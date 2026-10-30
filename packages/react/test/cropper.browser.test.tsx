@@ -1,3 +1,4 @@
+import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
 import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -262,5 +263,40 @@ describe("react parts", () => {
     await frames(4);
     expect(changes).toBe(1);
     expect(api.current?.getValue().rotation).toBe(5);
+  });
+});
+
+describe("react review regressions", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("binds through a render element that has its own ref", async () => {
+    const api = createRef<CropperApi>();
+    const mine = createRef<HTMLDivElement>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport
+          style={{ height: 300, position: "relative", width: 400 }}
+        >
+          <Cropper.Area render={<div ref={mine} />} />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await frames(3);
+    const area = screen.container.querySelector<HTMLElement>(
+      '[data-zriz-item="area"]'
+    );
+    expect(mine.current).toBe(area);
+    expect(area?.style.width).toBe("400px");
+  });
+
+  it("keeps an external cropper's options", async () => {
+    const external = createCropper({
+      image: { height: 300, width: 400 },
+      maxZoom: 4,
+    });
+    await render(<Cropper.Root cropper={external} />);
+    expect(external.getMaxZoom()).toBe(4);
   });
 });

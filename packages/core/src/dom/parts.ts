@@ -161,12 +161,25 @@ export const bindMask = (
   };
 };
 
+export interface AreaOptions {
+  liveVariables?: boolean | undefined;
+}
+
 export const bindArea = (
   cropper: Cropper,
-  element: HTMLElement
+  element: HTMLElement,
+  options: AreaOptions = {}
 ): (() => void) => {
   const { style } = element;
   style.position = "absolute";
+  const live = new Map<string, string>();
+  const variable = (name: string, value: number): void => {
+    const text = String(Math.round(value * 1000) / 1000);
+    if (live.get(name) !== text) {
+      live.set(name, text);
+      style.setProperty(name, text);
+    }
+  };
   let last: Box = { height: -1, width: -1, x: Number.NaN, y: Number.NaN };
   return follow(cropper, (frame) => {
     const { rect } = frame;
@@ -183,6 +196,23 @@ export const bindArea = (
       style.height = px(rect.height);
     }
     last = rect;
+    if (options.liveVariables === true) {
+      const { rotation } = cropper.getValue();
+      const zoom = cropper.getZoom();
+      const max = cropper.getMaxZoom();
+      const shift = viewOf(cropper).overscroll();
+      variable("--zriz-rotation", rotation);
+      variable(
+        "--zriz-rotation-progress",
+        rotation / Math.max(cropper.getRotationLimit(), 1e-9)
+      );
+      variable("--zriz-zoom", zoom);
+      variable(
+        "--zriz-zoom-progress",
+        max > 1 ? Math.log(zoom) / Math.log(max) : 0
+      );
+      variable("--zriz-overscroll", Math.hypot(shift.x, shift.y));
+    }
   });
 };
 
@@ -234,6 +264,7 @@ export const handleHandlers = (
   edge: HandleEdge,
   element?: () => Element | null
 ): HandleHandlers => {
+  const owner = {};
   const handle = EDGES[edge];
   const view = viewOf(cropper);
   let drag: HandleDrag | null = null;
@@ -246,13 +277,26 @@ export const handleHandlers = (
     };
   };
 
+  const onEscape = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape" || !drag) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    drag = null;
+    globalThis.removeEventListener("keydown", onEscape, true);
+    cropper.cancel(event, owner);
+    view.release();
+  };
+
   const finish = (event: PointerEvent): void => {
     if (drag?.id !== event.pointerId) {
       return;
     }
     drag = null;
+    globalThis.removeEventListener("keydown", onEscape, true);
     view.release();
-    cropper.end(event);
+    cropper.end(event, owner);
   };
 
   return {
@@ -265,13 +309,13 @@ export const handleHandlers = (
         drag ||
         !state ||
         (event.pointerType === "mouse" && event.button !== 0) ||
-        !cropper.begin("resize", event)
+        !cropper.begin("resize", event, owner)
       ) {
         return;
       }
       const placement = view.hold();
       if (!placement) {
-        cropper.end(event);
+        cropper.end(event, owner);
         return;
       }
       const start = toRect(state.crop);
@@ -283,6 +327,7 @@ export const handleHandlers = (
         placement,
         start,
       };
+      globalThis.addEventListener("keydown", onEscape, true);
       const target =
         element?.() ??
         (event.currentTarget instanceof Element ? event.currentTarget : null);
@@ -374,6 +419,13 @@ export const bindState = (
     element.toggleAttribute("data-changed", !state.pristine);
     element.toggleAttribute("data-mirrored", state.mirrored);
     element.toggleAttribute("data-reduced-motion", view.reducedMotion());
+    element.toggleAttribute("data-overscroll", chrome.overscroll);
+    const { aspect } = state;
+    let orientation = "square";
+    if (typeof aspect === "number" && aspect !== 1) {
+      orientation = aspect > 1 ? "landscape" : "portrait";
+    }
+    element.dataset.orientation = orientation;
     element.dataset.grid = chrome.grid;
     if (chrome.transition) {
       element.dataset.transition = chrome.transition;

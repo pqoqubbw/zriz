@@ -49,7 +49,12 @@ export {
   maskClip,
   maskGradient,
 } from "./parts";
-export type { HandleEdge, HandleHandlers, MaskShape } from "./parts";
+export type {
+  AreaOptions,
+  HandleEdge,
+  HandleHandlers,
+  MaskShape,
+} from "./parts";
 export {
   cssMatrix,
   cropBox,

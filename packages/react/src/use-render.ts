@@ -45,6 +45,7 @@ export const useRender = <S>({
     return createElement(render.type, {
       ...mergeProps(own, render.props),
       key: render.key,
+      ref: merged,
     });
   }
   return createElement(tag, own);

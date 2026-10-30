@@ -115,6 +115,7 @@ export const viewportController = (
   cropper: Cropper,
   initial: ViewportOptions = {}
 ): ViewportController => {
+  const owner = {};
   let options = initial;
   let element: HTMLElement | null = null;
   const view: View = viewOf(cropper);
@@ -279,7 +280,7 @@ export const viewportController = (
     }
     start = null;
     view.settleOverscroll();
-    cropper.end(event);
+    cropper.end(event, owner);
   };
 
   const handlers: ViewportHandlers = {
@@ -306,11 +307,11 @@ export const viewportController = (
           x: box.left + element.clientLeft,
           y: box.top + element.clientTop,
         };
-        if (!cropper.begin("pan", event)) {
+        if (!cropper.begin("pan", event, owner)) {
           return;
         }
       } else {
-        cropper.begin("pinch", event);
+        cropper.begin("pinch", event, owner);
       }
       capture(element, event.pointerId);
       pointers.set(event.pointerId, local(event));
@@ -353,7 +354,7 @@ export const viewportController = (
   const endWheel = (): void => {
     wheelTimer = null;
     if (pointers.size === 0 && !safari) {
-      cropper.end();
+      cropper.end(undefined, owner);
     }
   };
 
@@ -388,7 +389,12 @@ export const viewportController = (
       return;
     }
     if (wheelTimer === null) {
-      cropper.begin("wheel", event);
+      if (!cropper.begin("wheel", event, owner)) {
+        if (zoom) {
+          event.preventDefault();
+        }
+        return;
+      }
     } else {
       clearTimeout(wheelTimer);
     }
@@ -431,7 +437,7 @@ export const viewportController = (
       x: box.left + element.clientLeft,
       y: box.top + element.clientTop,
     };
-    if (!cropper.begin("pinch", event)) {
+    if (!cropper.begin("pinch", event, owner)) {
       return;
     }
     rotating = false;
@@ -458,7 +464,7 @@ export const viewportController = (
       return;
     }
     safari = null;
-    cropper.end(event);
+    cropper.end(event, owner);
   };
 
   const onHidden = (): void => {
@@ -467,6 +473,18 @@ export const viewportController = (
         finish(id, new Event("visibilitychange"));
       }
     }
+  };
+
+  const onEscape = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape" || pointers.size === 0) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    pointers.clear();
+    start = null;
+    view.setOverscroll({ x: 0, y: 0 });
+    cropper.cancel(event, owner);
   };
 
   const onBlur = (event: Event): void => {
@@ -491,8 +509,13 @@ export const viewportController = (
     document.removeEventListener("animationend", onAncestorSettle, true);
     document.removeEventListener("visibilitychange", onHidden);
     globalThis.removeEventListener("blur", onBlur);
+    globalThis.removeEventListener("keydown", onEscape, true);
     for (const id of pointers.keys()) {
       finish(id, new Event("lostpointercapture"));
+    }
+    if (safari) {
+      safari = null;
+      cropper.end(new Event("gestureend"), owner);
     }
     element = null;
   };
@@ -531,6 +554,7 @@ export const viewportController = (
       document.addEventListener("animationend", onAncestorSettle, true);
       document.addEventListener("visibilitychange", onHidden);
       globalThis.addEventListener("blur", onBlur);
+      globalThis.addEventListener("keydown", onEscape, true);
       observer = new ResizeObserver(measure);
       observer.observe(next);
       onDpr();

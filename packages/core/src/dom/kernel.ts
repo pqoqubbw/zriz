@@ -172,19 +172,18 @@ export const imageKernel = (): Kernel => {
     }
   };
 
-  const blank = (context: Context, circle: boolean): boolean => {
+  const dead = (context: Context): boolean => {
     const { width, height } = context.canvas;
-    const points: [number, number][] = circle
-      ? [[Math.floor(width / 2), Math.floor(height / 2)]]
-      : [
-          [0, 0],
-          [width - 1, 0],
-          [0, height - 1],
-          [width - 1, height - 1],
-        ];
-    return points.every(([x, y]) => {
+    const corners: [number, number][] = [
+      [0, 0],
+      [width - 1, height - 1],
+    ];
+    return corners.some(([x, y]) => {
+      context.fillStyle = "#010203";
+      context.fillRect(x, y, 1, 1);
       const { data } = context.getImageData(x, y, 1, 1);
-      return data[0] === 0 && data[1] === 0 && data[2] === 0 && data[3] === 0;
+      context.clearRect(x, y, 1, 1);
+      return data[3] === 0;
     });
   };
 
@@ -195,6 +194,7 @@ export const imageKernel = (): Kernel => {
   ): { canvas: Canvas; empty: boolean } => {
     const canvas = canvasFor(plan.width, plan.height);
     const context = contextOf(canvas, job.colorSpace);
+    const empty = dead(context);
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
     if (job.circle) {
@@ -232,7 +232,7 @@ export const imageKernel = (): Kernel => {
       context.drawImage(full.drawable, 0, 0);
       context.setTransform(1, 0, 0, 1, 0, 0);
     }
-    return { canvas, empty: blank(context, job.circle) };
+    return { canvas, empty };
   };
 
   const encode = async (

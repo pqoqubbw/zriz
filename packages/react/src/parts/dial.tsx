@@ -67,6 +67,7 @@ export const Dial = ({
         "aria-orientation": "horizontal",
         "data-dragging": dragging ? "" : undefined,
         "data-zriz-item": "dial",
+        onBlur: native(handlers.onBlur),
         onKeyDown: native(handlers.onKeyDown),
         onKeyUp: native(handlers.onKeyUp),
         onLostPointerCapture: native(handlers.onLostPointerCapture),

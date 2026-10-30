@@ -4,6 +4,7 @@ import type { Cropper } from "@zriz/core";
 import type { ComponentProps, Ref } from "react";
 import {
   createContext,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -73,8 +74,36 @@ export const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
 export const useMergedRef = <T>(
   own: (node: T | null) => (() => void) | undefined,
   theirs: Ref<T> | undefined
-): ((node: T | null) => () => void) =>
-  useMemo(() => mergeRefs<T>(own, theirs), [own, theirs]);
+): ((node: T | null) => () => void) => {
+  const latest = useRef(theirs);
+  const node = useRef<T | null>(null);
+  const release = useRef<(() => void) | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (latest.current === theirs) {
+      return;
+    }
+    latest.current = theirs;
+    if (node.current !== null) {
+      release.current?.();
+      release.current = mergeRefs<T>(theirs)(node.current);
+    }
+  }, [theirs]);
+  return useCallback(
+    (next: T | null) => {
+      node.current = next;
+      const cleanup = own(next);
+      release.current =
+        next === null ? null : mergeRefs<T>(latest.current)(next);
+      return () => {
+        release.current?.();
+        release.current = null;
+        node.current = null;
+        cleanup?.();
+      };
+    },
+    [own]
+  );
+};
 
 export const native =
   <E extends Event>(handler: (event: E) => void) =>

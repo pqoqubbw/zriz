@@ -2,6 +2,7 @@
 
 import { createCropper } from "@zriz/core";
 import type {
+  Aspect,
   Cropper,
   CropperFrame,
   CropperOptions,
@@ -16,34 +17,89 @@ import { useIsomorphicLayoutEffect, useLatest } from "./part";
 export interface UseCropperOptions extends Omit<CropperOptions, "clock"> {
   /** Use this instance instead of creating one. */
   cropper?: Cropper | undefined;
+  /** Controlled aspect: a ratio, "free" or "original". */
+  aspect?: Aspect | undefined;
+  /** Controlled straighten angle in degrees. */
+  rotation?: number | undefined;
+  /** Controlled zoom, 1 is the largest crop. */
+  zoom?: number | undefined;
 }
 
 export const useCropper = (options: UseCropperOptions = {}): Cropper => {
-  const { cropper: external, value, ...rest } = options;
+  const { cropper: external, value, aspect, rotation, zoom, ...rest } = options;
   const [own] = useState(() =>
-    external ? null : createCropper({ ...rest, value })
+    external
+      ? null
+      : createCropper({
+          ...rest,
+          defaultValue: {
+            ...rest.defaultValue,
+            ...(aspect === undefined ? {} : { aspect }),
+            ...(rotation === undefined ? {} : { rotation }),
+          },
+          value,
+        })
   );
   const cropper = external ?? own;
   if (!cropper) {
     throw new Error("zriz: no cropper");
   }
   const latest = useLatest(rest);
+  const hasChange = rest.onValueChange !== undefined;
+  const hasCommit = rest.onValueCommit !== undefined;
   useIsomorphicLayoutEffect(() => {
-    cropper.setOptions({
-      disabled: rest.disabled,
-      maxZoom: rest.maxZoom,
-      minSize: rest.minSize,
-      onValueChange: (next, details) =>
-        latest.current.onValueChange?.(next, details),
-      onValueCommit: (next, details) =>
-        latest.current.onValueCommit?.(next, details),
-    });
-  }, [cropper, rest.disabled, rest.maxZoom, rest.minSize]);
+    const patch: Partial<CropperOptions> = {};
+    if (rest.disabled !== undefined) {
+      patch.disabled = rest.disabled;
+    }
+    if (rest.maxZoom !== undefined) {
+      patch.maxZoom = rest.maxZoom;
+    }
+    if (rest.minSize !== undefined) {
+      patch.minSize = rest.minSize;
+    }
+    if (hasChange) {
+      patch.onValueChange = (next, details) => {
+        latest.current.onValueChange?.(next, details);
+      };
+    }
+    if (hasCommit) {
+      patch.onValueCommit = (next, details) => {
+        latest.current.onValueCommit?.(next, details);
+      };
+    }
+    if (Object.keys(patch).length > 0) {
+      cropper.setOptions(patch);
+    }
+  }, [
+    cropper,
+    hasChange,
+    hasCommit,
+    latest,
+    rest.disabled,
+    rest.maxZoom,
+    rest.minSize,
+  ]);
   useIsomorphicLayoutEffect(() => {
     if (value !== undefined) {
       cropper.setValue(value, { emit: false, reason: "controlled" });
     }
   }, [cropper, value]);
+  useIsomorphicLayoutEffect(() => {
+    if (aspect !== undefined && cropper.getValue().aspect !== aspect) {
+      cropper.setAspect(aspect, { reason: "aspect" });
+    }
+  }, [cropper, aspect]);
+  useIsomorphicLayoutEffect(() => {
+    if (rotation !== undefined && cropper.getValue().rotation !== rotation) {
+      cropper.setRotation(rotation, { reason: "controlled" });
+    }
+  }, [cropper, rotation]);
+  useIsomorphicLayoutEffect(() => {
+    if (zoom !== undefined && Math.abs(cropper.getZoom() - zoom) > 1e-6) {
+      cropper.setZoom(zoom, { reason: "controlled" });
+    }
+  }, [cropper, zoom]);
   useEffect(
     () => () => {
       own?.stop();

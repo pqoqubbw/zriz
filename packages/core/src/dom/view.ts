@@ -54,6 +54,7 @@ export interface Chrome {
   grid: Grid;
   active: boolean;
   transition: Transition | null;
+  overscroll: boolean;
 }
 
 export interface ViewOptions {
@@ -75,6 +76,7 @@ export interface View {
   hold: () => Placement | null;
   release: () => void;
   setOverscroll: (offset: Point) => void;
+  overscroll: () => Point;
   settleOverscroll: () => void;
   onFrame: (listener: (frame: ViewFrame) => void) => () => void;
   destroy: () => void;
@@ -313,7 +315,12 @@ export const viewOf = (cropper: Cropper): View => {
   let recentreTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
   let blend: { from: Pose; t: number } | null = null;
-  let chrome: Chrome = { active: false, grid: "none", transition: null };
+  let chrome: Chrome = {
+    active: false,
+    grid: "none",
+    overscroll: false,
+    transition: null,
+  };
   let last: ViewFrame | null = null;
   let target: HTMLElement | null = null;
   const claims = new WeakSet<Event>();
@@ -333,6 +340,7 @@ export const viewOf = (cropper: Cropper): View => {
     if (
       merged.active === chrome.active &&
       merged.grid === chrome.grid &&
+      merged.overscroll === chrome.overscroll &&
       merged.transition === chrome.transition
     ) {
       return;
@@ -582,6 +590,7 @@ export const viewOf = (cropper: Cropper): View => {
         listeners.delete(listener);
       };
     },
+    overscroll: () => shift,
     reducedMotion: reduced,
     release() {
       const state = cropper.getCropState();
@@ -602,6 +611,7 @@ export const viewOf = (cropper: Cropper): View => {
       stopShift?.();
       stopShift = null;
       shift = offset;
+      setChrome({ overscroll: offset.x !== 0 || offset.y !== 0 });
       cropper.invalidate();
     },
     setTarget(element) {
@@ -626,6 +636,7 @@ export const viewOf = (cropper: Cropper): View => {
         shift = done ? { x: 0, y: 0 } : { x: x.value, y: y.value };
         if (done) {
           stopShift = null;
+          setChrome({ overscroll: false });
         }
         return !done;
       }, false);

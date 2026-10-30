@@ -4,6 +4,7 @@ import { capture } from "./view";
 export interface KeyHandlers {
   onKeyDown: (event: KeyboardEvent) => void;
   onKeyUp: (event: KeyboardEvent) => void;
+  onBlur: (event: FocusEvent) => void;
 }
 
 export interface ZoomHandlers extends KeyHandlers {
@@ -38,10 +39,17 @@ const keyed = (
   plan: (event: KeyboardEvent) => KeyAction
 ): KeyHandlers => {
   let active = false;
+  const owner = {};
   return {
+    onBlur(event) {
+      if (active) {
+        active = false;
+        cropper.end(event, owner);
+      }
+    },
     onKeyDown(event) {
       const run = plan(event);
-      if (!run || (!active && !cropper.begin("keyboard", event))) {
+      if (!run || (!active && !cropper.begin("keyboard", event, owner))) {
         return;
       }
       event.preventDefault();
@@ -51,7 +59,7 @@ const keyed = (
     onKeyUp(event) {
       if (active) {
         active = false;
-        cropper.end(event);
+        cropper.end(event, owner);
       }
     },
   };
@@ -125,8 +133,9 @@ export const zoomHandlers = (
   options: ZoomOptions = {},
   element?: () => Element | null
 ): ZoomHandlers => {
+  const owner = {};
   let pointer: number | null = null;
-  const max = (): number => options.max ?? MAX_ZOOM;
+  const max = (): number => options.max ?? cropper.getMaxZoom();
   const sign = (): number => (options.dir === "rtl" ? -1 : 1);
   const target = (event: Event): Element | null =>
     element?.() ??
@@ -148,7 +157,7 @@ export const zoomHandlers = (
   const finish = (event: PointerEvent): void => {
     if (pointer === event.pointerId) {
       pointer = null;
-      cropper.end(event);
+      cropper.end(event, owner);
     }
   };
   const keys = keyed(cropper, (event) => {
@@ -180,7 +189,7 @@ export const zoomHandlers = (
       if (
         pointer !== null ||
         (event.pointerType === "mouse" && event.button !== 0) ||
-        !cropper.begin("zoom-control", event)
+        !cropper.begin("zoom-control", event, owner)
       ) {
         return;
       }
@@ -213,7 +222,10 @@ export const zoomAria = (
   const aria = (): void => {
     const zoom = cropper.getZoom();
     element.setAttribute("aria-valuemin", "1");
-    element.setAttribute("aria-valuemax", String(options.max ?? MAX_ZOOM));
+    element.setAttribute(
+      "aria-valuemax",
+      String(options.max ?? cropper.getMaxZoom())
+    );
     element.setAttribute("aria-valuenow", String(Math.round(zoom * 100) / 100));
     element.setAttribute("aria-valuetext", formatter.format(zoom));
   };
@@ -238,7 +250,10 @@ export const bindZoomThumb = (
   element.style.position = "absolute";
   let last = "";
   const write = (): void => {
-    const progress = zoomProgress(cropper.getZoom(), options.max ?? MAX_ZOOM);
+    const progress = zoomProgress(
+      cropper.getZoom(),
+      options.max ?? cropper.getMaxZoom()
+    );
     const next = `${progress * 100}%`;
     if (next !== last) {
       last = next;

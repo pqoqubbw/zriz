@@ -23,7 +23,7 @@ export const useZoom = (
   if (!cropper) {
     throw new Error("zriz: pass a cropper or render inside <Cropper.Root>");
   }
-  const max = options.max ?? 15;
+  const max = options.max ?? cropper.getMaxZoom();
   const value = useSyncExternalStore(
     (listener) => cropper.on("frame", listener),
     () => Math.round(cropper.getZoom() * 1000) / 1000,

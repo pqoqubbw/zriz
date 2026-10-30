@@ -20,6 +20,7 @@ export interface DialHandlers {
   onLostPointerCapture: (event: PointerEvent) => void;
   onKeyDown: (event: KeyboardEvent) => void;
   onKeyUp: (event: KeyboardEvent) => void;
+  onBlur: (event: FocusEvent) => void;
 }
 
 export interface DialState {
@@ -105,6 +106,7 @@ export const dialHandlers = (
   initial: DialOptions = {},
   element?: () => Element | null
 ): DialHandlers => {
+  const owner = {};
   const dial = dialStateOf(cropper);
   dial.setOptions(initial);
   const tracker = velocityTracker();
@@ -155,7 +157,7 @@ export const dialHandlers = (
         ) {
           show(target, false);
           stopMotion = null;
-          cropper.end(event);
+          cropper.end(event, owner);
           return false;
         }
         return true;
@@ -164,7 +166,7 @@ export const dialHandlers = (
       show(from + motion.value, false);
       if (Math.abs(motion.velocity) < STOP_SPEED) {
         stopMotion = null;
-        cropper.end(event);
+        cropper.end(event, owner);
         return false;
       }
       return true;
@@ -197,7 +199,7 @@ export const dialHandlers = (
     }
     pointer = null;
     if (!engaged) {
-      cropper.end(event);
+      cropper.end(event, owner);
       return;
     }
     engaged = false;
@@ -206,7 +208,7 @@ export const dialHandlers = (
       fling(velocity, cropper.getValue().rotation, event);
       return;
     }
-    cropper.end(event);
+    cropper.end(event, owner);
     settleOvershoot();
   };
 
@@ -245,6 +247,12 @@ export const dialHandlers = (
   };
 
   return {
+    onBlur(event) {
+      if (keyboard) {
+        keyboard = false;
+        cropper.end(event, owner);
+      }
+    },
     onKeyDown(event) {
       const next = step(event);
       if (next === null) {
@@ -253,7 +261,7 @@ export const dialHandlers = (
       event.preventDefault();
       if (!keyboard) {
         stopMotion?.();
-        if (!cropper.begin("keyboard", event)) {
+        if (!cropper.begin("keyboard", event, owner)) {
           return;
         }
         keyboard = true;
@@ -266,7 +274,7 @@ export const dialHandlers = (
     onKeyUp(event) {
       if (keyboard) {
         keyboard = false;
-        cropper.end(event);
+        cropper.end(event, owner);
       }
     },
     onLostPointerCapture(event) {
@@ -285,7 +293,7 @@ export const dialHandlers = (
       }
       stopMotion?.();
       stopMotion = null;
-      if (!cropper.begin("dial", event)) {
+      if (!cropper.begin("dial", event, owner)) {
         return;
       }
       pointer = event.pointerId;
@@ -310,7 +318,7 @@ export const dialHandlers = (
         if (event.pointerType === "touch" && Math.hypot(dx, dy) >= AXIS_LOCK) {
           if (Math.abs(dy) > Math.abs(dx)) {
             pointer = null;
-            cropper.end(event);
+            cropper.end(event, owner);
             return;
           }
           const target = targetOf(event, element);
@@ -394,6 +402,7 @@ export const bindDial = (
   }
   element.addEventListener("keydown", handlers.onKeyDown);
   element.addEventListener("keyup", handlers.onKeyUp);
+  element.addEventListener("blur", handlers.onBlur);
   const dial = dialState(cropper);
   const sync = (): void => {
     element.toggleAttribute("data-dragging", dial.dragging());
@@ -406,6 +415,7 @@ export const bindDial = (
     }
     element.removeEventListener("keydown", handlers.onKeyDown);
     element.removeEventListener("keyup", handlers.onKeyUp);
+    element.removeEventListener("blur", handlers.onBlur);
     offChange();
     offAria();
   };

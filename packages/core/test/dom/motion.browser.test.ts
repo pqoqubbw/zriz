@@ -146,7 +146,7 @@ describe("view motion", () => {
         }),
       ]);
     });
-    await wait(900);
+    await wait(500);
     expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
     await expect
       .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })

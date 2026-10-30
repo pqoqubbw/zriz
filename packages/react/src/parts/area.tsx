@@ -17,9 +17,13 @@ export interface AreaState {
   interacting: boolean;
 }
 
-export type AreaProps = PartProps<"div", AreaState>;
+export interface AreaProps extends PartProps<"div", AreaState> {
+  /** Write --zriz-rotation, --zriz-zoom, their -progress and --zriz-overscroll on this element each frame. */
+  liveVariables?: boolean;
+}
 
 export const Area = ({
+  liveVariables = false,
   render,
   className,
   ref,
@@ -32,9 +36,11 @@ export const Area = ({
   const own = useCallback(
     (element: HTMLDivElement | null) => {
       warnUnlabelled("Area", element);
-      return element ? bindArea(cropper, element) : undefined;
+      return element
+        ? bindArea(cropper, element, { liveVariables })
+        : undefined;
     },
-    [cropper]
+    [cropper, liveVariables]
   );
   return useRender({
     className,
@@ -44,6 +50,7 @@ export const Area = ({
         "data-interacting": interacting ? "" : undefined,
         "data-shape": shape,
         "data-zriz-item": "area",
+        onBlur: native(keys.onBlur),
         onKeyDown: native(keys.onKeyDown),
         onKeyUp: native(keys.onKeyUp),
         role: "group",

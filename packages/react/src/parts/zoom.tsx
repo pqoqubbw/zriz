@@ -60,6 +60,7 @@ export const Zoom = ({
         "aria-orientation": "horizontal",
         "data-dragging": dragging ? "" : undefined,
         "data-zriz-item": "zoom",
+        onBlur: native(handlers.onBlur),
         onKeyDown: native(handlers.onKeyDown),
         onKeyUp: native(handlers.onKeyUp),
         onLostPointerCapture: native(handlers.onLostPointerCapture),

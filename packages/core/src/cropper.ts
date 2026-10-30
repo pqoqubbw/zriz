@@ -61,6 +61,7 @@ export interface CommitDetails {
   reason: ChangeReason;
   event: Event | undefined;
   previous: CropValue;
+  pixelCrop: ExportPlan | null;
 }
 
 export interface CropperSnapshot {
@@ -113,9 +114,9 @@ export interface CropperOptions {
 }
 
 export interface ActionOptions {
-  reason?: ChangeReason;
-  event?: Event;
-  emit?: boolean;
+  reason?: ChangeReason | undefined;
+  event?: Event | undefined;
+  emit?: boolean | undefined;
 }
 
 export type FrameTask = (time: number, delta: number) => boolean;
@@ -142,8 +143,10 @@ export interface Cropper {
   getZoom: () => number;
   getRotationLimit: () => number;
   getPixelCrop: (scale?: number) => ExportPlan | null;
-  begin: (reason: ChangeReason, event?: Event) => boolean;
-  end: (event?: Event) => void;
+  begin: (reason: ChangeReason, event?: Event, owner?: unknown) => boolean;
+  end: (event?: Event, owner?: unknown) => void;
+  cancel: (event?: Event, owner?: unknown) => void;
+  getMaxZoom: () => number;
   setCropState: (
     next: CropState,
     options?: ActionOptions & { keep?: "size" | "centre" }
@@ -162,7 +165,9 @@ type Listeners = { [E in keyof CropperEvents]: Set<CropperEvents[E]> };
 interface Gesture {
   reason: ChangeReason;
   start: CropState | null;
+  startValue: CropValue;
   flushed: boolean;
+  owner: unknown;
 }
 
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
@@ -340,6 +345,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     committed = value;
     emit("commit", value, {
       event: pending.event,
+      pixelCrop: state ? exportPlan(state) : null,
       previous,
       reason: pending.reason,
     });
@@ -428,7 +434,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     action: ActionOptions,
     fallback: ChangeReason
   ): void => {
-    if (destroyed || valuesEqual(value, nextValue)) {
+    if (
+      destroyed ||
+      valuesEqual(value, nextValue) ||
+      (action.reason === "controlled" && gesture !== null)
+    ) {
       return;
     }
     state = next;
@@ -467,18 +477,33 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
 
   const cropper: Cropper = {
-    begin(reason, event) {
-      if (disabled()) {
+    begin(reason, event, owner) {
+      if (disabled() || (gesture !== null && gesture.owner !== owner)) {
         return false;
       }
       tasks.clear();
       const restart = gesture !== null;
-      gesture = { flushed: gesture?.flushed ?? false, reason, start: state };
+      gesture = {
+        flushed: gesture?.flushed ?? false,
+        owner,
+        reason,
+        start: gesture?.start ?? state,
+        startValue: gesture?.startValue ?? value,
+      };
       if (!restart) {
         emit("gesturestart", reason, event);
       }
       refresh();
       return true;
+    },
+    cancel(event, owner) {
+      if (!gesture || gesture.owner !== owner) {
+        return;
+      }
+      const { start, startValue, reason } = gesture;
+      tasks.clear();
+      accept(start, startValue, { event, reason }, reason);
+      cropper.end(event, owner);
     },
     destroy() {
       if (destroyed) {
@@ -499,8 +524,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         set.clear();
       }
     },
-    end(event) {
-      if (!gesture) {
+    end(event, owner) {
+      if (!gesture || gesture.owner !== owner) {
         return;
       }
       const { reason } = gesture;
@@ -519,6 +544,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       commitState(next, "size", action, "flip");
     },
     getCropState: () => state,
+    getMaxZoom: () => options.maxZoom ?? MAX_ZOOM,
     getPixelCrop: (scale) => (state ? exportPlan(state, scale) : null),
     getRotationLimit: rotationLimit,
     getState: () => snapshot,
@@ -615,10 +641,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       }
       commitState(next, action.keep ?? "size", action, "imperative");
     },
-    setImage(next) {
+    setImage(given) {
       if (destroyed) {
         return;
       }
+      const next =
+        given &&
+        Number.isFinite(given.width) &&
+        Number.isFinite(given.height) &&
+        given.width > 0 &&
+        given.height > 0
+          ? given
+          : null;
       const first = state === null;
       image = next;
       if (!next) {
@@ -642,7 +676,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         refresh();
         return;
       }
+      emittedState = constrain(fromValue(emitted, next), "centre");
+      emitted = stateToValue(emittedState, emitted.aspect);
       state = fixed;
+      frameDirty = true;
       accept(fixed, fixedValue, {}, "coverage");
       frameDirty = true;
       schedule();
@@ -712,7 +749,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
           y: anchor.y + (state.crop.y - anchor.y) * k,
         },
       };
-      commitState(next, "centre", action, "imperative");
+      commitState(next, "size", action, "imperative");
     },
     stop() {
       if (gesture) {

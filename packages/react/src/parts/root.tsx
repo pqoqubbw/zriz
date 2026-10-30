@@ -66,6 +66,13 @@ const urlFor = (blob: Blob): string => {
   return url;
 };
 
+const orientationOf = (aspect: CropperSnapshot["aspect"]): string => {
+  if (typeof aspect !== "number" || aspect === 1) {
+    return "square";
+  }
+  return aspect > 1 ? "landscape" : "portrait";
+};
+
 const useObjectUrl = (src: string | Blob | null | undefined): string | null => {
   useEffect(() => {
     const entry = src instanceof Blob ? blobUrls.get(src) : undefined;
@@ -89,6 +96,9 @@ export const Root = ({
   cropper: external,
   image,
   value,
+  aspect,
+  rotation,
+  zoom,
   defaultValue,
   minSize,
   maxZoom,
@@ -110,6 +120,7 @@ export const Root = ({
   ...html
 }: RootProps): ReactElement => {
   const cropper = useCropper({
+    aspect,
     cropper: external,
     defaultValue,
     disabled,
@@ -120,7 +131,9 @@ export const Root = ({
     onValueChange,
     onValueCommit,
     plugins,
+    rotation,
     value,
+    zoom,
   });
   useImperativeHandle(actionsRef, () => cropper, [cropper]);
   const view = viewOf(cropper);
@@ -145,8 +158,11 @@ export const Root = ({
         "data-grid": chrome.grid,
         "data-interacting": chrome.active ? "" : undefined,
         "data-mirrored": snapshot.mirrored ? "" : undefined,
+        "data-orientation": orientationOf(snapshot.aspect),
+        "data-overscroll": chrome.overscroll ? "" : undefined,
         "data-panning": gesture === "pan" ? "" : undefined,
         "data-pinching": gesture === "pinch" ? "" : undefined,
+        "data-reduced-motion": view.reducedMotion() ? "" : undefined,
         "data-resizing": gesture === "resize" ? "" : undefined,
         "data-rotating": gesture === "dial" ? "" : undefined,
         "data-settling": snapshot.settling ? "" : undefined,

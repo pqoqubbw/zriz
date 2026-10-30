@@ -2,7 +2,7 @@
 
 import { handleHandlers } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
@@ -66,7 +66,16 @@ export const Handle = ({
     () => handleHandlers(cropper, position, box.get),
     [box, cropper, position]
   );
-  const active = useCropperState((s) => s.interacting === "resize");
+  const resizing = useCropperState((s) => s.interacting === "resize");
+  const [mine, setMine] = useState(false);
+  const active = resizing && mine;
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent) => {
+      handlers.onPointerDown(event.nativeEvent);
+      setMine(cropper.getState().interacting === "resize");
+    },
+    [cropper, handlers]
+  );
   const own = useCallback(
     (node: HTMLDivElement | null) => {
       box.set(node);
@@ -81,11 +90,12 @@ export const Handle = ({
     props: mergeProps(
       {
         "aria-hidden": true,
+        "data-active": active ? "" : undefined,
         "data-edge": position,
         "data-zriz-item": "handle",
         onLostPointerCapture: native(handlers.onLostPointerCapture),
         onPointerCancel: native(handlers.onPointerCancel),
-        onPointerDown: native(handlers.onPointerDown),
+        onPointerDown,
         onPointerMove: native(handlers.onPointerMove),
         onPointerUp: native(handlers.onPointerUp),
         style: placement(position),

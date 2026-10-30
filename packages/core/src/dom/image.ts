@@ -119,10 +119,11 @@ export const sniff = (
   if (ascii(bytes, 0, 4) === "II*\0" || ascii(bytes, 0, 4) === "MM\0*") {
     return { animated: false, mime: "image/tiff" };
   }
-  const text = ascii(bytes, 0, Math.min(bytes.length, 512)).trimStart();
+  const text = new TextDecoder().decode(bytes.subarray(0, 512));
   if (
-    text.startsWith("<svg") ||
-    (text.startsWith("<?xml") && text.includes("<svg"))
+    /^\s*(?:<\?xml[^>]*\?>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>[]*(?:\[[\s\S]*?\])?\s*>)\s*)*<svg[\s>]/iu.test(
+      text
+    )
   ) {
     return { animated: false, mime: "image/svg+xml" };
   }
@@ -378,6 +379,18 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   );
 };
 
+const dispose = async (pending: Promise<LoadedImage>): Promise<void> => {
+  const late = await pending.catch(() => null);
+  late?.preview.close();
+  if (
+    late &&
+    late.source instanceof ImageBitmap &&
+    late.source !== late.preview
+  ) {
+    late.source.close();
+  }
+};
+
 export const loadImage = async (
   src: ImageSource,
   options: LoadOptions = {}
@@ -394,6 +407,9 @@ export const loadImage = async (
           : src;
       const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
       ({ mime, animated } = sniff(head));
+      if (mime === null && blob.type === "image/svg+xml") {
+        mime = blob.type;
+      }
       if (mime === "image/svg+xml") {
         const preview = await fromSvg(blob, edge);
         return {
@@ -412,7 +428,7 @@ export const loadImage = async (
           }
           const full = await options.decode(blob);
           const preview = await resizeBitmap(full, edge);
-          return { height: full.height, preview, width: full.width };
+          return { full, height: full.height, preview, width: full.width };
         }
       );
       const { preview, width, height } = decoded;
@@ -421,7 +437,7 @@ export const loadImage = async (
         height,
         mime,
         preview,
-        source: blob,
+        source: "full" in decoded ? decoded.full : blob,
         width,
       };
     }
@@ -459,7 +475,17 @@ export const loadImage = async (
       width: source.width,
     };
   };
-  return await withTimeout(work(), options.timeout ?? TIMEOUT, options.signal);
+  const pending = work();
+  try {
+    return await withTimeout(
+      pending,
+      options.timeout ?? TIMEOUT,
+      options.signal
+    );
+  } catch (error) {
+    void dispose(pending);
+    throw error;
+  }
 };
 
 export const outputLimit = (): number =>
@@ -489,15 +515,13 @@ export const exportImage = async (
     Math.sqrt(outputLimit() / (base.width * base.height))
   );
   const scales = [first, first / 2, first / 4];
-  const plans = scales.map((scale) => {
-    const plan = cropper.getPixelCrop(scale) ?? base;
-    return {
-      forward: plan.forward,
-      height: plan.height,
-      homography: plan.homography,
-      width: plan.width,
-    };
-  });
+  const crops = scales.map((scale) => cropper.getPixelCrop(scale) ?? base);
+  const plans = crops.map((plan) => ({
+    forward: plan.forward,
+    height: plan.height,
+    homography: plan.homography,
+    width: plan.width,
+  }));
   const wide =
     options.colorSpace === "display-p3" && image.source instanceof Blob;
   const url =
@@ -527,7 +551,7 @@ export const exportImage = async (
       TIMEOUT * 2,
       options.signal
     );
-    const crop = cropper.getPixelCrop(scales[index] ?? first) ?? base;
+    const crop = crops[index] ?? base;
     return {
       blob,
       crop,
