@@ -11,6 +11,8 @@ export interface DragLimits {
   aspect: number | null;
 }
 
+const SLOPE_EPSILON = 1e-9;
+
 type XEdge = "x0" | "x1";
 type YEdge = "y0" | "y1";
 
@@ -107,9 +109,9 @@ export const aspectHeightRange = (
     for (const [p0, p1] of pairs) {
       const base = plane.nx * p0.x + plane.ny * p0.y;
       const slope = plane.nx * p1.x + plane.ny * p1.y - base;
-      if (slope > 1e-15) {
+      if (slope > SLOPE_EPSILON) {
         max = Math.min(max, (plane.d - base) / slope);
-      } else if (slope < -1e-15) {
+      } else if (slope < -SLOPE_EPSILON) {
         min = Math.max(min, (plane.d - base) / slope);
       }
     }
@@ -158,8 +160,8 @@ const freePlanes = (
       const fixed =
         (xVaries ? 0 : plane.nx * start[xEdge]) +
         (yVaries ? 0 : plane.ny * start[yEdge]);
-      const nx = xVaries ? plane.nx : 0;
-      const ny = yVaries ? plane.ny : 0;
+      const nx = xVaries && Math.abs(plane.nx) > SLOPE_EPSILON ? plane.nx : 0;
+      const ny = yVaries && Math.abs(plane.ny) > SLOPE_EPSILON ? plane.ny : 0;
       if (nx !== 0 || ny !== 0) {
         planes.push({ d: plane.d - fixed, nx, ny });
       }

@@ -247,6 +247,25 @@ describe("handle drag constraints", () => {
     );
   });
 
+  it("ignores planes that a near-zero angle leaves almost parallel to the drag", () => {
+    const s = {
+      angle: 3.749924182617662e-11,
+      aspect: null,
+      crop: { height: 1194, width: 119.4, x: 0, y: 0 },
+      flip: false,
+      image: { height: 6232, width: 1194 },
+      perspective: { focal: 1, horizontal: 0, vertical: 0 },
+      turns: 3 as const,
+    };
+    const { planes } = limitsFor(s, 0);
+    const start = toRect(s);
+    const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
+    expect(dragHandle(start, "e", { x: 3000, y: 0 }, limits).x1).toBeCloseTo(
+      3000,
+      6
+    );
+  });
+
   it("gives the exact straighten limit for a minimum crop size", () => {
     assert(
       property(
