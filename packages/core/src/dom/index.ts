@@ -6,6 +6,7 @@ export {
   exportImage,
   imageOf,
   loadImage,
+  onImage,
   outputLimit,
   sniff,
   svgSize,
@@ -18,6 +19,7 @@ export type {
   LoadedImage,
   ZrizErrorCode,
 } from "./image";
+export { bindPhoto } from "./photo";
 export {
   areaKeyHandlers,
   bindZoomThumb,

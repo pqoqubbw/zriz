@@ -1,5 +1,11 @@
 import { imageKernel } from "./kernel";
-import type { DecodeReply, Kernel, RenderJob, RenderReply } from "./kernel";
+import type {
+  DecodeReply,
+  Kernel,
+  Region,
+  RenderJob,
+  RenderReply,
+} from "./kernel";
 
 interface Waiting {
   resolve: (value: unknown) => void;
@@ -18,7 +24,7 @@ let next = 0;
 const waiting = new Map<number, Waiting>();
 
 const program = (kernel: string): string =>
-  `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:String(error&&error.message||error)})}}`;
+  `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:String(error&&error.message||error)})}}`;
 
 const isReply = (value: unknown): value is Reply =>
   typeof value === "object" && value !== null && "id" in value;
@@ -98,13 +104,15 @@ const isRender = (value: unknown): value is RenderReply =>
 const fallback = (error: unknown): boolean =>
   error instanceof Error && error.message.startsWith("zriz:worker:");
 
-export const decodeOff = async (
-  blob: Blob,
-  edge: number
-): Promise<DecodeReply> => {
+const via = async <T>(
+  op: keyof Kernel,
+  args: readonly unknown[],
+  check: (value: unknown) => value is T,
+  here: (kernel: Kernel) => Promise<T>
+): Promise<T> => {
   try {
-    const reply = await call("decode", [blob, edge]);
-    if (isDecode(reply)) {
+    const reply = await call(op, args);
+    if (check(reply)) {
       return reply;
     }
   } catch (error) {
@@ -112,7 +120,73 @@ export const decodeOff = async (
       throw error;
     }
   }
-  return await direct().decode(blob, edge);
+  return await here(direct());
+};
+
+const isBitmap = (value: unknown): value is ImageBitmap =>
+  typeof ImageBitmap === "function" && value instanceof ImageBitmap;
+
+const isBlob = (value: unknown): value is Blob => value instanceof Blob;
+
+const isNothing = (value: unknown): value is undefined => value === undefined;
+
+export const decodeOff = async (
+  blob: Blob,
+  edge: number,
+  keep?: number
+): Promise<DecodeReply> =>
+  await via(
+    "decode",
+    [blob, edge, keep],
+    isDecode,
+    async (kernel) => await kernel.decode(blob, edge, keep)
+  );
+
+export const keepOff = async (
+  id: number,
+  bitmap: ImageBitmap
+): Promise<void> => {
+  await via("keep", [id, bitmap], isNothing, async (kernel) => {
+    await kernel.keep(id, bitmap);
+  });
+};
+
+export const motionOff = async (id: number, type: string): Promise<Blob> =>
+  await via(
+    "motion",
+    [id, type],
+    isBlob,
+    async (kernel) => await kernel.motion(id, type)
+  );
+
+export const resampleOff = async (
+  id: number,
+  scale: number
+): Promise<ImageBitmap> =>
+  await via(
+    "resample",
+    [id, scale],
+    isBitmap,
+    async (kernel) => await kernel.resample(id, scale)
+  );
+
+export const regionOff = async (
+  source: Blob | ImageBitmap,
+  rect: Region,
+  width: number,
+  height: number
+): Promise<ImageBitmap> =>
+  await via(
+    "region",
+    [source, rect, width, height],
+    isBitmap,
+    async (kernel) => await kernel.region(source, rect, width, height)
+  );
+
+export const releaseOff = async (id: number): Promise<void> => {
+  await via("release", [id], isNothing, async (kernel) => {
+    await kernel.release(id);
+  });
 };
 
 export const renderOff = async (job: RenderJob): Promise<RenderReply> => {

@@ -74,7 +74,7 @@
         "react",
         "react-dom"
       ],
-      "limit": "15 kB"
+      "limit": "18 kB"
     },
     {
       "name": "editor (every part)",
@@ -84,7 +84,7 @@
         "react",
         "react-dom"
       ],
-      "limit": "20 kB"
+      "limit": "23 kB"
     }
   ]
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { bindImage } from "@zriz/core/dom";
-import { use, useCallback } from "react";
-import type { ReactElement, SyntheticEvent } from "react";
+import { bindPhoto } from "@zriz/core/dom";
+import { useCallback } from "react";
+import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
-import { RootContextValue, useMergedRef } from "../part";
+import { useMergedRef } from "../part";
 import type { PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
@@ -15,47 +15,42 @@ export interface ImageState {
   ready: boolean;
 }
 
-export type ImageProps = PartProps<"img", ImageState>;
+export interface ImageProps extends PartProps<"div", ImageState> {
+  /** Text for the photo. Empty when the crop is described elsewhere. @default "" */
+  alt?: string;
+}
 
 export const Image = ({
+  alt = "",
   render,
   className,
   ref,
   ...props
 }: ImageProps): ReactElement => {
   const cropper = useCropperContext();
-  const { src, crossOrigin } = use(RootContextValue);
   const ready = useCropperState((s) => s.ready);
   const own = useCallback(
-    (element: HTMLImageElement | null) =>
-      element ? bindImage(cropper, element) : undefined,
-    [cropper]
-  );
-  const onLoad = useCallback(
-    (event: SyntheticEvent<HTMLImageElement>) => {
-      const { naturalWidth, naturalHeight } = event.currentTarget;
-      cropper.setImage({ height: naturalHeight, width: naturalWidth });
-    },
+    (element: HTMLDivElement | null) =>
+      element ? bindPhoto(cropper, element) : undefined,
     [cropper]
   );
   return useRender({
     className,
     props: mergeProps(
       {
-        alt: "",
-        crossOrigin,
+        children: [
+          <img alt={alt} draggable={false} key="motion" />,
+          <canvas aria-hidden key="rest" />,
+        ],
         "data-ready": ready ? "" : undefined,
         "data-zriz-item": "image",
-        decoding: "async",
-        draggable: false,
-        onLoad,
-        src: src ?? undefined,
+        role: alt === "" ? undefined : "img",
       },
       props
     ),
     ref: useMergedRef(own, ref),
     render,
     state: { ready },
-    tag: "img",
+    tag: "div",
   });
 };

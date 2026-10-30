@@ -192,7 +192,7 @@ describe("react parts", () => {
     const Late = () => {
       const [shown, setShown] = useState(false);
       return (
-        <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Root actionsRef={api} src={src}>
           <Cropper.Viewport
             style={{
               height: 300,
@@ -201,9 +201,7 @@ describe("react parts", () => {
               width: 400,
             }}
           >
-            {shown ? (
-              <Cropper.Image alt="" src={URL.createObjectURL(src)} />
-            ) : null}
+            {shown ? <Cropper.Image alt="" /> : null}
             <button
               aria-label="show"
               id="show"
@@ -217,11 +215,11 @@ describe("react parts", () => {
       );
     };
     const screen = await render(<Late />);
-    await frames(3);
+    await ready(api);
     screen.container.querySelector<HTMLButtonElement>("#show")?.click();
     await frames(3);
     const image = screen.container.querySelector<HTMLElement>(
-      '[data-zriz-item="image"]'
+      '[data-zriz-item="image"] img'
     );
     expect(image?.style.transform).toMatch(/^matrix\(/u);
   });

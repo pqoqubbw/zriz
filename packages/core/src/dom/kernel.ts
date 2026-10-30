@@ -32,9 +32,26 @@ export interface RenderReply {
   index: number;
 }
 
+export interface Region {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface Kernel {
-  decode: (blob: Blob, edge: number) => Promise<DecodeReply>;
+  decode: (blob: Blob, edge: number, keep?: number) => Promise<DecodeReply>;
+  keep: (id: number, bitmap: ImageBitmap) => Promise<void>;
   render: (job: RenderJob) => Promise<RenderReply>;
+  motion: (id: number, type: string) => Promise<Blob>;
+  resample: (id: number, scale: number) => Promise<ImageBitmap>;
+  region: (
+    source: Blob | ImageBitmap,
+    rect: Region,
+    width: number,
+    height: number
+  ) => Promise<ImageBitmap>;
+  release: (id: number) => Promise<void>;
 }
 
 export const imageKernel = (): Kernel => {
@@ -266,21 +283,85 @@ export const imageKernel = (): Kernel => {
     }
   };
 
+  const kept = new Map<number, ImageBitmap>();
+
+  const keptOf = (id: number): ImageBitmap => {
+    const bitmap = kept.get(id);
+    if (!bitmap) {
+      throw fail("decode", "the preview was released");
+    }
+    return bitmap;
+  };
+
   return {
-    async decode(blob, edge) {
+    async decode(blob, edge, keep) {
       const full = await decodeFull(blob);
       const scale = Math.min(1, edge / Math.max(full.width, full.height));
       const { width, height } = full;
-      if (scale === 1) {
-        return { height, preview: full, width };
+      let preview = full;
+      if (scale < 1) {
+        try {
+          preview = await createImageBitmap(full, {
+            resizeHeight: Math.max(1, Math.round(height * scale)),
+            resizeQuality: "medium",
+            resizeWidth: Math.max(1, Math.round(width * scale)),
+          });
+        } finally {
+          full.close();
+        }
       }
-      const preview = await createImageBitmap(full, {
-        resizeHeight: Math.max(1, Math.round(height * scale)),
-        resizeQuality: "medium",
-        resizeWidth: Math.max(1, Math.round(width * scale)),
-      });
-      full.close();
+      if (keep !== undefined) {
+        kept.get(keep)?.close();
+        kept.set(keep, await createImageBitmap(preview));
+      }
       return { height, preview, width };
+    },
+    async keep(id, bitmap) {
+      kept.get(id)?.close();
+      kept.set(id, await createImageBitmap(bitmap));
+    },
+    async motion(id, type) {
+      const preview = keptOf(id);
+      const canvas = canvasFor(preview.width, preview.height);
+      try {
+        contextOf(canvas, "srgb").drawImage(preview, 0, 0);
+        return await encode(canvas, type, 0.92);
+      } finally {
+        free(canvas);
+      }
+    },
+    async region(source, rect, width, height) {
+      const owned = source instanceof Blob ? await decodeFull(source) : null;
+      const full = owned ?? (source instanceof Blob ? null : source);
+      if (!full) {
+        throw fail("decode", "no bitmap");
+      }
+      const canvas = canvasFor(width, height);
+      try {
+        const context = contextOf(canvas, "srgb");
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(
+          full,
+          rect.x,
+          rect.y,
+          rect.width,
+          rect.height,
+          0,
+          0,
+          width,
+          height
+        );
+        return await createImageBitmap(canvas);
+      } finally {
+        free(canvas);
+        owned?.close();
+      }
+    },
+    async release(id) {
+      kept.get(id)?.close();
+      kept.delete(id);
+      await Promise.resolve();
     },
     async render(job) {
       const owned =
@@ -321,6 +402,14 @@ export const imageKernel = (): Kernel => {
       } finally {
         owned?.close();
       }
+    },
+    async resample(id, scale) {
+      const preview = keptOf(id);
+      return await createImageBitmap(preview, {
+        resizeHeight: Math.max(1, Math.round(preview.height * scale)),
+        resizeQuality: "medium",
+        resizeWidth: Math.max(1, Math.round(preview.width * scale)),
+      });
     },
   };
 };

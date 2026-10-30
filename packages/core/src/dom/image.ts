@@ -1,7 +1,13 @@
 import type { Cropper } from "../cropper";
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
-import { decodeOff, renderHere, renderOff } from "./worker";
+import {
+  decodeOff,
+  keepOff,
+  releaseOff,
+  renderHere,
+  renderOff,
+} from "./worker";
 
 export type ZrizErrorCode =
   | "cross-origin"
@@ -40,6 +46,7 @@ export interface LoadOptions {
 }
 
 export interface LoadedImage {
+  id: number;
   width: number;
   height: number;
   preview: ImageBitmap;
@@ -67,6 +74,7 @@ export interface ExportResult {
 }
 
 const TIMEOUT = 15_000;
+let nextId = 0;
 const QUALITY = 0.9;
 const MOBILE_AREA = 16_777_216;
 const DESKTOP_AREA = 268_435_456;
@@ -396,6 +404,8 @@ export const loadImage = async (
   options: LoadOptions = {}
 ): Promise<LoadedImage> => {
   const edge = options.previewEdge ?? defaultPreviewEdge();
+  nextId += 1;
+  const id = nextId;
   const work = async (): Promise<LoadedImage> => {
     let source: Blob | ImageBitmap;
     let mime: string | null = null;
@@ -412,22 +422,25 @@ export const loadImage = async (
       }
       if (mime === "image/svg+xml") {
         const preview = await fromSvg(blob, edge);
+        await keepOff(id, preview);
         return {
           animated,
           height: preview.height,
+          id,
           mime,
           preview,
           source: preview,
           width: preview.width,
         };
       }
-      const decoded = await decodeOff(blob, edge).catch(
+      const decoded = await decodeOff(blob, edge, id).catch(
         async (error: unknown) => {
           if (!options.decode) {
             throw toZriz(error, mime);
           }
           const full = await options.decode(blob);
           const preview = await resizeBitmap(full, edge);
+          await keepOff(id, preview);
           return { full, height: full.height, preview, width: full.width };
         }
       );
@@ -435,6 +448,7 @@ export const loadImage = async (
       return {
         animated,
         height,
+        id,
         mime,
         preview,
         source: "full" in decoded ? decoded.full : blob,
@@ -466,9 +480,11 @@ export const loadImage = async (
       source = await createImageBitmap(src);
     }
     const preview = await resizeBitmap(source, edge);
+    await keepOff(id, preview);
     return {
       animated,
       height: source.height,
+      id,
       mime,
       preview,
       source,
@@ -570,6 +586,19 @@ export const exportImage = async (
 };
 
 const attached = new WeakMap<Cropper, LoadedImage>();
+const imageListeners = new WeakMap<Cropper, Set<() => void>>();
+
+export const onImage = (
+  cropper: Cropper,
+  listener: () => void
+): (() => void) => {
+  const set = imageListeners.get(cropper) ?? new Set<() => void>();
+  imageListeners.set(cropper, set);
+  set.add(listener);
+  return () => {
+    set.delete(listener);
+  };
+};
 
 export const attachImage = (
   cropper: Cropper,
@@ -577,6 +606,7 @@ export const attachImage = (
 ): void => {
   const previous = attached.get(cropper);
   if (previous && previous !== image) {
+    void releaseOff(previous.id);
     previous.preview.close();
     if (
       previous.source instanceof ImageBitmap &&
@@ -591,6 +621,9 @@ export const attachImage = (
   } else {
     attached.delete(cropper);
     cropper.setImage(null);
+  }
+  for (const listener of imageListeners.get(cropper) ?? []) {
+    listener();
   }
 };
 

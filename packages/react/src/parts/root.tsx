@@ -1,8 +1,8 @@
 "use client";
 
 import type { Cropper, CropperSnapshot } from "@zriz/core";
-import { viewOf } from "@zriz/core/dom";
-import type { Chrome } from "@zriz/core/dom";
+import { ZrizError, attachImage, loadImage, viewOf } from "@zriz/core/dom";
+import type { Chrome, LoadedImage } from "@zriz/core/dom";
 import {
   useEffect,
   useId,
@@ -14,7 +14,7 @@ import type { ReactElement, Ref } from "react";
 
 import { CropperContext } from "../context";
 import { mergeProps } from "../merge-props";
-import { RootContextValue } from "../part";
+import { RootContextValue, useLatest } from "../part";
 import type { PartProps, RootContext } from "../part";
 import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
@@ -26,7 +26,9 @@ export interface RootState {
 }
 
 export interface RootProps
-  extends UseCropperOptions, Omit<PartProps<"div", RootState>, "defaultValue"> {
+  extends
+    UseCropperOptions,
+    Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad"> {
   /** The photo: a URL, a Blob or File, or null while empty. */
   src?: string | Blob | null;
   /** CORS mode for a cross-origin URL. */
@@ -41,55 +43,17 @@ export interface RootProps
   locale?: string;
   /** Receives the imperative API. */
   actionsRef?: Ref<Cropper>;
+  /** Called once the photo is decoded and ready to crop. */
+  onLoad?: (image: LoadedImage) => void;
+  /** Called with a typed ZrizError when the photo cannot load. */
+  onError?: (error: ZrizError) => void;
 }
-
-const blobUrls = new Map<Blob, { url: string; count: number }>();
-
-const releaseLater = (blob: Blob, delay: number): void => {
-  setTimeout(() => {
-    const entry = blobUrls.get(blob);
-    if (entry && entry.count === 0) {
-      URL.revokeObjectURL(entry.url);
-      blobUrls.delete(blob);
-    }
-  }, delay);
-};
-
-const urlFor = (blob: Blob): string => {
-  const entry = blobUrls.get(blob);
-  if (entry) {
-    return entry.url;
-  }
-  const url = URL.createObjectURL(blob);
-  blobUrls.set(blob, { count: 0, url });
-  releaseLater(blob, 5000);
-  return url;
-};
 
 const orientationOf = (aspect: CropperSnapshot["aspect"]): string => {
   if (typeof aspect !== "number" || aspect === 1) {
     return "square";
   }
   return aspect > 1 ? "landscape" : "portrait";
-};
-
-const useObjectUrl = (src: string | Blob | null | undefined): string | null => {
-  useEffect(() => {
-    const entry = src instanceof Blob ? blobUrls.get(src) : undefined;
-    if (entry) {
-      entry.count += 1;
-    }
-    return () => {
-      if (entry && src instanceof Blob) {
-        entry.count -= 1;
-        releaseLater(src, 0);
-      }
-    };
-  }, [src]);
-  if (src instanceof Blob) {
-    return urlFor(src);
-  }
-  return src ?? null;
 };
 
 export const Root = ({
@@ -114,6 +78,8 @@ export const Root = ({
   dir = "ltr",
   locale,
   actionsRef,
+  onLoad,
+  onError,
   render,
   className,
   ref,
@@ -143,10 +109,43 @@ export const Root = ({
   const snapshot = useCropperState((s) => s, cropper);
   const chrome = useSyncExternalStore(view.onChrome, view.chrome, view.chrome);
   const instructions = useId();
-  const url = useObjectUrl(src);
+  const latestLoad = useLatest(onLoad);
+  const latestError = useLatest(onError);
+  useEffect(() => {
+    const controller = new AbortController();
+    const run = async (): Promise<void> => {
+      if (src === undefined) {
+        return;
+      }
+      if (src === null) {
+        attachImage(cropper, null);
+        return;
+      }
+      try {
+        const loaded = await loadImage(src, {
+          crossOrigin,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) {
+          loaded.preview.close();
+          return;
+        }
+        attachImage(cropper, loaded);
+        latestLoad.current?.(loaded);
+      } catch (error) {
+        if (!controller.signal.aborted && error instanceof ZrizError) {
+          latestError.current?.(error);
+        }
+      }
+    };
+    void run();
+    return () => {
+      controller.abort();
+    };
+  }, [cropper, crossOrigin, latestError, latestLoad, src]);
   const context = useMemo<RootContext>(
-    () => ({ crossOrigin, dir, instructions, locale, shape, src: url }),
-    [crossOrigin, dir, instructions, locale, shape, url]
+    () => ({ crossOrigin, dir, instructions, locale, shape, src: null }),
+    [crossOrigin, dir, instructions, locale, shape]
   );
   const gesture = snapshot.interacting;
   const element = useRender({
