@@ -25,6 +25,25 @@
     outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
     border-radius: inherit;
   }
+  :where([data-zriz-item="viewport"], [data-zriz-item="dial"]) {
+    cursor: grab;
+  }
+  :where([data-panning], [data-pinching]) :where([data-zriz-item="viewport"]),
+  :where([data-zriz-item="dial"][data-dragging]) {
+    cursor: grabbing;
+  }
+  :where([data-zriz-item="handle"]) {
+    cursor: nwse-resize;
+  }
+  :where([data-edge="top-right"], [data-edge="bottom-left"]) {
+    cursor: nesw-resize;
+  }
+  :where([data-edge="top"], [data-edge="bottom"]) {
+    cursor: ns-resize;
+  }
+  :where([data-edge="left"], [data-edge="right"]) {
+    cursor: ew-resize;
+  }
   :where([data-zriz-item="grid"]) {
     opacity: 0;
     transition: opacity 0.3s;

@@ -3,6 +3,7 @@ import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
 import type { Point, Rect } from "../geometry/types";
+import { holdCursor } from "./cursor";
 import { capture, cssMatrix, viewOf } from "./view";
 import type { Box, Placement, ViewFrame } from "./view";
 
@@ -269,6 +270,7 @@ export const handleHandlers = (
   element?: () => Element | null
 ): HandleHandlers => {
   const owner = {};
+  let releaseCursor: (() => void) | null = null;
   const handle = EDGES[edge];
   const view = viewOf(cropper);
   let drag: HandleDrag | null = null;
@@ -288,6 +290,8 @@ export const handleHandlers = (
     event.preventDefault();
     event.stopPropagation();
     drag = null;
+    releaseCursor?.();
+    releaseCursor = null;
     globalThis.removeEventListener("keydown", onEscape, true);
     cropper.cancel(event, owner);
     view.release();
@@ -298,6 +302,8 @@ export const handleHandlers = (
       return;
     }
     drag = null;
+    releaseCursor?.();
+    releaseCursor = null;
     globalThis.removeEventListener("keydown", onEscape, true);
     view.release();
     cropper.end(event, owner);
@@ -337,6 +343,7 @@ export const handleHandlers = (
         (event.currentTarget instanceof Element ? event.currentTarget : null);
       if (target) {
         capture(target, event.pointerId);
+        releaseCursor = holdCursor(target);
       }
     },
     onPointerMove(event) {

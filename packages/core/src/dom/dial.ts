@@ -1,6 +1,7 @@
 import type { Cropper } from "../cropper";
 import { rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
+import { holdCursor } from "./cursor";
 import { capture, snap } from "./view";
 
 export interface DialOptions {
@@ -107,6 +108,7 @@ export const dialHandlers = (
   element?: () => Element | null
 ): DialHandlers => {
   const owner = {};
+  let releaseCursor: (() => void) | null = null;
   const dial = dialStateOf(cropper);
   dial.setOptions(initial);
   const tracker = velocityTracker();
@@ -198,6 +200,8 @@ export const dialHandlers = (
       return;
     }
     pointer = null;
+    releaseCursor?.();
+    releaseCursor = null;
     if (!engaged) {
       cropper.end(event, owner);
       return;
@@ -306,6 +310,7 @@ export const dialHandlers = (
       width = Math.max(target?.getBoundingClientRect().width ?? 0, 1);
       if (event.pointerType !== "touch" && target) {
         capture(target, event.pointerId);
+        releaseCursor = holdCursor(target);
       }
     },
     onPointerMove(event) {

@@ -3,6 +3,7 @@ import { rubberBandPoint } from "../geometry/band";
 import { applyMatrix2, rotationMatrix } from "../geometry/matrix";
 import { sourceToWorking, workingToSource } from "../geometry/state";
 import type { CropState, Point } from "../geometry/types";
+import { holdCursor } from "./cursor";
 import { capture, viewOf } from "./view";
 import type { Layout, View } from "./view";
 
@@ -116,6 +117,7 @@ export const viewportController = (
   initial: ViewportOptions = {}
 ): ViewportController => {
   const owner = {};
+  let releaseCursor: (() => void) | null = null;
   let options = initial;
   let element: HTMLElement | null = null;
   const view: View = viewOf(cropper);
@@ -279,6 +281,8 @@ export const viewportController = (
       return;
     }
     start = null;
+    releaseCursor?.();
+    releaseCursor = null;
     view.settleOverscroll();
     cropper.end(event, owner);
   };
@@ -314,6 +318,9 @@ export const viewportController = (
         cropper.begin("pinch", event, owner);
       }
       capture(element, event.pointerId);
+      if (pointers.size === 0) {
+        releaseCursor = holdCursor(element);
+      }
       pointers.set(event.pointerId, local(event));
       rebase();
     },
@@ -483,6 +490,8 @@ export const viewportController = (
     event.stopPropagation();
     pointers.clear();
     start = null;
+    releaseCursor?.();
+    releaseCursor = null;
     view.setOverscroll({ x: 0, y: 0 });
     cropper.cancel(event, owner);
   };
