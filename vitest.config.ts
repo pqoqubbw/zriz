@@ -12,6 +12,8 @@ export default defineConfig({
           exclude: ["**/*.browser.test.*", "**/node_modules/**"],
           include: ["packages/*/test/**/*.test.ts"],
           name: "unit",
+          setupFiles: ["packages/core/test/setup.ts"],
+          testTimeout: 120_000,
         },
       },
       {

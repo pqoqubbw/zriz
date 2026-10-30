@@ -4,24 +4,14 @@ import { coverScale } from "@zriz/core";
 import type { Size } from "@zriz/core";
 
 export interface UseCoverScaleOptions {
-  /**
-   * Natural size of the image in pixels.
-   */
+  /** Natural image size in pixels. */
   image: Size;
-  /**
-   * Size of the crop area in the same units as the image.
-   */
+  /** Crop size in image pixels. */
   crop: Size;
-  /**
-   * Straighten angle in degrees.
-   * @default 0
-   */
+  /** Straighten angle in degrees. @default 0 */
   rotation?: number;
 }
 
-/**
- * Returns the smallest scale for the rotated image that keeps the crop area free of empty corners.
- */
 export const useCoverScale = ({
   image,
   crop,

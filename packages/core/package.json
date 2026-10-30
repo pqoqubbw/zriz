@@ -23,6 +23,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./geometry": {
+      "types": "./dist/geometry/index.d.ts",
+      "default": "./dist/geometry/index.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -39,6 +43,7 @@
     "@arethetypeswrong/cli": "catalog:",
     "@size-limit/preset-small-lib": "catalog:",
     "publint": "catalog:",
+    "sharp": "0.35.5",
     "size-limit": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:"
@@ -48,6 +53,18 @@
       "path": "dist/index.js",
       "import": "{ coverScale }",
       "limit": "500 B"
+    },
+    {
+      "name": "toSharp",
+      "path": "dist/index.js",
+      "import": "{ toSharp }",
+      "limit": "1 kB"
+    },
+    {
+      "name": "geometry",
+      "path": "dist/geometry/index.js",
+      "import": "*",
+      "limit": "5 kB"
     }
   ]
 }

@@ -31,7 +31,7 @@ All of check, type, test, lint:package and size must pass before a commit.
 ## Rules
 
 - Zero runtime dependencies. `@zriz/core` depends on nothing, `@zriz/react` only on `@zriz/core` with `react` 19+ as a peer. Write it ourselves; a new runtime dependency needs the owner's approval. Dev dependencies are fine.
-- No code comments. TSDoc on exported API is the one exception, because the docs read it.
+- No code comments, TSDoc included. The one exception: a single short line on public props of React parts, because the docs generate API tables from it. Never restate what the code or the name already says.
 - Never add AI attribution to commits, PRs or docs.
 - Local git only. Push, open PRs or publish to npm only when the owner says so.
 - Prose runs through the unslop skill: no em dashes, no arrows, no "·" separators.

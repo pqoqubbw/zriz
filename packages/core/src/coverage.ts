@@ -1,12 +1,8 @@
-export interface Size {
-  readonly width: number;
-  readonly height: number;
-}
+import type { Size } from "./geometry/types";
 
-/**
- * The smallest scale for an image rotated by `angle` radians so that a centred
- * crop of size `crop` sees no empty corners.
- */
+export type { Size } from "./geometry/types";
+
+/** Minimum cover scale for a centred crop. */
 export const coverScale = (image: Size, crop: Size, angle: number): number => {
   const cos = Math.abs(Math.cos(angle));
   const sin = Math.abs(Math.sin(angle));
@@ -16,10 +12,7 @@ export const coverScale = (image: Size, crop: Size, angle: number): number => {
   );
 };
 
-/**
- * Whether a centred crop of size `crop` lies fully inside the image rotated by
- * `angle` radians and scaled by `scale`.
- */
+/** Whether a centred crop is covered. */
 export const covers = (
   image: Size,
   crop: Size,
