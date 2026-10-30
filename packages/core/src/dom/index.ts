@@ -14,6 +14,7 @@ export {
   bindHandle,
   bindImage,
   bindMask,
+  bindState,
   handleHandlers,
   maskClip,
   maskGradient,
@@ -27,7 +28,18 @@ export {
   snap,
   viewOf,
 } from "./view";
-export type { Box, Inset, Layout, Placement, View, ViewFrame } from "./view";
+export type {
+  Box,
+  Chrome,
+  Grid,
+  Inset,
+  Layout,
+  Placement,
+  Transition,
+  View,
+  ViewFrame,
+  ViewOptions,
+} from "./view";
 export { bindViewport, viewportController } from "./viewport";
 export type {
   ViewportController,

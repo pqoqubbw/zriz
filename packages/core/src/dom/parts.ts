@@ -218,8 +218,8 @@ export const handleHandlers = (
       return;
     }
     drag = null;
-    cropper.end(event);
     view.release();
+    cropper.end(event);
   };
 
   return {
@@ -310,5 +310,56 @@ export const bindHandle = (
       "lostpointercapture",
       handlers.onLostPointerCapture
     );
+  };
+};
+
+const reasonAttribute: Partial<Record<string, string>> = {
+  dial: "rotating",
+  pan: "panning",
+  pinch: "pinching",
+  resize: "resizing",
+  wheel: "zooming",
+  "zoom-control": "zooming",
+};
+
+export const bindState = (
+  cropper: Cropper,
+  element: HTMLElement
+): (() => void) => {
+  const view = viewOf(cropper);
+  let gesture: string | undefined;
+  const sync = (): void => {
+    const state = cropper.getState();
+    const chrome = view.chrome();
+    element.toggleAttribute("data-interacting", chrome.active);
+    element.toggleAttribute("data-settling", state.settling);
+    element.toggleAttribute("data-changed", !state.pristine);
+    element.toggleAttribute("data-mirrored", state.mirrored);
+    element.toggleAttribute("data-reduced-motion", view.reducedMotion());
+    element.dataset.grid = chrome.grid;
+    if (chrome.transition) {
+      element.dataset.transition = chrome.transition;
+    } else {
+      delete element.dataset.transition;
+    }
+    const next = state.interacting
+      ? reasonAttribute[state.interacting]
+      : undefined;
+    if (next !== gesture) {
+      if (gesture !== undefined) {
+        element.removeAttribute(`data-${gesture}`);
+      }
+      if (next !== undefined) {
+        element.setAttribute(`data-${next}`, "");
+      }
+      gesture = next;
+    }
+  };
+  sync();
+  const offState = cropper.subscribe(sync);
+  const offChrome = view.onChrome(sync);
+  return () => {
+    offState();
+    offChrome();
   };
 };

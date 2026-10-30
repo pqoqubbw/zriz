@@ -1,5 +1,9 @@
 import type { Cropper } from "../cropper";
-import { multiplyMatrix3 } from "../geometry/matrix";
+import {
+  applyHomography,
+  invertMatrix3,
+  multiplyMatrix3,
+} from "../geometry/matrix";
 import {
   isFlatPerspective,
   perspectiveHomography,
@@ -42,8 +46,27 @@ export interface ViewFrame {
   layout: Layout;
 }
 
+export type Transition = "recentre" | "rotate" | "flip" | "morph";
+
+export type Grid = "none" | "coarse" | "fine";
+
+export interface Chrome {
+  grid: Grid;
+  active: boolean;
+  transition: Transition | null;
+}
+
+export interface ViewOptions {
+  motion?: "auto" | "always" | "reduce";
+  recentreDelay?: number;
+}
+
 export interface View {
   frame: () => ViewFrame | null;
+  chrome: () => Chrome;
+  onChrome: (listener: () => void) => () => void;
+  setOptions: (options: ViewOptions) => void;
+  reducedMotion: () => boolean;
   setTarget: (element: HTMLElement | null) => void;
   local: (event: { clientX: number; clientY: number }) => Point;
   claim: (event: Event) => void;
@@ -157,31 +180,202 @@ const views = new WeakMap<Cropper, View>();
 
 const OVERSCROLL_OMEGA = 42;
 const OVERSCROLL_ZETA = 1.4;
+const RECENTRE_OMEGA = 16.1;
+const RECENTRE_DELAY = 1060;
+const CHROME_HOLD = 1380;
+const ROTATE_MS = 410;
+const FLIP_MS = 470;
+const REDUCED_MS = 150;
+const REDUCED_OMEGA = 40;
+
+interface Pose {
+  rect: Box;
+  centre: Point;
+  anchor: Point;
+  angle: number;
+  sx: number;
+  sy: number;
+}
+
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+const lerpBox = (a: Box, b: Box, t: number): Box => ({
+  height: lerp(a.height, b.height, t),
+  width: lerp(a.width, b.width, t),
+  x: lerp(a.x, b.x, t),
+  y: lerp(a.y, b.y, t),
+});
+
+const snapBox = (box: Box, dpr: number): Box => {
+  const x0 = Math.ceil(box.x * dpr - 1e-6) / dpr;
+  const y0 = Math.ceil(box.y * dpr - 1e-6) / dpr;
+  const x1 = Math.max(Math.floor((box.x + box.width) * dpr + 1e-6) / dpr, x0);
+  const y1 = Math.max(Math.floor((box.y + box.height) * dpr + 1e-6) / dpr, y0);
+  return { height: y1 - y0, width: x1 - x0, x: x0, y: y0 };
+};
+
+const exactBox = (state: CropState, placement: Placement): Box => ({
+  height: placement.scale * state.crop.height,
+  width: placement.scale * state.crop.width,
+  x:
+    placement.offset.x +
+    placement.scale * (state.crop.x - state.crop.width / 2),
+  y:
+    placement.offset.y +
+    placement.scale * (state.crop.y - state.crop.height / 2),
+});
+
+const pinnedPlacement = (rect: Box, state: CropState): Placement => {
+  const scale = rect.width / state.crop.width;
+  return {
+    offset: {
+      x: rect.x + rect.width / 2 - scale * state.crop.x,
+      y: rect.y + rect.height / 2 - scale * state.crop.y,
+    },
+    scale,
+  };
+};
+
+const pose = (rect: Box, matrix: Matrix3): Pose | null => {
+  if (matrix[6] !== 0 || matrix[7] !== 0) {
+    return null;
+  }
+  const centre = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  const [a, b, , c, d] = matrix;
+  const det = a * d - b * c;
+  const flipped = det < 0;
+  const sx = (flipped ? -1 : 1) * Math.hypot(a, c);
+  return {
+    anchor: applyHomography(invertMatrix3(matrix), centre),
+    angle: flipped ? Math.atan2(-c, -a) : Math.atan2(c, a),
+    centre,
+    rect,
+    sx,
+    sy: det / sx,
+  };
+};
+
+const blendMatrix = (from: Pose, to: Pose, t: number): Matrix3 => {
+  let turn = to.angle - from.angle;
+  turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
+  const angle = from.angle + turn * t;
+  const sx = lerp(from.sx, to.sx, t);
+  const sy = lerp(from.sy, to.sy, t);
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const a = sx * cos;
+  const b = -sy * sin;
+  const c = sx * sin;
+  const d = sy * cos;
+  const anchor = {
+    x: lerp(from.anchor.x, to.anchor.x, t),
+    y: lerp(from.anchor.y, to.anchor.y, t),
+  };
+  const centre = {
+    x: lerp(from.centre.x, to.centre.x, t),
+    y: lerp(from.centre.y, to.centre.y, t),
+  };
+  return [
+    a,
+    b,
+    centre.x - a * anchor.x - b * anchor.y,
+    c,
+    d,
+    centre.y - c * anchor.x - d * anchor.y,
+    0,
+    0,
+    1,
+  ];
+};
+
+const easeOut = (t: number): number => 1 - (1 - t) ** 3;
+
+const easeInOut = (t: number): number =>
+  t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+
+const settled = (omega: number, ms: number): number => {
+  const t = (omega * ms) / 1000;
+  return 1 - (1 + t) * Math.exp(-t);
+};
 
 export const viewOf = (cropper: Cropper): View => {
   const existing = views.get(cropper);
   if (existing) {
     return existing;
   }
+  let options: ViewOptions = {};
   let layout: Layout | null = null;
   let held: Placement | null = null;
+  let pinned: Box | null = null;
   let shift: Point = { x: 0, y: 0 };
   let stopShift: (() => void) | null = null;
+  let stopTransition: (() => void) | null = null;
+  let recentreTimer: ReturnType<typeof setTimeout> | null = null;
+  let chromeTimer: ReturnType<typeof setTimeout> | null = null;
+  let blend: { from: Pose; t: number } | null = null;
+  let chrome: Chrome = { active: false, grid: "none", transition: null };
   let last: ViewFrame | null = null;
   let target: HTMLElement | null = null;
   const claims = new WeakSet<Event>();
   const listeners = new Set<(frame: ViewFrame) => void>();
+  const chromeListeners = new Set<() => void>();
+  const reduceQuery =
+    typeof matchMedia === "function"
+      ? matchMedia("(prefers-reduced-motion: reduce)")
+      : null;
+
+  const reduced = (): boolean =>
+    options.motion === "reduce" ||
+    (options.motion !== "always" && (reduceQuery?.matches ?? false));
+
+  const setChrome = (next: Partial<Chrome>): void => {
+    const merged = { ...chrome, ...next };
+    if (
+      merged.active === chrome.active &&
+      merged.grid === chrome.grid &&
+      merged.transition === chrome.transition
+    ) {
+      return;
+    }
+    chrome = merged;
+    for (const listener of chromeListeners) {
+      listener();
+    }
+  };
+
+  const placementOf = (state: CropState, current: Layout): Placement => {
+    if (held) {
+      return held;
+    }
+    return pinned
+      ? pinnedPlacement(pinned, state)
+      : fitPlacement(current, state);
+  };
 
   const compute = (): ViewFrame | null => {
     const state = cropper.getCropState();
     if (!layout || !state) {
       return null;
     }
-    const placement = held ?? fitPlacement(layout, state);
+    const placement = placementOf(state, layout);
+    const matrix = imageMatrix(state, placement, shift);
+    const exact = exactBox(state, placement);
+    if (blend) {
+      const to = pose(exact, matrix);
+      if (to) {
+        return {
+          layout,
+          matrix: blendMatrix(blend.from, to, blend.t),
+          rect: snapBox(lerpBox(blend.from.rect, exact, blend.t), layout.dpr),
+          scale: placement.scale,
+          state,
+        };
+      }
+    }
     return {
       layout,
-      matrix: imageMatrix(state, placement, shift),
-      rect: cropBox(state, placement, layout.dpr),
+      matrix,
+      rect: snapBox(exact, layout.dpr),
       scale: placement.scale,
       state,
     };
@@ -196,17 +390,149 @@ export const viewOf = (cropper: Cropper): View => {
     }
   };
 
-  const off = cropper.on("frame", publish);
+  const endTransition = (): void => {
+    stopTransition?.();
+    stopTransition = null;
+    blend = null;
+    setChrome({ transition: null });
+  };
+
+  const recentre = (): void => {
+    recentreTimer = null;
+    const from = pinned;
+    if (!from) {
+      return;
+    }
+    const omega = reduced() ? REDUCED_OMEGA : RECENTRE_OMEGA;
+    let elapsed = 0;
+    setChrome({ transition: "recentre" });
+    stopTransition = cropper.run((_, delta) => {
+      elapsed += delta;
+      const state = cropper.getCropState();
+      if (!layout || !state) {
+        pinned = null;
+        return false;
+      }
+      const fit = exactBox(state, fitPlacement(layout, state));
+      const t = settled(omega, elapsed);
+      if (t > 0.9995) {
+        pinned = null;
+        stopTransition = null;
+        setChrome({ transition: null });
+        return false;
+      }
+      pinned = lerpBox(from, fit, t);
+      return true;
+    }, false);
+  };
+
+  const scheduleRecentre = (): void => {
+    if (recentreTimer !== null) {
+      clearTimeout(recentreTimer);
+    }
+    recentreTimer = pinned
+      ? setTimeout(recentre, options.recentreDelay ?? RECENTRE_DELAY)
+      : null;
+  };
+
+  const animate = (kind: Transition, from: ViewFrame): void => {
+    const start = pose(from.rect, from.matrix);
+    if (!start) {
+      return;
+    }
+    endTransition();
+    blend = { from: start, t: 0 };
+    setChrome({ transition: kind });
+    let elapsed = 0;
+    const quick = reduced();
+    stopTransition = cropper.run((_, delta) => {
+      elapsed += delta;
+      let t = 1;
+      if (quick) {
+        t = easeOut(Math.min(elapsed / REDUCED_MS, 1));
+      } else if (kind === "rotate") {
+        t = easeOut(Math.min(elapsed / ROTATE_MS, 1));
+      } else if (kind === "flip") {
+        t = easeInOut(Math.min(elapsed / FLIP_MS, 1));
+      } else {
+        t = settled(RECENTRE_OMEGA, elapsed);
+      }
+      if (t >= 0.9995 || !blend) {
+        blend = null;
+        stopTransition = null;
+        setChrome({ transition: null });
+        return false;
+      }
+      blend.t = t;
+      return true;
+    }, false);
+  };
+
+  const transitionFor: Partial<Record<string, Transition>> = {
+    aspect: "morph",
+    flip: "flip",
+    history: "morph",
+    reset: "morph",
+    "rotate-90": "rotate",
+  };
+
+  const offFrame = cropper.on("frame", publish);
+  const offChange = cropper.on("change", (_, details) => {
+    const kind = transitionFor[details.reason];
+    const from = last;
+    if (kind && from) {
+      pinned = null;
+      animate(kind, from);
+    }
+  });
+  const offStart = cropper.on("gesturestart", (reason) => {
+    if (recentreTimer !== null) {
+      clearTimeout(recentreTimer);
+      recentreTimer = null;
+    }
+    if (chromeTimer !== null) {
+      clearTimeout(chromeTimer);
+      chromeTimer = null;
+    }
+    endTransition();
+    const grids: Partial<Record<string, Grid>> = {
+      dial: "fine",
+      keyboard: chrome.grid,
+    };
+    setChrome({ active: true, grid: grids[reason] ?? "coarse" });
+  });
+  const offEnd = cropper.on("gestureend", () => {
+    if (chrome.grid === "fine") {
+      setChrome({ grid: "none" });
+    }
+    chromeTimer = setTimeout(() => {
+      chromeTimer = null;
+      setChrome({ active: false, grid: "none" });
+    }, CHROME_HOLD);
+    scheduleRecentre();
+  });
 
   const view: View = {
+    chrome: () => chrome,
     claim(event) {
       claims.add(event);
     },
     claimed: (event) => claims.has(event),
     destroy() {
-      off();
+      offFrame();
+      offChange();
+      offStart();
+      offEnd();
       stopShift?.();
+      endTransition();
+      if (recentreTimer !== null) {
+        clearTimeout(recentreTimer);
+      }
+      if (chromeTimer !== null) {
+        clearTimeout(chromeTimer);
+      }
       listeners.clear();
+      chromeListeners.clear();
       views.delete(cropper);
     },
     frame: () => last ?? compute(),
@@ -215,7 +541,7 @@ export const viewOf = (cropper: Cropper): View => {
       if (!layout || !state) {
         return null;
       }
-      held ??= fitPlacement(layout, state);
+      held ??= placementOf(state, layout);
       return held;
     },
     local(event) {
@@ -228,19 +554,33 @@ export const viewOf = (cropper: Cropper): View => {
         y: event.clientY - box.top - target.clientTop,
       };
     },
+    onChrome(listener) {
+      chromeListeners.add(listener);
+      return () => {
+        chromeListeners.delete(listener);
+      };
+    },
     onFrame(listener) {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
       };
     },
+    reducedMotion: reduced,
     release() {
+      const state = cropper.getCropState();
+      if (held && state) {
+        pinned = exactBox(state, held);
+      }
       held = null;
       cropper.invalidate();
     },
     setLayout(next) {
       layout = next;
       cropper.invalidate();
+    },
+    setOptions(next) {
+      options = next;
     },
     setOverscroll(offset) {
       stopShift?.();
