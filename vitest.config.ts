@@ -1,0 +1,36 @@
+import react from "@vitejs/plugin-react";
+import { playwright } from "@vitest/browser-playwright";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    maxWorkers: 2,
+    projects: [
+      {
+        test: {
+          environment: "node",
+          exclude: ["**/*.browser.test.*", "**/node_modules/**"],
+          include: ["packages/*/test/**/*.test.ts"],
+          name: "unit",
+        },
+      },
+      {
+        plugins: [react()],
+        test: {
+          browser: {
+            enabled: true,
+            headless: true,
+            instances: [
+              { browser: "chromium" },
+              { browser: "firefox" },
+              { browser: "webkit" },
+            ],
+            provider: playwright(),
+          },
+          include: ["packages/*/test/**/*.browser.test.{ts,tsx}"],
+          name: "browser",
+        },
+      },
+    ],
+  },
+});

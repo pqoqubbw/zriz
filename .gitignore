@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+out
+coverage
+*.tsbuildinfo
+next-env.d.ts
+.env*
+.DS_Store
+.vercel
+__screenshots__
+.vitest-attachments
+test-results
+
+notes

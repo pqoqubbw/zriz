@@ -1,0 +1,53 @@
+{
+  "name": "@zriz/core",
+  "version": "0.0.0",
+  "description": "Framework-agnostic core of zriz: crop geometry, coverage solver, springs and export.",
+  "keywords": [
+    "crop",
+    "cropper",
+    "headless",
+    "image",
+    "rotate",
+    "straighten"
+  ],
+  "homepage": "https://zriz.dev",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "type": "tsc -p tsconfig.json",
+    "lint:package": "publint --strict && attw --pack . --profile esm-only",
+    "size": "size-limit"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@size-limit/preset-small-lib": "catalog:",
+    "publint": "catalog:",
+    "size-limit": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "import": "{ coverScale }",
+      "limit": "500 B"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "name": "@zriz/react",
+  "version": "0.0.0",
+  "description": "Headless image cropper for React with the feel of iOS Photos: straighten dial, no empty corners.",
+  "keywords": [
+    "crop",
+    "cropper",
+    "headless",
+    "image",
+    "react",
+    "rotate",
+    "straighten"
+  ],
+  "homepage": "https://zriz.dev",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "type": "tsc -p tsconfig.json",
+    "lint:package": "publint --strict && attw --pack . --profile esm-only",
+    "size": "size-limit"
+  },
+  "dependencies": {
+    "@zriz/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@size-limit/preset-small-lib": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "publint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "size-limit": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "import": "{ useCoverScale }",
+      "limit": "1 kB",
+      "ignore": [
+        "react"
+      ]
+    }
+  ]
+}
