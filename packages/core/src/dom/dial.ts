@@ -4,12 +4,12 @@ import { decay, spring, velocityTracker } from "../motion";
 import { capture, snap } from "./view";
 
 export interface DialOptions {
-  gain?: number;
-  slop?: number;
-  tau?: number;
-  dir?: "ltr" | "rtl";
-  locale?: string;
-  format?: Intl.NumberFormatOptions;
+  gain?: number | undefined;
+  slop?: number | undefined;
+  tau?: number | undefined;
+  dir?: "ltr" | "rtl" | undefined;
+  locale?: string | undefined;
+  format?: Intl.NumberFormatOptions | undefined;
 }
 
 export interface DialHandlers {
@@ -89,9 +89,21 @@ export const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
 const clamp = (value: number, limit: number): number =>
   Math.min(Math.max(value, -limit), limit);
 
+const targetOf = (
+  event: Event,
+  element?: () => Element | null
+): Element | null => {
+  const own = element?.();
+  if (own) {
+    return own;
+  }
+  return event.currentTarget instanceof Element ? event.currentTarget : null;
+};
+
 export const dialHandlers = (
   cropper: Cropper,
-  initial: DialOptions = {}
+  initial: DialOptions = {},
+  element?: () => Element | null
 ): DialHandlers => {
   const dial = dialStateOf(cropper);
   dial.setOptions(initial);
@@ -282,14 +294,10 @@ export const dialHandlers = (
       startRotation = cropper.getValue().rotation;
       engaged = false;
       tracker.reset();
-      if (event.currentTarget instanceof Element) {
-        width = event.currentTarget.getBoundingClientRect().width || 1;
-      }
-      if (
-        event.pointerType !== "touch" &&
-        event.currentTarget instanceof Element
-      ) {
-        capture(event.currentTarget, event.pointerId);
+      const target = targetOf(event, element);
+      width = Math.max(target?.getBoundingClientRect().width ?? 0, 1);
+      if (event.pointerType !== "touch" && target) {
+        capture(target, event.pointerId);
       }
     },
     onPointerMove(event) {
@@ -305,8 +313,9 @@ export const dialHandlers = (
             cropper.end(event);
             return;
           }
-          if (event.currentTarget instanceof Element) {
-            capture(event.currentTarget, event.pointerId);
+          const target = targetOf(event, element);
+          if (target) {
+            capture(target, event.pointerId);
           }
         }
         const slop = dial.options().slop ?? SLOP;
@@ -328,12 +337,11 @@ export const dialHandlers = (
   };
 };
 
-export const bindDial = (
+export const dialAria = (
   cropper: Cropper,
   element: HTMLElement,
   options: DialOptions = {}
 ): (() => void) => {
-  const handlers = dialHandlers(cropper, options);
   const formatter = new Intl.NumberFormat(options.locale, {
     maximumFractionDigits: 1,
     style: "unit",
@@ -341,6 +349,33 @@ export const bindDial = (
     unitDisplay: "long",
     ...options.format,
   });
+  const aria = (): void => {
+    const limit = cropper.getRotationLimit();
+    const { rotation } = cropper.getValue();
+    element.setAttribute("aria-valuemin", String(-limit));
+    element.setAttribute("aria-valuemax", String(limit));
+    element.setAttribute("aria-valuenow", String(rotation));
+    element.setAttribute("aria-valuetext", formatter.format(rotation));
+  };
+  aria();
+  const offCommit = cropper.on("commit", aria);
+  const offKeys = cropper.on("change", (_, details) => {
+    if (details.reason === "keyboard" || details.reason === "reset") {
+      aria();
+    }
+  });
+  return () => {
+    offCommit();
+    offKeys();
+  };
+};
+
+export const bindDial = (
+  cropper: Cropper,
+  element: HTMLElement,
+  options: DialOptions = {}
+): (() => void) => {
+  const handlers = dialHandlers(cropper, options);
   element.style.touchAction = "pan-y";
   element.style.userSelect = "none";
   element.setAttribute("role", "slider");
@@ -358,26 +393,12 @@ export const bindDial = (
   }
   element.addEventListener("keydown", handlers.onKeyDown);
   element.addEventListener("keyup", handlers.onKeyUp);
-  const aria = (): void => {
-    const limit = cropper.getRotationLimit();
-    const { rotation } = cropper.getValue();
-    element.setAttribute("aria-valuemin", String(-limit));
-    element.setAttribute("aria-valuemax", String(limit));
-    element.setAttribute("aria-valuenow", String(rotation));
-    element.setAttribute("aria-valuetext", formatter.format(rotation));
-  };
-  aria();
   const dial = dialState(cropper);
   const sync = (): void => {
     element.toggleAttribute("data-dragging", dial.dragging());
   };
   const offChange = dial.onChange(sync);
-  const offCommit = cropper.on("commit", aria);
-  const offKeys = cropper.on("change", (_, details) => {
-    if (details.reason === "keyboard" || details.reason === "reset") {
-      aria();
-    }
-  });
+  const offAria = dialAria(cropper, element, options);
   return () => {
     for (const [type, handler] of events) {
       element.removeEventListener(type, handler);
@@ -385,8 +406,7 @@ export const bindDial = (
     element.removeEventListener("keydown", handlers.onKeyDown);
     element.removeEventListener("keyup", handlers.onKeyUp);
     offChange();
-    offCommit();
-    offKeys();
+    offAria();
   };
 };
 

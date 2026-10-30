@@ -1,9 +1,19 @@
 export {
+  areaKeyHandlers,
+  bindZoomThumb,
+  zoomAria,
+  zoomAt,
+  zoomHandlers,
+  zoomProgress,
+} from "./controls";
+export type { KeyHandlers, ZoomHandlers, ZoomOptions } from "./controls";
+export {
   DIAL_STEP,
   DIAL_TICKS,
   bindDial,
   bindDialTicks,
   bindDialValue,
+  dialAria,
   dialHandlers,
   dialState,
   tickData,

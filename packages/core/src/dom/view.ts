@@ -57,8 +57,8 @@ export interface Chrome {
 }
 
 export interface ViewOptions {
-  motion?: "auto" | "always" | "reduce";
-  recentreDelay?: number;
+  motion?: "auto" | "always" | "reduce" | undefined;
+  recentreDelay?: number | undefined;
 }
 
 export interface View {
@@ -501,6 +501,21 @@ export const viewOf = (cropper: Cropper): View => {
     };
     setChrome({ active: true, grid: grids[reason] ?? "coarse" });
   });
+  const offStop = cropper.on("stop", () => {
+    endTransition();
+    stopShift?.();
+    stopShift = null;
+    shift = { x: 0, y: 0 };
+    if (recentreTimer !== null) {
+      clearTimeout(recentreTimer);
+      recentreTimer = null;
+    }
+    if (chromeTimer !== null) {
+      clearTimeout(chromeTimer);
+      chromeTimer = null;
+    }
+    setChrome({ active: false, grid: "none" });
+  });
   const offEnd = cropper.on("gestureend", () => {
     if (chrome.grid === "fine") {
       setChrome({ grid: "none" });
@@ -523,6 +538,7 @@ export const viewOf = (cropper: Cropper): View => {
       offChange();
       offStart();
       offEnd();
+      offStop();
       stopShift?.();
       endTransition();
       if (recentreTimer !== null) {

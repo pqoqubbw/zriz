@@ -32,6 +32,12 @@ export default defineConfig({
       rules: { "eslint/no-await-in-loop": "off", "promise/avoid-new": "off" },
     },
     {
+      files: ["packages/react/src/**"],
+      rules: {
+        "react/hook-use-state": "off",
+      },
+    },
+    {
       files: ["apps/docs/components/demo.tsx"],
       rules: { "react/no-danger": "off" },
     },

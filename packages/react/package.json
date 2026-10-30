@@ -24,6 +24,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./cropper": {
+      "types": "./dist/cropper.d.ts",
+      "default": "./dist/cropper.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -56,12 +60,30 @@
   },
   "size-limit": [
     {
+      "name": "useCoverScale",
       "path": "dist/index.js",
       "import": "{ useCoverScale }",
-      "limit": "1 kB",
+      "limit": "1 kB"
+    },
+    {
+      "name": "avatar",
+      "path": "dist/cropper.js",
+      "import": "{ Root, Viewport, Image, Mask, Area }",
       "ignore": [
-        "react"
-      ]
+        "react",
+        "react-dom"
+      ],
+      "limit": "15 kB"
+    },
+    {
+      "name": "editor (every part)",
+      "path": "dist/cropper.js",
+      "import": "*",
+      "ignore": [
+        "react",
+        "react-dom"
+      ],
+      "limit": "20 kB"
     }
   ]
 }

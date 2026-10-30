@@ -200,7 +200,8 @@ const handlePoint = (rect: Rect, handle: CropHandle): Point => {
 
 export const handleHandlers = (
   cropper: Cropper,
-  handle: CropHandle
+  handle: CropHandle,
+  element?: () => Element | null
 ): HandleHandlers => {
   const view = viewOf(cropper);
   let drag: HandleDrag | null = null;
@@ -250,8 +251,11 @@ export const handleHandlers = (
         placement,
         start,
       };
-      if (event.currentTarget instanceof Element) {
-        capture(event.currentTarget, event.pointerId);
+      const target =
+        element?.() ??
+        (event.currentTarget instanceof Element ? event.currentTarget : null);
+      if (target) {
+        capture(target, event.pointerId);
       }
     },
     onPointerMove(event) {

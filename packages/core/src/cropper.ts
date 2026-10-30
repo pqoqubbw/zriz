@@ -88,6 +88,7 @@ export interface CropperEvents {
   gestureend: (reason: ChangeReason, event: Event | undefined) => void;
   settle: () => void;
   frame: (frame: CropperFrame) => void;
+  stop: () => void;
   destroy: () => void;
 }
 
@@ -98,17 +99,17 @@ export interface CropperPlugin {
 }
 
 export interface CropperOptions {
-  image?: Size | null;
-  value?: CropValue;
-  defaultValue?: Partial<CropValue>;
-  minSize?: Size;
-  maxZoom?: number;
-  focalLength?: number;
-  disabled?: boolean;
-  clock?: Clock;
-  onValueChange?: CropperEvents["change"];
-  onValueCommit?: CropperEvents["commit"];
-  plugins?: readonly CropperPlugin[];
+  image?: Size | null | undefined;
+  value?: CropValue | undefined;
+  defaultValue?: Partial<CropValue> | undefined;
+  minSize?: Size | undefined;
+  maxZoom?: number | undefined;
+  focalLength?: number | undefined;
+  disabled?: boolean | undefined;
+  clock?: Clock | undefined;
+  onValueChange?: CropperEvents["change"] | undefined;
+  onValueCommit?: CropperEvents["commit"] | undefined;
+  plugins?: readonly CropperPlugin[] | undefined;
 }
 
 export interface ActionOptions {
@@ -149,6 +150,7 @@ export interface Cropper {
   ) => void;
   run: (task: FrameTask, blocking?: boolean) => () => void;
   invalidate: () => void;
+  stop: () => void;
   destroy: () => void;
 }
 
@@ -182,6 +184,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     gestureend: new Set(),
     gesturestart: new Set(),
     settle: new Set(),
+    stop: new Set(),
   };
   const subscribers = new Set<() => void>();
   const tasks = new Map<FrameTask, boolean>();
@@ -710,6 +713,21 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         },
       };
       commitState(next, "centre", action, "imperative");
+    },
+    stop() {
+      if (gesture) {
+        cropper.end();
+      }
+      tasks.clear();
+      if (handle !== null) {
+        clock.cancel(handle);
+        handle = null;
+      }
+      flush();
+      settleCommit();
+      lastTime = null;
+      emit("stop");
+      refresh();
     },
     subscribe(listener) {
       subscribers.add(listener);

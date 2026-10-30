@@ -9,8 +9,8 @@ import type { Layout, View } from "./view";
 export type WheelMode = "pan" | "zoom" | "none";
 
 export interface ViewportOptions {
-  wheel?: WheelMode;
-  rotateGesture?: boolean;
+  wheel?: WheelMode | undefined;
+  rotateGesture?: boolean | undefined;
 }
 
 export interface ViewportHandlers {
