@@ -19,7 +19,11 @@
     "paths": {
       "@/*": ["./*"],
       "@zriz/react": ["../../packages/react/src/index.ts"],
-      "@zriz/core": ["../../packages/core/src/index.ts"]
+      "@zriz/react/cropper": ["../../packages/react/src/cropper.ts"],
+      "@zriz/react/styles.css": ["../../packages/core/src/styles.css"],
+      "@zriz/core": ["../../packages/core/src/index.ts"],
+      "@zriz/core/dom": ["../../packages/core/src/dom/index.ts"],
+      "@zriz/core/geometry": ["../../packages/core/src/geometry/index.ts"]
     },
     "allowJs": true,
     "esModuleInterop": true

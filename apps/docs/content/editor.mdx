@@ -1,0 +1,29 @@
+export const metadata = {
+  title: "Editor",
+  description:
+    "Every part: handles, grid, straighten dial, aspects, rotate, flip, reset and export.",
+};
+
+# Editor
+
+<Demo name="editor/full" />
+
+The dial is the iOS ruler: 41 ticks across ±45°, 4 px per degree, a 10 px slop before it moves, and a throw that decays the way Photos does. Arrow keys turn it by 1°, Shift or Page keys by 10°, Home and End jump to the limits, 0 straightens.
+
+Handles take physical names, `top-left` to `left`, and their hit box is `--zriz-handle-size`, 44 px by default. The grid shows thirds while you move the crop and a fine grid while you straighten, then fades 1.38 s after you let go.
+
+`Reset` hides itself while nothing has changed. `Rotate` turns counter-clockwise by default, as Photos does.
+
+## Export
+
+```ts
+import { exportCrop } from "@zriz/core/dom";
+
+const { blob, type, width, height, crop } = await exportCrop(cropper, {
+  type: "image/webp",
+  quality: 0.9,
+  maxSize: { width: 2048, height: 2048 },
+});
+```
+
+`type` is what the browser actually produced: Safari returns PNG when asked for WebP. Export decodes the original once in a worker, so a 48 MP photo does not freeze the page.

@@ -54,6 +54,11 @@ export default defineConfig({
       },
     },
     {
+      files: ["apps/docs/demos/**"],
+      plugins: next.plugins ?? [],
+      rules: { ...next.rules, "nextjs/no-img-element": "off" },
+    },
+    {
       files: ["apps/docs/components/demo.tsx"],
       rules: { "react/no-danger": "off" },
     },

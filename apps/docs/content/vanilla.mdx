@@ -1,0 +1,37 @@
+export const metadata = {
+  title: "Without React",
+  description: "The same cropper from @zriz/core with one binder per element.",
+};
+
+# Without React
+
+```ts
+import { createCropper } from "@zriz/core";
+import {
+  attachImage,
+  bindArea,
+  bindMask,
+  bindPhoto,
+  bindState,
+  bindViewport,
+  exportCrop,
+  loadImage,
+} from "@zriz/core/dom";
+
+const cropper = createCropper({ defaultValue: { aspect: 4 / 3 } });
+const unbind = [
+  bindViewport(cropper, viewport),
+  bindPhoto(cropper, photo),
+  bindMask(cropper, mask),
+  bindArea(cropper, area),
+  bindState(cropper, root),
+];
+attachImage(cropper, await loadImage(file));
+
+cropper.on("commit", (value, details) => save(details.pixelCrop));
+const { blob } = await exportCrop(cropper, { type: "image/jpeg" });
+```
+
+Each binder returns its cleanup. Import only the binders you use; the dial, zoom slider and handles live in `bindDial`, `bindDialTicks`, `bindZoomThumb` and `bindHandle`.
+
+The store works without a DOM too. `cropper.setRotation`, `setZoom`, `panBy`, `setAspect`, `rotate90`, `flip` and `reset` all keep the crop valid, and `serialize` and `parse` turn the value into JSON and back.

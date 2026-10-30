@@ -1,0 +1,26 @@
+export const metadata = {
+  title: "Images and export",
+  description:
+    "Formats, EXIF, colour, memory, errors, and cropping the original on a server.",
+};
+
+# Images and export
+
+Pass `src` a URL, a `File` or a `Blob`. zriz sniffs the format from the bytes, decodes a preview in a worker and keeps nothing full-size on the main thread.
+
+- **Orientation.** All eight EXIF orientations show and export upright. Coordinates are always in the upright image.
+- **Formats.** JPEG, PNG, WebP, AVIF, GIF and BMP work everywhere. HEIC decodes only in Safari; elsewhere `onError` gets a `ZrizError` with code `unsupported-format`, and you can pass your own decoder.
+- **SVG** without a size is measured from its `viewBox`.
+- **Cross-origin** images need CORS. Without it you get code `cross-origin` when the photo loads, not when you export.
+- **Colour.** Ask for `colorSpace: "display-p3"` to keep a wide-gamut photo wide in Chrome and Safari. Firefox exports sRGB.
+- **Deep zoom.** Past the preview's detail, zriz decodes just the visible region of the original at rest, so 15× stays sharp.
+
+## What the browser drops
+
+Browser export strips EXIF and GPS, HDR gain maps and 16-bit depth. When you need them, crop the original on your server with the description zriz gives you, where `width` and `height` are the upright size of the original:
+
+```ts
+import { toSharp } from "@zriz/core";
+
+const recipe = toSharp(details.pixelCrop, { width, height });
+```

@@ -1,0 +1,18 @@
+export const metadata = {
+  title: "Accessibility",
+  description: "Keys, labels, announcements and forced colours.",
+};
+
+# Accessibility
+
+zriz ships no words. Give the Area, Dial and Zoom an `aria-label`; development builds warn when one is missing.
+
+- **Area** is one tab stop with `role="group"`, described by `<Cropper.Instructions>`. Arrows move the photo by 1% (Shift 10%), Alt with an arrow resizes, plus and minus zoom, 0 resets.
+- **Dial** and **Zoom** are sliders. Their spoken value comes from `Intl.NumberFormat`, so "7 degrees" and "150%" follow the `locale` you pass to Root.
+- **Announcer** is a polite live region that speaks after each commit, in your words:
+
+  ```tsx
+  <Cropper.Announcer announce={(value) => `Straightened by ${value.rotation} degrees`} />
+  ```
+
+- Keys work only on the focused part. In right-to-left pages the slider keys flip; the photo never does.

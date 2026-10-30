@@ -1,0 +1,36 @@
+export const metadata = {
+  title: "Getting started",
+  description: "Install zriz and crop an avatar in ten lines.",
+};
+
+# Getting started
+
+```sh
+pnpm add @zriz/react
+```
+
+zriz needs React 19 and has no other dependencies. The parts render plain elements with `data-zriz-item` on each, so they look like nothing until you style them. The optional stylesheet gives you the iOS look:
+
+```ts
+import "@zriz/react/styles.css";
+```
+
+It sits in `@layer components.zriz`, so any class you add wins without `!important`, Tailwind utilities included.
+
+## An avatar
+
+<Demo name="avatar/basic" />
+
+`shape="circle"` draws a round mask and exports a round PNG. `aspect={1}` keeps the crop square. Drag, pinch, scroll or use a trackpad to move and zoom; a two-finger twist straightens the photo.
+
+`onValueCommit` fires once per gesture, after any motion has settled. Its `details.pixelCrop` describes the crop in source pixels, which is what a server needs to cut the original. Use `onValueChange` only when you need every frame.
+
+## What you get by default
+
+- No empty corners. Straightening zooms in just enough to keep the photo covering the crop, like Photos.
+- Pinch zooms around your fingers and turns the photo, with a 5° dead zone so a plain pinch does not tilt it.
+- Mouse wheel and two-finger trackpad drags pan the photo. At the edge the page scrolls on, so a cropper in a long page never traps the scroll.
+- After you resize the crop, it waits 1.06 s and glides back to the centre with the same pixels under it.
+- Escape cancels a drag. Reduced motion shortens every animation but keeps your own throws.
+
+Next: [the full editor](/docs/editor), [styling](/docs/styling), [images and export](/docs/images).

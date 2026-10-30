@@ -1,0 +1,63 @@
+export const metadata = {
+  title: "Styling",
+  description:
+    "Restyle the parts or bring your own elements: classes, data attributes, variables and render props.",
+};
+
+# Styling
+
+Every part renders one element with `data-zriz-item="<part>"`. Geometry is written inline by zriz, paint is yours.
+
+## The default stylesheet
+
+`@zriz/react/styles.css` is 800 bytes gzip. It declares Tailwind's layer order first and puts every rule in `@layer components.zriz` with zero specificity, so:
+
+- any class you write beats it, in either import order;
+- Tailwind's preflight and other resets cannot erase it, because it paints only with `background` and `outline`;
+- forced colours keep the frame, handles, grid and ticks visible.
+
+Colours are variables you can set anywhere above the cropper: `--zriz-line`, `--zriz-scrim`, `--zriz-grid`, `--zriz-tick`, `--zriz-accent`. Set `data-theme="dark"` or a `.dark` class on an ancestor to pin the scheme.
+
+## State attributes
+
+Root carries `data-interacting`, `data-panning`, `data-pinching`, `data-resizing`, `data-rotating`, `data-zooming`, `data-settling`, `data-changed`, `data-mirrored`, `data-overscroll`, `data-orientation`, `data-grid`, `data-transition` and `data-reduced-motion`. Parts add their own: `data-dragging` on the dial, `data-active` and `data-edge` on handles, `data-checked` on aspect items, `data-sharp` on the image once the crisp frame is drawn.
+
+```css
+[data-zriz-item="mask"] {
+  background: rgb(0 0 0 / 0.7);
+}
+[data-zriz-item="root"][data-interacting] [data-zriz-item="mask"] {
+  opacity: 0.4;
+}
+```
+
+## className and render
+
+`className` takes a string or a function of the part's state. `render` swaps the element for yours, with props and refs merged:
+
+```tsx
+<Cropper.Grid className={(state) => (state.grid === "fine" ? "grid-fine" : "")} />
+<Cropper.Reset render={<MyButton variant="ghost" />}>Reset</Cropper.Reset>
+```
+
+## Your handlers win
+
+Every event handler you pass runs before zriz's. Call `preventZrizHandler(event)` to skip zriz for that event:
+
+```tsx
+import { preventZrizHandler } from "@zriz/react";
+
+<Cropper.Viewport
+  onPointerDown={(event) => {
+    if (locked) preventZrizHandler(event);
+  }}
+/>;
+```
+
+## Live values without renders
+
+zriz never re-renders React per frame. To follow the angle or zoom in CSS, opt in on the Area, and decorations inside it can read `--zriz-rotation`, `--zriz-zoom`, their `-progress` versions and `--zriz-overscroll`:
+
+```tsx
+<Cropper.Area liveVariables />
+```
