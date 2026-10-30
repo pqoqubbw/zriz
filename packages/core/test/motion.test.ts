@@ -103,6 +103,15 @@ describe(velocityTracker, () => {
     expect(tracker.velocity(296)).toBeCloseTo(2000, 6);
   });
 
+  it("forgets the motion before a pause, even if a still sample follows", () => {
+    const tracker = velocityTracker();
+    for (let t = 0; t <= 40; t += 8) {
+      tracker.push(t, t * 2);
+    }
+    tracker.push(130, 80);
+    expect(tracker.velocity(131)).toBe(0);
+  });
+
   it("gives zero after a 40 ms pause", () => {
     const tracker = velocityTracker();
     for (let t = 0; t <= 80; t += 8) {

@@ -117,6 +117,11 @@ export const velocityTracker = (
   let values: number[] = [];
   return {
     push(time, value) {
+      const previous = times.at(-1);
+      if (previous !== undefined && time - previous > stale) {
+        times = [];
+        values = [];
+      }
       times.push(time);
       values.push(value);
       while (

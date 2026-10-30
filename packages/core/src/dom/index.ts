@@ -1,4 +1,15 @@
 export {
+  DIAL_STEP,
+  DIAL_TICKS,
+  bindDial,
+  bindDialTicks,
+  bindDialValue,
+  dialHandlers,
+  dialState,
+  tickData,
+} from "./dial";
+export type { DialHandlers, DialOptions, DialState } from "./dial";
+export {
   bindArea,
   bindHandle,
   bindImage,

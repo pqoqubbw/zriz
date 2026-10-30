@@ -17,7 +17,7 @@ declare module "vitest/browser" {
   interface BrowserCommands {
     drag: (
       selector: string,
-      path: readonly (readonly [number, number])[]
+      path: readonly (readonly [number, number, number?])[]
     ) => Promise<void>;
     pinch: (
       selector: string,
