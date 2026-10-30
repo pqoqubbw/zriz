@@ -271,7 +271,8 @@ h1 {
 
 .avatar-viewport {
   position: relative;
-  width: min(320px, 100%);
+  width: 320px;
+  max-width: 100%;
   aspect-ratio: 1;
   padding: 24px;
   background: #000;
@@ -281,7 +282,8 @@ h1 {
 
 .editor-viewport {
   position: relative;
-  width: 100%;
+  width: 640px;
+  max-width: 100%;
   aspect-ratio: 4 / 3;
   padding: 28px;
   background: #000;

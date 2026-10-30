@@ -54,6 +54,7 @@ export const Area = ({
         onKeyDown: native(keys.onKeyDown),
         onKeyUp: native(keys.onKeyUp),
         role: "group",
+        style: shape === "circle" ? { borderRadius: "50%" } : undefined,
         tabIndex: 0,
       },
       props

@@ -22,8 +22,8 @@
     content: "";
     position: absolute;
     inset: 1px;
-    pointer-events: none;
     outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
+    border-radius: inherit;
   }
   :where([data-zriz-item="grid"]) {
     opacity: 0;

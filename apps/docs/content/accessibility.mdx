@@ -12,7 +12,9 @@ zriz ships no words. Give the Area, Dial and Zoom an `aria-label`; development b
 - **Announcer** is a polite live region that speaks after each commit, in your words:
 
   ```tsx
-  <Cropper.Announcer announce={(value) => `Straightened by ${value.rotation} degrees`} />
+  <Cropper.Announcer
+    announce={(value) => `Straightened by ${value.rotation} degrees`}
+  />
   ```
 
 - Keys work only on the focused part. In right-to-left pages the slider keys flip; the photo never does.

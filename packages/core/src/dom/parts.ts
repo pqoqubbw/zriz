@@ -163,6 +163,7 @@ export const bindMask = (
 
 export interface AreaOptions {
   liveVariables?: boolean | undefined;
+  shape?: MaskShape | undefined;
 }
 
 export const bindArea = (
@@ -172,6 +173,9 @@ export const bindArea = (
 ): (() => void) => {
   const { style } = element;
   style.position = "absolute";
+  if (options.shape === "circle") {
+    style.borderRadius = "50%";
+  }
   const live = new Map<string, string>();
   const variable = (name: string, value: number): void => {
     const text = String(Math.round(value * 1000) / 1000);
