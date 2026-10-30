@@ -170,4 +170,44 @@ describe("view", () => {
     expect(time.pending()).toBe(0);
     view.destroy();
   });
+
+  it("flips on the curve measured from iOS Photos", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const view = viewOf(cropper);
+    view.setOptions({ motion: "always" });
+    view.setLayout({
+      dpr: 2,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+    time.frame();
+    const rest = view.frame()?.matrix[0] ?? 1;
+    const widths = new Map<number, number>();
+    view.onFrame((frame) => {
+      widths.set(Math.round(time.clock.now()), frame.matrix[0] / rest);
+    });
+    cropper.flip();
+    const start = time.clock.now();
+    time.frames(30, 1000 / 120);
+    const at = (ms: number): number => {
+      let best = 0;
+      let gap = Number.POSITIVE_INFINITY;
+      for (const [t, w] of widths) {
+        if (Math.abs(t - start - ms) < gap) {
+          gap = Math.abs(t - start - ms);
+          best = w;
+        }
+      }
+      return best;
+    };
+    expect(Math.abs(at(65) - 0.3)).toBeLessThan(0.17);
+    expect(Math.abs(at(148) + 0.51)).toBeLessThan(0.12);
+    expect(Math.abs(at(250) + 0.87)).toBeLessThan(0.06);
+    view.destroy();
+  });
 });

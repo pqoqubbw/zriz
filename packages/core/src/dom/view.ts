@@ -186,7 +186,7 @@ const RECENTRE_OMEGA = 16.1;
 const RECENTRE_DELAY = 1060;
 const CHROME_HOLD = 1380;
 const ROTATE_MS = 410;
-const FLIP_MS = 470;
+const FLIP_OMEGA = 17.6;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
 
@@ -291,9 +291,6 @@ const blendMatrix = (from: Pose, to: Pose, t: number): Matrix3 => {
 };
 
 const easeOut = (t: number): number => 1 - (1 - t) ** 3;
-
-const easeInOut = (t: number): number =>
-  t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
 
 const settled = (omega: number, ms: number): number => {
   const t = (omega * ms) / 1000;
@@ -461,7 +458,7 @@ export const viewOf = (cropper: Cropper): View => {
       } else if (kind === "rotate") {
         t = easeOut(Math.min(elapsed / ROTATE_MS, 1));
       } else if (kind === "flip") {
-        t = easeInOut(Math.min(elapsed / FLIP_MS, 1));
+        t = settled(FLIP_OMEGA, elapsed);
       } else {
         t = settled(RECENTRE_OMEGA, elapsed);
       }
