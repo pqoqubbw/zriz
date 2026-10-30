@@ -1,0 +1,123 @@
+@layer properties, theme, base, components, utilities;
+@layer components.zriz {
+  :where([data-zriz-item="root"]) {
+    color-scheme: var(--zriz-scheme);
+  }
+  :where([data-theme="light"], .light) {
+    --zriz-scheme: light;
+  }
+  :where([data-theme="dark"], .dark) {
+    --zriz-scheme: dark;
+  }
+  :where([data-zriz-item="mask"]) {
+    background: var(--zriz-scrim, light-dark(#f7f7f7eb, #000000c7));
+    transition: opacity 0.3s;
+    forced-color-adjust: none;
+  }
+  :where([data-zriz-item="mask"][data-interacting]) {
+    opacity: 0.6;
+    transition-duration: 0.2s;
+  }
+  :where([data-zriz-item="area"])::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    pointer-events: none;
+    outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
+  }
+  :where([data-zriz-item="grid"]) {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  :where([data-zriz-item="grid"][data-visible]) {
+    opacity: 1;
+    transition-duration: 0.25s;
+  }
+  :where([data-zriz-item="grid"] > *) {
+    min-width: 1px;
+    min-height: 1px;
+    background: var(--zriz-grid, #fff9);
+  }
+  :where([data-zriz-item="handle"])::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    translate: -2px -2px;
+    transform-origin: 2px 2px;
+    background: var(--zriz-line, light-dark(#000, #fff));
+    clip-path: polygon(0 0, 100% 0, 100% 3px, 3px 3px, 3px 100%, 0 100%);
+  }
+  :where([data-zriz-item="handle"][data-edge$="right"])::before {
+    scale: -1 1;
+  }
+  :where([data-zriz-item="handle"][data-edge^="bottom"])::before {
+    scale: 1 -1;
+  }
+  :where([data-zriz-item="handle"][data-edge="bottom-right"])::before {
+    scale: -1;
+  }
+  :where([data-zriz-item="handle"]:not([data-edge*="\-"]))::before {
+    width: 25px;
+    height: 3px;
+    translate: -50% -2px;
+  }
+  :where(
+    [data-zriz-item="handle"]:is([data-edge="left"], [data-edge="right"])
+  )::before {
+    width: 3px;
+    height: 25px;
+    translate: -2px -50%;
+  }
+  :where([data-zriz-item="dial"])::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 27px;
+    background: var(--zriz-line, light-dark(#000, #fff));
+    transition: 0.25s;
+  }
+  :where([data-zriz-item="dial"][data-dragging])::after {
+    background: var(--zriz-accent, #fdca00);
+    transition: none;
+  }
+  :where([data-zriz-item="dial-ticks"] > *) {
+    width: 1px;
+    height: 10px;
+    background: var(--zriz-tick, light-dark(#9b9b9b, #666));
+  }
+  :where([data-zriz-item="dial-ticks"] > [data-major]) {
+    background: var(--zriz-line, light-dark(#000, #fff));
+  }
+  :where([data-zriz-item="dial-ticks"] > [data-fade]) {
+    opacity: 0.25;
+  }
+  :where([data-zriz-item="dial-ticks"] > [data-fade="1"]) {
+    opacity: 0.5;
+  }
+  :where([data-zriz-item="dial-ticks"] > [data-fade="2"]) {
+    opacity: 0.75;
+  }
+  :where([data-zriz-item="dial"]:not([data-snapped]) [data-zero])::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--zriz-line, light-dark(#000, #fff));
+  }
+  @media (forced-colors) {
+    :where([data-zriz-item]) {
+      --zriz-line: CanvasText;
+      --zriz-grid: CanvasText;
+      --zriz-tick: CanvasText;
+      --zriz-accent: Highlight;
+    }
+  }
+}

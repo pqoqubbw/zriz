@@ -10,6 +10,7 @@ import { RootContextValue, native, useElementBox, useMergedRef } from "../part";
 import type { PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
+import { warnUnlabelled } from "../warn";
 
 export interface ZoomState {
   dragging: boolean;
@@ -41,6 +42,7 @@ export const Zoom = ({
   const own = useCallback(
     (node: HTMLDivElement | null) => {
       box.set(node);
+      warnUnlabelled("Zoom", node);
       const off = node
         ? zoomAria(cropper, node, { format, locale, max })
         : undefined;
@@ -66,7 +68,11 @@ export const Zoom = ({
         onPointerMove: native(handlers.onPointerMove),
         onPointerUp: native(handlers.onPointerUp),
         role: "slider",
-        style: { position: "relative", touchAction: "none" },
+        style: {
+          WebkitTapHighlightColor: "transparent",
+          position: "relative",
+          touchAction: "none",
+        },
         tabIndex: 0,
       },
       props

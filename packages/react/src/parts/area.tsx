@@ -10,6 +10,7 @@ import { RootContextValue, native, useMergedRef } from "../part";
 import type { PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
+import { warnUnlabelled } from "../warn";
 
 export interface AreaState {
   shape: "rect" | "circle";
@@ -29,8 +30,10 @@ export const Area = ({
   const interacting = useCropperState((s) => s.interacting !== null);
   const [keys] = useState(() => areaKeyHandlers(cropper));
   const own = useCallback(
-    (element: HTMLDivElement | null) =>
-      element ? bindArea(cropper, element) : undefined,
+    (element: HTMLDivElement | null) => {
+      warnUnlabelled("Area", element);
+      return element ? bindArea(cropper, element) : undefined;
+    },
     [cropper]
   );
   return useRender({

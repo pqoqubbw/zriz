@@ -1,7 +1,7 @@
 "use client";
 
 import { handleHandlers } from "@zriz/core/dom";
-import type { CropHandle } from "@zriz/core/geometry";
+import type { HandleEdge } from "@zriz/core/dom";
 import { useCallback, useMemo } from "react";
 import type { ReactElement } from "react";
 
@@ -13,20 +13,19 @@ import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
 
 export interface HandleState {
-  position: CropHandle;
+  position: HandleEdge;
   active: boolean;
 }
 
 export interface HandleProps extends PartProps<"div", HandleState> {
   /** Which corner or edge this handle drags. */
-  position: CropHandle;
+  position: HandleEdge;
 }
 
-const placement = (position: CropHandle): React.CSSProperties => {
+const placement = (position: HandleEdge): React.CSSProperties => {
   const size = "var(--zriz-handle-size, 44px)";
-  const x = position.includes("w") ? "left" : "right";
-  const y = position.includes("n") ? "top" : "bottom";
   const style: React.CSSProperties = {
+    WebkitTapHighlightColor: "transparent",
     height: size,
     position: "absolute",
     touchAction: "none",
@@ -34,15 +33,19 @@ const placement = (position: CropHandle): React.CSSProperties => {
   };
   let tx = "-50%";
   let ty = "-50%";
-  if (position.includes("e") || position.includes("w")) {
-    style[x] = 0;
-    tx = x === "left" ? "-50%" : "50%";
+  if (position.endsWith("left")) {
+    style.left = 0;
+  } else if (position.endsWith("right")) {
+    style.right = 0;
+    tx = "50%";
   } else {
     style.left = "50%";
   }
-  if (position.includes("n") || position.includes("s")) {
-    style[y] = 0;
-    ty = y === "top" ? "-50%" : "50%";
+  if (position.startsWith("top")) {
+    style.top = 0;
+  } else if (position.startsWith("bottom")) {
+    style.bottom = 0;
+    ty = "50%";
   } else {
     style.top = "50%";
   }

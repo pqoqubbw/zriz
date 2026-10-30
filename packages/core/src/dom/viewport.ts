@@ -522,6 +522,7 @@ export const viewportController = (
       next.style.userSelect = "none";
       next.style.setProperty("-webkit-user-select", "none");
       next.style.setProperty("-webkit-touch-callout", "none");
+      next.style.setProperty("-webkit-tap-highlight-color", "transparent");
       next.addEventListener("wheel", onWheel, { passive: false });
       next.addEventListener("gesturestart", onGestureStart);
       next.addEventListener("gesturechange", onGestureChange);

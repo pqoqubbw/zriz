@@ -20,7 +20,7 @@ describe("server rendering", () => {
             Cropper.Area,
             { "aria-label": "Crop" },
             createElement(Cropper.Grid),
-            createElement(Cropper.Handle, { position: "nw" })
+            createElement(Cropper.Handle, { position: "top-left" })
           )
         ),
         createElement(

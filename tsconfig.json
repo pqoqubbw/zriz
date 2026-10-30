@@ -1,7 +1,14 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["test", "*.ts", "packages/*/test", "packages/*/tsdown.config.ts"]
+  "include": [
+    "scripts",
+    "test",
+    "*.ts",
+    "packages/*/test",
+    "packages/*/tsdown.config.ts"
+  ]
 }

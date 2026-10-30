@@ -2,7 +2,7 @@
 
 import { viewOf } from "@zriz/core/dom";
 import type { Grid as GridMode } from "@zriz/core/dom";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
@@ -16,22 +16,29 @@ export interface GridState {
 
 export type GridProps = PartProps<"div", GridState>;
 
-const LINES = [1, 2, 3, 4, 5, 6, 7, 8];
-
-const lines = LINES.flatMap((k) =>
-  (["x", "y"] as const).map((axis) => (
-    <span
-      data-axis={axis}
-      data-coarse={k % 3 === 0 ? "" : undefined}
-      key={`${axis}${k}`}
-      style={
-        axis === "x"
-          ? { left: `${(k / 9) * 100}%`, position: "absolute" }
-          : { position: "absolute", top: `${(k / 9) * 100}%` }
-      }
-    />
-  ))
+const line = (axis: "x" | "y", at: number, coarse: boolean): ReactElement => (
+  <span
+    data-axis={axis}
+    data-coarse={coarse ? "" : undefined}
+    key={`${axis}${at}`}
+    style={
+      axis === "x"
+        ? { bottom: 0, left: `${at * 100}%`, position: "absolute", top: 0 }
+        : { left: 0, position: "absolute", right: 0, top: `${at * 100}%` }
+    }
+  />
 );
+
+const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
+  const count = mode === "fine" ? 9 : 3;
+  return Array.from({ length: count - 1 }, (_, i) => i + 1).flatMap((k) => [
+    line("x", k / count, mode === "coarse"),
+    line("y", k / count, mode === "coarse"),
+  ]);
+};
+
+const coarseLines = linesFor("coarse");
+const fineLines = linesFor("fine");
 
 export const Grid = ({
   render,
@@ -46,13 +53,18 @@ export const Grid = ({
     () => view.chrome().grid,
     () => "none" as const
   );
+  const [shown, setShown] = useState<"coarse" | "fine">("coarse");
+  if (grid !== "none" && grid !== shown) {
+    setShown(grid);
+  }
   return useRender({
     className,
     props: mergeProps(
       {
         "aria-hidden": true,
-        children: lines,
+        children: shown === "fine" ? fineLines : coarseLines,
         "data-grid": grid,
+        "data-visible": grid === "none" ? undefined : "",
         "data-zriz-item": "grid",
         style: { inset: 0, pointerEvents: "none", position: "absolute" },
       },

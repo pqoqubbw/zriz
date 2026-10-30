@@ -93,7 +93,7 @@ const mount = (width = 400, height = 300, hidden = false): Fixture => {
     bindImage(cropper, image),
     bindMask(cropper, mask),
     bindArea(cropper, area),
-    bindHandle(cropper, handle, "se"),
+    bindHandle(cropper, handle, "bottom-right"),
   ];
   cleanups.push(() => {
     for (const off of unbind) {

@@ -8,6 +8,27 @@ import type { Box, Placement, ViewFrame } from "./view";
 
 export type MaskShape = "rect" | "circle";
 
+export type HandleEdge =
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "right"
+  | "bottom-right"
+  | "bottom"
+  | "bottom-left"
+  | "left";
+
+const EDGES: Record<HandleEdge, CropHandle> = {
+  bottom: "s",
+  "bottom-left": "sw",
+  "bottom-right": "se",
+  left: "w",
+  right: "e",
+  top: "n",
+  "top-left": "nw",
+  "top-right": "ne",
+};
+
 const MIN_HANDLE_SPAN = 88;
 
 let shapeSupport: boolean | null = null;
@@ -112,7 +133,13 @@ export const bindMask = (
   style.inset = "0";
   style.pointerEvents = "none";
   let last = "";
-  return follow(cropper, (frame) => {
+  const view = viewOf(cropper);
+  const sync = (): void => {
+    element.toggleAttribute("data-interacting", view.chrome().active);
+  };
+  sync();
+  const offChrome = view.onChrome(sync);
+  const stop = follow(cropper, (frame) => {
     if (shape === "circle" && !supportsShape()) {
       const next = maskGradient(frame.rect, frame.layout.dpr);
       if (next !== last) {
@@ -128,6 +155,10 @@ export const bindMask = (
       style.clipPath = next;
     }
   });
+  return () => {
+    stop();
+    offChrome();
+  };
 };
 
 export const bindArea = (
@@ -200,9 +231,10 @@ const handlePoint = (rect: Rect, handle: CropHandle): Point => {
 
 export const handleHandlers = (
   cropper: Cropper,
-  handle: CropHandle,
+  edge: HandleEdge,
   element?: () => Element | null
 ): HandleHandlers => {
+  const handle = EDGES[edge];
   const view = viewOf(cropper);
   let drag: HandleDrag | null = null;
 
@@ -296,10 +328,12 @@ export const handleHandlers = (
 export const bindHandle = (
   cropper: Cropper,
   element: HTMLElement,
-  handle: CropHandle
+  edge: HandleEdge
 ): (() => void) => {
-  const handlers = handleHandlers(cropper, handle);
+  const handlers = handleHandlers(cropper, edge);
   element.style.touchAction = "none";
+  element.style.setProperty("-webkit-tap-highlight-color", "transparent");
+  element.dataset.edge = edge;
   element.addEventListener("pointerdown", handlers.onPointerDown);
   element.addEventListener("pointermove", handlers.onPointerMove);
   element.addEventListener("pointerup", handlers.onPointerUp);

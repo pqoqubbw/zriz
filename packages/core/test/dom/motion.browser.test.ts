@@ -87,7 +87,7 @@ const mount = (motion: "always" | "reduce" = "always"): Fixture => {
     bindImage(cropper, image),
     bindMask(cropper, mask),
     bindArea(cropper, area),
-    bindHandle(cropper, handle, "se"),
+    bindHandle(cropper, handle, "bottom-right"),
     bindState(cropper, root),
   ];
   cleanups.push(() => {
@@ -148,9 +148,10 @@ describe("view motion", () => {
     });
     await wait(900);
     expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
-    await wait(900);
+    await expect
+      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
+      .toBe(200);
     off();
-    expect(centreOf(view.frame()).x).toBeCloseTo(200, 0);
     expect(fixture.changes).toBe(changes);
     const [first] = corners;
     const tolerance = 4000 / 360;
@@ -175,8 +176,9 @@ describe("view motion", () => {
     await wait(900);
     expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
     fixture.cropper.end();
-    await wait(1700);
-    expect(centreOf(view.frame()).x).toBeCloseTo(200, 0);
+    await expect
+      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
+      .toBe(200);
   });
 
   it("animates a quarter turn without change events in between", async () => {

@@ -15,6 +15,7 @@ import { mergeProps } from "../merge-props";
 import { RootContextValue, native, useElementBox, useMergedRef } from "../part";
 import type { PartProps } from "../part";
 import { useRender } from "../use-render";
+import { warnUnlabelled } from "../warn";
 
 export interface DialState {
   dragging: boolean;
@@ -48,6 +49,7 @@ export const Dial = ({
   const own = useCallback(
     (node: HTMLDivElement | null) => {
       box.set(node);
+      warnUnlabelled("Dial", node);
       const off = node
         ? dialAria(cropper, node, { format, locale })
         : undefined;
@@ -74,6 +76,7 @@ export const Dial = ({
         onPointerUp: native(handlers.onPointerUp),
         role: "slider",
         style: {
+          WebkitTapHighlightColor: "transparent",
           position: "relative",
           touchAction: "pan-y",
           userSelect: "none",

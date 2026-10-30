@@ -356,6 +356,7 @@ export const dialAria = (
     element.setAttribute("aria-valuemax", String(limit));
     element.setAttribute("aria-valuenow", String(rotation));
     element.setAttribute("aria-valuetext", formatter.format(rotation));
+    element.toggleAttribute("data-snapped", rotation === 0);
   };
   aria();
   const offCommit = cropper.on("commit", aria);

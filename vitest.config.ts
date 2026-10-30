@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-import { drag, pinch, touch } from "./test/commands";
+import { drag, pinch, touch } from "./test/commands.ts";
 
 export default defineConfig({
   test: {

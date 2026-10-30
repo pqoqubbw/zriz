@@ -31,16 +31,17 @@
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
     },
+    "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node ../../scripts/css.ts dist/styles.css",
     "dev": "tsdown --watch",
     "type": "tsc -p tsconfig.json",
-    "lint:package": "publint --strict && attw --pack . --profile esm-only",
+    "lint:package": "publint --strict && attw --pack . --profile esm-only --exclude-entrypoints ./styles.css",
     "size": "size-limit"
   },
   "devDependencies": {
