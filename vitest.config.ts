@@ -2,6 +2,8 @@ import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
+import { drag, pinch } from "./test/commands";
+
 export default defineConfig({
   test: {
     maxWorkers: 2,
@@ -20,6 +22,7 @@ export default defineConfig({
         plugins: [react()],
         test: {
           browser: {
+            commands: { drag, pinch },
             enabled: true,
             headless: true,
             instances: [

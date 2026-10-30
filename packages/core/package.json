@@ -27,6 +27,10 @@
       "types": "./dist/geometry/index.d.ts",
       "default": "./dist/geometry/index.js"
     },
+    "./dom": {
+      "types": "./dist/dom/index.d.ts",
+      "default": "./dist/dom/index.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -65,6 +69,42 @@
       "path": "dist/geometry/index.js",
       "import": "*",
       "limit": "5 kB"
+    },
+    {
+      "name": "createCropper",
+      "path": "dist/index.js",
+      "import": "{ createCropper }",
+      "limit": "5 kB"
+    },
+    {
+      "name": "value",
+      "path": "dist/index.js",
+      "import": "{ parse, serialize }",
+      "limit": "500 B"
+    },
+    {
+      "name": "motion",
+      "path": "dist/index.js",
+      "import": "{ spring, decay, velocityTracker }",
+      "limit": "600 B"
+    },
+    {
+      "name": "dom (all binders)",
+      "path": "dist/dom/index.js",
+      "import": "*",
+      "limit": "10 kB"
+    },
+    {
+      "name": "avatar (cropper + viewport + image + mask + area)",
+      "path": [
+        "dist/index.js",
+        "dist/dom/index.js"
+      ],
+      "import": {
+        "dist/index.js": "{ createCropper }",
+        "dist/dom/index.js": "{ bindViewport, bindImage, bindMask, bindArea }"
+      },
+      "limit": "10 kB"
     }
   ]
 }

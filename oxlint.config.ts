@@ -24,6 +24,14 @@ export default defineConfig({
       rules: { "eslint/require-await": "off" },
     },
     {
+      files: [
+        "**/*.browser.test.ts",
+        "**/*.browser.test.tsx",
+        "test/commands.ts",
+      ],
+      rules: { "eslint/no-await-in-loop": "off", "promise/avoid-new": "off" },
+    },
+    {
       files: ["apps/docs/components/demo.tsx"],
       rules: { "react/no-danger": "off" },
     },
