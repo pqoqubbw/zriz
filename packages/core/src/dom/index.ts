@@ -1,4 +1,24 @@
 export {
+  ZrizError,
+  attachImage,
+  defaultPreviewEdge,
+  exportCrop,
+  exportImage,
+  imageOf,
+  loadImage,
+  outputLimit,
+  sniff,
+  svgSize,
+} from "./image";
+export type {
+  ExportOptions,
+  ExportResult,
+  ImageSource,
+  LoadOptions,
+  LoadedImage,
+  ZrizErrorCode,
+} from "./image";
+export {
   areaKeyHandlers,
   bindZoomThumb,
   zoomAria,

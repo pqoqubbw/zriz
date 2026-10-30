@@ -28,8 +28,24 @@ export default defineConfig({
         "**/*.browser.test.ts",
         "**/*.browser.test.tsx",
         "test/commands.ts",
+        "packages/core/test/fixtures/make.ts",
       ],
       rules: { "eslint/no-await-in-loop": "off", "promise/avoid-new": "off" },
+    },
+    {
+      files: [
+        "packages/core/src/dom/image.ts",
+        "packages/core/src/dom/worker.ts",
+      ],
+      rules: { "promise/avoid-new": "off" },
+    },
+    {
+      files: ["packages/core/src/dom/kernel.ts"],
+      rules: {
+        "eslint/no-await-in-loop": "off",
+        "promise/avoid-new": "off",
+        "unicorn/consistent-function-scoping": "off",
+      },
     },
     {
       files: ["packages/react/src/**"],
