@@ -17,7 +17,9 @@
     "src"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,6 +32,22 @@
     "./dom": {
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
+    },
+    "./dom/render": {
+      "types": "./dist/dom/render.d.ts",
+      "default": "./dist/dom/render.js"
+    },
+    "./dom/svg": {
+      "types": "./dist/dom/svg.d.ts",
+      "default": "./dist/dom/svg.js"
+    },
+    "./dom/source": {
+      "types": "./dist/dom/source.d.ts",
+      "default": "./dist/dom/source.js"
+    },
+    "./dom/sharpen": {
+      "types": "./dist/dom/sharpen.d.ts",
+      "default": "./dist/dom/sharpen.js"
     },
     "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
@@ -47,6 +65,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@size-limit/preset-small-lib": "catalog:",
+    "esbuild": "0.28.2",
     "publint": "catalog:",
     "sharp": "0.35.5",
     "size-limit": "catalog:",
@@ -93,10 +112,28 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "18 kB"
+      "limit": "17.7 kB",
+      "entry": [
+        "index"
+      ]
     },
     {
       "name": "avatar (cropper + viewport + image + mask + area)",
+      "path": [
+        "dist/index.js",
+        "dist/dom/index.js"
+      ],
+      "import": {
+        "dist/index.js": "{ createCropper }",
+        "dist/dom/index.js": "{ bindViewport, bindImage, bindMask, bindArea }"
+      },
+      "limit": "11.5 kB",
+      "entry": [
+        "index"
+      ]
+    },
+    {
+      "name": "avatar total (with lazy chunks)",
       "path": [
         "dist/index.js",
         "dist/dom/index.js"
@@ -111,7 +148,58 @@
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "8 kB"
+      "limit": "3.4 kB",
+      "entry": [
+        "index"
+      ]
+    },
+    {
+      "name": "exportCrop",
+      "path": "dist/dom/index.js",
+      "import": "{ exportCrop }",
+      "limit": "300 B",
+      "entry": [
+        "index"
+      ]
+    },
+    {
+      "name": "exportCrop total (with render chunk)",
+      "path": "dist/dom/index.js",
+      "import": "{ exportCrop }",
+      "limit": "3.2 kB"
+    },
+    {
+      "name": "loadImage",
+      "path": "dist/dom/index.js",
+      "import": "{ loadImage }",
+      "limit": "3.03 kB",
+      "entry": [
+        "index"
+      ]
+    },
+    {
+      "name": "lazy chunk dom/render",
+      "path": "dist/dom/render.js",
+      "import": "*",
+      "limit": "3.05 kB"
+    },
+    {
+      "name": "lazy chunk dom/svg",
+      "path": "dist/dom/svg.js",
+      "import": "*",
+      "limit": "1.3 kB"
+    },
+    {
+      "name": "lazy chunk dom/source",
+      "path": "dist/dom/source.js",
+      "import": "*",
+      "limit": "600 B"
+    },
+    {
+      "name": "lazy chunk dom/sharpen",
+      "path": "dist/dom/sharpen.js",
+      "import": "*",
+      "limit": "1.9 kB"
     }
   ]
 }

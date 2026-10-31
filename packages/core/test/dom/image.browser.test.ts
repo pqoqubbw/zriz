@@ -9,6 +9,7 @@ import {
   exportImage,
   loadImage,
   setCropShape,
+  sniff,
 } from "../../src/dom";
 import { workerActive } from "../../src/dom/worker";
 import { workingToSource } from "../../src/geometry";
@@ -47,6 +48,8 @@ const near = (
   a !== undefined &&
   b !== undefined &&
   b.every((value, i) => Math.abs((a[i] ?? 0) - value) <= tolerance);
+
+const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
 describe("load and export", () => {
   it.each([1, 2, 3, 4, 5, 6, 7, 8])(
@@ -121,6 +124,45 @@ describe("load and export", () => {
   it("sizes an SVG with only a viewBox from the viewBox", async () => {
     const image = await loadImage(await fixture("viewbox.svg"));
     expect(image.width / image.height).toBeCloseTo(1.5, 2);
+  });
+
+  it("loads a typed SVG blob behind an XML prolog", async () => {
+    const svg = await fixture("viewbox.svg");
+    const text = await svg.text();
+    const image = await loadImage(
+      new Blob([`<?xml version="1.0"?>\n${text}`], { type: "image/svg+xml" })
+    );
+    expect(image.mime).toBe("image/svg+xml");
+    expect(image.width / image.height).toBeCloseTo(1.5, 2);
+  });
+
+  it("sniffs SVG text and leaves other text unknown", () => {
+    expect(sniff(encode("<!-- x -->\n<svg viewBox='0 0 1 1'/>")).mime).toBe(
+      "image/svg+xml"
+    );
+    expect(sniff(encode("<html><svg></svg></html>")).mime).toBeNull();
+    expect(sniff(new Uint8Array([0xff, 0xd8, 0xff, 0])).mime).toBe(
+      "image/jpeg"
+    );
+  });
+
+  it("loads a canvas element source", async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40;
+    canvas.height = 20;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("no 2d context");
+    }
+    context.fillStyle = "#f00";
+    context.fillRect(0, 0, 40, 20);
+    const image = await loadImage(canvas);
+    expect([image.width, image.height]).toStrictEqual([40, 20]);
+    const result = await exportImage(createCropper({ image }), image, {
+      type: "image/png",
+    });
+    const [pixel] = await pixels(result.blob, [[1, 1]]);
+    expect(near(pixel, [255, 0, 0, 255])).toBeTruthy();
   });
 
   it("throws a typed error for a format the browser cannot decode", async () => {

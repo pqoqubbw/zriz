@@ -1,11 +1,11 @@
 import type { Cropper } from "../cropper";
-import { applyHomography, invertMatrix3 } from "../geometry/matrix";
 import type { Matrix3 } from "../geometry/types";
-import { imageOf, onImage } from "./image";
 import type { LoadedImage } from "./image";
+import { imageOf, onImage } from "./image-store";
+import { afterPaint } from "./later";
 import { cssMatrix, viewOf } from "./view";
 import type { ViewFrame } from "./view";
-import { motionOff, regionOff, resampleOff } from "./worker";
+import { motionOff } from "./worker";
 
 interface Drawn {
   matrix: Matrix3;
@@ -14,7 +14,6 @@ interface Drawn {
 }
 
 const SAME = 1e-6;
-const DETAIL = 1.02;
 
 const sameMatrix = (a: Matrix3, b: Matrix3): boolean =>
   a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < SAME);
@@ -24,36 +23,6 @@ const isAffine = (m: Matrix3): boolean =>
 
 const motionType = (image: LoadedImage): string =>
   image.mime === "image/jpeg" ? "image/jpeg" : "image/png";
-
-const visibleRect = (
-  frame: ViewFrame,
-  image: LoadedImage
-): { x: number; y: number; width: number; height: number } => {
-  const back = invertMatrix3(frame.matrix);
-  const { width, height } = frame.layout;
-  const corners = [
-    applyHomography(back, { x: 0, y: 0 }),
-    applyHomography(back, { x: width, y: 0 }),
-    applyHomography(back, { x: 0, y: height }),
-    applyHomography(back, { x: width, y: height }),
-  ];
-  const x0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.x))));
-  const y0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.y))));
-  const x1 = Math.min(
-    image.width,
-    Math.ceil(Math.max(...corners.map((c) => c.x)))
-  );
-  const y1 = Math.min(
-    image.height,
-    Math.ceil(Math.max(...corners.map((c) => c.y)))
-  );
-  return {
-    height: Math.max(1, y1 - y0),
-    width: Math.max(1, x1 - x0),
-    x: x0,
-    y: y0,
-  };
-};
 
 const childOf = <K extends "img" | "canvas">(
   container: HTMLElement,
@@ -163,30 +132,17 @@ export const bindPhoto = (
     if (!image || !isAffine(frame.matrix)) {
       return;
     }
-    const { dpr } = frame.layout;
-    const [a, c, , b, d] = frame.matrix;
-    const devicePerSource = Math.sqrt(Math.abs(a * d - b * c)) * dpr;
-    const previewPerSource = image.preview.width / image.width;
-    const ratio = devicePerSource / previewPerSource;
-    const whole = { height: image.height, width: image.width, x: 0, y: 0 };
-    let bitmap: ImageBitmap | null = null;
-    let region = whole;
-    if (ratio <= 1 / DETAIL) {
-      bitmap = await resampleOff(image.id, ratio);
-    } else if (ratio > DETAIL && previewPerSource < 1) {
-      region = visibleRect(frame, image);
-      bitmap = await regionOff(
-        image.source,
-        region,
-        Math.max(1, Math.round(region.width * devicePerSource)),
-        Math.max(1, Math.round(region.height * devicePerSource))
-      );
+    const current = image;
+    const { refine } = await import("./sharpen");
+    if (ticket !== token) {
+      return;
     }
+    const { bitmap, region } = await refine(frame, current);
     if (ticket !== token || !settled()) {
       bitmap?.close();
       return;
     }
-    const source = bitmap ?? image.preview;
+    const source = bitmap ?? current.preview;
     paint(frame, source, region, source);
     bitmap?.close();
     drawn = {
@@ -309,6 +265,7 @@ export const bindPhoto = (
     }
   };
 
+  afterPaint(async () => await import("./sharpen"));
   load();
   const offImage = onImage(cropper, load);
   const offFrame = view.onFrame(write);

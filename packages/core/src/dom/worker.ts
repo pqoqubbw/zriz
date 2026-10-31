@@ -1,11 +1,5 @@
 import { imageKernel } from "./kernel";
-import type {
-  DecodeReply,
-  Kernel,
-  Region,
-  RenderJob,
-  RenderReply,
-} from "./kernel";
+import type { DecodeReply, Kernel, Region } from "./kernel";
 
 interface Waiting {
   resolve: (value: unknown) => void;
@@ -18,100 +12,102 @@ interface Reply {
   error?: string;
 }
 
-let worker: Worker | null | undefined;
-let local: Kernel | null = null;
-let next = 0;
-const waiting = new Map<number, Waiting>();
+export interface Lane<K> {
+  call: (op: string, args: readonly unknown[]) => Promise<unknown>;
+  here: () => K;
+  active: () => boolean;
+}
 
 const program = (kernel: string): string =>
-  `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:String(error&&error.message||error)})}}`;
+  `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:error instanceof ReferenceError?"zriz:worker:failed":String(error&&error.message||error)})}}`;
 
 const isReply = (value: unknown): value is Reply =>
   typeof value === "object" && value !== null && "id" in value;
 
-const spawn = (): Worker | null => {
-  if (worker !== undefined) {
-    return worker;
-  }
-  worker = null;
-  if (
-    typeof Worker !== "function" ||
-    typeof OffscreenCanvas !== "function" ||
-    typeof Blob !== "function"
-  ) {
-    return worker;
-  }
-  try {
-    const url = URL.createObjectURL(
-      new Blob([program(imageKernel.toString())], { type: "text/javascript" })
-    );
-    const created = new Worker(url);
-    created.addEventListener("message", (event: MessageEvent<unknown>) => {
-      const reply = event.data;
-      if (!isReply(reply)) {
-        return;
-      }
-      const entry = waiting.get(reply.id);
-      waiting.delete(reply.id);
-      if (reply.error === undefined) {
-        entry?.resolve(reply.result);
-      } else {
-        entry?.reject(new Error(reply.error));
-      }
-    });
-    created.addEventListener("error", () => {
-      worker = null;
-      for (const entry of waiting.values()) {
-        entry.reject(new Error("zriz:worker:failed"));
-      }
-      waiting.clear();
-    });
-    worker = created;
-  } catch {
+export const lane = <K>(kernel: () => K): Lane<K> => {
+  let worker: Worker | null | undefined;
+  let local: K | null = null;
+  let next = 0;
+  const waiting = new Map<number, Waiting>();
+
+  const spawn = (): Worker | null => {
+    if (worker !== undefined) {
+      return worker;
+    }
     worker = null;
-  }
-  return worker;
+    if (
+      typeof Worker !== "function" ||
+      typeof OffscreenCanvas !== "function" ||
+      typeof Blob !== "function"
+    ) {
+      return worker;
+    }
+    try {
+      const url = URL.createObjectURL(
+        new Blob([program(kernel.toString())], { type: "text/javascript" })
+      );
+      const created = new Worker(url);
+      created.addEventListener("message", (event: MessageEvent<unknown>) => {
+        const reply = event.data;
+        if (!isReply(reply)) {
+          return;
+        }
+        const entry = waiting.get(reply.id);
+        waiting.delete(reply.id);
+        if (reply.error === undefined) {
+          entry?.resolve(reply.result);
+        } else {
+          entry?.reject(new Error(reply.error));
+        }
+      });
+      created.addEventListener("error", () => {
+        worker = null;
+        for (const entry of waiting.values()) {
+          entry.reject(new Error("zriz:worker:failed"));
+        }
+        waiting.clear();
+      });
+      worker = created;
+    } catch {
+      worker = null;
+    }
+    return worker;
+  };
+
+  return {
+    active: () => worker !== null && worker !== undefined,
+    call: async (op, args) => {
+      const target = spawn();
+      if (!target) {
+        throw new Error("zriz:worker:none");
+      }
+      next += 1;
+      const id = next;
+      const result = new Promise<unknown>((resolve, reject) => {
+        waiting.set(id, { reject, resolve });
+      });
+      target.postMessage({ args, id, op }, []);
+      return await result;
+    },
+    here: () => {
+      local ??= kernel();
+      return local;
+    },
+  };
 };
-
-const direct = (): Kernel => {
-  local ??= imageKernel();
-  return local;
-};
-
-const call = async (
-  op: keyof Kernel,
-  args: readonly unknown[]
-): Promise<unknown> => {
-  const target = spawn();
-  if (!target) {
-    throw new Error("zriz:worker:none");
-  }
-  next += 1;
-  const id = next;
-  const result = new Promise<unknown>((resolve, reject) => {
-    waiting.set(id, { reject, resolve });
-  });
-  target.postMessage({ args, id, op }, []);
-  return await result;
-};
-
-const isDecode = (value: unknown): value is DecodeReply =>
-  typeof value === "object" && value !== null && "preview" in value;
-
-const isRender = (value: unknown): value is RenderReply =>
-  typeof value === "object" && value !== null && "blob" in value;
 
 const fallback = (error: unknown): boolean =>
   error instanceof Error && error.message.startsWith("zriz:worker:");
 
-const via = async <T>(
-  op: keyof Kernel,
+export const via = async <K, T>(
+  target: Lane<K>,
+  op: keyof K & string,
   args: readonly unknown[],
   check: (value: unknown) => value is T,
-  here: (kernel: Kernel) => Promise<T>
+  here: (kernel: K) => Promise<T>
 ): Promise<T> => {
   try {
-    const reply = await call(op, args);
+    const reply = await target.call(op, args);
     if (check(reply)) {
       return reply;
     }
@@ -120,8 +116,18 @@ const via = async <T>(
       throw error;
     }
   }
-  return await here(direct());
+  return await here(target.here());
 };
+
+let decoder: Lane<Kernel> | undefined;
+
+const decoding = (): Lane<Kernel> => {
+  decoder ??= lane(imageKernel);
+  return decoder;
+};
+
+const isDecode = (value: unknown): value is DecodeReply =>
+  typeof value === "object" && value !== null && "preview" in value;
 
 const isBitmap = (value: unknown): value is ImageBitmap =>
   typeof ImageBitmap === "function" && value instanceof ImageBitmap;
@@ -136,6 +142,7 @@ export const decodeOff = async (
   keep?: number
 ): Promise<DecodeReply> =>
   await via(
+    decoding(),
     "decode",
     [blob, edge, keep],
     isDecode,
@@ -146,13 +153,14 @@ export const keepOff = async (
   id: number,
   bitmap: ImageBitmap
 ): Promise<void> => {
-  await via("keep", [id, bitmap], isNothing, async (kernel) => {
+  await via(decoding(), "keep", [id, bitmap], isNothing, async (kernel) => {
     await kernel.keep(id, bitmap);
   });
 };
 
 export const motionOff = async (id: number, type: string): Promise<Blob> =>
   await via(
+    decoding(),
     "motion",
     [id, type],
     isBlob,
@@ -164,6 +172,7 @@ export const resampleOff = async (
   scale: number
 ): Promise<ImageBitmap> =>
   await via(
+    decoding(),
     "resample",
     [id, scale],
     isBitmap,
@@ -177,6 +186,7 @@ export const regionOff = async (
   height: number
 ): Promise<ImageBitmap> =>
   await via(
+    decoding(),
     "region",
     [source, rect, width, height],
     isBitmap,
@@ -184,27 +194,9 @@ export const regionOff = async (
   );
 
 export const releaseOff = async (id: number): Promise<void> => {
-  await via("release", [id], isNothing, async (kernel) => {
+  await via(decoding(), "release", [id], isNothing, async (kernel) => {
     await kernel.release(id);
   });
 };
 
-export const renderOff = async (job: RenderJob): Promise<RenderReply> => {
-  try {
-    const reply = await call("render", [job]);
-    if (isRender(reply)) {
-      return reply;
-    }
-  } catch (error) {
-    if (!fallback(error)) {
-      throw error;
-    }
-  }
-  return await direct().render(job);
-};
-
-export const workerActive = (): boolean =>
-  worker !== null && worker !== undefined;
-
-export const renderHere = async (job: RenderJob): Promise<RenderReply> =>
-  await direct().render(job);
+export const workerActive = (): boolean => decoder?.active() ?? false;

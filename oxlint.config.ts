@@ -40,7 +40,10 @@ export default defineConfig({
       rules: { "promise/avoid-new": "off" },
     },
     {
-      files: ["packages/core/src/dom/kernel.ts"],
+      files: [
+        "packages/core/src/dom/kernel.ts",
+        "packages/core/src/dom/render-kernel.ts",
+      ],
       rules: {
         "eslint/no-await-in-loop": "off",
         "promise/avoid-new": "off",
@@ -52,6 +55,14 @@ export default defineConfig({
       rules: {
         "react/hook-use-state": "off",
       },
+    },
+    {
+      files: [
+        "packages/react/src/parts/**",
+        "packages/react/test/**",
+        "test/react18/**",
+      ],
+      rules: { "eslint/prefer-arrow-callback": "off" },
     },
     {
       files: ["apps/docs/demos/**"],

@@ -13,3 +13,5 @@ const scale = coverScale(
 ```
 
 Most apps want [`@zriz/react`](https://www.npmjs.com/package/@zriz/react) instead.
+
+`@zriz/core/dom/render`, `@zriz/core/dom/svg`, `@zriz/core/dom/source` and `@zriz/core/dom/sharpen` exist so `@zriz/core/dom` can load them on demand. They are internal: don't import them, their exports can change in any release.

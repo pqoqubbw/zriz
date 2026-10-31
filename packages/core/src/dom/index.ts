@@ -1,24 +1,16 @@
-export {
-  ZrizError,
-  attachImage,
-  defaultPreviewEdge,
-  exportCrop,
-  exportImage,
-  imageOf,
-  loadImage,
-  onImage,
-  outputLimit,
-  sniff,
-  svgSize,
-} from "./image";
+export { ZrizError } from "./error";
+export type { ZrizErrorCode } from "./error";
+export { exportCrop, exportImage } from "./export";
+export { defaultPreviewEdge, loadImage, outputLimit } from "./image";
 export type {
   ExportOptions,
   ExportResult,
   ImageSource,
   LoadOptions,
   LoadedImage,
-  ZrizErrorCode,
 } from "./image";
+export { attachImage, imageOf, onImage } from "./image-store";
+export { sniff, svgSize } from "./svg-size";
 export { bindPhoto } from "./photo";
 export { cropShapeOf, setCropShape } from "./shape";
 export {

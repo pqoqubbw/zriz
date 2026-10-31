@@ -77,6 +77,29 @@ describe("photo layer", () => {
     }
   });
 
+  it("turns sharp after the first settle when the image arrives with the binder", async () => {
+    const image = await loadImage(await stripes(), { previewEdge: 1024 });
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const photo = document.createElement("div");
+    viewport.append(photo);
+    document.body.append(viewport);
+    const cropper = createCropper();
+    const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
+    attachImage(cropper, image);
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+      attachImage(cropper, null);
+      viewOf(cropper).destroy();
+      cropper.destroy();
+      viewport.remove();
+    });
+    await sharp(photo);
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("visible");
+  });
+
   it("shows a sharp canvas at rest and the moving image during a gesture", async () => {
     const { cropper, photo } = await mount(1024);
     await sharp(photo);
