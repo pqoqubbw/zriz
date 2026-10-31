@@ -40,6 +40,11 @@
   }
   :where([data-zriz-item="viewport"], [data-zriz-item="dial"]) {
     cursor: grab;
+    overflow: clip;
+  }
+  :where([data-zriz-item="dial"]) {
+    height: 40px;
+    overflow-y: visible;
   }
   :where([data-panning], [data-pinching]) :where([data-zriz-item="viewport"]),
   :where([data-zriz-item="dial"][data-dragging]) {

@@ -709,6 +709,9 @@ export const viewportController = (
         view.setLayout(null);
         return;
       }
+      if (getComputedStyle(next).position === "static") {
+        next.style.position = "relative";
+      }
       next.style.touchAction = "none";
       next.style.userSelect = "none";
       next.style.setProperty("-webkit-user-select", "none");

@@ -71,6 +71,29 @@ describe("default styles", () => {
     expect(corner.scale).toBe("-1");
   });
 
+  it("gives a bare viewport and dial a working box", async () => {
+    await render(
+      <div style={{ width: 361 }}>
+        <Cropper.Root image={{ height: 300, width: 400 }}>
+          <Cropper.Viewport style={{ height: 200 }}>
+            <Cropper.Area aria-label="Crop" />
+          </Cropper.Viewport>
+          <Cropper.Dial aria-label="Straighten">
+            <Cropper.DialTicks />
+          </Cropper.Dial>
+        </Cropper.Root>
+      </div>
+    );
+    await frames(3);
+    const viewport = getComputedStyle(pick('[data-zriz-item="viewport"]'));
+    expect(viewport.position).toBe("relative");
+    expect(viewport.overflow).toBe("clip");
+    const dial = pick('[data-zriz-item="dial"]');
+    expect(dial.getBoundingClientRect().height).toBe(40);
+    expect(getComputedStyle(dial).overflowX).toBe("clip");
+    expect(getComputedStyle(dial).overflowY).toBe("visible");
+  });
+
   it("paints edge bars and ticks", async () => {
     const api = createRef<CropperApi>();
     await render(<Editor api={api} />);
@@ -146,17 +169,22 @@ describe("default styles", () => {
       "none"
     );
   });
+
   it("lets a part pin its own scheme inside a themed page", async () => {
-    render(
+    await render(
       <div className="dark">
         <Cropper.Root image={{ height: 300, width: 400 }}>
           <Cropper.Dial aria-label="Straighten" className="light" />
           <Cropper.Zoom aria-label="Zoom" />
         </Cropper.Root>
-      </div>,
+      </div>
     );
     await frames();
-    expect(getComputedStyle(pick('[data-zriz-item="dial"]')).colorScheme).toBe("light");
-    expect(getComputedStyle(pick('[data-zriz-item="zoom"]')).colorScheme).toBe("dark");
+    expect(getComputedStyle(pick('[data-zriz-item="dial"]')).colorScheme).toBe(
+      "light"
+    );
+    expect(getComputedStyle(pick('[data-zriz-item="zoom"]')).colorScheme).toBe(
+      "dark"
+    );
   });
 });
