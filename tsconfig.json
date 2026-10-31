@@ -10,5 +10,6 @@
     "*.ts",
     "packages/*/test",
     "packages/*/tsdown.config.ts"
-  ]
+  ],
+  "exclude": ["test/react18"]
 }

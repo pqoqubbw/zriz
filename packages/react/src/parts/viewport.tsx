@@ -2,13 +2,12 @@
 
 import { viewportController } from "@zriz/core/dom";
 import type { WheelMode } from "@zriz/core/dom";
-import { useCallback, useEffect, useState } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { native, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
 
@@ -23,14 +22,13 @@ export interface ViewportProps extends PartProps<"div", ViewportState> {
   rotateGesture?: boolean;
 }
 
-export const Viewport = ({
-  wheel = "pan",
-  rotateGesture = true,
-  render,
-  className,
-  ref,
-  ...props
-}: ViewportProps): ReactElement => {
+export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  ViewportProps
+>(function Viewport(
+  { wheel = "pan", rotateGesture = true, render, className, ...props },
+  ref
+) {
   const cropper = useCropperContext();
   const [controller] = useState(() =>
     viewportController(cropper, { rotateGesture, wheel })
@@ -39,7 +37,7 @@ export const Viewport = ({
     controller.setOptions({ rotateGesture, wheel });
   }, [controller, rotateGesture, wheel]);
   const own = useCallback(
-    (element: HTMLDivElement | null) => {
+    (element: HTMLDivElement) => {
       controller.setElement(element);
       return () => {
         controller.setElement(null);
@@ -67,4 +65,4 @@ export const Viewport = ({
     state: { interacting },
     tag: "div",
   });
-};
+});

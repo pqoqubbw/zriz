@@ -10,18 +10,19 @@ import {
 } from "@zriz/core/dom";
 import type { Chrome, LoadedImage } from "@zriz/core/dom";
 import {
+  forwardRef,
   useEffect,
   useId,
   useImperativeHandle,
   useMemo,
   useSyncExternalStore,
 } from "react";
-import type { ReactElement, Ref } from "react";
+import type { Ref } from "react";
 
 import { CropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { RootContextValue, useLatest } from "../part";
-import type { PartProps, RootContext } from "../part";
+import type { Part, PartProps, RootContext } from "../part";
 import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { useRender } from "../use-render";
@@ -64,36 +65,41 @@ const orientationOf = (aspect: CropperSnapshot["aspect"]): string => {
   return aspect > 1 ? "landscape" : "portrait";
 };
 
-export const Root = ({
-  cropper: external,
-  image,
-  value,
-  aspect,
-  rotation,
-  zoom,
-  defaultValue,
-  minSize,
-  maxZoom,
-  focalLength,
-  disabled,
-  onValueChange,
-  onValueCommit,
-  plugins,
-  src,
-  crossOrigin,
-  shape = "rect",
-  motion = "auto",
-  recentreDelay,
-  dir = "ltr",
-  locale,
-  actionsRef,
-  onLoad,
-  onError,
-  render,
-  className,
-  ref,
-  ...html
-}: RootProps): ReactElement => {
+export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  RootProps
+>(function Root(
+  {
+    cropper: external,
+    image,
+    value,
+    aspect,
+    rotation,
+    zoom,
+    defaultValue,
+    minSize,
+    maxZoom,
+    focalLength,
+    disabled,
+    onValueChange,
+    onValueCommit,
+    plugins,
+    src,
+    crossOrigin,
+    shape = "rect",
+    motion = "auto",
+    recentreDelay,
+    dir = "ltr",
+    locale,
+    actionsRef,
+    onLoad,
+    onError,
+    render,
+    className,
+    ...html
+  },
+  ref
+) {
   const cropper = useCropper({
     aspect: shape === "circle" ? 1 : aspect,
     cropper: external,
@@ -192,8 +198,10 @@ export const Root = ({
     tag: "div",
   });
   return (
-    <CropperContext value={cropper}>
-      <RootContextValue value={context}>{element}</RootContextValue>
-    </CropperContext>
+    <CropperContext.Provider value={cropper}>
+      <RootContextValue.Provider value={context}>
+        {element}
+      </RootContextValue.Provider>
+    </CropperContext.Provider>
   );
-};
+});

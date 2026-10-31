@@ -18,7 +18,9 @@
     "src"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -27,6 +29,11 @@
     "./cropper": {
       "types": "./dist/cropper.d.ts",
       "default": "./dist/cropper.js"
+    },
+    "./warn": {
+      "types": "./dist/warn.d.ts",
+      "production": "./dist/warn-off.js",
+      "default": "./dist/warn.js"
     },
     "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
@@ -49,6 +56,7 @@
     "@size-limit/preset-small-lib": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "magic-string": "1.4.5",
     "publint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -57,34 +65,12 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "@types/react": "^18.2.0 || ^19.0.0",
+    "react": "^18.2.0 || ^19.0.0"
   },
-  "size-limit": [
-    {
-      "name": "useCoverScale",
-      "path": "dist/index.js",
-      "import": "{ useCoverScale }",
-      "limit": "1 kB"
-    },
-    {
-      "name": "avatar",
-      "path": "dist/cropper.js",
-      "import": "{ Root, Viewport, Image, Mask, Area }",
-      "ignore": [
-        "react",
-        "react-dom"
-      ],
-      "limit": "19 kB"
-    },
-    {
-      "name": "editor (every part)",
-      "path": "dist/cropper.js",
-      "import": "*",
-      "ignore": [
-        "react",
-        "react-dom"
-      ],
-      "limit": "24 kB"
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
     }
-  ]
+  }
 }

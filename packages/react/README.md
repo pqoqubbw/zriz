@@ -13,3 +13,17 @@ const scale = useCoverScale({
   rotation: 7,
 });
 ```
+
+## Without a bundler
+
+The parts import their dev-only accessibility warning from `@zriz/react/warn`. An import map needs an entry for it next to `@zriz/react/cropper`, `@zriz/core` and `@zriz/core/dom`:
+
+```json
+{
+  "imports": {
+    "@zriz/react/warn": "/node_modules/@zriz/react/dist/warn-off.js"
+  }
+}
+```
+
+Point it at `dist/warn.js` during development to keep the warning.

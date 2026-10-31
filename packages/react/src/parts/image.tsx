@@ -1,13 +1,12 @@
 "use client";
 
 import { bindPhoto } from "@zriz/core/dom";
-import { useCallback } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
 
@@ -20,18 +19,14 @@ export interface ImageProps extends PartProps<"div", ImageState> {
   alt?: string;
 }
 
-export const Image = ({
-  alt = "",
-  render,
-  className,
-  ref,
-  ...props
-}: ImageProps): ReactElement => {
+export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  ImageProps
+>(function Image({ alt = "", render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const ready = useCropperState((s) => s.ready);
   const own = useCallback(
-    (element: HTMLDivElement | null) =>
-      element ? bindPhoto(cropper, element) : undefined,
+    (element: HTMLDivElement) => bindPhoto(cropper, element),
     [cropper]
   );
   return useRender({
@@ -53,4 +48,4 @@ export const Image = ({
     state: { ready },
     tag: "div",
   });
-};
+});

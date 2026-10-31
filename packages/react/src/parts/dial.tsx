@@ -1,21 +1,21 @@
 "use client";
 
 import { dialAria, dialHandlers, dialState } from "@zriz/core/dom";
+import { warnUnlabelled } from "@zriz/react/warn";
 import {
-  use,
+  forwardRef,
+  useContext,
   useCallback,
   useEffect,
   useState,
   useSyncExternalStore,
 } from "react";
-import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { RootContextValue, native, useElementBox, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
-import { warnUnlabelled } from "../warn";
 
 export interface DialState {
   dragging: boolean;
@@ -26,15 +26,12 @@ export interface DialProps extends PartProps<"div", DialState> {
   format?: Intl.NumberFormatOptions;
 }
 
-export const Dial = ({
-  format,
-  render,
-  className,
-  ref,
-  ...props
-}: DialProps): ReactElement => {
+export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  DialProps
+>(function Dial({ format, render, className, ...props }, ref) {
   const cropper = useCropperContext();
-  const { dir, locale } = use(RootContextValue);
+  const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
   const [handlers] = useState(() => dialHandlers(cropper, { dir }, box.get));
   const state = dialState(cropper);
@@ -47,15 +44,13 @@ export const Dial = ({
     () => false
   );
   const own = useCallback(
-    (node: HTMLDivElement | null) => {
+    (node: HTMLDivElement) => {
       box.set(node);
       warnUnlabelled("Dial", node);
-      const off = node
-        ? dialAria(cropper, node, { format, locale })
-        : undefined;
+      const off = dialAria(cropper, node, { format, locale });
       return () => {
         box.set(null);
-        off?.();
+        off();
       };
     },
     [box, cropper, format, locale]
@@ -91,4 +86,4 @@ export const Dial = ({
     state: { dragging },
     tag: "div",
   });
-};
+});

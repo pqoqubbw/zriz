@@ -1,13 +1,12 @@
 "use client";
 
 import { bindMask } from "@zriz/core/dom";
-import { use, useCallback } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useContext, useCallback } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { RootContextValue, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
 
 export interface MaskState {
@@ -16,17 +15,14 @@ export interface MaskState {
 
 export type MaskProps = PartProps<"div", MaskState>;
 
-export const Mask = ({
-  render,
-  className,
-  ref,
-  ...props
-}: MaskProps): ReactElement => {
+export const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  MaskProps
+>(function Mask({ render, className, ...props }, ref) {
   const cropper = useCropperContext();
-  const { shape } = use(RootContextValue);
+  const { shape } = useContext(RootContextValue);
   const own = useCallback(
-    (element: HTMLDivElement | null) =>
-      element ? bindMask(cropper, element, shape) : undefined,
+    (element: HTMLDivElement) => bindMask(cropper, element, shape),
     [cropper, shape]
   );
   return useRender({
@@ -40,4 +36,4 @@ export const Mask = ({
     state: { shape },
     tag: "div",
   });
-};
+});

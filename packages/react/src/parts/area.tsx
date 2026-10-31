@@ -1,16 +1,15 @@
 "use client";
 
 import { areaKeyHandlers, bindArea } from "@zriz/core/dom";
-import { use, useCallback, useState } from "react";
-import type { ReactElement } from "react";
+import { warnUnlabelled } from "@zriz/react/warn";
+import { forwardRef, useContext, useCallback, useState } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { RootContextValue, native, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
-import { warnUnlabelled } from "../warn";
 
 export interface AreaState {
   shape: "rect" | "circle";
@@ -22,23 +21,18 @@ export interface AreaProps extends PartProps<"div", AreaState> {
   liveVariables?: boolean;
 }
 
-export const Area = ({
-  liveVariables = false,
-  render,
-  className,
-  ref,
-  ...props
-}: AreaProps): ReactElement => {
+export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  AreaProps
+>(function Area({ liveVariables = false, render, className, ...props }, ref) {
   const cropper = useCropperContext();
-  const { shape, instructions } = use(RootContextValue);
+  const { shape, instructions } = useContext(RootContextValue);
   const interacting = useCropperState((s) => s.interacting !== null);
   const [keys] = useState(() => areaKeyHandlers(cropper));
   const own = useCallback(
-    (element: HTMLDivElement | null) => {
+    (element: HTMLDivElement) => {
       warnUnlabelled("Area", element);
-      return element
-        ? bindArea(cropper, element, { liveVariables })
-        : undefined;
+      return bindArea(cropper, element, { liveVariables });
     },
     [cropper, liveVariables]
   );
@@ -64,4 +58,4 @@ export const Area = ({
     state: { interacting, shape },
     tag: "div",
   });
-};
+});

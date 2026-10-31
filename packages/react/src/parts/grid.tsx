@@ -2,12 +2,12 @@
 
 import { viewOf } from "@zriz/core/dom";
 import type { Grid as GridMode } from "@zriz/core/dom";
-import { useState, useSyncExternalStore } from "react";
+import { forwardRef, useState, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
 
 export interface GridState {
@@ -37,15 +37,15 @@ const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
   ]);
 };
 
-const coarseLines = linesFor("coarse");
-const fineLines = linesFor("fine");
+const lines: Partial<Record<"coarse" | "fine", ReactElement[]>> = {};
 
-export const Grid = ({
-  render,
-  className,
-  ref,
-  ...props
-}: GridProps): ReactElement => {
+const linesOf = (mode: "coarse" | "fine"): ReactElement[] =>
+  (lines[mode] ??= linesFor(mode));
+
+export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  GridProps
+>(function Grid({ render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const view = viewOf(cropper);
   const grid = useSyncExternalStore(
@@ -62,7 +62,7 @@ export const Grid = ({
     props: mergeProps(
       {
         "aria-hidden": true,
-        children: shown === "fine" ? fineLines : coarseLines,
+        children: linesOf(shown),
         "data-grid": grid,
         "data-visible": grid === "none" ? undefined : "",
         "data-zriz-item": "grid",
@@ -75,4 +75,4 @@ export const Grid = ({
     state: { grid },
     tag: "div",
   });
-};
+});

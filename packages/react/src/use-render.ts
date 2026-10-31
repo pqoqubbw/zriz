@@ -1,7 +1,7 @@
 "use client";
 
-import { createElement, isValidElement, useMemo } from "react";
-import type { ReactElement, Ref } from "react";
+import { createElement, isValidElement, useMemo, version } from "react";
+import type { JSX, ReactElement, Ref } from "react";
 
 import { mergeProps, mergeRefs } from "./merge-props";
 
@@ -9,10 +9,25 @@ export type RenderProp<S> =
   | ReactElement
   | ((props: Record<string, unknown>, state: S) => ReactElement);
 
+const legacy = Number(version.slice(0, version.indexOf("."))) < 19;
+
+const isRef = (value: unknown): value is Ref<HTMLElement> =>
+  typeof value === "function" ||
+  (typeof value === "object" && value !== null && "current" in value);
+
+const refOf = (element: ReactElement): Ref<HTMLElement> | undefined => {
+  const holder: unknown = legacy ? element : element.props;
+  const ref =
+    typeof holder === "object" && holder !== null && "ref" in holder
+      ? holder.ref
+      : undefined;
+  return isRef(ref) ? ref : undefined;
+};
+
 export type ClassName<S> = string | ((state: S) => string | undefined);
 
 export interface RenderOptions<S> {
-  tag: keyof React.JSX.IntrinsicElements;
+  tag: keyof JSX.IntrinsicElements;
   state: S;
   props: Record<string, unknown>;
   ref?: Ref<HTMLElement> | undefined;
@@ -30,9 +45,7 @@ export const useRender = <S>({
 }: RenderOptions<S>): ReactElement => {
   const resolved =
     typeof className === "function" ? className(state) : className;
-  const elementRef = isValidElement<{ ref?: Ref<HTMLElement> }>(render)
-    ? render.props.ref
-    : undefined;
+  const elementRef = isValidElement(render) ? refOf(render) : undefined;
   const merged = useMemo(
     () => (elementRef ? mergeRefs(ref, elementRef) : ref),
     [ref, elementRef]

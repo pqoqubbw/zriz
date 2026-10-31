@@ -1,13 +1,12 @@
 "use client";
 
 import { bindDialValue } from "@zriz/core/dom";
-import { useCallback } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { useLatest, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
 
 export interface DialValueProps extends PartProps<"span", object> {
@@ -15,24 +14,17 @@ export interface DialValueProps extends PartProps<"span", object> {
   format?: (rotation: number) => string;
 }
 
-export const DialValue = ({
-  format,
-  render,
-  className,
-  ref,
-  ...props
-}: DialValueProps): ReactElement => {
+export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
+  HTMLSpanElement,
+  DialValueProps
+>(function DialValue({ format, render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const latest = useLatest(format);
   const own = useCallback(
-    (node: HTMLSpanElement | null) =>
-      node
-        ? bindDialValue(cropper, node, (rotation) =>
-            latest.current
-              ? latest.current(rotation)
-              : String(Math.round(rotation))
-          )
-        : undefined,
+    (node: HTMLSpanElement) =>
+      bindDialValue(cropper, node, (rotation) =>
+        latest.current ? latest.current(rotation) : String(Math.round(rotation))
+      ),
     [cropper, latest]
   );
   return useRender({
@@ -46,4 +38,4 @@ export const DialValue = ({
     state: {},
     tag: "span",
   });
-};
+});

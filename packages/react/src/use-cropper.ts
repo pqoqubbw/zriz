@@ -9,7 +9,7 @@ import type {
   CropperSnapshot,
   CropValue,
 } from "@zriz/core";
-import { use, useEffect, useState, useSyncExternalStore } from "react";
+import { useContext, useEffect, useState, useSyncExternalStore } from "react";
 
 import { CropperContext } from "./context";
 import { useIsomorphicLayoutEffect, useLatest } from "./part";
@@ -110,7 +110,7 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
 };
 
 const useTarget = (cropper?: Cropper): Cropper => {
-  const context = use(CropperContext);
+  const context = useContext(CropperContext);
   const target = cropper ?? context;
   if (!target) {
     throw new Error("zriz: pass a cropper or render inside <Cropper.Root>");

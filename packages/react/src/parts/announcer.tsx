@@ -1,36 +1,13 @@
 "use client";
 
 import type { CommitDetails, CropValue } from "@zriz/core";
-import { use, useEffect, useState } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useEffect, useState } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
-import { RootContextValue, useLatest } from "../part";
-import type { PartProps } from "../part";
+import { useLatest } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
-
-export type InstructionsProps = PartProps<"div", object>;
-
-export const Instructions = ({
-  render,
-  className,
-  ref,
-  ...props
-}: InstructionsProps): ReactElement => {
-  const { instructions } = use(RootContextValue);
-  return useRender({
-    className,
-    props: mergeProps(
-      { "data-zriz-item": "instructions", hidden: true, id: instructions },
-      props
-    ),
-    ref,
-    render,
-    state: {},
-    tag: "div",
-  });
-};
 
 export interface AnnouncerProps extends Omit<
   PartProps<"div", object>,
@@ -40,13 +17,10 @@ export interface AnnouncerProps extends Omit<
   announce: (value: CropValue, details: CommitDetails) => string | null;
 }
 
-export const Announcer = ({
-  announce,
-  render,
-  className,
-  ref,
-  ...props
-}: AnnouncerProps): ReactElement => {
+export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  AnnouncerProps
+>(function Announcer({ announce, render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const latest = useLatest(announce);
   const [message, setMessage] = useState("");
@@ -81,4 +55,4 @@ export const Announcer = ({
     state: {},
     tag: "div",
   });
-};
+});

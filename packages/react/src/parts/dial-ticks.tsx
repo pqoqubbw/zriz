@@ -1,13 +1,12 @@
 "use client";
 
 import { DIAL_TICKS, bindDialTicks, tickData } from "@zriz/core/dom";
-import { useCallback } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useRender } from "../use-render";
 
 export interface DialTicksState {
@@ -19,17 +18,13 @@ export interface DialTicksProps extends PartProps<"div", DialTicksState> {
   count?: number;
 }
 
-export const DialTicks = ({
-  count = DIAL_TICKS,
-  render,
-  className,
-  ref,
-  ...props
-}: DialTicksProps): ReactElement => {
+export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  DialTicksProps
+>(function DialTicks({ count = DIAL_TICKS, render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const own = useCallback(
-    (node: HTMLDivElement | null) =>
-      node ? bindDialTicks(cropper, node, count) : undefined,
+    (node: HTMLDivElement) => bindDialTicks(cropper, node, count),
     [cropper, count]
   );
   const ticks = Array.from({ length: count }, (_, i) => {
@@ -54,4 +49,4 @@ export const DialTicks = ({
     state: { count },
     tag: "div",
   });
-};
+});

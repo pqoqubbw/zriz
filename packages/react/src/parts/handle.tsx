@@ -2,13 +2,12 @@
 
 import { handleHandlers } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
-import { useCallback, useMemo, useState } from "react";
-import type { ReactElement } from "react";
+import { forwardRef, useCallback, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
 import { native, useElementBox, useMergedRef } from "../part";
-import type { PartProps } from "../part";
+import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
 
@@ -53,13 +52,10 @@ const placement = (position: HandleEdge): React.CSSProperties => {
   return style;
 };
 
-export const Handle = ({
-  position,
-  render,
-  className,
-  ref,
-  ...props
-}: HandleProps): ReactElement => {
+export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
+  HTMLDivElement,
+  HandleProps
+>(function Handle({ position, render, className, ...props }, ref) {
   const cropper = useCropperContext();
   const box = useElementBox();
   const handlers = useMemo(
@@ -77,7 +73,7 @@ export const Handle = ({
     [cropper, handlers]
   );
   const own = useCallback(
-    (node: HTMLDivElement | null) => {
+    (node: HTMLDivElement) => {
       box.set(node);
       return () => {
         box.set(null);
@@ -107,4 +103,4 @@ export const Handle = ({
     state: { active, position },
     tag: "div",
   });
-};
+});

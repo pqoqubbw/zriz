@@ -1,12 +1,13 @@
-import { createElement } from "react";
+import { createElement, version } from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import * as Cropper from "../src/cropper";
 
 describe("server rendering", () => {
   it("renders every part without window", () => {
     expect("window" in globalThis).toBeFalsy();
+    const errors = vi.spyOn(console, "error");
     const html = renderToString(
       createElement(
         Cropper.Root,
@@ -49,5 +50,13 @@ describe("server rendering", () => {
     expect(html).toContain('data-zriz-item="root"');
     expect(html).toContain('data-zriz-item="dial-ticks"');
     expect(html.match(/<span/gu)?.length).toBeGreaterThan(41);
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it("runs on the React major its project names", ({ task }) => {
+    expect(version.split(".")[0]).toBe(
+      task.file.projectName?.includes("react18") === true ? "18" : "19"
+    );
   });
 });

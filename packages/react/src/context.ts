@@ -1,13 +1,13 @@
 "use client";
 
 import type { Cropper } from "@zriz/core";
-import { createContext, use } from "react";
+import { createContext, useContext } from "react";
 
 export const CropperContext: React.Context<Cropper | null> =
   createContext<Cropper | null>(null);
 
 export const useCropperContext = (): Cropper => {
-  const cropper = use(CropperContext);
+  const cropper = useContext(CropperContext);
   if (!cropper) {
     throw new Error("zriz: parts must be inside <Cropper.Root>");
   }

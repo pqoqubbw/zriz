@@ -27,10 +27,11 @@ All of check, type, test, lint:package and size must pass before a commit.
 - The packages build with tsdown in unbundle mode, ESM only, per-file output, so `"use client"` stays on each file. tsdown warns that the directive "may not be preserved". It is preserved; check `dist` if in doubt.
 - pnpm refuses releases younger than one day (`minimumReleaseAge`). Pin the previous version instead of turning it off.
 - Test files: `*.test.ts` run in node, `*.browser.test.tsx` run in the three browsers. Property tests for maths use fast-check.
+- The `unit-react18` and `browser-react18` projects run the React tests again on React 18.3, installed in `test/react18`. That folder also type-checks a consumer file against @types/react 18.
 
 ## Rules
 
-- Zero runtime dependencies. `@zriz/core` depends on nothing, `@zriz/react` only on `@zriz/core` with `react` 19+ as a peer. Write it ourselves; a new runtime dependency needs the owner's approval. Dev dependencies are fine.
+- Zero runtime dependencies. `@zriz/core` depends on nothing, `@zriz/react` only on `@zriz/core` with `react` 18.2+ as a peer, one build for 18 and 19. Write it ourselves; a new runtime dependency needs the owner's approval. Dev dependencies are fine.
 - No code comments, TSDoc included. The one exception: a single short line on public props of React parts, because the docs generate API tables from it. Never restate what the code or the name already says.
 - Never add AI attribution to commits, PRs or docs.
 - Local git only. Push, open PRs or publish to npm only when the owner says so.

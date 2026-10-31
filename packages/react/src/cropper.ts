@@ -1,22 +1,23 @@
 "use client";
 
+export { Announcer } from "./parts/announcer";
 export { Area } from "./parts/area";
-export {
-  AspectGroup,
-  AspectItem,
-  Flip,
-  Orientation,
-  Reset,
-  Rotate,
-} from "./parts/buttons";
+export { AspectGroup } from "./parts/aspect-group";
+export { AspectItem } from "./parts/aspect-item";
 export { Dial } from "./parts/dial";
 export { DialTicks } from "./parts/dial-ticks";
 export { DialValue } from "./parts/dial-value";
+export { Flip } from "./parts/flip";
 export { Grid } from "./parts/grid";
 export { Handle } from "./parts/handle";
 export { Image } from "./parts/image";
+export { Instructions } from "./parts/instructions";
 export { Mask } from "./parts/mask";
+export { Orientation } from "./parts/orientation";
+export { Reset } from "./parts/reset";
 export { Root } from "./parts/root";
-export { Announcer, Instructions } from "./parts/text";
+export { Rotate } from "./parts/rotate";
 export { Viewport } from "./parts/viewport";
-export { Zoom, ZoomStep, ZoomThumb } from "./parts/zoom";
+export { Zoom } from "./parts/zoom";
+export { ZoomStep } from "./parts/zoom-step";
+export { ZoomThumb } from "./parts/zoom-thumb";

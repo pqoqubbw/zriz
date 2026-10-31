@@ -18,32 +18,60 @@ const isHandler = (key: string, value: unknown): value is Handler =>
 const isStyle = (value: unknown): value is CSSProperties =>
   typeof value === "object" && value !== null;
 
-export const mergeRefs =
-  <T>(...refs: (Ref<T> | undefined)[]) =>
-  (node: T | null): (() => void) => {
-    const cleanups = refs.map((ref) => {
-      if (typeof ref === "function") {
-        const cleanup = ref(node);
-        return typeof cleanup === "function"
-          ? cleanup
-          : () => {
-              ref(null);
-            };
-      }
-      if (ref) {
-        ref.current = node;
-        return () => {
-          ref.current = null;
+const attach = <T>(
+  ref: Ref<T> | undefined,
+  node: T | null
+): (() => unknown) | null => {
+  if (typeof ref === "function") {
+    const cleanup = ref(node);
+    return typeof cleanup === "function"
+      ? cleanup
+      : () => {
+          ref(null);
         };
-      }
-      return null;
-    });
+  }
+  if (ref && typeof ref === "object") {
+    ref.current = node;
     return () => {
-      for (const cleanup of cleanups) {
-        cleanup?.();
+      ref.current = null;
+    };
+  }
+  return null;
+};
+
+const run = (cleanups: ((() => unknown) | null)[]): void => {
+  for (const cleanup of cleanups) {
+    cleanup?.();
+  }
+};
+
+const noop = (): void => undefined;
+
+export const mergeRefs = <T>(
+  ...refs: (Ref<T> | undefined)[]
+): ((node: T | null) => () => void) => {
+  let cleanups: ((() => unknown) | null)[] | null = null;
+  return (node) => {
+    const previous = cleanups;
+    cleanups = null;
+    if (previous) {
+      run(previous);
+    } else if (node === null) {
+      refs.map((ref) => attach(ref, null));
+    }
+    if (node === null) {
+      return noop;
+    }
+    const mine = refs.map((ref) => attach(ref, node));
+    cleanups = mine;
+    return () => {
+      if (cleanups === mine) {
+        cleanups = null;
+        run(mine);
       }
     };
   };
+};
 
 export const mergeProps = (
   ours: Record<string, unknown>,

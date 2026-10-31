@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - apps/*
+  - test/react18
 
 catalog:
   react: 19.3.1

@@ -1,7 +1,14 @@
 "use client";
 
 import type { Cropper } from "@zriz/core";
-import type { ComponentProps, Ref } from "react";
+import type {
+  ComponentPropsWithoutRef,
+  ForwardRefExoticComponent,
+  JSX,
+  PropsWithoutRef,
+  Ref,
+  RefAttributes,
+} from "react";
 import {
   createContext,
   useCallback,
@@ -14,15 +21,25 @@ import {
 import { mergeRefs } from "./merge-props";
 import type { ClassName, RenderProp } from "./use-render";
 
-export type PartProps<T extends keyof React.JSX.IntrinsicElements, S> = Omit<
-  ComponentProps<T>,
+type ElementOf<T> = T extends keyof HTMLElementTagNameMap
+  ? HTMLElementTagNameMap[T]
+  : T extends keyof SVGElementTagNameMap
+    ? SVGElementTagNameMap[T]
+    : Element;
+
+export type PartProps<T extends keyof JSX.IntrinsicElements, S> = Omit<
+  ComponentPropsWithoutRef<T>,
   "className"
 > & {
   /** A class, or a function of the part's state that returns one. */
   className?: ClassName<S>;
   /** Your own element, or a function of props and state that returns one. */
   render?: RenderProp<S>;
-};
+} & RefAttributes<ElementOf<T>>;
+
+export type Part<P, E> = ForwardRefExoticComponent<
+  PropsWithoutRef<P> & RefAttributes<E>
+>;
 
 export interface RootContext {
   shape: "rect" | "circle";
@@ -71,13 +88,17 @@ const createBox = (): ElementBox => {
 
 export const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
 
+const hold = <T>(ref: Ref<T> | undefined, node: T): (() => void) =>
+  mergeRefs<T>(ref)(node);
+
 export const useMergedRef = <T>(
-  own: (node: T | null) => (() => void) | undefined,
+  own: (node: T) => (() => void) | undefined,
   theirs: Ref<T> | undefined
-): ((node: T | null) => () => void) => {
+): ((node: T | null) => void) => {
   const latest = useRef(theirs);
   const node = useRef<T | null>(null);
-  const release = useRef<(() => void) | null>(null);
+  const release = useRef<(() => void) | undefined>(undefined);
+  const unbind = useRef<(() => void) | undefined>(undefined);
   useIsomorphicLayoutEffect(() => {
     if (latest.current === theirs) {
       return;
@@ -85,21 +106,20 @@ export const useMergedRef = <T>(
     latest.current = theirs;
     if (node.current !== null) {
       release.current?.();
-      release.current = mergeRefs<T>(theirs)(node.current);
+      release.current = hold(theirs, node.current);
     }
   }, [theirs]);
   return useCallback(
     (next: T | null) => {
+      release.current?.();
+      release.current = undefined;
+      unbind.current?.();
+      unbind.current = undefined;
       node.current = next;
-      const cleanup = own(next);
-      release.current =
-        next === null ? null : mergeRefs<T>(latest.current)(next);
-      return () => {
-        release.current?.();
-        release.current = null;
-        node.current = null;
-        cleanup?.();
-      };
+      if (next !== null) {
+        unbind.current = own(next);
+        release.current = hold(latest.current, next);
+      }
     },
     [own]
   );
