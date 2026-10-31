@@ -20,6 +20,7 @@ export type {
   ZrizErrorCode,
 } from "./image";
 export { bindPhoto } from "./photo";
+export { cropShapeOf, setCropShape } from "./shape";
 export {
   areaKeyHandlers,
   bindZoomThumb,

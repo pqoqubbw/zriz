@@ -1,6 +1,7 @@
 import type { Cropper } from "../cropper";
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
+import { cropShapeOf } from "./shape";
 import {
   decodeOff,
   keepOff,
@@ -586,6 +587,7 @@ export const exportImage = async (
 };
 
 const attached = new WeakMap<Cropper, LoadedImage>();
+
 const imageListeners = new WeakMap<Cropper, Set<() => void>>();
 
 export const onImage = (
@@ -638,5 +640,8 @@ export const exportCrop = async (
   if (!image) {
     throw new ZrizError("no-image", "zriz: load a photo before exporting");
   }
-  return await exportImage(cropper, image, options);
+  return await exportImage(cropper, image, {
+    ...options,
+    shape: options?.shape ?? cropShapeOf(cropper),
+  });
 };

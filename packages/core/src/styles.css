@@ -44,6 +44,9 @@
   :where([data-edge="left"], [data-edge="right"]) {
     cursor: ew-resize;
   }
+  :where([data-shape="circle"] > [data-zriz-item="handle"][data-edge*="\-"]) {
+    display: none;
+  }
   :where([data-zriz-item="grid"]) {
     opacity: 0;
     transition: opacity 0.3s;

@@ -8,6 +8,7 @@ import {
   exportCrop,
   exportImage,
   loadImage,
+  setCropShape,
 } from "../../src/dom";
 import { workerActive } from "../../src/dom/worker";
 import { workingToSource } from "../../src/geometry";
@@ -96,6 +97,17 @@ describe("load and export", () => {
     ]);
     expect(corner?.[3]).toBe(0);
     expect(centre?.[3]).toBe(255);
+  });
+
+  it("exports a round PNG when the crop was drawn as a circle", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const cropper = createCropper({ defaultValue: { aspect: 1 } });
+    attachImage(cropper, image);
+    setCropShape(cropper, "circle");
+    const result = await exportCrop(cropper);
+    expect(result.type).toBe("image/png");
+    const [corner] = await pixels(result.blob, [[0, 0]]);
+    expect(corner?.[3]).toBe(0);
   });
 
   it("reports the type the browser actually produced", async () => {

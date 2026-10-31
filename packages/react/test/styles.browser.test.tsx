@@ -108,4 +108,42 @@ describe("default styles", () => {
         .backgroundColor
     ).toBe("rgb(0, 128, 0)");
   });
+
+  it("keeps a circle round: aspect 1, other ratios off, no corner handles", async () => {
+    const api = createRef<CropperApi>();
+    await render(
+      <Cropper.Root
+        actionsRef={api}
+        aspect="free"
+        image={{ height: 300, width: 400 }}
+        shape="circle"
+      >
+        <Cropper.Viewport
+          style={{ height: 300, position: "relative", width: 400 }}
+        >
+          <Cropper.Area aria-label="Crop">
+            <Cropper.Handle position="top-left" />
+            <Cropper.Handle position="top" />
+          </Cropper.Area>
+        </Cropper.Viewport>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={16 / 9}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+    const [square, wide] = document.querySelectorAll<HTMLButtonElement>(
+      '[data-zriz-item="aspect-item"]'
+    );
+    expect(square?.disabled).toBeFalsy();
+    expect(wide?.disabled).toBeTruthy();
+    expect(getComputedStyle(pick('[data-edge="top-left"]')).display).toBe(
+      "none"
+    );
+    expect(getComputedStyle(pick('[data-edge="top"]')).display).not.toBe(
+      "none"
+    );
+  });
 });

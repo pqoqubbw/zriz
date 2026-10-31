@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
 import { mergeProps } from "../merge-props";
+import { RootContextValue } from "../part";
 import type { PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { useRender } from "../use-render";
@@ -155,6 +156,7 @@ export const AspectGroup = ({
 
 export interface AspectItemState {
   checked: boolean;
+  disabled: boolean;
 }
 
 export interface AspectItemProps extends PartProps<"button", AspectItemState> {
@@ -171,6 +173,8 @@ export const AspectItem = ({
 }: AspectItemProps): ReactElement => {
   const cropper = useCropperContext();
   const inGroup = use(AspectGroupContext);
+  const { shape } = use(RootContextValue);
+  const disabled = shape === "circle" && value !== 1;
   const checked = useCropperState((s) => s.aspect === value);
   const onClick = useCallback(
     (event: React.MouseEvent) => {
@@ -185,7 +189,9 @@ export const AspectItem = ({
         "aria-checked": inGroup ? checked : undefined,
         "aria-pressed": inGroup ? undefined : checked,
         "data-checked": checked ? "" : undefined,
+        "data-disabled": disabled ? "" : undefined,
         "data-zriz-item": "aspect-item",
+        disabled,
         onClick,
         role: inGroup ? "radio" : undefined,
         type: "button",
@@ -194,7 +200,7 @@ export const AspectItem = ({
     ),
     ref,
     render,
-    state: { checked },
+    state: { checked, disabled },
     tag: "button",
   });
 };

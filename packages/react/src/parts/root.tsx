@@ -1,7 +1,13 @@
 "use client";
 
 import type { Cropper, CropperSnapshot } from "@zriz/core";
-import { ZrizError, attachImage, loadImage, viewOf } from "@zriz/core/dom";
+import {
+  ZrizError,
+  attachImage,
+  loadImage,
+  setCropShape,
+  viewOf,
+} from "@zriz/core/dom";
 import type { Chrome, LoadedImage } from "@zriz/core/dom";
 import {
   useEffect,
@@ -33,10 +39,12 @@ export interface RootProps
   src?: string | Blob | null;
   /** CORS mode for a cross-origin URL. */
   crossOrigin?: "anonymous" | "use-credentials";
-  /** Crop shape. A circle draws a round mask and exports a round PNG. */
+  /** Crop shape. A circle locks the aspect to 1, draws a round mask and exports a round PNG. */
   shape?: "rect" | "circle";
   /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
   motion?: "auto" | "always" | "reduce";
+  /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
+  recentreDelay?: number;
   /** Reading direction for keys and sliders. @default "ltr" */
   dir?: "ltr" | "rtl";
   /** Locale for value text. */
@@ -75,6 +83,7 @@ export const Root = ({
   crossOrigin,
   shape = "rect",
   motion = "auto",
+  recentreDelay,
   dir = "ltr",
   locale,
   actionsRef,
@@ -86,7 +95,7 @@ export const Root = ({
   ...html
 }: RootProps): ReactElement => {
   const cropper = useCropper({
-    aspect,
+    aspect: shape === "circle" ? 1 : aspect,
     cropper: external,
     defaultValue,
     disabled,
@@ -104,8 +113,11 @@ export const Root = ({
   useImperativeHandle(actionsRef, () => cropper, [cropper]);
   const view = viewOf(cropper);
   useEffect(() => {
-    view.setOptions({ motion });
-  }, [view, motion]);
+    setCropShape(cropper, shape);
+  }, [cropper, shape]);
+  useEffect(() => {
+    view.setOptions({ motion, recentreDelay });
+  }, [view, motion, recentreDelay]);
   const snapshot = useCropperState((s) => s, cropper);
   const chrome = useSyncExternalStore(view.onChrome, view.chrome, view.chrome);
   const instructions = useId();
