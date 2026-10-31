@@ -4,7 +4,7 @@ import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { commands } from "vitest/browser";
+import { commands, userEvent } from "vitest/browser";
 
 import { preventZrizHandler } from "../src";
 import * as Cropper from "../src/cropper";
@@ -222,6 +222,70 @@ describe("react parts", () => {
       '[data-zriz-item="image"] img'
     );
     expect(image?.style.transform).toMatch(/^matrix\(/u);
+  });
+
+  it("shrinks and grows a locked crop with alt and the arrows", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} aspect={1} src={src}>
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image alt="" />
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await ready(api);
+    const width = (): number => api.current?.getValue().size.width ?? 0;
+    const start = width();
+    screen.container
+      .querySelector<HTMLElement>('[data-zriz-item="area"]')
+      ?.focus();
+    await userEvent.keyboard("{Alt>}{ArrowLeft}{/Alt}");
+    await frames(3);
+    const shrunk = width();
+    expect(shrunk).toBeLessThan(start);
+    await userEvent.keyboard("{Alt>}{ArrowUp}{/Alt}");
+    await frames(3);
+    expect(width()).toBeLessThan(shrunk);
+    await userEvent.keyboard("{Alt>}{ArrowRight}{/Alt}");
+    await frames(3);
+    expect(width()).toBeGreaterThan(shrunk * 0.99);
+    const crop = api.current?.getCropState()?.crop;
+    expect(crop?.width).toBeCloseTo(crop?.height ?? 0, 6);
+  });
+
+  it("reports the orientation button as its own reason", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    const reasons: string[] = [];
+    const screen = await render(
+      <Cropper.Root
+        actionsRef={api}
+        aspect={16 / 9}
+        onValueChange={(_, details) => {
+          reasons.push(details.reason);
+        }}
+        src={src}
+      >
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image alt="" />
+        </Cropper.Viewport>
+        <Cropper.Orientation>turn</Cropper.Orientation>
+      </Cropper.Root>
+    );
+    await ready(api);
+    screen.container
+      .querySelector<HTMLButtonElement>('[data-zriz-item="orientation"]')
+      ?.click();
+    await frames(4);
+    expect(api.current?.getValue().aspect).toBeCloseTo(9 / 16, 6);
+    expect(reasons).toContain("orientation");
+    expect(reasons).not.toContain("aspect");
   });
 
   it("never echoes a controlled value", async () => {

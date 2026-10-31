@@ -31,7 +31,7 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
         if (typeof current === "number") {
           cropper.setAspect(1 / current, {
             event: event.nativeEvent,
-            reason: "aspect",
+            reason: "orientation",
           });
         }
       },

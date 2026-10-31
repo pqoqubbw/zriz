@@ -85,7 +85,7 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
       const grow = 1 + step;
       const width = arrow[0] === 0 ? 1 : grow ** arrow[0];
       const height = arrow[1] === 0 ? 1 : grow ** arrow[1];
-      const lock = state.aspect === null ? 1 : Math.max(width, height);
+      const lock = width * height;
       return () => {
         cropper.setCropState(
           {
