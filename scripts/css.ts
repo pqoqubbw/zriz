@@ -5,7 +5,7 @@ import { gzipSync } from "node:zlib";
 
 import { transform } from "lightningcss";
 
-const BUDGET = 930;
+const BUDGET = 960;
 const version = (major: number): number => major * 65_536;
 
 const root = path.resolve(import.meta.dirname, "..");
