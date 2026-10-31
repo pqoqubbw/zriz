@@ -146,4 +146,17 @@ describe("default styles", () => {
       "none"
     );
   });
+  it("lets a part pin its own scheme inside a themed page", async () => {
+    render(
+      <div className="dark">
+        <Cropper.Root image={{ height: 300, width: 400 }}>
+          <Cropper.Dial aria-label="Straighten" className="light" />
+          <Cropper.Zoom aria-label="Zoom" />
+        </Cropper.Root>
+      </div>,
+    );
+    await frames();
+    expect(getComputedStyle(pick('[data-zriz-item="dial"]')).colorScheme).toBe("light");
+    expect(getComputedStyle(pick('[data-zriz-item="zoom"]')).colorScheme).toBe("dark");
+  });
 });

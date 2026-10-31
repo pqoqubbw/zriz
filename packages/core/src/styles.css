@@ -10,16 +10,16 @@
   :where([data-theme="dark"], .dark) {
     --zriz-scheme: dark;
   }
-  :where(
-    :is([data-theme="light"], .light) [data-zriz-item],
-    [data-zriz-item]:is([data-theme="light"], .light)
-  ) {
+  :where(:is([data-theme="light"], .light) [data-zriz-item]) {
     color-scheme: light;
   }
-  :where(
-    :is([data-theme="dark"], .dark) [data-zriz-item],
-    [data-zriz-item]:is([data-theme="dark"], .dark)
-  ) {
+  :where(:is([data-theme="dark"], .dark) [data-zriz-item]) {
+    color-scheme: dark;
+  }
+  :where([data-zriz-item]:is([data-theme="light"], .light)) {
+    color-scheme: light;
+  }
+  :where([data-zriz-item]:is([data-theme="dark"], .dark)) {
     color-scheme: dark;
   }
   :where([data-zriz-item="mask"]) {
