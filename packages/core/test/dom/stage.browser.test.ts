@@ -247,6 +247,25 @@ describe("dom binders", () => {
       expect(fixture.commits).toBe(1);
     });
 
+    it("keeps a dragged handle inside the viewport padding", async () => {
+      const fixture = mount();
+      fixture.cropper.setZoom(2, { emit: false });
+      await frames();
+      const area = local(fixture, fixture.area);
+      const x = area.x + area.width;
+      const y = area.y + area.height;
+      await commands.drag(`#${fixture.id}`, [
+        [x, y],
+        [x + 10, y + 8],
+        [x + 22, y + 16],
+      ]);
+      await frames(2);
+      const after = local(fixture, fixture.area);
+      expect(after.x + after.width).toBeGreaterThan(x + 1);
+      expect(after.x + after.width).toBeLessThanOrEqual(380.5);
+      expect(after.y + after.height).toBeLessThanOrEqual(280.5);
+    });
+
     it("ends a gesture on pointercancel", async () => {
       const fixture = mount();
       fixture.cropper.setZoom(2, { emit: false });
@@ -275,11 +294,176 @@ describe("dom binders", () => {
       const fixture = mount();
       await frames();
       expect(wheel(fixture, { deltaY: 40 })).toBeTruthy();
+      await wait(200);
       fixture.cropper.setZoom(2, { emit: false });
       await frames();
       const before = fixture.cropper.getValue().center.y;
       expect(wheel(fixture, { deltaY: 40 })).toBeFalsy();
       expect(fixture.cropper.getValue().center.y).toBeGreaterThan(before);
+    });
+
+    it("keeps a gesture that moved the photo and stops it at the edge", async () => {
+      const fixture = mount();
+      fixture.cropper.setZoom(2, { emit: false });
+      await frames();
+      const view = viewOf(fixture.cropper);
+      const centres: number[] = [];
+      const handled = Array.from({ length: 40 }, (_, i) => {
+        const passed = wheel(fixture, { deltaY: i % 2 === 0 ? 40 : 7 });
+        centres.push(fixture.cropper.getValue().center.y);
+        return passed;
+      });
+      expect(handled.every((passed) => !passed)).toBeTruthy();
+      expect(view.overscroll()).toStrictEqual({ x: 0, y: 0 });
+      expect(
+        centres.every((y, i) => i === 0 || y >= (centres[i - 1] ?? 0))
+      ).toBeTruthy();
+      expect(centres.at(-1)).toBeCloseTo(0.75, 6);
+      await wait(200);
+      expect(fixture.cropper.getState().interacting).toBeNull();
+    });
+
+    it("hands the whole gesture to the page when it starts at the limit", async () => {
+      const fixture = mount();
+      await frames();
+      const gestures: string[] = [];
+      fixture.cropper.on("gesturestart", (reason) => {
+        gestures.push(reason);
+      });
+      const handled = Array.from({ length: 5 }, () =>
+        wheel(fixture, { deltaY: 40 })
+      );
+      expect(handled.every(Boolean)).toBeTruthy();
+      expect(gestures).toStrictEqual([]);
+    });
+
+    it("stretches past the smallest zoom with ctrl and springs back", async () => {
+      const fixture = mount();
+      await frames();
+      const view = viewOf(fixture.cropper);
+      for (let i = 0; i < 6; i += 1) {
+        wheel(fixture, { ctrlKey: true, deltaY: 50 });
+      }
+      expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
+      expect(view.overzoom()).toBeLessThan(0.9);
+      expect(view.overzoom()).toBeGreaterThan(Math.exp(-0.5));
+      await frames();
+      const shrunk = view.frame()?.matrix[0] ?? 0;
+      wheel(fixture, { ctrlKey: true, deltaY: -20 });
+      expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
+      await frames();
+      expect(view.frame()?.matrix[0] ?? 0).toBeGreaterThan(shrunk);
+      await wait(200);
+      await expect.poll(() => view.overzoom(), { timeout: 2000 }).toBe(1);
+    });
+
+    it("only stretches once the zoom reaches its minimum", async () => {
+      const fixture = mount();
+      await frames();
+      fixture.cropper.setZoom(3, { emit: false });
+      await frames();
+      const view = viewOf(fixture.cropper);
+      const box = fixture.viewport.getBoundingClientRect();
+      const early: number[] = [];
+      for (let i = 0; i < 20; i += 1) {
+        wheel(fixture, {
+          clientX: box.x + 340,
+          clientY: box.y + 250,
+          ctrlKey: true,
+          deltaY: 8,
+        });
+        if (view.overzoom() < 1 && fixture.cropper.getZoom() > 1 + 1e-6) {
+          early.push(fixture.cropper.getZoom());
+        }
+      }
+      expect(early).toStrictEqual([]);
+      expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
+      expect(view.overzoom()).toBeLessThan(1);
+    });
+
+    it("shrinks around the crop centre with even gaps, never below two thirds", async () => {
+      const fixture = mount();
+      await frames();
+      const view = viewOf(fixture.cropper);
+      const box = fixture.viewport.getBoundingClientRect();
+      for (let i = 0; i < 40; i += 1) {
+        wheel(fixture, {
+          clientX: box.x + 40,
+          clientY: box.y + 40,
+          ctrlKey: true,
+          deltaY: 4,
+        });
+      }
+      await frames();
+      const frame = view.frame();
+      if (!frame) {
+        throw new Error("no frame");
+      }
+      const [a, , e, , d, f] = frame.matrix;
+      const { rect } = frame;
+      const left = e - rect.x;
+      const right = rect.x + rect.width - (e + a * photo.width);
+      const top = f - rect.y;
+      const bottom = rect.y + rect.height - (f + d * photo.height);
+      expect(left).toBeGreaterThan(5);
+      expect(Math.abs(left - right)).toBeLessThan(0.5);
+      expect(Math.abs(top - bottom)).toBeLessThan(0.5);
+      expect(view.overzoom()).toBeGreaterThan(2 / 3);
+      expect(view.overzoom()).toBeLessThan(0.75);
+    });
+
+    it("only nudges past the smallest zoom on a trackpad, then snaps back quickly", async () => {
+      const fixture = mount();
+      await frames();
+      const view = viewOf(fixture.cropper);
+      for (let i = 0; i < 60; i += 1) {
+        wheel(fixture, { ctrlKey: true, deltaY: 3.7 });
+      }
+      expect(view.overzoom()).toBeLessThan(0.97);
+      expect(view.overzoom()).toBeGreaterThan(Math.exp(-0.08));
+      wheel(fixture, { ctrlKey: true, deltaY: -1.3 });
+      expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
+      await wait(150 + 300);
+      expect(view.overzoom()).toBeGreaterThan(0.999);
+      await expect.poll(() => view.overzoom(), { timeout: 2000 }).toBe(1);
+    });
+
+    it("lets a trackpad pinch start right after the page took a scroll", async () => {
+      const fixture = mount();
+      await frames();
+      expect(wheel(fixture, { deltaY: 40 })).toBeTruthy();
+      expect(wheel(fixture, { ctrlKey: true, deltaY: -20 })).toBeFalsy();
+      expect(fixture.cropper.getZoom()).toBeGreaterThan(1.1);
+    });
+
+    it("waits for a real delta before deciding who owns the gesture", async () => {
+      const fixture = mount();
+      fixture.cropper.setZoom(2, { emit: false });
+      await frames();
+      wheel(fixture, { deltaY: 0 });
+      expect(wheel(fixture, { deltaY: 40 })).toBeFalsy();
+    });
+
+    it("ends the wheel gesture when the viewport goes away", async () => {
+      const cropper = createCropper({ image: photo });
+      const element = document.createElement("div");
+      element.style.cssText = "position:relative;width:400px;height:300px;";
+      document.body.append(element);
+      const unbind = bindViewport(cropper, element);
+      await frames();
+      cropper.setZoom(2, { emit: false });
+      await frames();
+      element.dispatchEvent(
+        new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 40 })
+      );
+      expect(cropper.getState().interacting).toBe("wheel");
+      unbind();
+      expect(cropper.getState().interacting).toBeNull();
+      expect(cropper.begin("pan", undefined, "other")).toBeTruthy();
+      cropper.end(undefined, "other");
+      viewOf(cropper).destroy();
+      cropper.destroy();
+      element.remove();
     });
 
     it("zooms at the cursor with ctrl", async () => {
@@ -325,6 +509,38 @@ describe("dom binders", () => {
         expect(Math.abs(shown.x - mid.x)).toBeLessThan(0.1);
         expect(Math.abs(shown.y - mid.y)).toBeLessThan(0.1);
         expect(fixture.cropper.getValue().rotation).toBeCloseTo(15, 0);
+      }
+    );
+
+    it.runIf(server.browser === "chromium")(
+      "turns with two fingers without shrinking the photo",
+      async () => {
+        const fixture = mount(600, 600);
+        await frames();
+        const view = viewOf(fixture.cropper);
+        let smallest = 1;
+        const off = view.onFrame(() => {
+          smallest = Math.min(smallest, view.overzoom());
+        });
+        const mid = { x: 300, y: 300 };
+        const a: [number, number][] = [];
+        const b: [number, number][] = [];
+        for (let i = 0; i <= 12; i += 1) {
+          const angle = ((20 * Math.PI) / 180) * (i / 12);
+          a.push([
+            mid.x - 100 * Math.cos(angle),
+            mid.y - 100 * Math.sin(angle),
+          ]);
+          b.push([
+            mid.x + 100 * Math.cos(angle),
+            mid.y + 100 * Math.sin(angle),
+          ]);
+        }
+        await commands.pinch(`#${fixture.id}`, a, b, true);
+        await frames(2);
+        off();
+        expect(fixture.cropper.getValue().rotation).toBeGreaterThan(10);
+        expect(smallest).toBe(1);
       }
     );
   });

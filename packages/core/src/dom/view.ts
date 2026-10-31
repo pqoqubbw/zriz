@@ -75,9 +75,10 @@ export interface View {
   setLayout: (layout: Layout | null) => void;
   hold: () => Placement | null;
   release: () => void;
-  setOverscroll: (offset: Point) => void;
+  setOverscroll: (offset: Point | null, zoom?: number, anchor?: Point) => void;
   overscroll: () => Point;
-  settleOverscroll: () => void;
+  overzoom: () => number;
+  settleOverscroll: (quick?: boolean) => void;
   onFrame: (listener: (frame: ViewFrame) => void) => () => void;
   destroy: () => void;
 }
@@ -182,11 +183,13 @@ const views = new WeakMap<Cropper, View>();
 
 const OVERSCROLL_OMEGA = 42;
 const OVERSCROLL_ZETA = 1.4;
-const RECENTRE_OMEGA = 16.1;
-const RECENTRE_DELAY = 1060;
+const TEMPO = 1.35;
+const ZOOM_OMEGA = 17.3 * TEMPO;
+const RECENTRE_OMEGA = 16.1 * TEMPO;
+const RECENTRE_DELAY = 500;
 const CHROME_HOLD = 1380;
-const ROTATE_MS = 410;
-const FLIP_OMEGA = 17.6;
+const ROTATE_MS = 410 / TEMPO;
+const FLIP_OMEGA = 17.6 * TEMPO;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
 
@@ -195,6 +198,7 @@ interface Pose {
   centre: Point;
   anchor: Point;
   angle: number;
+  mirror: number;
   sx: number;
   sy: number;
 }
@@ -245,15 +249,16 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
   const centre = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   const [a, b, , c, d] = matrix;
   const det = a * d - b * c;
-  const flipped = det < 0;
-  const sx = (flipped ? -1 : 1) * Math.hypot(a, c);
+  const mirror = det < 0 ? -1 : 1;
+  const sx = Math.hypot(a, c);
   return {
     anchor: applyHomography(invertMatrix3(matrix), centre),
-    angle: flipped ? Math.atan2(-c, -a) : Math.atan2(c, a),
+    angle: Math.atan2(c, mirror * a),
     centre,
+    mirror,
     rect,
     sx,
-    sy: det / sx,
+    sy: (mirror * det) / sx,
   };
 };
 
@@ -263,10 +268,11 @@ const blendMatrix = (from: Pose, to: Pose, t: number): Matrix3 => {
   const angle = from.angle + turn * t;
   const sx = lerp(from.sx, to.sx, t);
   const sy = lerp(from.sy, to.sy, t);
+  const mirror = lerp(from.mirror, to.mirror, t);
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const a = sx * cos;
-  const b = -sy * sin;
+  const a = mirror * sx * cos;
+  const b = -mirror * sy * sin;
   const c = sx * sin;
   const d = sy * cos;
   const anchor = {
@@ -307,7 +313,10 @@ export const viewOf = (cropper: Cropper): View => {
   let held: Placement | null = null;
   let pinned: Box | null = null;
   let shift: Point = { x: 0, y: 0 };
+  let zoom = 1;
+  let anchor: Point = { x: 0, y: 0 };
   let stopShift: (() => void) | null = null;
+  let stopZoom: (() => void) | null = null;
   let stopTransition: (() => void) | null = null;
   let recentreTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -363,7 +372,19 @@ export const viewOf = (cropper: Cropper): View => {
       return null;
     }
     const placement = placementOf(state, layout);
-    const matrix = imageMatrix(state, placement, shift);
+    const matrix = imageMatrix(
+      state,
+      zoom === 1
+        ? placement
+        : {
+            offset: {
+              x: anchor.x + zoom * (placement.offset.x - anchor.x),
+              y: anchor.y + zoom * (placement.offset.y - anchor.y),
+            },
+            scale: zoom * placement.scale,
+          },
+      shift
+    );
     const exact = exactBox(state, placement);
     if (blend) {
       const to = pose(exact, matrix);
@@ -481,6 +502,59 @@ export const viewOf = (cropper: Cropper): View => {
     "rotate-90": "rotate",
   };
 
+  const markOverscroll = (): void => {
+    setChrome({ overscroll: shift.x !== 0 || shift.y !== 0 || zoom !== 1 });
+  };
+
+  const settleShift = (): void => {
+    stopShift?.();
+    stopShift = null;
+    const from = shift;
+    if (from.x === 0 && from.y === 0) {
+      return;
+    }
+    let elapsed = 0;
+    stopShift = cropper.run((_, delta) => {
+      elapsed += delta;
+      const x = spring(from.x, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed);
+      const y = spring(from.y, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed);
+      const done =
+        Math.abs(x.value) < 0.1 &&
+        Math.abs(y.value) < 0.1 &&
+        Math.abs(x.velocity) < 1 &&
+        Math.abs(y.velocity) < 1;
+      shift = done ? { x: 0, y: 0 } : { x: x.value, y: y.value };
+      if (done) {
+        stopShift = null;
+        markOverscroll();
+      }
+      return !done;
+    }, false);
+  };
+
+  const settleZoom = (quick: boolean): void => {
+    stopZoom?.();
+    stopZoom = null;
+    const from = Math.log(zoom);
+    if (from === 0) {
+      return;
+    }
+    let elapsed = 0;
+    stopZoom = cropper.run((_, delta) => {
+      elapsed += delta;
+      const z = quick
+        ? spring(from, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed)
+        : spring(from, 0, ZOOM_OMEGA, 1, elapsed);
+      const done = Math.abs(z.value) < 1e-4 && Math.abs(z.velocity) < 1e-2;
+      zoom = done ? 1 : Math.exp(z.value);
+      if (done) {
+        stopZoom = null;
+        markOverscroll();
+      }
+      return !done;
+    }, false);
+  };
+
   const offFrame = cropper.on("frame", publish);
   const offChange = cropper.on("change", (_, details) => {
     const kind = transitionFor[details.reason];
@@ -510,7 +584,11 @@ export const viewOf = (cropper: Cropper): View => {
     endTransition();
     stopShift?.();
     stopShift = null;
+    stopZoom?.();
+    stopZoom = null;
     shift = { x: 0, y: 0 };
+    zoom = 1;
+    markOverscroll();
     if (recentreTimer !== null) {
       clearTimeout(recentreTimer);
       recentreTimer = null;
@@ -545,6 +623,7 @@ export const viewOf = (cropper: Cropper): View => {
       offEnd();
       offStop();
       stopShift?.();
+      stopZoom?.();
       endTransition();
       if (recentreTimer !== null) {
         clearTimeout(recentreTimer);
@@ -588,6 +667,7 @@ export const viewOf = (cropper: Cropper): View => {
       };
     },
     overscroll: () => shift,
+    overzoom: () => zoom,
     reducedMotion: reduced,
     release() {
       const state = cropper.getCropState();
@@ -604,39 +684,27 @@ export const viewOf = (cropper: Cropper): View => {
     setOptions(next) {
       options = next;
     },
-    setOverscroll(offset) {
-      stopShift?.();
-      stopShift = null;
-      shift = offset;
-      setChrome({ overscroll: offset.x !== 0 || offset.y !== 0 });
+    setOverscroll(offset, scale, around) {
+      if (offset) {
+        stopShift?.();
+        stopShift = null;
+        shift = offset;
+      }
+      if (scale !== undefined) {
+        stopZoom?.();
+        stopZoom = null;
+        zoom = scale;
+        anchor = around ?? anchor;
+      }
+      markOverscroll();
       cropper.invalidate();
     },
     setTarget(element) {
       target = element;
     },
-    settleOverscroll() {
-      stopShift?.();
-      const from = shift;
-      let elapsed = 0;
-      if (from.x === 0 && from.y === 0) {
-        return;
-      }
-      stopShift = cropper.run((_, delta) => {
-        elapsed += delta;
-        const x = spring(from.x, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed);
-        const y = spring(from.y, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed);
-        const done =
-          Math.abs(x.value) < 0.1 &&
-          Math.abs(y.value) < 0.1 &&
-          Math.abs(x.velocity) < 1 &&
-          Math.abs(y.velocity) < 1;
-        shift = done ? { x: 0, y: 0 } : { x: x.value, y: y.value };
-        if (done) {
-          stopShift = null;
-          setChrome({ overscroll: false });
-        }
-        return !done;
-      }, false);
+    settleOverscroll(quick = false) {
+      settleShift();
+      settleZoom(quick);
     },
   };
   views.set(cropper, view);

@@ -2,10 +2,11 @@ import type { Cropper } from "../cropper";
 import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
-import type { Point, Rect } from "../geometry/types";
+import type { HalfPlane, Point, Rect } from "../geometry/types";
 import { holdCursor } from "./cursor";
+import { setCropShape } from "./shape";
 import { capture, cssMatrix, viewOf } from "./view";
-import type { Box, Placement, ViewFrame } from "./view";
+import type { Box, Layout, Placement, ViewFrame } from "./view";
 
 export type MaskShape = "rect" | "circle";
 
@@ -129,6 +130,7 @@ export const bindMask = (
   element: HTMLElement,
   shape: MaskShape = "rect"
 ): (() => void) => {
+  setCropShape(cropper, shape);
   const { style } = element;
   style.position = "absolute";
   style.inset = "0";
@@ -234,7 +236,30 @@ interface HandleDrag {
   placement: Placement;
   start: Rect;
   grab: Point;
+  bounds: HalfPlane[];
 }
+
+const boxPlanes = (
+  layout: Layout | undefined,
+  placement: Placement,
+  start: Rect
+): HalfPlane[] => {
+  if (!layout) {
+    return [];
+  }
+  const { inset, width, height } = layout;
+  const { offset, scale } = placement;
+  const left = Math.min((inset.left - offset.x) / scale, start.x0);
+  const top = Math.min((inset.top - offset.y) / scale, start.y0);
+  const right = Math.max((width - inset.right - offset.x) / scale, start.x1);
+  const bottom = Math.max((height - inset.bottom - offset.y) / scale, start.y1);
+  return [
+    { d: right, nx: 1, ny: 0 },
+    { d: -left, nx: -1, ny: 0 },
+    { d: bottom, nx: 0, ny: 1 },
+    { d: -top, nx: 0, ny: -1 },
+  ];
+};
 
 const toRect = (crop: {
   x: number;
@@ -332,6 +357,7 @@ export const handleHandlers = (
       const pointer = toWorking(event, placement);
       const anchor = handlePoint(start, handle);
       drag = {
+        bounds: boxPlanes(view.frame()?.layout, placement, start),
         grab: { x: pointer.x - anchor.x, y: pointer.y - anchor.y },
         id: event.pointerId,
         placement,
@@ -361,7 +387,7 @@ export const handleHandlers = (
           aspect: state.aspect,
           minHeight: span,
           minWidth: span,
-          planes: imagePlanes(state),
+          planes: [...imagePlanes(state), ...drag.bounds],
         }
       );
       cropper.setCropState(

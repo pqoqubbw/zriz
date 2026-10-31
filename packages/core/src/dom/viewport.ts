@@ -1,6 +1,12 @@
 import type { Cropper } from "../cropper";
-import { rubberBandPoint } from "../geometry/band";
+import {
+  inverseRubberBand,
+  rubberBand,
+  rubberBandPoint,
+} from "../geometry/band";
+import { largestFit } from "../geometry/coverage";
 import { applyMatrix2, rotationMatrix } from "../geometry/matrix";
+import { imagePlanes, insidePlanes, panPlanes } from "../geometry/planes";
 import { sourceToWorking, workingToSource } from "../geometry/state";
 import type { CropState, Point } from "../geometry/types";
 import { holdCursor } from "./cursor";
@@ -45,6 +51,11 @@ interface Start {
 }
 
 const PAN_BAND = 125;
+const ZOOM_NOISE = 1e-6;
+const ZOOM_REACH = 2;
+const PAD_BAND = 0.08;
+const PAD_REACH = 0.5;
+const PAN_NOISE = 0.01;
 const ROTATE_DEAD_ZONE = 5;
 const WHEEL_IDLE = 150;
 const LINE_HEIGHT = 16;
@@ -73,6 +84,80 @@ const spread = (
 };
 
 const pixels = (value: string): number => Number(value.slice(0, -2)) || 0;
+
+const bandZoom = (excess: number): number => {
+  const shown = 0.5 + 0.5 / (3 - 2 * Math.exp(-Math.abs(excess)));
+  return excess < 0 ? shown : 1 / shown;
+};
+
+const padZoom = (excess: number): number =>
+  Math.exp(Math.sign(excess) * rubberBand(Math.abs(excess), PAD_BAND));
+
+const unpadZoom = (zoom: number): number => {
+  const shown = Math.log(zoom);
+  return (
+    Math.sign(shown) *
+    inverseRubberBand(Math.min(Math.abs(shown), PAD_BAND * 0.999), PAD_BAND)
+  );
+};
+
+const unbandZoom = (zoom: number): number => {
+  const shown = zoom < 1 ? zoom : 1 / zoom;
+  const ratio = (3 - 0.5 / Math.max(shown - 0.5, 1e-9)) / 2;
+  const excess = -Math.log(Math.min(Math.max(ratio, 1e-9), 1));
+  return zoom < 1 ? -excess : excess;
+};
+
+const absorb = (held: number, step: number): [number, number] => {
+  if (held === 0 || Math.sign(step) === Math.sign(held)) {
+    return [held, step];
+  }
+  const left = held + step;
+  return Math.sign(left) === Math.sign(held) ? [left, 0] : [0, left];
+};
+
+const settle = (value: number, noise: number): number =>
+  Math.abs(value) < noise ? 0 : value;
+
+const canPan = (state: CropState, delta: Point, scale: number): boolean => {
+  const planes = panPlanes(
+    imagePlanes(state),
+    state.crop.width,
+    state.crop.height
+  );
+  const step = 0.5 / scale;
+  const x = -Math.sign(delta.x) * step;
+  const y = -Math.sign(delta.y) * step;
+  return [
+    { x, y },
+    { x, y: 0 },
+    { x: 0, y },
+  ].some(
+    (move) =>
+      (move.x !== 0 || move.y !== 0) &&
+      insidePlanes(
+        planes,
+        { x: state.crop.x + move.x, y: state.crop.y + move.y },
+        1e-9
+      )
+  );
+};
+
+const wheelDelta = (
+  event: WheelEvent,
+  page: number,
+  sideways = event.shiftKey
+): Point => {
+  let unit = 1;
+  if (event.deltaMode === 1) {
+    unit = LINE_HEIGHT;
+  } else if (event.deltaMode === 2) {
+    unit = page;
+  }
+  const dx = event.deltaX * unit;
+  const dy = event.deltaY * unit;
+  return sideways && dx === 0 ? { x: -dy, y: 0 } : { x: -dx, y: -dy };
+};
 
 const isGesture = (event: Event): event is SafariGestureEvent =>
   "scale" in event && "rotation" in event;
@@ -127,6 +212,9 @@ export const viewportController = (
   let rotating = false;
   let safari: Start | null = null;
   let wheelTimer: ReturnType<typeof setTimeout> | null = null;
+  let wheelOwned = false;
+  let wheelZoom = 0;
+  let wheelPad = false;
   let observer: ResizeObserver | null = null;
   let dprQuery: MediaQueryList | null = null;
 
@@ -213,7 +301,13 @@ export const viewportController = (
       : null;
   };
 
-  const pan = (begin: Start, delta: Point, event: Event): boolean => {
+  const zoomAnchor = (): Point => rectCentre() ?? { x: 0, y: 0 };
+
+  const pan = (
+    begin: Start,
+    delta: Point,
+    event: Event
+  ): { moved: boolean; excess: Point } => {
     const before = cropper.getCropState();
     const desired = {
       x: begin.state.crop.x - delta.x / begin.scale,
@@ -225,14 +319,15 @@ export const viewportController = (
     );
     const after = cropper.getCropState();
     if (!after) {
-      return false;
+      return { excess: { x: 0, y: 0 }, moved: false };
     }
-    const excess = {
-      x: (desired.x - after.crop.x) * -begin.scale,
-      y: (desired.y - after.crop.y) * -begin.scale,
+    return {
+      excess: {
+        x: settle((desired.x - after.crop.x) * -begin.scale, PAN_NOISE),
+        y: settle((desired.y - after.crop.y) * -begin.scale, PAN_NOISE),
+      },
+      moved: before !== after,
     };
-    view.setOverscroll(rubberBandPoint(excess, { x: 0, y: 0 }, PAN_BAND, 1));
-    return before !== after;
   };
 
   const pinch = (
@@ -241,10 +336,10 @@ export const viewportController = (
     ratio: number,
     turnRaw: number,
     event: Event
-  ): void => {
+  ): number => {
     const centre = rectCentre();
     if (!centre) {
-      return;
+      return 0;
     }
     let turn = 0;
     if (options.rotateGesture !== false) {
@@ -270,6 +365,12 @@ export const viewportController = (
       keep: turn === 0 ? "size" : "centre",
       reason: "pinch",
     });
+    const wanted = 1 / largestFit(imagePlanes(begin.state), next.crop).scale;
+    const max = cropper.getMaxZoom();
+    if (wanted < 1) {
+      return settle(Math.log(wanted), ZOOM_NOISE);
+    }
+    return wanted > max ? settle(Math.log(wanted / max), ZOOM_NOISE) : 0;
   };
 
   const finish = (id: number, event: Event): void => {
@@ -278,6 +379,8 @@ export const viewportController = (
     }
     if (pointers.size > 0) {
       rebase();
+      view.settleOverscroll();
+      view.setOverscroll(view.overscroll());
       return;
     }
     start = null;
@@ -334,7 +437,7 @@ export const viewportController = (
       const points = [...pointers.values()];
       const centroid = centroidOf(points);
       if (points.length === 1) {
-        pan(
+        const { excess } = pan(
           start,
           {
             x: centroid.x - start.centroid.x,
@@ -342,16 +445,20 @@ export const viewportController = (
           },
           event
         );
+        view.setOverscroll(
+          rubberBandPoint(excess, { x: 0, y: 0 }, PAN_BAND, 1)
+        );
         return;
       }
       const { distance, angle } = spread(points);
-      pinch(
+      const excess = pinch(
         start,
         centroid,
         distance / start.distance,
         wrapDegrees(angle - start.angle),
         event
       );
+      view.setOverscroll(null, bandZoom(excess), zoomAnchor());
     },
     onPointerUp(event) {
       finish(event.pointerId, event);
@@ -359,53 +466,106 @@ export const viewportController = (
   };
 
   const endWheel = (): void => {
+    if (wheelTimer !== null) {
+      clearTimeout(wheelTimer);
+    }
     wheelTimer = null;
-    if (pointers.size === 0 && !safari) {
+    wheelZoom = 0;
+    if (wheelOwned) {
+      wheelOwned = false;
+      view.settleOverscroll(wheelPad);
       cropper.end(undefined, owner);
     }
+    wheelPad = false;
   };
 
-  const onWheel = (event: WheelEvent): void => {
-    if (!element || pointers.size > 0 || !cropper.getCropState()) {
-      return;
-    }
-    const dy = event.deltaY;
-    const dx = event.deltaX;
-    let unit = 1;
-    if (event.deltaMode === 1) {
-      unit = LINE_HEIGHT;
-    } else if (event.deltaMode === 2) {
-      unit = element.clientHeight;
-    }
-    const zoom = event.ctrlKey || options.wheel === "zoom";
-    if (event.ctrlKey && safari) {
-      event.preventDefault();
-      return;
-    }
-    if (!zoom && options.wheel === "none") {
-      return;
-    }
-    const box = element.getBoundingClientRect();
-    origin = {
-      x: box.left + element.clientLeft,
-      y: box.top + element.clientTop,
-    };
-    const state = cropper.getCropState();
-    const frame = view.frame();
-    if (!state || !frame) {
-      return;
-    }
-    if (wheelTimer === null) {
-      if (!cropper.begin("wheel", event, owner)) {
-        if (zoom) {
-          event.preventDefault();
-        }
-        return;
-      }
-    } else {
+  const idleWheel = (): void => {
+    if (wheelTimer !== null) {
       clearTimeout(wheelTimer);
     }
     wheelTimer = setTimeout(endWheel, WHEEL_IDLE);
+  };
+
+  const wheelIgnored = (pinching: boolean, zoom: boolean): boolean =>
+    (pinching && safari !== null) ||
+    (!zoom && options.wheel === "none") ||
+    cropper.getState().disabled;
+
+  const anchorTo = (target: HTMLElement): void => {
+    const box = target.getBoundingClientRect();
+    origin = {
+      x: box.left + target.clientLeft,
+      y: box.top + target.clientTop,
+    };
+  };
+
+  const claimWheel = (event: WheelEvent): boolean => {
+    if (!cropper.begin("wheel", event, owner)) {
+      return false;
+    }
+    wheelOwned = true;
+    wheelPad = event.ctrlKey && !Number.isInteger(event.deltaY);
+    wheelZoom = wheelPad
+      ? unpadZoom(view.overzoom())
+      : unbandZoom(view.overzoom());
+    return true;
+  };
+
+  const wheelZoomBy = (begin: Start, event: WheelEvent, page: number): void => {
+    const raw = -wheelDelta(event, page, false).y;
+    const pinchStep = event.ctrlKey && !Number.isInteger(event.deltaY);
+    const step = pinchStep ? raw : Math.min(Math.max(raw, -50), 50);
+    if (pinchStep && !wheelPad) {
+      wheelPad = true;
+      wheelZoom = unpadZoom(view.overzoom());
+    }
+    const [held, rest] = absorb(wheelZoom, -step / 100);
+    wheelZoom = held;
+    if (rest !== 0) {
+      wheelZoom += pinch(begin, begin.centroid, Math.exp(rest), 0, event);
+    }
+    const reach = wheelPad ? PAD_REACH : ZOOM_REACH;
+    wheelZoom = Math.min(Math.max(wheelZoom, -reach), reach);
+    view.setOverscroll(
+      null,
+      wheelPad ? padZoom(wheelZoom) : bandZoom(wheelZoom),
+      zoomAnchor()
+    );
+  };
+
+  const onWheel = (event: WheelEvent): void => {
+    const state = cropper.getCropState();
+    const frame = view.frame();
+    if (!element || pointers.size > 0 || !state || !frame) {
+      return;
+    }
+    const zoom = event.ctrlKey || options.wheel === "zoom";
+    if (zoom) {
+      event.preventDefault();
+    }
+    if (wheelIgnored(event.ctrlKey, zoom)) {
+      return;
+    }
+    const delta = wheelDelta(event, element.clientHeight);
+    if (delta.x === 0 && delta.y === 0) {
+      if (event.ctrlKey) {
+        endWheel();
+      }
+      return;
+    }
+    if (!wheelOwned) {
+      const pageOwns = wheelTimer !== null && !zoom;
+      if (pageOwns || (!zoom && !canPan(state, delta, frame.scale))) {
+        idleWheel();
+        return;
+      }
+      if (!claimWheel(event)) {
+        return;
+      }
+    }
+    idleWheel();
+    event.preventDefault();
+    anchorTo(element);
     const begin: Start = {
       angle: 0,
       centroid: local(event),
@@ -414,19 +574,10 @@ export const viewportController = (
       state,
     };
     if (zoom) {
-      event.preventDefault();
-      const step = Math.min(Math.max(dy * unit, -50), 50);
-      pinch(begin, begin.centroid, Math.exp(-step / 100), 0, event);
-      return;
+      wheelZoomBy(begin, event, element.clientHeight);
+    } else {
+      pan(begin, delta, event);
     }
-    const delta =
-      event.shiftKey && dx === 0
-        ? { x: -dy * unit, y: 0 }
-        : { x: -dx * unit, y: -dy * unit };
-    if (pan(begin, delta, event)) {
-      event.preventDefault();
-    }
-    view.setOverscroll({ x: 0, y: 0 });
   };
 
   const onGestureStart = (event: Event): void => {
@@ -462,7 +613,15 @@ export const viewportController = (
     if (!safari || !isGesture(event)) {
       return;
     }
-    pinch(safari, local(event), event.scale || 1, event.rotation || 0, event);
+    const centroid = local(event);
+    const excess = pinch(
+      safari,
+      centroid,
+      event.scale || 1,
+      event.rotation || 0,
+      event
+    );
+    view.setOverscroll(null, padZoom(excess), zoomAnchor());
   };
 
   const onGestureEnd = (event: Event): void => {
@@ -471,14 +630,25 @@ export const viewportController = (
       return;
     }
     safari = null;
+    view.settleOverscroll(true);
     cropper.end(event, owner);
+  };
+
+  const releaseAll = (event: Event): void => {
+    for (const id of pointers.keys()) {
+      finish(id, event);
+    }
+    if (safari) {
+      safari = null;
+      view.settleOverscroll(true);
+      cropper.end(event, owner);
+    }
+    endWheel();
   };
 
   const onHidden = (): void => {
     if (document.visibilityState === "hidden") {
-      for (const id of pointers.keys()) {
-        finish(id, new Event("visibilitychange"));
-      }
+      releaseAll(new Event("visibilitychange"));
     }
   };
 
@@ -492,14 +662,12 @@ export const viewportController = (
     start = null;
     releaseCursor?.();
     releaseCursor = null;
-    view.setOverscroll({ x: 0, y: 0 });
+    view.setOverscroll({ x: 0, y: 0 }, 1);
     cropper.cancel(event, owner);
   };
 
   const onBlur = (event: Event): void => {
-    for (const id of pointers.keys()) {
-      finish(id, event);
-    }
+    releaseAll(event);
   };
 
   const detach = (): void => {
@@ -519,23 +687,14 @@ export const viewportController = (
     document.removeEventListener("visibilitychange", onHidden);
     globalThis.removeEventListener("blur", onBlur);
     globalThis.removeEventListener("keydown", onEscape, true);
-    for (const id of pointers.keys()) {
-      finish(id, new Event("lostpointercapture"));
-    }
-    if (safari) {
-      safari = null;
-      cropper.end(new Event("gestureend"), owner);
-    }
+    releaseAll(new Event("lostpointercapture"));
     element = null;
   };
 
   return {
     destroy() {
       detach();
-      if (wheelTimer !== null) {
-        clearTimeout(wheelTimer);
-        wheelTimer = null;
-      }
+      endWheel();
       view.setLayout(null);
     },
     handlers,

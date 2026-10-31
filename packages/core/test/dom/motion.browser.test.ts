@@ -125,7 +125,7 @@ describe("view motion", () => {
     }
   });
 
-  it("waits 1.06 s, then recentres with the same pixels under the crop", async () => {
+  it("waits 0.5 s, then recentres with the same pixels under the crop", async () => {
     const fixture = mount();
     await frames();
     await shrinkFromCorner(fixture);
@@ -146,7 +146,7 @@ describe("view motion", () => {
         }),
       ]);
     });
-    await wait(500);
+    await wait(250);
     expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
     await expect
       .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
@@ -154,7 +154,7 @@ describe("view motion", () => {
     off();
     expect(fixture.changes).toBe(changes);
     const [first] = corners;
-    const tolerance = 4000 / 360;
+    const tolerance = (1.25 * 4000) / 360;
     for (const pair of corners) {
       expect(Math.abs((pair[0]?.x ?? 0) - (first?.[0]?.x ?? 0))).toBeLessThan(
         tolerance
@@ -165,13 +165,28 @@ describe("view motion", () => {
     }
   });
 
+  it("waits as long as recentreDelay asks", async () => {
+    const fixture = mount();
+    await frames();
+    const view = viewOf(fixture.cropper);
+    view.setOptions({ recentreDelay: 1060 });
+    await shrinkFromCorner(fixture);
+    await frames();
+    const offCentre = centreOf(view.frame());
+    await wait(800);
+    expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
+    await expect
+      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
+      .toBe(200);
+  });
+
   it("cancels the wait when a new touch lands", async () => {
     const fixture = mount();
     await frames();
     await shrinkFromCorner(fixture);
     const view = viewOf(fixture.cropper);
     const offCentre = centreOf(view.frame());
-    await wait(600);
+    await wait(250);
     fixture.cropper.begin("pan");
     await wait(900);
     expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);

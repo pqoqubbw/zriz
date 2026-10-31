@@ -169,6 +169,23 @@ describe("dial", () => {
     expect(fixture.cropper.getValue().rotation).toBe(45);
   });
 
+  it("still springs the ruler back when a key is pressed during the bounce", async () => {
+    const fixture = mount();
+    await frames();
+    await commands.drag(`#${fixture.id}`, [
+      [10, 20],
+      [30, 20],
+      [200, 20],
+      [355, 20],
+    ]);
+    expect(dialState(fixture.cropper).overshoot()).not.toBe(0);
+    fixture.dial.focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    await wait(800);
+    expect(dialState(fixture.cropper).overshoot()).toBe(0);
+    expect(fixture.cropper.getValue().rotation).toBe(44);
+  });
+
   it("follows the slider keys and speaks the value", async () => {
     const fixture = mount();
     await frames();

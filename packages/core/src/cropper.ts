@@ -474,6 +474,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const fromValue = (next: CropValue, size: Size): CropState =>
     valueToState(next, size, focal(size));
 
+  const dropHolding = (): void => {
+    for (const [task, holds] of tasks) {
+      if (holds) {
+        tasks.delete(task);
+      }
+    }
+  };
+
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
 
   const cropper: Cropper = {
@@ -481,7 +489,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (disabled() || (gesture !== null && gesture.owner !== owner)) {
         return false;
       }
-      tasks.clear();
+      dropHolding();
       const restart = gesture !== null;
       gesture = {
         flushed: gesture?.flushed ?? false,
@@ -501,7 +509,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       const { start, startValue, reason } = gesture;
-      tasks.clear();
+      dropHolding();
       accept(start, startValue, { event, reason }, reason);
       cropper.end(event, owner);
     },
@@ -753,7 +761,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     },
     stop() {
       if (gesture) {
-        cropper.end();
+        cropper.end(undefined, gesture.owner);
       }
       tasks.clear();
       if (handle !== null) {

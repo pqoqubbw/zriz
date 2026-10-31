@@ -119,12 +119,15 @@ export const dialHandlers = (
   let engaged = false;
   let width = 1;
   let stopMotion: (() => void) | null = null;
+  let stopSettle: (() => void) | null = null;
   let keyboard = false;
 
   const gain = (): number => dial.options().gain ?? GAIN;
   const sign = (): number => (dial.options().dir === "rtl" ? -1 : 1);
 
   const show = (raw: number, dragging: boolean): void => {
+    stopSettle?.();
+    stopSettle = null;
     const limit = cropper.getRotationLimit();
     const value = clamp(raw, limit);
     cropper.setRotation(value, { reason: "dial" });
@@ -182,17 +185,17 @@ export const dialHandlers = (
       return;
     }
     let elapsed = 0;
-    stopMotion = cropper.run((_, delta) => {
+    stopSettle = cropper.run((_, delta) => {
       elapsed += delta;
       const motion = spring(over, 0, RETURN_OMEGA, 1, elapsed);
       const done =
         Math.abs(motion.value) < 0.1 && Math.abs(motion.velocity) < 1;
       dial.set(done ? 0 : motion.value, false);
       if (done) {
-        stopMotion = null;
+        stopSettle = null;
       }
       return !done;
-    });
+    }, false);
   };
 
   const finish = (event: PointerEvent, velocity: number): void => {

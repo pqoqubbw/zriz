@@ -171,7 +171,84 @@ describe("view", () => {
     view.destroy();
   });
 
-  it("flips on the curve measured from iOS Photos", () => {
+  it("keeps settling overscroll when another gesture starts", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const view = viewOf(cropper);
+    view.setLayout({
+      dpr: 2,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+    time.frame();
+    view.setOverscroll({ x: 40, y: -30 });
+    view.settleOverscroll();
+    time.frames(3);
+    cropper.begin("dial", undefined, "dial");
+    cropper.setRotation(-10, { reason: "dial" });
+    time.frames(60);
+    cropper.end(undefined, "dial");
+    time.frames(60);
+    expect(view.overscroll()).toStrictEqual({ x: 0, y: 0 });
+    expect(view.chrome().overscroll).toBeFalsy();
+    view.destroy();
+  });
+
+  it("keeps settling overscroll when another gesture is cancelled", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const view = viewOf(cropper);
+    view.setLayout({
+      dpr: 2,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+    time.frame();
+    view.setOverscroll({ x: 40, y: -30 }, 0.8, { x: 200, y: 150 });
+    view.settleOverscroll();
+    time.frames(3);
+    cropper.begin("resize", undefined, "handle");
+    cropper.cancel(undefined, "handle");
+    time.frames(120);
+    expect(view.overscroll()).toStrictEqual({ x: 0, y: 0 });
+    expect(view.overzoom()).toBe(1);
+    expect(view.chrome().overscroll).toBeFalsy();
+    view.destroy();
+  });
+
+  it("lets a zoom stretch start without stopping a running bounce", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const view = viewOf(cropper);
+    view.setLayout({
+      dpr: 2,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+    time.frame();
+    view.setOverscroll({ x: 0, y: 60 });
+    view.settleOverscroll();
+    time.frames(2);
+    view.setOverscroll(null, 0.95, { x: 200, y: 150 });
+    time.frames(60);
+    expect(view.overscroll()).toStrictEqual({ x: 0, y: 0 });
+    expect(view.overzoom()).toBe(0.95);
+    view.destroy();
+  });
+
+  it("flips on the curve measured from iOS Photos, 1.35 times faster", () => {
     const time = fakeClock();
     const cropper = createCropper({
       clock: time.clock,
@@ -193,7 +270,7 @@ describe("view", () => {
     });
     cropper.flip();
     const start = time.clock.now();
-    time.frames(30, 1000 / 120);
+    time.frames(60, 1000 / 240);
     const at = (ms: number): number => {
       let best = 0;
       let gap = Number.POSITIVE_INFINITY;
@@ -205,9 +282,47 @@ describe("view", () => {
       }
       return best;
     };
-    expect(Math.abs(at(65) - 0.3)).toBeLessThan(0.17);
-    expect(Math.abs(at(148) + 0.51)).toBeLessThan(0.12);
-    expect(Math.abs(at(250) + 0.87)).toBeLessThan(0.06);
+    expect(Math.abs(at(65 / 1.35) - 0.3)).toBeLessThan(0.17);
+    expect(Math.abs(at(148 / 1.35) + 0.51)).toBeLessThan(0.12);
+    expect(Math.abs(at(250 / 1.35) + 0.87)).toBeLessThan(0.06);
     view.destroy();
   });
+
+  it.each([1, 2, 3])(
+    "flips across the screen after %i quarter turns",
+    (turns) => {
+      const time = fakeClock();
+      const cropper = createCropper({
+        clock: time.clock,
+        image: { height: 3000, width: 4000 },
+      });
+      const view = viewOf(cropper);
+      view.setOptions({ motion: "always" });
+      view.setLayout({
+        dpr: 2,
+        height: 300,
+        inset: { bottom: 0, left: 0, right: 0, top: 0 },
+        width: 400,
+      });
+      for (let i = 0; i < turns; i += 1) {
+        cropper.rotate90("cw");
+      }
+      time.frames(120);
+      const rest = view.frame()?.matrix ?? [];
+      const rows: number[][] = [];
+      view.onFrame((frame) => {
+        rows.push([...frame.matrix]);
+      });
+      cropper.flip();
+      time.frames(120, 1000 / 120);
+      for (const m of rows) {
+        expect(m[3]).toBeCloseTo(rest[3] ?? 0, 6);
+        expect(m[4]).toBeCloseTo(rest[4] ?? 0, 6);
+      }
+      const end = rows.at(-1) ?? [];
+      expect(end[0]).toBeCloseTo(-(rest[0] ?? 0), 6);
+      expect(end[1]).toBeCloseTo(-(rest[1] ?? 0), 6);
+      view.destroy();
+    }
+  );
 });
