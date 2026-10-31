@@ -36,6 +36,10 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
     },
     [cropper, value]
   );
+  let tabStop: number | undefined;
+  if (inGroup) {
+    tabStop = checked ? 0 : -1;
+  }
   return useRender({
     className,
     props: mergeProps(
@@ -48,6 +52,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
         disabled,
         onClick,
         role: inGroup ? "radio" : undefined,
+        tabIndex: tabStop,
         type: "button",
       },
       props

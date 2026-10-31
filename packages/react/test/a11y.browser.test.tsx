@@ -75,6 +75,77 @@ describe("accessibility", () => {
     expect(api.current?.getZoom()).toBeCloseTo(1, 6);
   });
 
+  it("moves through the aspect group with arrows and one tab stop", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={16 / 9}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    await frames(2);
+    const items = [
+      ...screen.container.querySelectorAll<HTMLButtonElement>(
+        '[data-zriz-item="aspect-item"]'
+      ),
+    ];
+    expect(items.map((item) => item.tabIndex)).toStrictEqual([0, -1, -1]);
+    items[0]?.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await frames(2);
+    expect(document.activeElement).toBe(items[1]);
+    expect(api.current?.getValue().aspect).toBe(1);
+    expect(items.map((item) => item.tabIndex)).toStrictEqual([-1, 0, -1]);
+  });
+
+  it("wraps around and jumps to the ends of the aspect group", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={16 / 9}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    await frames(2);
+    const items = [
+      ...screen.container.querySelectorAll<HTMLButtonElement>(
+        '[data-zriz-item="aspect-item"]'
+      ),
+    ];
+    items[0]?.focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    await frames(2);
+    expect(document.activeElement).toBe(items[2]);
+    expect(api.current?.getValue().aspect).toBeCloseTo(16 / 9, 6);
+    await userEvent.keyboard("{Home}");
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe("free");
+  });
+
+  it("keeps a tab stop when no aspect item is checked", async () => {
+    const screen = await render(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={16 / 9}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    await frames(2);
+    const items = [
+      ...screen.container.querySelectorAll<HTMLButtonElement>(
+        '[data-zriz-item="aspect-item"]'
+      ),
+    ];
+    expect(items.map((item) => item.tabIndex)).toStrictEqual([0, -1]);
+  });
+
   it("warns once when a part has no name", async () => {
     const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
     await render(
