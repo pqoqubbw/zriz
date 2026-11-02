@@ -311,9 +311,13 @@ export const loadImage = async (
       const element = await import("./source").catch((error: unknown) => {
         throw toZriz(error);
       });
-      source = await element.fromElement(src);
+      source = await element.fromElement(src).catch((error: unknown) => {
+        throw toZriz(error);
+      });
     }
-    const preview = await resizeBitmap(source, edge);
+    const preview = await resizeBitmap(source, edge).catch((error: unknown) => {
+      throw toZriz(error);
+    });
     await keepOff(id, preview);
     return {
       animated,

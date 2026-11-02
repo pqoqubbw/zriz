@@ -175,6 +175,14 @@ describe("load and export", () => {
     );
   });
 
+  it("throws a typed decode error for an element it cannot read", async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 0;
+    const attempt = loadImage(canvas);
+    await expect(attempt).rejects.toBeInstanceOf(ZrizError);
+    await expect(attempt).rejects.toMatchObject({ code: "decode" });
+  });
+
   it("throws a typed cross-origin error at load, not at export", async () => {
     const attempt = loadImage("https://zriz.invalid/photo.jpg", {
       timeout: 5000,
