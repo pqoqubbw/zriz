@@ -1,5 +1,6 @@
 import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
+import { imageOf } from "@zriz/core/dom";
 import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -222,6 +223,25 @@ describe("react parts", () => {
       '[data-zriz-item="image"] img'
     );
     expect(image?.style.transform).toMatch(/^matrix\(/u);
+  });
+
+  it("frees the photo when Root unmounts", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} src={src}>
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await ready(api);
+    const cropper = api.current;
+    expect(cropper && imageOf(cropper)).not.toBeNull();
+    await screen.unmount();
+    expect(cropper && imageOf(cropper)).toBeNull();
   });
 
   it("applies a controlled zoom given before the photo loads", async () => {

@@ -161,6 +161,14 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       controller.abort();
     };
   }, [cropper, crossOrigin, latestError, latestLoad, src]);
+  useEffect(
+    () => () => {
+      if (!external) {
+        attachImage(cropper, null);
+      }
+    },
+    [cropper, external]
+  );
   const context = useMemo<RootContext>(
     () => ({ crossOrigin, dir, instructions, locale, shape, src: null }),
     [crossOrigin, dir, instructions, locale, shape]
