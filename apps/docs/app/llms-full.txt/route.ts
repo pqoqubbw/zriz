@@ -1,13 +1,8 @@
-import { pageMarkdown } from "@/lib/markdown";
-import { pages } from "@/lib/pages";
+import { fullMarkdown } from "@/lib/doc/markdown";
 
 export const dynamic = "force-static";
 
-export const GET = async () => {
-  const docs = await Promise.all(
-    pages.map(async (page) => await pageMarkdown(page.slug))
-  );
-  return new Response(docs.join("\n\n"), {
+export const GET = () =>
+  new Response(fullMarkdown(), {
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
-};

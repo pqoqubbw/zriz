@@ -1,0 +1,5 @@
+[data-zriz-item="orientation"] {
+  &[data-orientation="portrait"] svg {
+    rotate: 90deg;
+  }
+}

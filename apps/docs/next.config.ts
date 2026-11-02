@@ -1,50 +1,37 @@
-import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
+
+const markdown = [
+  { key: "accept", type: "header", value: ".*text/markdown.*" },
+] as const;
 
 const config: NextConfig = {
   agentRules: false,
   headers: async () => [
     {
-      headers: [
-        {
-          key: "Link",
-          value: '</llms.txt>; rel="alternate"; type="text/plain"',
-        },
-      ],
-      source: "/:path*",
+      headers: [{ key: "Vary", value: "Accept" }],
+      source: "/docs/:slug",
     },
   ],
-  pageExtensions: ["ts", "tsx", "mdx"],
+  poweredByHeader: false,
   reactCompiler: true,
+  redirects: async () => [
+    {
+      destination: "/docs/introduction",
+      missing: [...markdown],
+      permanent: true,
+      source: "/",
+    },
+    { destination: "/docs/introduction", permanent: true, source: "/docs" },
+  ],
   rewrites: async () => ({
     afterFiles: [],
     beforeFiles: [
+      { destination: "/md/introduction", has: [...markdown], source: "/" },
       { destination: "/md/:slug", source: "/docs/:slug.md" },
-      {
-        destination: "/md/:slug",
-        has: [{ key: "accept", type: "header", value: ".*text/markdown.*" }],
-        source: "/docs/:slug",
-      },
+      { destination: "/md/:slug", has: [...markdown], source: "/docs/:slug" },
     ],
     fallback: [],
   }),
-  serverExternalPackages: ["fumadocs-typescript", "typescript"],
 };
 
-export default createMDX({
-  options: {
-    rehypePlugins: [
-      [
-        "@shikijs/rehype",
-        {
-          defaultColor: false,
-          themes: {
-            dark: "github-dark-default",
-            light: "github-light-default",
-          },
-        },
-      ],
-    ],
-    remarkPlugins: ["remark-gfm"],
-  },
-})(config);
+export default config;

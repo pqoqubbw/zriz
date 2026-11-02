@@ -1,0 +1,3 @@
+[data-zriz-item="grid"] > :not([data-coarse]) {
+  background: rgb(255 255 255 / 0.3);
+}

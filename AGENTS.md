@@ -6,7 +6,7 @@ Headless image cropper for the web with the feel of iOS Photos. Read `notes/BRIE
 
 - `packages/core`: `@zriz/core`, framework-agnostic TypeScript with zero dependencies. Geometry, the coverage solver, springs, export. Never import React here, never add `"use client"`.
 - `packages/react`: `@zriz/react`, unstyled React parts in the style of Base UI. Every file that uses hooks or browser APIs starts with `"use client"`.
-- `apps/docs`: the Next.js site for zriz.dev. MDX pages in `content/`, live demos in `demos/<page>/<name>.tsx`, API tables generated from TSDoc in the package source.
+- `apps/docs`: the Next.js site for zriz.dev. Each page is typed data in `content/<slug>.ts`, built from the blocks in `lib/doc/define.ts`. One renderer turns it into HTML (`components/doc/blocks.tsx`) and one into markdown for agents (`lib/doc/markdown.ts`); a new block kind fails to compile until both handle it. Code shown on a page lives in `snippets/<slug>/` as real, type-checked files, and excerpts are cut from them by anchor lines. Nav order and titles are in `lib/nav.ts`. Demos are grey placeholders for now.
 - `notes/reference/`: the approved vanilla sketch of the feel and the raw research. Read only, local only.
 
 ## Commands
@@ -23,7 +23,7 @@ All of check, type, test, lint:package and size must pass before a commit.
 ## Toolchain notes
 
 - The packages use TypeScript 7 with `isolatedDeclarations`, so every export needs an explicit type.
-- The docs app stays on TypeScript 5.9, because fumadocs-typescript needs the compiler API, which TypeScript 7 lacks until 7.1.
+- The docs app stays on TypeScript 5.9, because Next.js type-checks through the TypeScript compiler API, which TypeScript 7 lacks until 7.1.
 - The packages build with tsdown in unbundle mode, ESM only, per-file output, so `"use client"` stays on each file. tsdown warns that the directive "may not be preserved". It is preserved; check `dist` if in doubt.
 - pnpm refuses releases younger than one day (`minimumReleaseAge`). Pin the previous version instead of turning it off.
 - Test files: `*.test.ts` run in node, `*.browser.test.tsx` run in the three browsers. Property tests for maths use fast-check.

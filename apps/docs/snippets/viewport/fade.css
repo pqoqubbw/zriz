@@ -1,0 +1,6 @@
+[data-zriz-item="image"] {
+  transition: opacity 0.2s;
+}
+[data-zriz-item="image"]:not([data-ready]) {
+  opacity: 0;
+}

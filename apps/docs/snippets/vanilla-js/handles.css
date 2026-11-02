@@ -1,0 +1,22 @@
+[data-zriz-item="handle"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--zriz-handle-size, 44px);
+  height: var(--zriz-handle-size, 44px);
+  translate: -50% -50%;
+}
+[data-edge$="right"] {
+  left: 100%;
+}
+[data-edge^="bottom"] {
+  top: 100%;
+}
+[data-edge="top"],
+[data-edge="bottom"] {
+  left: 50%;
+}
+[data-edge="left"],
+[data-edge="right"] {
+  top: 50%;
+}

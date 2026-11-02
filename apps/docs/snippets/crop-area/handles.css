@@ -1,0 +1,6 @@
+[data-zriz-item="viewport"] {
+  padding: 28px;
+}
+[data-zriz-item="area"] {
+  --zriz-handle-size: 56px;
+}

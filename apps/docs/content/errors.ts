@@ -1,0 +1,105 @@
+import {
+  code,
+  column,
+  defineDoc,
+  messages,
+  p,
+  section,
+  table,
+} from "@/lib/doc/define";
+
+export const errors = defineDoc({
+  blocks: [
+    section(
+      "where errors arrive",
+      p(
+        "`Root` calls `onError` with a `ZrizError` when a photo cannot load. `ZrizError` comes from `@zriz/core/dom`, like `loadImage` and `exportCrop`. `loadImage` and `exportCrop` reject instead, so catch them where you call them:"
+      ),
+      code("errors/save.ts"),
+      p(
+        "every `ZrizError` has a `code` from the table below, and its message starts with `zriz:`. the one exception is a `decode` function you pass to `loadImage`: when it throws, `loadImage` rejects with your own error as it is."
+      )
+    ),
+    section(
+      "codes",
+      table({
+        columns: [
+          column("code", "mono", { width: 200 }),
+          column("when it fires, and the fix", "prose"),
+        ],
+        fix: "fix",
+        rows: [
+          [
+            "cross-origin",
+            "the server sent the photo without `Access-Control-Allow-Origin`, the network dropped, or an `img`, `video` or `canvas` you pass is tainted.",
+            'send the header. if the request needs cookies, pass `crossOrigin="use-credentials"` to `Root`.',
+          ],
+          [
+            "unsupported-format",
+            "the file is heic, jpeg xl or tiff and this browser cannot decode it, either on load or when an export decodes the original again.",
+            "call `loadImage` yourself with your own `decode` function, as in [loading images](loading-images), or convert the file to jpeg first.",
+          ],
+          [
+            "decode",
+            "the url answered with an error status, the bytes are not an image, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, the browser gave no 2d canvas, or an export could not decode the original again.",
+            "open the url and check the response. if you are offline, try again once the network is back.",
+          ],
+          [
+            "timeout",
+            "a photo took over 15 s to load, or an export took over 30 s.",
+            "send a smaller file or export a smaller `maxSize`. for a slow network, load the photo yourself with a longer `timeout`, as in [loading images](loading-images).",
+          ],
+          [
+            "aborted",
+            "the `signal` you passed fired. `Root` also aborts its own load when `src` changes and never reports it.",
+            "nothing. skip this code in your catch.",
+          ],
+          [
+            "blank",
+            "the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones.",
+            "set `maxSize` to 2048 by 2048 or less.",
+          ],
+          [
+            "no-image",
+            "an export ran before a photo loaded, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo.",
+            "disable the export button until `onLoad` fires. keep `@zriz/core` at the same version as `@zriz/react`.",
+          ],
+        ],
+      })
+    ),
+    section(
+      "thrown errors",
+      p(
+        "these are plain `Error` objects that react shows in its error overlay. they mean a part or hook cannot find its cropper."
+      ),
+      messages("message", [
+        {
+          fix: "move the part inside `Root`. a part in a portal still needs `Root` above it in the react tree.",
+          message: "zriz: parts must be inside <Cropper.Root>",
+        },
+        {
+          fix: "a hook such as `useCropperValue` or `useZoom` ran outside `Root`. pass it the cropper from `useCropper`, or move the component inside `Root`.",
+          message: "zriz: pass a cropper or render inside <Cropper.Root>",
+        },
+        {
+          fix: "`Root` got `cropper` on its first render and none later. keep passing the same cropper, or give `Root` a new `key` to start a new one.",
+          message: "zriz: no cropper",
+        },
+      ])
+    ),
+    section(
+      "console warnings",
+      p(
+        "in development, `Area`, `Dial` and `Zoom` each warn once when nothing names them, with the part's name in the message. production builds print nothing."
+      ),
+      messages("message", [
+        {
+          fix: "name the part. [accessibility](accessibility) shows how to label each part.",
+          message:
+            "zriz: <Cropper.Area> needs aria-label, aria-labelledby or text. zriz ships no words, so screen readers get nothing otherwise.",
+        },
+      ])
+    ),
+  ],
+  lede: "every error zriz throws or reports, when it happens and how to fix it.",
+});

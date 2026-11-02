@@ -1,0 +1,1 @@
+pnpm add @zriz/react

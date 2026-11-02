@@ -1,0 +1,27 @@
+<div id="cropper" data-zriz-item="root">
+  <div
+    id="viewport"
+    data-zriz-item="viewport"
+    style="width: 480px; height: 360px; padding: 24px"
+  >
+    <div id="photo" data-zriz-item="image"></div>
+    <div id="mask" data-zriz-item="mask"></div>
+    <div
+      id="area"
+      data-zriz-item="area"
+      role="group"
+      tabindex="0"
+      aria-label="Crop area"
+    ></div>
+  </div>
+  <div
+    id="dial"
+    data-zriz-item="dial"
+    aria-label="Straighten"
+    style="position: relative"
+  >
+    <div id="ticks" data-zriz-item="dial-ticks"></div>
+  </div>
+</div>
+<input id="file" type="file" accept="image/*" />
+<p id="status" role="alert"></p>

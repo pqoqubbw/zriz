@@ -1,20 +1,37 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 
-import "@zriz/react/styles.css";
 import "./globals.css";
+import { cn } from "@/lib/cn";
 
-const sans = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const inter = localFont({
+  display: "swap",
+  src: "./fonts/inter.woff2",
+  variable: "--font-inter",
+  weight: "100 900",
+});
+
+const paperMono = localFont({
+  display: "swap",
+  src: "./fonts/paper-mono.woff2",
+  variable: "--font-paper-mono",
+  weight: "100 800",
+});
 
 export const metadata: Metadata = {
-  description: "Headless image cropper for React with the feel of iOS Photos.",
+  description:
+    "zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.",
   metadataBase: new URL("https://zriz.dev"),
   title: { default: "zriz", template: "%s | zriz" },
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#fdfdfc",
+};
+
 const Layout = ({ children }: { children: React.ReactNode }) => (
-  <html className={`${sans.variable} ${mono.variable}`} lang="en">
+  <html className={cn(inter.variable, paperMono.variable)} lang="en">
     <body>{children}</body>
   </html>
 );

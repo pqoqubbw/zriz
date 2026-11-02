@@ -10,7 +10,7 @@ export default defineConfig({
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
     "notes/**",
-    "apps/docs/public/sketch/**",
+    "apps/docs/snippets/**",
   ],
   options: { typeAware: true },
   overrides: [
@@ -18,6 +18,17 @@ export default defineConfig({
       files: ["apps/docs/**"],
       plugins: next.plugins ?? [],
       rules: { ...next.rules, "nextjs/no-html-link-for-pages": "off" },
+    },
+    {
+      files: ["apps/docs/components/doc/code-block.tsx"],
+      rules: {
+        "jsx-a11y/no-noninteractive-tabindex": "off",
+        "react/no-danger": "off",
+      },
+    },
+    {
+      files: ["apps/docs/components/doc/controls.tsx"],
+      rules: { "jsx-a11y/role-has-required-aria-props": "off" },
     },
     {
       files: ["apps/docs/next.config.ts"],
@@ -63,15 +74,6 @@ export default defineConfig({
         "test/react18/**",
       ],
       rules: { "eslint/prefer-arrow-callback": "off" },
-    },
-    {
-      files: ["apps/docs/demos/**"],
-      plugins: next.plugins ?? [],
-      rules: { ...next.rules, "nextjs/no-img-element": "off" },
-    },
-    {
-      files: ["apps/docs/components/demo.tsx"],
-      rules: { "react/no-danger": "off" },
     },
   ],
 });

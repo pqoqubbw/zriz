@@ -1,0 +1,8 @@
+[data-zriz-item="zoom-thumb"] {
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  translate: -50% 0;
+  background: #111;
+}

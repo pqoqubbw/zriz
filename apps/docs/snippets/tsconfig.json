@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["react", "node"],
+    "paths": {
+      "@zriz/core": ["../../../packages/core/src/index.ts"],
+      "@zriz/core/dom": [
+        "../../../packages/core/src/dom/index.ts"
+      ],
+      "@zriz/react": ["../../../packages/react/src/index.ts"],
+      "@zriz/react/cropper": [
+        "../../../packages/react/src/cropper.ts"
+      ],
+      "@zriz/react/warn": [
+        "../../../packages/react/src/warn.ts"
+      ]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
