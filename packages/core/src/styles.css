@@ -118,6 +118,7 @@
     left: 50%;
     width: 1px;
     height: 27px;
+    translate: -50% 0;
     background: var(--zriz-line, light-dark(#000, #fff));
     transition: 0.25s;
   }

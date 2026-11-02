@@ -209,6 +209,27 @@ describe("dial", () => {
     expect(fixture.dial.getAttribute("role")).toBe("slider");
   });
 
+  it("centres the middle tick and fits every tick in 361 px", async () => {
+    const style = document.createElement("style");
+    style.textContent = "[id^='dial-'] span { width: 1px; height: 10px; }";
+    document.head.append(style);
+    const fixture = mount();
+    await frames(3);
+    const host = fixture.dial.getBoundingClientRect();
+    const ticks = [...fixture.strip.children].map((tick) =>
+      tick.getBoundingClientRect()
+    );
+    const middle = ticks[(ticks.length - 1) / 2];
+    style.remove();
+    expect(ticks).toHaveLength(41);
+    expect(ticks[0]?.left).toBeGreaterThanOrEqual(host.left);
+    expect(ticks.at(-1)?.right).toBeLessThanOrEqual(host.right);
+    expect((middle?.left ?? 0) + 0.5).toBeCloseTo(
+      host.left + host.width / 2,
+      6
+    );
+  });
+
   it("snaps the ruler to device pixels", async () => {
     const fixture = mount();
     fixture.cropper.setRotation(3.3);

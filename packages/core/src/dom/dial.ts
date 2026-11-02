@@ -479,7 +479,8 @@ export const bindDialTicks = (
   const host = strip.parentElement;
   let centre = 0;
   const measure = (): void => {
-    centre = (host?.getBoundingClientRect().width ?? 0) / 2;
+    const tick = ticks[0]?.getBoundingClientRect().width ?? 0;
+    centre = ((host?.getBoundingClientRect().width ?? 0) - tick) / 2;
     cropper.invalidate();
   };
   const observer = host ? new ResizeObserver(measure) : null;
