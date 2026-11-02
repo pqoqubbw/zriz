@@ -83,21 +83,27 @@ const snappedCrop = (
     state.image.height - 1,
     Math.max(0, snapEdge(Math.min(...ys)))
   );
-  const right = Math.min(
-    state.image.width,
-    Math.max(left + 1, snapEdge(Math.max(...xs)))
-  );
-  const bottom = Math.min(
-    state.image.height,
-    Math.max(top + 1, snapEdge(Math.max(...ys)))
-  );
-  const centre = sourceToWorking(state, {
-    x: (left + right) / 2,
-    y: (top + bottom) / 2,
-  });
-  const sourceWidth = right - left;
-  const sourceHeight = bottom - top;
   const turned = state.turns % 2 !== 0;
+  let sourceWidth =
+    Math.min(state.image.width, Math.max(left + 1, snapEdge(Math.max(...xs)))) -
+    left;
+  let sourceHeight =
+    Math.min(state.image.height, Math.max(top + 1, snapEdge(Math.max(...ys)))) -
+    top;
+  if (state.aspect !== null) {
+    const ratio = turned ? 1 / state.aspect : state.aspect;
+    const fitHeight = Math.max(1, Math.round(sourceWidth / ratio));
+    const fitWidth = Math.max(1, Math.round(sourceHeight * ratio));
+    if (fitHeight < sourceHeight) {
+      sourceHeight = fitHeight;
+    } else if (fitWidth < sourceWidth) {
+      sourceWidth = fitWidth;
+    }
+  }
+  const centre = sourceToWorking(state, {
+    x: left + sourceWidth / 2,
+    y: top + sourceHeight / 2,
+  });
   return {
     crop: {
       height: turned ? sourceWidth : sourceHeight,

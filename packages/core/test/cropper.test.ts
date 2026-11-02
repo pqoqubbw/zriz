@@ -190,6 +190,32 @@ describe("events", () => {
     expect(cropper.getState().committed.rotation).toBe(8);
   });
 
+  it("keeps a locked square crop square in source pixels", () => {
+    fcAssert(
+      property(
+        double({ max: 0.99, min: 0.05, noNaN: true }),
+        double({ max: 0.95, min: 0.05, noNaN: true }),
+        double({ max: 0.95, min: 0.05, noNaN: true }),
+        constantFrom(0, 1, 2, 3),
+        (size, x, y, quarterTurns) => {
+          const cropper = createCropper({
+            defaultValue: { aspect: 1, quarterTurns },
+            image: { height: 3024, width: 4031 },
+          });
+          cropper.setValue({
+            center: { x, y },
+            size: { height: size, width: size * (3024 / 4031) },
+          });
+          const plan = cropper.getPixelCrop();
+          const small = plan ? cropper.getPixelCrop(512 / plan.width) : null;
+          cropper.destroy();
+          expect(plan?.width).toBe(plan?.height);
+          expect(small?.width).toBe(small?.height);
+        }
+      )
+    );
+  });
+
   it("destroys the plugins it started, even after setOptions", () => {
     const first = {
       destroy: vi.fn<() => void>(),
