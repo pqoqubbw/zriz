@@ -94,17 +94,17 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     if (aspect !== undefined && cropper.getValue().aspect !== aspect) {
       cropper.setAspect(aspect, { reason: "aspect" });
     }
-  }, [cropper, aspect, ready]);
+  }, [cropper, aspect, ready, rest.disabled]);
   useIsomorphicLayoutEffect(() => {
     if (rotation !== undefined && cropper.getValue().rotation !== rotation) {
       cropper.setRotation(rotation, { reason: "controlled" });
     }
-  }, [cropper, rotation, ready]);
+  }, [cropper, rotation, ready, rest.disabled]);
   useIsomorphicLayoutEffect(() => {
     if (zoom !== undefined && Math.abs(cropper.getZoom() - zoom) > 1e-6) {
       cropper.setZoom(zoom, { reason: "controlled" });
     }
-  }, [cropper, zoom, ready]);
+  }, [cropper, zoom, ready, rest.disabled]);
   useEffect(
     () => () => {
       own?.stop();

@@ -240,6 +240,34 @@ describe("react parts", () => {
     expect(api.current?.getZoom()).toBeCloseTo(2, 6);
   });
 
+  it("applies a controlled zoom set while disabled once enabled", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    const Editor = ({
+      disabled,
+      zoom,
+    }: {
+      disabled: boolean;
+      zoom: number;
+    }) => (
+      <Cropper.Root actionsRef={api} disabled={disabled} src={src} zoom={zoom}>
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image alt="" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    const screen = await render(<Editor disabled={false} zoom={1} />);
+    await ready(api);
+    await screen.rerender(<Editor disabled zoom={2} />);
+    await frames(2);
+    expect(api.current?.getZoom()).toBeCloseTo(1, 6);
+    await screen.rerender(<Editor disabled={false} zoom={2} />);
+    await frames(2);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+  });
+
   it("shrinks and grows a locked crop with alt and the arrows", async () => {
     const src = await photo();
     const api = createRef<CropperApi>();
