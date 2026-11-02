@@ -224,6 +224,22 @@ describe("react parts", () => {
     expect(image?.style.transform).toMatch(/^matrix\(/u);
   });
 
+  it("applies a controlled zoom given before the photo loads", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    await render(
+      <Cropper.Root actionsRef={api} src={src} zoom={2}>
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image alt="" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await ready(api);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+  });
+
   it("shrinks and grows a locked crop with alt and the arrows", async () => {
     const src = await photo();
     const api = createRef<CropperApi>();

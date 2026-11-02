@@ -44,6 +44,11 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
   if (!cropper) {
     throw new Error("zriz: no cropper");
   }
+  const ready = useSyncExternalStore(
+    cropper.subscribe,
+    () => cropper.getState().ready,
+    () => cropper.getState().ready
+  );
   const latest = useLatest(rest);
   const hasChange = rest.onValueChange !== undefined;
   const hasCommit = rest.onValueCommit !== undefined;
@@ -89,17 +94,17 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     if (aspect !== undefined && cropper.getValue().aspect !== aspect) {
       cropper.setAspect(aspect, { reason: "aspect" });
     }
-  }, [cropper, aspect]);
+  }, [cropper, aspect, ready]);
   useIsomorphicLayoutEffect(() => {
     if (rotation !== undefined && cropper.getValue().rotation !== rotation) {
       cropper.setRotation(rotation, { reason: "controlled" });
     }
-  }, [cropper, rotation]);
+  }, [cropper, rotation, ready]);
   useIsomorphicLayoutEffect(() => {
     if (zoom !== undefined && Math.abs(cropper.getZoom() - zoom) > 1e-6) {
       cropper.setZoom(zoom, { reason: "controlled" });
     }
-  }, [cropper, zoom]);
+  }, [cropper, zoom, ready]);
   useEffect(
     () => () => {
       own?.stop();
