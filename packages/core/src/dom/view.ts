@@ -498,6 +498,7 @@ export const viewOf = (cropper: Cropper): View => {
     aspect: "morph",
     flip: "flip",
     history: "morph",
+    orientation: "morph",
     reset: "morph",
     "rotate-90": "rotate",
   };
