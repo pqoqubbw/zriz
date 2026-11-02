@@ -45,10 +45,21 @@ const browser = () => ({
   provider: playwright(),
 });
 
+const docs = fileURLToPath(new URL("apps/docs/", import.meta.url));
+
 export default defineConfig({
   test: {
     maxWorkers: 2,
     projects: [
+      {
+        resolve: { alias: [{ find: /^@\//u, replacement: docs }] },
+        test: {
+          environment: "node",
+          include: ["apps/docs/test/**/*.test.ts"],
+          name: "docs",
+          setupFiles: ["apps/docs/test/setup.ts"],
+        },
+      },
       {
         resolve: { alias: [warn] },
         test: {
