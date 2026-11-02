@@ -521,7 +521,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         clock.cancel(handle);
         handle = null;
       }
-      for (const plugin of options.plugins ?? []) {
+      for (const plugin of initial.plugins ?? []) {
         plugin.destroy?.();
       }
       emit("destroy");

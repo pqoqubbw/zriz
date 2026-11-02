@@ -190,6 +190,25 @@ describe("events", () => {
     expect(cropper.getState().committed.rotation).toBe(8);
   });
 
+  it("destroys the plugins it started, even after setOptions", () => {
+    const first = {
+      destroy: vi.fn<() => void>(),
+      init: vi.fn<() => void>(),
+      name: "first",
+    };
+    const second = {
+      destroy: vi.fn<() => void>(),
+      init: vi.fn<() => void>(),
+      name: "second",
+    };
+    const cropper = createCropper({ plugins: [first] });
+    cropper.setOptions({ plugins: [second] });
+    cropper.destroy();
+    expect(first.destroy).toHaveBeenCalledOnce();
+    expect(second.init).not.toHaveBeenCalled();
+    expect(second.destroy).not.toHaveBeenCalled();
+  });
+
   it("stops the clock when idle and after destroy", () => {
     const { cropper, time } = setup();
     cropper.panBy(0.1, 0);
