@@ -72,6 +72,24 @@ describe("accessibility", () => {
       .toBeInTheDocument();
   });
 
+  it("speaks the same message again after a second commit", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Editor api={api} />);
+    await frames(3);
+    const region = (): string =>
+      screen.container.querySelector('[data-zriz-item="announcer"]')
+        ?.textContent ?? "";
+    api.current?.rotate90();
+    await frames(4);
+    const first = region();
+    api.current?.rotate90();
+    await frames(4);
+    const second = region();
+    expect(first.trim()).toBe("Saved");
+    expect(second.trim()).toBe("Saved");
+    expect(second).not.toBe(first);
+  });
+
   it("exposes the zoom slider with keys and percent text", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);

@@ -27,7 +27,12 @@ export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
   useEffect(
     () =>
       cropper.on("commit", (value, details) => {
-        setMessage(latest.current(value, details) ?? "");
+        const next = latest.current(value, details) ?? "";
+        setMessage((last) =>
+          next !== "" && last.trimEnd() === next
+            ? `${next}${last.endsWith("\u00A0") ? "" : "\u00A0"}`
+            : next
+        );
       }),
     [cropper, latest]
   );
