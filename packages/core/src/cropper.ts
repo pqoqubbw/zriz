@@ -294,7 +294,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     };
   };
 
-  const isPristine = (): boolean => valuesEqual(value, resetValue);
+  let resetFit: CropValue = resetValue;
+  const isPristine = (): boolean =>
+    valuesEqual(value, resetValue) || valuesEqual(value, resetFit);
 
   const makeSnapshot = (): CropperSnapshot => ({
     aspect: value.aspect,
@@ -473,6 +475,15 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const fromValue = (next: CropValue, size: Size): CropState =>
     valueToState(next, size, focal(size));
+
+  const fitReset = (): void => {
+    resetFit = image
+      ? stateToValue(
+          constrain(fromValue(resetValue, image), "centre"),
+          resetValue.aspect
+        )
+      : resetValue;
+  };
 
   const dropHolding = (): void => {
     for (const [task, holds] of tasks) {
@@ -663,6 +674,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
           : null;
       const first = state === null;
       image = next;
+      fitReset();
       if (!next) {
         state = null;
         emittedState = null;
@@ -694,6 +706,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     },
     setOptions(next) {
       options = { ...options, ...next };
+      fitReset();
       if (state && image) {
         commitState(state, "centre", { reason: "coverage" }, "coverage");
       }

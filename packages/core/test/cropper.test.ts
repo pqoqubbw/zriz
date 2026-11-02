@@ -190,6 +190,24 @@ describe("events", () => {
     expect(cropper.getState().committed.rotation).toBe(8);
   });
 
+  it("reads pristine when the start value is refitted to the photo", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { aspect: 1, rotation: 60 },
+      image: { height: 3024, width: 4032 },
+    });
+    time.frames(2);
+    expect(cropper.getState().pristine).toBeTruthy();
+    cropper.setRotation(10);
+    time.frames(2);
+    expect(cropper.getState().pristine).toBeFalsy();
+    cropper.reset();
+    time.frames(2);
+    expect(cropper.getState().pristine).toBeTruthy();
+    cropper.destroy();
+  });
+
   it("keeps a locked square crop square in source pixels", () => {
     fcAssert(
       property(
