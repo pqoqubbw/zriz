@@ -58,6 +58,20 @@ describe("accessibility", () => {
     expect(result.violations.map((v) => v.id)).toStrictEqual([]);
   });
 
+  it("names the photo with alt", async () => {
+    const screen = await render(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Image alt="A dog on a beach" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await frames(2);
+    await expect
+      .element(screen.getByRole("img", { name: "A dog on a beach" }))
+      .toBeInTheDocument();
+  });
+
   it("exposes the zoom slider with keys and percent text", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);

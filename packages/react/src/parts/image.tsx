@@ -33,8 +33,9 @@ export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
     className,
     props: mergeProps(
       {
+        "aria-label": alt === "" ? undefined : alt,
         children: [
-          <img alt={alt} draggable={false} key="motion" />,
+          <img alt="" draggable={false} key="motion" />,
           <canvas aria-hidden key="rest" />,
         ],
         "data-ready": ready ? "" : undefined,
