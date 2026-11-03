@@ -26,7 +26,7 @@ The pages in `apps/docs/content` are the spec for public behaviour and API. If t
 - `pnpm type` type-checks every workspace and writes the Next.js route types that `pnpm check` needs. On a fresh clone, run `build:packages`, then `type`, then `check`.
 - `pnpm test` runs unit tests in node and browser tests in chromium, firefox and webkit. `pnpm test:unit` skips the browsers.
 - `pnpm build:packages`, `pnpm lint:package` (publint and attw), `pnpm size` (size-limit).
-- `pnpm changeset` adds a release note. Every change that users of `@zriz/core` or `@zriz/react` can notice needs one.
+- `/release` in Claude Code prepares a release: changelog, version bump and pull request. Only the maintainer runs it. `apps/docs/content/releases.ts` is the only source of the changelog.
 - `pnpm sim` opens the docs in a booted iOS simulator. It needs macOS with Xcode. Boot one with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun simctl boot <device>`.
 
 All of check, type, test, lint:package and size must pass before a commit. CI runs the same steps on every pull request.

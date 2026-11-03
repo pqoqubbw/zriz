@@ -56,7 +56,6 @@ The repo ships settings for VS Code, Cursor and Zed, and an `.editorconfig` for 
 | `pnpm build:packages` | Build `@zriz/core` and `@zriz/react` |
 | `pnpm lint:package` | publint and are-the-types-wrong on the built packages |
 | `pnpm size` | Bundle size limits |
-| `pnpm changeset` | Add a changeset |
 
 ## What CI runs
 
@@ -64,11 +63,9 @@ Every pull request and every push to `main` runs lint, format, types, the packag
 
 CI on a pull request from a fork waits until I approve the run, and again after each new push. That can take a day.
 
-## Changesets
+## Releases
 
-If your change touches `packages/core` or `packages/react` and a user could notice it, run `pnpm changeset`. Pick patch, minor or major, and write one sentence for the changelog. Both packages always release together.
-
-Docs, tests and CI changes don't need a changeset.
+You don't need a changelog entry or a version bump. If a user could notice your change, say what they would notice in the pull request. The maintainer writes the changelog when cutting a release, and both packages always release together.
 
 ## Code rules
 
