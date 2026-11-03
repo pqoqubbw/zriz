@@ -253,13 +253,18 @@ const noClassVariable = {
   }),
 };
 
+const outsideSnippets = (rule) => ({
+  create: (context) =>
+    context.filename.includes("/snippets/") ? {} : rule.create(context),
+});
+
 const plugin = {
   meta: { name: "docs" },
   rules: {
-    "constant-case": constantCase,
-    "export-list": exportList,
-    "no-class-variable": noClassVariable,
-    "props-type": propsType,
+    "constant-case": outsideSnippets(constantCase),
+    "export-list": outsideSnippets(exportList),
+    "no-class-variable": outsideSnippets(noClassVariable),
+    "props-type": outsideSnippets(propsType),
   },
 };
 
