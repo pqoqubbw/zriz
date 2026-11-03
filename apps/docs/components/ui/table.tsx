@@ -38,7 +38,7 @@ const tableCellVariants = cva("", {
   compoundVariants: [{ class: "font-medium", kind: "mono", tone: "ink" }],
   defaultVariants: { end: false },
   variants: {
-    end: { false: "", true: "sm:text-right" },
+    end: { false: "", true: "tabular-nums sm:text-right" },
     kind: {
       head: "font-book",
       mono: "min-w-0 font-mono text-cell-mono *:wrap-break-word *:whitespace-pre-wrap max-sm:*:wrap-anywhere",
