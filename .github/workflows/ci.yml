@@ -68,21 +68,15 @@ jobs:
       - run: pnpm exec vitest run --project '!* (chromium)' --project '!* (firefox)' --project '!* (webkit)'
 
   browser:
-    name: browser (${{ matrix.engine }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: browser (${{ matrix.engine }})
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - engine: chromium
-            os: ubuntu-24.04
-          - engine: firefox
-            os: macos-26
-          - engine: webkit
-            os: macos-26
+        engine: [chromium, firefox, webkit]
     env:
       ENGINE: ${{ matrix.engine }}
     steps:
@@ -98,15 +92,14 @@ jobs:
       - run: pnpm build:packages
       - name: install the browser
         run: |
-          args=("$ENGINE")
+          args=("$ENGINE" --with-deps)
           if [ "$ENGINE" = chromium ]; then args+=(--only-shell); fi
-          if [ "$RUNNER_OS" = Linux ]; then args+=(--with-deps); fi
           pnpm exec playwright install "${args[@]}"
       - run: pnpm exec vitest run --project "* ($ENGINE)"
       - if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: browser-${{ matrix.engine }}-${{ matrix.os }}
+          name: browser-${{ matrix.engine }}
           path: |
             .vitest/attachments
             **/__screenshots__
