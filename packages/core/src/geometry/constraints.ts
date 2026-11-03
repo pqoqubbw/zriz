@@ -163,7 +163,12 @@ const freePlanes = (
       const nx = xVaries && Math.abs(plane.nx) > SLOPE_EPSILON ? plane.nx : 0;
       const ny = yVaries && Math.abs(plane.ny) > SLOPE_EPSILON ? plane.ny : 0;
       if (nx !== 0 || ny !== 0) {
-        planes.push({ d: plane.d - fixed, nx, ny });
+        const length = Math.hypot(nx, ny);
+        planes.push({
+          d: (plane.d - fixed) / length,
+          nx: nx / length,
+          ny: ny / length,
+        });
       }
     }
   }

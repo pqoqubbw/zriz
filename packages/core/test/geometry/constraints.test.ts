@@ -266,6 +266,33 @@ describe("handle drag constraints", () => {
     );
   });
 
+  it("stops at a plane a near-zero angle leaves almost parallel, without a jump back", () => {
+    const s = {
+      angle: -5.729577951308234e-8,
+      aspect: null,
+      crop: { height: 0.9999999979, width: 0.09999999979, x: 0, y: 0 },
+      flip: false,
+      image: { height: 7, width: 1 },
+      perspective: { focal: 1, horizontal: 0, vertical: 0 },
+      turns: 3 as const,
+    };
+    const { planes } = limitsFor(s, 0);
+    const start = toRect(s);
+    const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
+    const edges = [1.05, 1.5, 2.01, 2.05].map(
+      (x) => dragHandle(start, "e", { x, y: 0 }, limits, s.crop.width).x1
+    );
+    for (const [i, edge] of edges.entries()) {
+      expect(edge).toBeGreaterThanOrEqual(
+        edges[i - 1] ?? Number.NEGATIVE_INFINITY
+      );
+    }
+    expect(dragHandle(start, "e", { x: 2.05, y: 0 }, limits).x1).toBeCloseTo(
+      1.05,
+      6
+    );
+  });
+
   it("gives the exact straighten limit for a minimum crop size", () => {
     assert(
       property(
