@@ -1,7 +1,17 @@
 name: release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - packages/core/package.json
+      - packages/react/package.json
   workflow_dispatch:
+    inputs:
+      rehearse:
+        description: Build and pack only, publish nothing
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -12,42 +22,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  select-mode:
-    name: select mode
+  gate:
+    name: gate
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
+      checks: read
       contents: read
+      pull-requests: read
     outputs:
-      mode: ${{ steps.select-mode.outputs.mode }}
-      publish-plan-artifact-id: ${{ steps.select-mode.outputs.publish-plan-artifact-id }}
+      release: ${{ steps.gate.outputs.release }}
+      sha: ${{ steps.gate.outputs.sha }}
+      version: ${{ steps.gate.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.22.2
           package-manager-cache: false
-      - run: pnpm install --frozen-lockfile
-      - id: select-mode
-        uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REHEARSE: ${{ inputs.rehearse }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+        run: bash scripts/release-gate.sh
 
   pack:
     name: pack
-    needs: select-mode
-    if: needs.select-mode.outputs.mode == 'publish'
+    needs: gate
+    if: needs.gate.outputs.release == 'true' || inputs.rehearse
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
-    outputs:
-      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.gate.outputs.sha }}
           persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -58,30 +73,94 @@ jobs:
       - run: pnpm build:packages
       - run: pnpm lint:package
       - run: pnpm size
-      - id: pack
-        uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+      - run: |
+          pnpm --filter @zriz/core pack --pack-destination "$RUNNER_TEMP/tarballs"
+          pnpm --filter @zriz/react pack --pack-destination "$RUNNER_TEMP/tarballs"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
+          name: tarballs
+          path: ${{ runner.temp }}/tarballs
+          if-no-files-found: error
+          retention-days: 30
 
-  publish:
-    name: publish
-    needs: pack
+  stage:
+    name: stage
+    needs: [gate, pack]
+    if: needs.gate.outputs.release == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    environment: npm
+    timeout-minutes: 10
     permissions:
-      contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.22.2
           package-manager-cache: false
-      - run: pnpm install --frozen-lockfile
-      - uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+          name: tarballs
+          path: tarballs
+      - env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          status=0
+          for package in core react; do
+            if ! output="$(npm stage publish "./tarballs/zriz-$package-$VERSION.tgz" 2>&1)"; then
+              echo "$output"
+              if echo "$output" | grep -qiE 'already|exists|E409'; then
+                echo "::warning::@zriz/$package@$VERSION was staged or published before"
+              else
+                status=1
+              fi
+            else
+              echo "$output"
+            fi
+          done
+          if [ "$status" -eq 0 ]; then
+            echo "Approve both versions on npmjs.com. Nothing is live until then." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
+
+  github-release:
+    name: github release
+    needs: [gate, stage]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.2
+          package-manager-cache: false
+      - name: wait for the approval on npm
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          for _ in $(seq 1 120); do
+            core="$(npm view "@zriz/core@$VERSION" version 2> /dev/null || true)"
+            react="$(npm view "@zriz/react@$VERSION" version 2> /dev/null || true)"
+            if [ "$core" = "$VERSION" ] && [ "$react" = "$VERSION" ]; then
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::$VERSION is not live after an hour. Approve it on npmjs.com, then rerun this job"
+          exit 1
+      - env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.gate.outputs.sha }}
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "v$VERSION already has a release"
+            exit 0
+          fi
+          node scripts/release-notes.ts "$VERSION" > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" --target "$SHA" --title "$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
