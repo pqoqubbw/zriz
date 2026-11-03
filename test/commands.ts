@@ -40,6 +40,14 @@ export const drag: BrowserCommand<[selector: string, path: Path]> = async (
   await mouse.down();
   for (const [x, y, pause] of rest) {
     if (pause !== undefined) {
+      const frame = await context.frame();
+      await frame.evaluate(async () => {
+        await new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(resolve);
+          });
+        });
+      });
       await new Promise((resolve) => {
         setTimeout(resolve, pause);
       });
