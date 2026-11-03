@@ -57,7 +57,7 @@ const Heading = ({
   return (
     <Tag className={className} id={id}>
       <a
-        className="decoration-underline decoration-1 [text-underline-position:from-font] hover:underline focus-visible:outline-offset-4"
+        className="decoration-underline decoration-1 [text-underline-position:from-font] hover:underline"
         href={`#${id}`}
       >
         {children}

@@ -17,7 +17,7 @@ const Choice = ({
       <legend className="sr-only">{control.name}</legend>
       {control.options.map((option) => (
         <label
-          className="rounded-item text-control text-faint has-checked:text-ink has-checked:shadow-raised has-focus-visible:outline-ink flex h-7 cursor-pointer items-center px-2.5 has-checked:bg-white has-checked:font-medium has-focus-visible:outline-2 has-focus-visible:outline-offset-1"
+          className="rounded-item text-control text-faint has-checked:text-ink has-checked:shadow-raised has-focus-visible:corners flex h-7 cursor-pointer items-center px-2.5 has-checked:bg-white has-checked:font-medium"
           key={option}
         >
           <input

@@ -6,7 +6,7 @@ import { Icon } from "@/components/doc/icon";
 import { NavList } from "@/components/shell/nav-list";
 
 const button =
-  "-mr-3 flex size-11 cursor-pointer items-center justify-center rounded-control";
+  "group -mr-3 flex size-11 cursor-pointer items-center justify-center rounded-control focus-visible:[border-image-source:none]";
 
 export const Menu = ({ logo }: { logo: React.ReactNode }) => {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -34,7 +34,9 @@ export const Menu = ({ logo }: { logo: React.ReactNode }) => {
         }}
         type="button"
       >
-        <Icon className="size-5" name="menu" />
+        <span className="group-focus-visible:corners flex">
+          <Icon className="size-5" name="menu" />
+        </span>
       </button>
       <dialog
         aria-label="menu"
@@ -55,7 +57,9 @@ export const Menu = ({ logo }: { logo: React.ReactNode }) => {
               }}
               type="button"
             >
-              <Icon className="size-5" name="close" />
+              <span className="group-focus-visible:corners flex">
+                <Icon className="size-5" name="close" />
+              </span>
             </button>
           </div>
           <nav

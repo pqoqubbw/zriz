@@ -19,7 +19,7 @@ export const CodeBlock = async ({
     aria-label={`${languageOf(file).fence} code`}
     className={cn(
       cn(
-        "rounded-panel bg-surface [scrollbar-width:none] overflow-x-auto overscroll-x-contain",
+        "rounded-panel bg-surface [scrollbar-width:none] overflow-x-auto overscroll-x-contain max-sm:[border-image-outset:0]",
         bleed
       ),
       className
