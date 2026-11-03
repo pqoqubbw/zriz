@@ -11,6 +11,8 @@ next-env.d.ts
 __screenshots__
 .vitest-attachments
 test-results
-
-notes
 .vitest
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
