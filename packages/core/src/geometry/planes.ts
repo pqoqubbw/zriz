@@ -76,21 +76,6 @@ export const insidePlanes = (
     (plane) => plane.nx * point.x + plane.ny * point.y <= plane.d + epsilon
   );
 
-const planeExcess = (
-  planes: readonly HalfPlane[],
-  point: Point,
-  epsilon: number
-): number => {
-  let excess = 0;
-  for (const plane of planes) {
-    const over = plane.nx * point.x + plane.ny * point.y - plane.d;
-    if (over > epsilon && over > excess) {
-      excess = over;
-    }
-  }
-  return excess;
-};
-
 export const projectOntoPlanes = (
   planes: readonly HalfPlane[],
   point: Point,
@@ -120,7 +105,12 @@ export const projectOntoPlanes = (
   let bestExcess = Number.POSITIVE_INFINITY;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const candidate of candidates) {
-    const excess = planeExcess(planes, candidate, epsilon * 10);
+    const excess = Math.max(
+      epsilon * 10,
+      ...planes.map(
+        (plane) => plane.nx * candidate.x + plane.ny * candidate.y - plane.d
+      )
+    );
     const distance =
       (candidate.x - point.x) ** 2 + (candidate.y - point.y) ** 2;
     if (
