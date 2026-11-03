@@ -1,6 +1,7 @@
 import { cn } from "@/lib/cn";
 import { highlight } from "@/lib/doc/highlight";
 import { languageOf } from "@/lib/doc/snippets";
+import { bleed } from "@/lib/styles";
 
 const roles =
   "[&_.a]:text-code-attr [&_.c]:text-code-comment [&_.k]:text-accent [&_.n]:text-code-number [&_.p]:text-code-punct [&_.s]:text-code-string [&_.t]:text-code-tag";
@@ -17,7 +18,10 @@ export const CodeBlock = async ({
   <figure
     aria-label={`${languageOf(file).fence} code`}
     className={cn(
-      "rounded-panel bg-surface [scrollbar-width:none] overflow-x-auto overscroll-x-contain max-sm:-mx-4 max-sm:rounded-none",
+      cn(
+        "rounded-panel bg-surface [scrollbar-width:none] overflow-x-auto overscroll-x-contain",
+        bleed
+      ),
       className
     )}
     tabIndex={0}

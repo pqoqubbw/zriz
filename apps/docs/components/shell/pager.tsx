@@ -1,15 +1,21 @@
+import { cva } from "class-variance-authority";
 import Link from "next/link";
 
-import { cn } from "@/lib/cn";
 import { order, pathOf, titleOf } from "@/lib/nav";
 import type { Slug } from "@/lib/nav";
 
+const side = cva("-my-3 flex flex-col gap-0.5 py-3", {
+  variants: {
+    label: {
+      next: "col-start-2 items-end text-right",
+      previous: "col-start-1 items-start",
+    },
+  },
+});
+
 const Side = ({ label, slug }: { label: "next" | "previous"; slug: Slug }) => (
   <Link
-    className={cn(
-      "-my-px flex min-w-11 flex-col gap-0.5 py-px",
-      label === "next" ? "ml-auto items-end" : ""
-    )}
+    className={side({ label })}
     href={pathOf(slug)}
     rel={label === "next" ? "next" : "prev"}
   >
@@ -23,7 +29,7 @@ export const Pager = ({ slug }: { slug: Slug }) => {
   const previous = order[at - 1];
   const next = order[at + 1];
   return (
-    <nav aria-label="pages" className="flex pt-4">
+    <nav aria-label="pages" className="grid grid-cols-2 gap-4 pt-4">
       {previous !== undefined && <Side label="previous" slug={previous} />}
       {next !== undefined && <Side label="next" slug={next} />}
     </nav>

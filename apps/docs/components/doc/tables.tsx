@@ -15,6 +15,7 @@ import type {
   NamedRow,
   PropRow,
 } from "@/lib/doc/schema";
+import { bleed } from "@/lib/styles";
 
 const glyphs: Record<string, string> = {
   alt: "⌥",
@@ -108,8 +109,10 @@ const templateOf = (columns: readonly Column[], fix: boolean): string => {
     .join(" ");
 };
 
-const panel =
-  "flex flex-col rounded-panel bg-surface px-4 text-left sm:grid sm:gap-x-4";
+const panel = cn(
+  "rounded-panel bg-surface flex flex-col px-4 text-left sm:grid sm:gap-x-4",
+  bleed
+);
 const headRow =
   "col-span-full flex pt-2 pb-1.75 text-caption text-muted sm:grid sm:grid-cols-subgrid";
 const bodyRow =
@@ -215,7 +218,8 @@ const cellOf = (
   column: Column,
   first: boolean,
   muted: boolean,
-  value: string
+  value: string,
+  labelled: boolean
 ) => (
   <td
     className={cell({
@@ -225,7 +229,7 @@ const cellOf = (
     })}
     key={column.label}
   >
-    {!first && <ColumnName text={column.label} />}
+    {labelled && !first && <ColumnName text={column.label} />}
     {column.kind === "mono" ? (
       <Tokens items={typeTokens(value, true)} />
     ) : (
@@ -252,7 +256,13 @@ export const Table = ({
       }))}
       rows={rows.map((row, r) => ({
         cells: columns.map((column, i) =>
-          cellOf(column, i === 0, fix !== undefined, row[i] ?? "")
+          cellOf(
+            column,
+            i === 0,
+            fix !== undefined,
+            row[i] ?? "",
+            columns.length > 2
+          )
         ),
         continues: row[0] === "" && r > 0,
         ...(fix === undefined
@@ -285,7 +295,6 @@ export const NamedTable = ({
           {row.name}
         </td>,
         <td className="text-cell text-soft" key="text">
-          <ColumnName text={heads[kind][1]} />
           <Text source={withoutStop(row.text)} />
         </td>,
       ],
@@ -322,7 +331,7 @@ export const KeyTable = ({
   />
 );
 
-const list = "flex flex-col rounded-panel bg-surface px-4";
+const list = cn("rounded-panel bg-surface flex flex-col px-4", bleed);
 const listHead = "pt-2 pb-1.75 text-caption text-muted";
 const listRow = "flex flex-col gap-0.5 py-2.75 inset-shadow-rule";
 const gapAfterName = "inline-block w-3";

@@ -11,12 +11,12 @@ import { groups, pathOf } from "@/lib/nav";
 const item = cva("text-nav hover:text-ink block w-full", {
   variants: {
     active: { false: "text-muted", true: "font-strong text-ink" },
-    roomy: { false: "py-0.5", true: "py-3" },
+    roomy: { false: "py-0.5", true: "py-1.5" },
   },
 });
 
 const title = cva("text-caption text-group", {
-  variants: { roomy: { false: "py-0.5", true: "pt-3 pb-1" } },
+  variants: { roomy: { false: "py-0.5", true: "pt-1.5 pb-0.5" } },
 });
 
 export const NavList = ({ roomy }: { roomy: boolean }) => {
@@ -29,7 +29,7 @@ export const NavList = ({ roomy }: { roomy: boolean }) => {
       ?.scrollIntoView({ block: "nearest" });
   }, [pathname]);
   return (
-    <div className={cn("flex flex-col", roomy ? "gap-2" : "gap-7")} ref={list}>
+    <div className={cn("flex flex-col", roomy ? "gap-5" : "gap-7")} ref={list}>
       {groups.map((group) => {
         const id = `nav-${roomy ? "menu" : "side"}-${group.title || "start"}`;
         return (

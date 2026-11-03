@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { cn } from "@/lib/cn";
 import type { Control } from "@/lib/doc/schema";
+import { bleed } from "@/lib/styles";
 
 const Choice = ({
   control,
@@ -99,7 +100,10 @@ export const Controls = ({
   controls: readonly Control[];
 }) => (
   <div
-    className={cn("rounded-panel bg-surface flex flex-col px-4", className)}
+    className={cn(
+      cn("rounded-panel bg-surface flex flex-col px-4", bleed),
+      className
+    )}
     data-markdown-ignore=""
   >
     {controls.map((control, i) => (

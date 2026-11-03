@@ -2,6 +2,7 @@
 @source "../app";
 @source "../components";
 @source "../lib/doc/flow.ts";
+@source "../lib/styles.ts";
 
 @custom-variant thumb {
   &::-webkit-slider-thumb {

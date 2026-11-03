@@ -4,7 +4,7 @@ import { NavList } from "@/components/shell/nav-list";
 
 const DocsLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="grid grid-cols-[minmax(0,35rem)] justify-center px-4 md:grid-cols-[11rem_minmax(35rem,50rem)] md:gap-x-20 md:px-8">
-    <header className="bg-page sticky top-0 z-10 row-start-1 flex h-11 items-center justify-between md:hidden">
+    <header className="bg-page sticky top-0 z-10 row-start-1 -mx-4 flex h-11 items-center justify-between px-4 md:hidden">
       <Logo />
       <Menu logo={<Logo />} />
     </header>

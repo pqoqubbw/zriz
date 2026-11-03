@@ -19,6 +19,7 @@ import { gapClass, slotOf } from "@/lib/doc/flow";
 import type { Slot } from "@/lib/doc/flow";
 import type { Block, BlockOf, Kind } from "@/lib/doc/schema";
 import { textOf } from "@/lib/doc/snippets";
+import { bleed } from "@/lib/styles";
 
 type Before = Slot | "answer" | null;
 
@@ -127,7 +128,10 @@ const renderers: { [K in Kind]: Renderer<K> } = {
   log: (block, { className }) => (
     <div
       className={cn(
-        "rounded-panel bg-surface text-code flex flex-col p-4 font-mono",
+        cn(
+          "rounded-panel bg-surface text-code flex flex-col p-4 font-mono",
+          bleed
+        ),
         className
       )}
     >
@@ -169,7 +173,10 @@ const renderers: { [K in Kind]: Renderer<K> } = {
   prompt: (block, { className }) => (
     <div
       className={cn(
-        "rounded-panel bg-surface flex items-start gap-3 py-4 pr-3 pl-4",
+        cn(
+          "rounded-panel bg-surface flex items-start gap-3 py-4 pr-3 pl-4",
+          bleed
+        ),
         className
       )}
       data-copy=""
