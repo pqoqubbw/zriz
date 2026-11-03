@@ -13,7 +13,7 @@ type PagerProps = {
   slug: Slug;
 };
 
-const pagerLinkVariants = cva("-my-3 flex flex-col gap-0.5 py-3", {
+const pagerLinkVariants = cva("group -my-3 flex flex-col gap-0.5 py-3", {
   variants: {
     label: {
       next: "col-start-2 items-end text-right",
@@ -28,8 +28,12 @@ const PagerLink = ({ label, slug }: PagerLinkProps) => (
     href={pagePath(slug)}
     rel={label === "next" ? "next" : "prev"}
   >
-    <span className="text-small text-faint">{label}</span>
-    <span className="font-medium">{titleOf(slug)}</span>
+    <span className="text-small text-faint transition-colors duration-150 ease-out group-hover:text-muted motion-reduce:transition-none">
+      {label}
+    </span>
+    <span className="font-medium underline decoration-transparent decoration-1 transition-colors duration-150 ease-out group-hover:decoration-ink motion-reduce:transition-none">
+      {titleOf(slug)}
+    </span>
   </Link>
 );
 

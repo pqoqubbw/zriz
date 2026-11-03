@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { CN_THEME, cn } from "@/lib/cn";
 
 const THEME_TOKEN =
-  /^\s*--(?<group>font-weight|inset-shadow|radius|shadow|text)-(?<name>[a-z0-9-]+):/gmu;
+  /^\s*--(?<group>font-weight|inset-shadow|radius|shadow|text|tracking)-(?<name>[a-z0-9-]+):/gmu;
 
 const themeNames = (): Record<string, string[]> => {
   const css = readFileSync("app/globals.css", "utf-8");

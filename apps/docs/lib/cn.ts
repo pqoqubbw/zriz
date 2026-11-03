@@ -20,6 +20,7 @@ const CN_THEME = {
     "control",
     "small",
   ],
+  tracking: ["strong"],
 };
 
 const cn = createCn({ extend: { theme: CN_THEME } });
