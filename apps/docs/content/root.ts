@@ -9,7 +9,7 @@ import {
   section,
 } from "@/lib/doc/define";
 
-export const root = defineDoc({
+const ROOT_PAGE = defineDoc({
   blocks: [
     demo("root"),
     section(
@@ -220,3 +220,5 @@ export const root = defineDoc({
   ],
   lede: "`Root` loads the photo, keeps the crop and holds every other part.",
 });
+
+export { ROOT_PAGE };

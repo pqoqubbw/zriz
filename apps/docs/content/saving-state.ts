@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, excerpt, p, section } from "@/lib/doc/define";
 
-export const savingState = defineDoc({
+const SAVING_STATE_PAGE = defineDoc({
   blocks: [
     demo("saving-state", 56),
     section(
@@ -43,3 +43,5 @@ export const savingState = defineDoc({
   ],
   lede: "keep the crop for each photo in local storage and bring it back on the next visit.",
 });
+
+export { SAVING_STATE_PAGE };

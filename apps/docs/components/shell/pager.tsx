@@ -1,10 +1,19 @@
 import { cva } from "class-variance-authority";
 import Link from "next/link";
 
-import { order, pathOf, titleOf } from "@/lib/nav";
+import { PAGE_ORDER, pagePath, titleOf } from "@/lib/nav";
 import type { Slug } from "@/lib/nav";
 
-const side = cva("-my-3 flex flex-col gap-0.5 py-3", {
+type PagerLinkProps = {
+  label: "next" | "previous";
+  slug: Slug;
+};
+
+type PagerProps = {
+  slug: Slug;
+};
+
+const pagerLinkVariants = cva("-my-3 flex flex-col gap-0.5 py-3", {
   variants: {
     label: {
       next: "col-start-2 items-end text-right",
@@ -13,10 +22,10 @@ const side = cva("-my-3 flex flex-col gap-0.5 py-3", {
   },
 });
 
-const Side = ({ label, slug }: { label: "next" | "previous"; slug: Slug }) => (
+const PagerLink = ({ label, slug }: PagerLinkProps) => (
   <Link
-    className={side({ label })}
-    href={pathOf(slug)}
+    className={pagerLinkVariants({ label })}
+    href={pagePath(slug)}
     rel={label === "next" ? "next" : "prev"}
   >
     <span className="text-small text-faint">{label}</span>
@@ -24,14 +33,17 @@ const Side = ({ label, slug }: { label: "next" | "previous"; slug: Slug }) => (
   </Link>
 );
 
-export const Pager = ({ slug }: { slug: Slug }) => {
-  const at = order.indexOf(slug);
-  const previous = order[at - 1];
-  const next = order[at + 1];
+const Pager = ({ slug }: PagerProps) => {
+  const at = PAGE_ORDER.indexOf(slug);
+  const previous = PAGE_ORDER[at - 1];
+  const next = PAGE_ORDER[at + 1];
+
   return (
     <nav aria-label="pages" className="grid grid-cols-2 gap-4 pt-4">
-      {previous !== undefined && <Side label="previous" slug={previous} />}
-      {next !== undefined && <Side label="next" slug={next} />}
+      {previous !== undefined && <PagerLink label="previous" slug={previous} />}
+      {next !== undefined && <PagerLink label="next" slug={next} />}
     </nav>
   );
 };
+
+export { Pager };

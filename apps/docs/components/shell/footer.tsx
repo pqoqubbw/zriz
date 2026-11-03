@@ -1,29 +1,38 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { Mark } from "@/components/doc/icon";
-import { links } from "@/lib/site";
+import { Mark } from "@/components/shell/logo";
+import { pagePath } from "@/lib/nav";
+import { SITE_LINKS } from "@/lib/site";
 
-const link = "-mx-2.5 -my-3 px-2.5 py-3 hover:text-ink";
+type FooterLinkProps = {
+  children: ReactNode;
+  href: string;
+};
 
-export const Footer = () => (
-  <footer className="text-caption flex flex-wrap items-center justify-between gap-4 pt-24 pb-16">
-    <div className="text-soft flex items-center gap-5">
-      <a className={link} href={links.github}>
-        github
-      </a>
-      <a className={link} href={links.npm}>
-        npm
-      </a>
-      <Link className={link} href="/docs/changelog" prefetch={false}>
-        changelog
-      </Link>
-      <a className={link} href="/llms.txt">
-        llms.txt
-      </a>
+const FooterLink = ({ children, href }: FooterLinkProps) => (
+  <Link
+    className="-mx-2.5 -my-3 px-2.5 py-3 hover:text-ink"
+    href={href}
+    prefetch={false}
+  >
+    {children}
+  </Link>
+);
+
+const Footer = () => (
+  <footer className="flex flex-wrap items-center justify-between gap-4 pt-24 pb-16 text-caption">
+    <div className="flex items-center gap-5 text-soft">
+      <FooterLink href={SITE_LINKS.github}>github</FooterLink>
+      <FooterLink href={SITE_LINKS.npm}>npm</FooterLink>
+      <FooterLink href={pagePath("changelog")}>changelog</FooterLink>
+      <FooterLink href="/llms.txt">llms.txt</FooterLink>
     </div>
-    <div className="text-faint flex items-center gap-2">
-      <Mark className="text-ink size-4 shrink-0 opacity-45" />
+    <div className="flex items-center gap-2 text-faint">
+      <Mark className="size-4 shrink-0 text-ink opacity-45" />
       made by dmytro
     </div>
   </footer>
 );
+
+export { Footer };

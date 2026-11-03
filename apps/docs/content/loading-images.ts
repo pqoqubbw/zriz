@@ -1,6 +1,6 @@
 import { code, column, defineDoc, p, section, table } from "@/lib/doc/define";
 
-export const loadingImages = defineDoc({
+const LOADING_IMAGES_PAGE = defineDoc({
   blocks: [
     section(
       "open a file from an input",
@@ -106,3 +106,5 @@ export const loadingImages = defineDoc({
   ],
   lede: "open a photo from a file input, a url or a blob, and check which formats and sizes load.",
 });
+
+export { LOADING_IMAGES_PAGE };

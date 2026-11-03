@@ -1,8 +1,7 @@
-import { fullMarkdown } from "@/lib/doc/markdown";
+import { fullMarkdown } from "@/lib/doc/llms";
+import { textResponse } from "@/lib/responses";
 
+const GET = () => textResponse(fullMarkdown(), "text/plain");
+
+export { GET };
 export const dynamic = "force-static";
-
-export const GET = () =>
-  new Response(fullMarkdown(), {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });

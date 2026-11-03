@@ -1,6 +1,6 @@
 import { column, defineDoc, p, section, table } from "@/lib/doc/define";
 
-export const bundleSize = defineDoc({
+const BUNDLE_SIZE_PAGE = defineDoc({
   blocks: [
     section(
       "first load",
@@ -42,18 +42,18 @@ export const bundleSize = defineDoc({
         rows: [
           [
             "render",
-            "the first export. it starts downloading once the first photo attaches.",
+            "the first export. it starts downloading once the first photo attaches",
             "2.95 kB",
           ],
           [
             "sharpen",
-            "the sharper redraw at rest and on deep zoom. it starts downloading after the first paint.",
+            "the sharper redraw at rest and on deep zoom. it starts downloading after the first paint",
             "1.83 kB",
           ],
-          ["svg", "the photo is an svg.", "1.25 kB"],
+          ["svg", "the photo is an svg", "1.25 kB"],
           [
             "source",
-            "you pass an `img`, `video`, `canvas` or `OffscreenCanvas` to `loadImage`. `Root` never loads it.",
+            "you pass an `img`, `video`, `canvas` or `OffscreenCanvas` to `loadImage`. `Root` never loads it",
             "555 B",
           ],
         ],
@@ -71,3 +71,5 @@ export const bundleSize = defineDoc({
   ],
   lede: "what each set of imports adds to your bundle, minified and compressed with brotli.",
 });
+
+export { BUNDLE_SIZE_PAGE };

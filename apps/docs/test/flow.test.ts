@@ -1,13 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import { gap } from "@/lib/doc/flow";
-import type { Slot } from "@/lib/doc/flow";
+import type { Before, Slot } from "@/lib/doc/flow";
 
-const design: [Slot, Slot, number][] = [
+const SLOTS: readonly Slot[] = [
+  "actions",
+  "code",
+  "demo",
+  "head",
+  "label",
+  "p",
+  "part",
+  "qa",
+  "question",
+  "table",
+];
+
+const DESIGN_GAPS: [Slot, Slot, number][] = [
   ["actions", "actions", 12],
   ["actions", "code", 12],
   ["actions", "demo", 12],
-  ["actions", "list", 12],
   ["actions", "p", 12],
   ["actions", "part", 40],
   ["actions", "qa", 12],
@@ -16,7 +28,6 @@ const design: [Slot, Slot, number][] = [
   ["code", "actions", 20],
   ["code", "code", 24],
   ["code", "demo", 24],
-  ["code", "list", 20],
   ["code", "p", 20],
   ["code", "part", 40],
   ["code", "qa", 20],
@@ -25,7 +36,6 @@ const design: [Slot, Slot, number][] = [
   ["demo", "actions", 20],
   ["demo", "code", 24],
   ["demo", "demo", 24],
-  ["demo", "list", 20],
   ["demo", "p", 20],
   ["demo", "part", 40],
   ["demo", "qa", 20],
@@ -34,7 +44,6 @@ const design: [Slot, Slot, number][] = [
   ["head", "actions", 16],
   ["head", "code", 16],
   ["head", "demo", 16],
-  ["head", "list", 16],
   ["head", "p", 16],
   ["head", "part", 40],
   ["head", "qa", 16],
@@ -43,25 +52,14 @@ const design: [Slot, Slot, number][] = [
   ["label", "actions", 12],
   ["label", "code", 12],
   ["label", "demo", 12],
-  ["label", "list", 12],
   ["label", "p", 12],
   ["label", "part", 12],
   ["label", "qa", 12],
   ["label", "question", 12],
   ["label", "table", 12],
-  ["list", "actions", 12],
-  ["list", "code", 12],
-  ["list", "demo", 12],
-  ["list", "list", 12],
-  ["list", "p", 12],
-  ["list", "part", 40],
-  ["list", "qa", 12],
-  ["list", "question", 12],
-  ["list", "table", 12],
   ["p", "actions", 12],
   ["p", "code", 12],
   ["p", "demo", 12],
-  ["p", "list", 12],
   ["p", "p", 12],
   ["p", "part", 40],
   ["p", "qa", 12],
@@ -70,7 +68,6 @@ const design: [Slot, Slot, number][] = [
   ["part", "actions", 12],
   ["part", "code", 12],
   ["part", "demo", 12],
-  ["part", "list", 12],
   ["part", "p", 12],
   ["part", "part", 40],
   ["part", "qa", 12],
@@ -79,7 +76,6 @@ const design: [Slot, Slot, number][] = [
   ["qa", "actions", 12],
   ["qa", "code", 12],
   ["qa", "demo", 12],
-  ["qa", "list", 12],
   ["qa", "p", 12],
   ["qa", "part", 40],
   ["qa", "qa", 28],
@@ -88,7 +84,6 @@ const design: [Slot, Slot, number][] = [
   ["question", "actions", 12],
   ["question", "code", 12],
   ["question", "demo", 12],
-  ["question", "list", 12],
   ["question", "p", 12],
   ["question", "part", 40],
   ["question", "qa", 12],
@@ -97,7 +92,6 @@ const design: [Slot, Slot, number][] = [
   ["table", "actions", 20],
   ["table", "code", 24],
   ["table", "demo", 24],
-  ["table", "list", 20],
   ["table", "p", 20],
   ["table", "part", 40],
   ["table", "qa", 20],
@@ -105,9 +99,23 @@ const design: [Slot, Slot, number][] = [
   ["table", "table", 16],
 ];
 
+const ANSWER_GAPS: [Before, Slot, number][] = SLOTS.flatMap(
+  (after): [Before, Slot, number][] => [
+    ["answer", after, after === "code" ? 12 : 4],
+    [null, after, 0],
+  ]
+);
+
 describe("flow", () => {
-  it.each(design)(
+  it.each(DESIGN_GAPS)(
     "puts %s before %s %ipx apart, as the design does",
+    (before, after, px) => {
+      expect(gap(before, after)).toBe(px);
+    }
+  );
+
+  it.each(ANSWER_GAPS)(
+    "puts %s before %s %ipx apart inside an answer or at the start",
     (before, after, px) => {
       expect(gap(before, after)).toBe(px);
     }

@@ -1,6 +1,6 @@
 import { code, defineDoc, p, qa, section } from "@/lib/doc/define";
 
-export const faq = defineDoc({
+const FAQ_PAGE = defineDoc({
   blocks: [
     section(
       "setup",
@@ -78,3 +78,5 @@ export const faq = defineDoc({
   ],
   lede: "short answers, each with a link to the page that covers it in full.",
 });
+
+export { FAQ_PAGE };

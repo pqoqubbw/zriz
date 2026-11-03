@@ -1,8 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import type { ReactNode } from "react";
 
 import "./globals.css";
 import { cn } from "@/lib/cn";
+import { SITE_DESCRIPTION, SITE_ORIGIN } from "@/lib/site";
+
+type RootLayoutProps = {
+  children: ReactNode;
+};
 
 const inter = localFont({
   display: "swap",
@@ -18,22 +24,22 @@ const paperMono = localFont({
   weight: "100 800",
 });
 
-export const metadata: Metadata = {
-  description:
-    "zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.",
-  metadataBase: new URL("https://zriz.dev"),
+const metadata: Metadata = {
+  description: SITE_DESCRIPTION,
+  metadataBase: new URL(SITE_ORIGIN),
   title: { default: "zriz", template: "%s | zriz" },
 };
 
-export const viewport: Viewport = {
+const viewport: Viewport = {
   colorScheme: "light",
   themeColor: "#fdfdfc",
 };
 
-const Layout = ({ children }: { children: React.ReactNode }) => (
+const RootLayout = ({ children }: RootLayoutProps) => (
   <html className={cn(inter.variable, paperMono.variable)} lang="en">
     <body>{children}</body>
   </html>
 );
 
-export default Layout;
+export { metadata, viewport };
+export default RootLayout;

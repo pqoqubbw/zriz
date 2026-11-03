@@ -10,7 +10,7 @@ import {
   section,
 } from "@/lib/doc/define";
 
-export const zoom = defineDoc({
+const ZOOM_PAGE = defineDoc({
   blocks: [
     demo("zoom"),
     section(
@@ -69,7 +69,7 @@ export const zoom = defineDoc({
           keys: [["up"], ["down"]],
           text: "move 1/20 of the track. up zooms in",
         },
-        { keys: [["shift", "arrow"]], text: "move half the track" },
+        { keys: [["shift", "arrow keys"]], text: "move half the track" },
         { keys: [["page up"], ["page down"]], text: "move half the track" },
         { keys: [["home"], ["end"]], text: "go to 1× or to `max`" },
       ]),
@@ -133,3 +133,5 @@ export const zoom = defineDoc({
   ],
   lede: "a zoom slider and step buttons, for people with no wheel or pinch.",
 });
+
+export { ZOOM_PAGE };

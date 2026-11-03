@@ -1,70 +1,72 @@
-import dynamic from "next/dynamic";
+import { cva } from "class-variance-authority";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 
-import { CodeBlock } from "@/components/doc/code-block";
+import { CodeFigure } from "@/components/doc/code-figure";
+import { Controls } from "@/components/doc/controls";
 import { CopyAction, CopyButton } from "@/components/doc/copy-button";
 import { Demo } from "@/components/doc/demo";
-import {
-  KeyTable,
-  Messages,
-  NamedTable,
-  Signatures,
-  Table,
-} from "@/components/doc/tables";
+import { MessageList, PropList } from "@/components/doc/tables/definition-list";
+import { TableBlock } from "@/components/doc/tables/grid-table";
+import { PairTable } from "@/components/doc/tables/pair-table";
 import { Text } from "@/components/doc/text";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/cn";
 import type { Anchors } from "@/lib/doc/anchors";
-import { gapClass, slotOf } from "@/lib/doc/flow";
-import type { Slot } from "@/lib/doc/flow";
+import { BLOCK_SLOTS, gap } from "@/lib/doc/flow";
+import type { Before, Gap } from "@/lib/doc/flow";
 import type { Block, BlockOf, Kind } from "@/lib/doc/schema";
-import { textOf } from "@/lib/doc/snippets";
-import { bleed } from "@/lib/styles";
 
-type Before = Slot | "answer" | null;
-
-interface Context {
+type Context = {
   anchors: Anchors;
   className: string;
-  flow: (blocks: readonly Block[], first: Before, level: 3 | 4) => ReactNode;
   level: 3 | 4;
-}
+};
 
 type Renderer<K extends Kind> = (
   block: BlockOf<K>,
   context: Context
 ) => ReactNode;
 
-const Controls = dynamic(async () => {
-  const loaded = await import("@/components/doc/controls");
-  return loaded.Controls;
+type FlowProps = {
+  anchors: Anchors;
+  blocks: readonly Block[];
+  first: Before;
+  level: 3 | 4;
+};
+
+type DocBodyProps = {
+  anchors: Anchors;
+  blocks: readonly Block[];
+};
+
+const CODE_IDENTIFIER = /^[a-z]+[A-Z]\w*$/u;
+
+const flowVariants = cva("", {
+  variants: {
+    gap: {
+      0: "",
+      12: "mt-3",
+      16: "mt-4",
+      20: "mt-5",
+      24: "mt-6",
+      28: "mt-7",
+      4: "mt-1",
+      40: "mt-10",
+    } satisfies Record<Gap, string>,
+  },
 });
 
-const identifier = /^[a-z]+[A-Z]\w*$/u;
+const renderCode: Renderer<"code" | "excerpt"> = (block, { className }) => (
+  <CodeFigure block={block} className={className} />
+);
 
-const Heading = ({
-  children,
-  className,
-  id,
-  level,
-}: {
-  children: ReactNode;
-  className: string;
-  id: string;
-  level: 2 | 3 | 4;
-}) => {
-  const Tag = `h${level}` as const;
-  return (
-    <Tag className={className} id={id}>
-      <a
-        className="decoration-underline decoration-1 [text-underline-position:from-font] hover:underline"
-        href={`#${id}`}
-      >
-        {children}
-      </a>
-    </Tag>
-  );
-};
+const renderPairs: Renderer<"attrs" | "keys" | "variables"> = (
+  block,
+  { className }
+) => <PairTable className={className} kind={block.kind} rows={block.rows} />;
 
 const renderers: { [K in Kind]: Renderer<K> } = {
   actions: (block, { className }) => (
@@ -72,79 +74,47 @@ const renderers: { [K in Kind]: Renderer<K> } = {
       {block.action === "copy-value" ? (
         <CopyAction label={block.label} />
       ) : (
-        <button
-          className="rounded-control text-control shadow-button flex h-8 items-center bg-white px-3.5 font-medium opacity-40"
-          disabled
-          type="button"
-        >
-          {block.label}
-        </button>
+        <Button disabled>{block.label}</Button>
       )}
     </div>
   ),
-  attrs: (block, { className }) => (
-    <NamedTable className={className} kind="attrs" rows={block.rows} />
+  attrs: renderPairs,
+  caption: (block, { className, level }) => (
+    <Heading className={className} level={level} variant="mono">
+      {block.text}
+    </Heading>
   ),
-  caption: (block, { className, level }) => {
-    const Tag = `h${level}` as const;
-    return (
-      <Tag className={cn("text-body font-mono font-semibold", className)}>
-        {block.text}
-      </Tag>
-    );
-  },
-  code: (block, { className }) => (
-    <CodeBlock className={className} code={textOf(block)} file={block.file} />
-  ),
+  code: renderCode,
   controls: (block, { className }) => (
     <Controls className={className} controls={block.controls} />
   ),
   demo: (block, { className }) => (
     <Demo className={className} name={block.name} />
   ),
-  excerpt: (block, { className }) => (
-    <CodeBlock className={className} code={textOf(block)} file={block.file} />
-  ),
+  excerpt: renderCode,
   intro: (block, context) => (
     <div className="flex flex-col pb-14">
-      {context.flow(block.blocks, null, 3)}
+      <Flow
+        anchors={context.anchors}
+        blocks={block.blocks}
+        first={null}
+        level={3}
+      />
     </div>
   ),
-  keys: (block, { className }) => (
-    <KeyTable className={className} rows={block.rows} />
-  ),
-  list: (block, { className }) => (
-    <ul className={cn("flex flex-col gap-2", className)}>
-      {block.items.map((item) => (
-        <li
-          className="before:bg-dot relative pl-4.5 before:absolute before:top-2.25 before:left-0.5 before:size-1 before:rounded-full"
-          key={item}
-        >
-          <Text source={item} />
-        </li>
-      ))}
-    </ul>
-  ),
+  keys: renderPairs,
   log: (block, { className }) => (
-    <div
-      className={cn(
-        cn(
-          "rounded-panel bg-surface text-code flex flex-col p-4 font-mono",
-          bleed
-        ),
-        className
-      )}
-    >
+    <Panel className={cn("font-mono text-code", className)} layout="box">
       {block.lines.map((line, i) => (
         <div className="flex gap-4" key={`${i}-${line.event}`}>
-          <span className="text-faint w-20 shrink-0">{line.time}</span>{" "}
+          <span className="w-20 shrink-0 text-faint">{line.time}</span>{" "}
           <span>{line.event}</span>
         </div>
       ))}
-    </div>
+    </Panel>
   ),
   messages: (block, { className }) => (
-    <Messages className={className} label={block.label} rows={block.rows} />
+    <MessageList className={className} label={block.label} rows={block.rows} />
   ),
   p: (block, { className }) => (
     <p className={className}>
@@ -154,11 +124,7 @@ const renderers: { [K in Kind]: Renderer<K> } = {
   part: (block, context) => (
     <div className={cn("flex flex-col", context.className)}>
       <div className="flex flex-col gap-1">
-        <Heading
-          className="text-body font-mono font-semibold"
-          id={context.anchors.of(block)}
-          level={3}
-        >
+        <Heading id={context.anchors.of(block)} level={3} variant="mono">
           {block.name}
         </Heading>
         {block.text !== "" && (
@@ -167,71 +133,59 @@ const renderers: { [K in Kind]: Renderer<K> } = {
           </p>
         )}
       </div>
-      {context.flow(block.blocks, "head", 4)}
+      <Flow
+        anchors={context.anchors}
+        blocks={block.blocks}
+        first="head"
+        level={4}
+      />
     </div>
   ),
   prompt: (block, { className }) => (
-    <div
-      className={cn(
-        cn(
-          "rounded-panel bg-surface flex items-start gap-3 py-4 pr-3 pl-4",
-          bleed
-        ),
-        className
-      )}
-      data-copy=""
-    >
-      <p className="min-w-0 flex-1 break-words" data-copy-text="">
+    <Panel className={className} data-copy="" layout="prompt">
+      <p className="min-w-0 flex-1 wrap-break-word" data-copy-text="">
         <Text source={block.text} />
       </p>
       <CopyButton label="Copy prompt" />
-    </div>
+    </Panel>
   ),
   props: (block, { className }) => (
-    <Signatures className={className} label={block.label} rows={block.rows} />
+    <PropList className={className} label={block.label} rows={block.rows} />
   ),
   qa: (block, context) => (
     <div className={cn("flex flex-col", context.className)}>
-      <Heading
-        className="text-body font-strong"
-        id={context.anchors.of(block)}
-        level={3}
-      >
+      <Heading id={context.anchors.of(block)} level={3} variant="question">
         {block.question}
       </Heading>
-      {context.flow(block.blocks, "answer", 4)}
+      <Flow
+        anchors={context.anchors}
+        blocks={block.blocks}
+        first="answer"
+        level={4}
+      />
     </div>
   ),
   section: (block, context) => (
     <section className="flex flex-col pb-14" data-copy="">
       <Heading
-        className={
-          identifier.test(block.title)
-            ? "text-heading-mono font-mono"
-            : "text-heading"
-        }
         id={context.anchors.of(block)}
         level={2}
+        variant={CODE_IDENTIFIER.test(block.title) ? "section-mono" : "section"}
       >
         {block.title}
       </Heading>
-      {context.flow(block.blocks, "label", 3)}
+      <Flow
+        anchors={context.anchors}
+        blocks={block.blocks}
+        first="label"
+        level={3}
+      />
     </section>
   ),
-  sub: (block, { className, level }) => {
-    const Tag = `h${level}` as const;
-    return (
-      <Tag className={cn("text-body font-strong", className)}>
-        <Text source={block.text} />
-      </Tag>
-    );
-  },
   table: (block, { className }) => (
-    <Table block={block} className={className} />
+    <TableBlock block={block} className={className} />
   ),
-  variables: (block, { className }) => (
-    <NamedTable className={className} kind="variables" rows={block.rows} />
-  ),
+  variables: renderPairs,
 };
 
 const render = <K extends Kind>(
@@ -239,64 +193,36 @@ const render = <K extends Kind>(
   context: Context
 ): ReactNode => renderers[block.kind](block, context);
 
-const spaces = {
-  40: "pb-10",
-  48: "pb-12",
-  56: "pb-14",
-} as const;
-
-const spaceOf = (before: Before, block: Block): string => {
-  if (before === "answer") {
-    return block.kind === "code" || block.kind === "excerpt" ? "mt-3" : "mt-1";
-  }
-  return before === null ? "" : gapClass(before, slotOf[block.kind]);
-};
-
-export const Flow = ({
-  anchors,
-  blocks,
-  first,
-  level,
-}: {
-  anchors: Anchors;
-  blocks: readonly Block[];
-  first: Before;
-  level: 3 | 4;
-}): ReactNode =>
+const Flow = ({ anchors, blocks, first, level }: FlowProps): ReactNode =>
   blocks.map((block, i) => {
     const previous = blocks[i - 1];
-    const before = previous === undefined ? first : slotOf[previous.kind];
+    const before = previous === undefined ? first : BLOCK_SLOTS[previous.kind];
+
     return (
       <Fragment key={`${i}-${block.kind}`}>
         {render(block, {
           anchors,
-          className: spaceOf(first === "answer" ? "answer" : before, block),
-          flow: (inner, start, depth) => (
-            <Flow
-              anchors={anchors}
-              blocks={inner}
-              first={start}
-              level={depth}
-            />
-          ),
+          className: flowVariants({
+            gap: gap(
+              first === "answer" ? "answer" : before,
+              BLOCK_SLOTS[block.kind]
+            ),
+          }),
           level,
         })}
       </Fragment>
     );
   });
 
-export const Page = ({
-  anchors,
-  blocks,
-}: {
-  anchors: Anchors;
-  blocks: readonly Block[];
-}) =>
+const DocBody = ({ anchors, blocks }: DocBodyProps) =>
   blocks.map((block) =>
     block.kind === "demo" ? (
-      <div className={spaces[block.space ?? 40]} key={block.name}>
-        <Demo className="" name={block.name} />
-      </div>
+      <Demo
+        className=""
+        key={block.name}
+        name={block.name}
+        space={block.space ?? 40}
+      />
     ) : (
       <Flow
         anchors={anchors}
@@ -307,3 +233,5 @@ export const Page = ({
       />
     )
   );
+
+export { DocBody };

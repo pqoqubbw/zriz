@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, excerpt, p, section } from "@/lib/doc/define";
 
-export const fullEditor = defineDoc({
+const FULL_EDITOR_PAGE = defineDoc({
   blocks: [
     demo("full-editor", 56),
     section(
@@ -105,3 +105,5 @@ export const fullEditor = defineDoc({
   ],
   lede: "the crop area, the dial, zoom, aspect ratios, the buttons and a jpeg export in one component.",
 });
+
+export { FULL_EDITOR_PAGE };

@@ -1,15 +1,17 @@
 import Link from "next/link";
 
+import { PageHeader } from "@/components/shell/page-header";
+import { pagePath } from "@/lib/nav";
+
 const NotFound = () => (
-  <main className="mx-auto flex w-[min(560px,100%-32px)] flex-col gap-2 pt-18">
-    <h1 className="text-title">not found</h1>
-    <p className="text-lede text-muted">
+  <main className="mx-auto page-column pt-18">
+    <PageHeader title="not found">
       this page does not exist. start from the{" "}
-      <Link className="link" href="/docs/introduction">
+      <Link className="link" href={pagePath("introduction")}>
         introduction
       </Link>
       .
-    </p>
+    </PageHeader>
   </main>
 );
 

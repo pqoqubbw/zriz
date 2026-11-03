@@ -1,21 +1,26 @@
-export const demos = {
-  "aspect-ratio": { height: 320 },
-  avatar: { height: 320 },
-  buttons: { height: 320 },
-  "crop-area": { height: 320 },
-  dial: { height: 320 },
-  exporting: { height: 320 },
-  "full-editor": { height: 320 },
-  introduction: { height: 320 },
-  playground: { height: 454 },
-  "quick-start": { height: 320 },
-  root: { height: 320 },
-  "saving-state": { height: 320 },
-  "server-crop": { height: 320 },
-  styling: { height: 320 },
-  undo: { height: 320 },
-  viewport: { height: 320 },
-  zoom: { height: 320 },
-} as const satisfies Record<string, { height: 320 | 454 }>;
+const DEMO_NAMES = [
+  "aspect-ratio",
+  "avatar",
+  "buttons",
+  "crop-area",
+  "dial",
+  "exporting",
+  "full-editor",
+  "introduction",
+  "playground",
+  "quick-start",
+  "root",
+  "saving-state",
+  "server-crop",
+  "styling",
+  "undo",
+  "viewport",
+  "zoom",
+] as const;
 
-export type DemoName = keyof typeof demos;
+type DemoName = (typeof DEMO_NAMES)[number];
+
+const TALL_DEMO: DemoName = "playground";
+
+export type { DemoName };
+export { TALL_DEMO };

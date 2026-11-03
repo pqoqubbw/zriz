@@ -11,7 +11,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const cropArea = defineDoc({
+const CROP_AREA_PAGE = defineDoc({
   blocks: [
     demo("crop-area"),
     section(
@@ -80,9 +80,9 @@ export const cropArea = defineDoc({
       p("these keys work while `Area` has focus, never on the window:"),
       keys([
         { keys: [["arrow keys"]], text: "move the crop by 1% of its size" },
-        { keys: [["shift", "arrow"]], text: "move it by 10%" },
+        { keys: [["shift", "arrow keys"]], text: "move it by 10%" },
         {
-          keys: [["alt", "arrow"]],
+          keys: [["alt", "arrow keys"]],
           text: "resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. the centre stays put",
         },
         { keys: [["+"], ["="]], text: "zoom in 1.1×" },
@@ -221,3 +221,5 @@ export const cropArea = defineDoc({
   ],
   lede: "`Area` is the crop you keep. `Handle` resizes it and `Grid` draws guides while you work.",
 });
+
+export { CROP_AREA_PAGE };

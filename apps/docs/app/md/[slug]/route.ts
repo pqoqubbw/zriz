@@ -1,24 +1,25 @@
 import { pageMarkdown } from "@/lib/doc/markdown";
-import { isSlug, order, pathOf } from "@/lib/nav";
-import { origin } from "@/lib/site";
+import { isSlug, slugParams } from "@/lib/nav";
+import { textResponse } from "@/lib/responses";
+import { LLMS_URL, pageUrl } from "@/lib/site";
 
-export const dynamic = "force-static";
-export const dynamicParams = false;
-export const generateStaticParams = () => order.map((slug) => ({ slug }));
+const generateStaticParams = slugParams;
 
-export const GET = async (_: Request, context: RouteContext<"/md/[slug]">) => {
+const GET = async (_: Request, context: RouteContext<"/md/[slug]">) => {
   const { slug } = await context.params;
+
   if (!isSlug(slug)) {
-    return new Response("not found\n", {
-      headers: { "Content-Type": "text/markdown; charset=utf-8" },
-      status: 404,
-    });
+    return textResponse("not found\n", "text/markdown", { status: 404 });
   }
-  return new Response(pageMarkdown(slug), {
+
+  return textResponse(pageMarkdown(slug), "text/markdown", {
     headers: {
-      "Content-Type": "text/markdown; charset=utf-8",
-      Link: `<${origin}${pathOf(slug)}>; rel="canonical", <${origin}/llms.txt>; rel="llms-txt"`,
+      Link: `<${pageUrl(slug)}>; rel="canonical", <${LLMS_URL}>; rel="llms-txt"`,
       Vary: "Accept",
     },
   });
 };
+
+export { GET, generateStaticParams };
+export const dynamic = "force-static";
+export const dynamicParams = false;

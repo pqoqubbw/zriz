@@ -1,6 +1,6 @@
 import { defineDoc, p, section } from "@/lib/doc/define";
 
-export const changelog = defineDoc({
+const CHANGELOG_PAGE = defineDoc({
   blocks: [
     section(
       "0.0.0, not published yet",
@@ -11,3 +11,5 @@ export const changelog = defineDoc({
   ],
   lede: "what changed in each published version of zriz, newest first.",
 });
+
+export { CHANGELOG_PAGE };

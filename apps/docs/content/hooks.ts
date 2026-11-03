@@ -8,7 +8,7 @@ import {
   section,
 } from "@/lib/doc/define";
 
-export const hooks = defineDoc({
+const HOOKS_PAGE = defineDoc({
   blocks: [
     intro(
       p(
@@ -49,47 +49,47 @@ export const hooks = defineDoc({
           [
             {
               name: "ready",
-              text: "is `true` once a photo is loaded and sized.",
+              text: "is `true` once a photo is loaded and sized",
               type: "boolean",
             },
             {
               name: "interacting",
-              text: "names the gesture in progress.",
+              text: "names the gesture in progress",
               type: "ChangeReason | null",
             },
             {
               name: "settling",
-              text: "is `true` while any animation runs: a thrown dial, the recentre, a rotate or flip.",
+              text: "is `true` while any animation runs: a thrown dial, the recentre, a rotate or flip",
               type: "boolean",
             },
             {
               name: "pristine",
-              text: "is `true` while the crop matches the reset value.",
+              text: "is `true` while the crop matches the reset value",
               type: "boolean",
             },
             {
               name: "disabled",
-              text: "is `true` while the cropper refuses gestures and most writes, see [cropper](cropper).",
+              text: "is `true` while the cropper refuses gestures and most writes, see [cropper](cropper)",
               type: "boolean",
             },
             {
               name: "aspect",
-              text: "holds the current aspect.",
+              text: "holds the current aspect",
               type: "Aspect",
             },
             {
               name: "quarterTurns",
-              text: "holds the current quarter turns.",
+              text: "holds the current quarter turns",
               type: "0 | 1 | 2 | 3",
             },
             {
               name: "mirrored",
-              text: "is `true` while the photo is flipped.",
+              text: "is `true` while the photo is flipped",
               type: "boolean",
             },
             {
               name: "committed",
-              text: "holds the last committed value.",
+              text: "holds the last committed value",
               type: "CropValue",
             },
           ],
@@ -116,32 +116,32 @@ export const hooks = defineDoc({
           [
             {
               name: "value",
-              text: "holds the zoom rounded to 3 decimals. it updates every frame.",
+              text: "holds the zoom rounded to 3 decimals. it updates every frame",
               type: "number",
             },
             {
               name: "min",
-              text: "is always 1, the largest crop.",
+              text: "is always 1, the largest crop",
               type: "number",
             },
             {
               name: "max",
-              text: "is the `max` option, or the cropper's `maxZoom`, 15 by default. `max` sets the slider's range only. the cropper still stops at `maxZoom`.",
+              text: "is the `max` option, or the cropper's `maxZoom`, 15 by default. `max` sets the slider's range only. the cropper still stops at `maxZoom`",
               type: "number",
             },
             {
               name: "dragging",
-              text: "is `true` while a drag runs.",
+              text: "is `true` while a drag runs",
               type: "boolean",
             },
             {
               name: "onValueChange",
-              text: "starts the gesture on the first call and sets the zoom.",
+              text: "starts the gesture on the first call and sets the zoom",
               type: "(zoom) => void",
             },
             {
               name: "onValueCommitted",
-              text: "ends the gesture. call it when the slider lets go.",
+              text: "ends the gesture. call it when the slider lets go",
               type: "() => void",
             },
           ],
@@ -168,34 +168,34 @@ export const hooks = defineDoc({
             {
               name: "tag",
               required: true,
-              text: 'sets the tag, for example `"span"`.',
+              text: 'sets the tag, for example `"span"`',
               type: "keyof JSX.IntrinsicElements",
             },
             {
               name: "state",
               required: true,
-              text: "goes to `render` and `className` functions.",
+              text: "goes to `render` and `className` functions",
               type: "S",
             },
             {
               name: "props",
               required: true,
-              text: "sets the element's props.",
+              text: "sets the element's props",
               type: "Record<string, unknown>",
             },
             {
               name: "ref",
-              text: "attaches to the element.",
+              text: "attaches to the element",
               type: "Ref<HTMLElement>",
             },
             {
               name: "render",
-              text: "replaces the element, as on every part.",
+              text: "replaces the element, as on every part",
               type: "RenderProp<S>",
             },
             {
               name: "className",
-              text: "sets the class: a string, or a function of state.",
+              text: "sets the class: a string, or a function of state",
               type: "ClassName<S>",
             },
           ],
@@ -206,3 +206,5 @@ export const hooks = defineDoc({
   ],
   lede: "seven hooks from `@zriz/react` that read the cropper and build parts of your own.",
 });
+
+export { HOOKS_PAGE };

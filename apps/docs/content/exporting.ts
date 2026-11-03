@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, p, props, section } from "@/lib/doc/define";
 
-export const exporting = defineDoc({
+const EXPORTING_PAGE = defineDoc({
   blocks: [
     demo("exporting"),
     section(
@@ -105,37 +105,37 @@ export const exporting = defineDoc({
         [
           {
             name: "width",
-            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default.",
+            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default",
             type: "number",
           },
           {
             name: "height",
-            text: "the output height in pixels at the same scale.",
+            text: "the output height in pixels at the same scale",
             type: "number",
           },
           {
             name: "pixelRect",
-            text: "`{ left, top, width, height }` in the upright original, or `null` with a straighten angle or perspective.",
+            text: "`{ left, top, width, height }` in the upright original, or `null` with a straighten angle or perspective",
             type: "PixelRect | null",
           },
           {
             name: "rotateExpand",
-            text: "the mirror as `flop`, the quarter turns times 90 plus the straighten angle as `degrees`, and the crop's centre from the photo's centre after that whole turn as `dx` and `dy`, in source pixels.",
+            text: "the mirror as `flop`, the quarter turns times 90 plus the straighten angle as `degrees`, and the crop's centre from the photo's centre after that whole turn as `dx` and `dy`, in source pixels",
             type: "{ flop, degrees, dx, dy }",
           },
           {
             name: "forward",
-            text: "the map from source pixels to output pixels, as `[a, b, c, d, e, f]` in canvas `setTransform()` order.",
+            text: "the map from source pixels to output pixels, as `[a, b, c, d, e, f]` in canvas `setTransform()` order",
             type: "AffineMatrix",
           },
           {
             name: "inverse",
-            text: "the map from output pixels back to source pixels.",
+            text: "the map from output pixels back to source pixels",
             type: "AffineMatrix",
           },
           {
             name: "homography",
-            text: "the 3 by 3 perspective matrix, or `null` with no perspective.",
+            text: "the 3 by 3 perspective matrix, or `null` with no perspective",
             type: "Matrix3 | null",
           },
         ],
@@ -151,3 +151,5 @@ export const exporting = defineDoc({
   ],
   lede: "turn the crop into an image file in the browser, or send the export plan to your server and cut the original there.",
 });
+
+export { EXPORTING_PAGE };

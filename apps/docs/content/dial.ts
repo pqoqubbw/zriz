@@ -11,7 +11,7 @@ import {
   variables,
 } from "@/lib/doc/define";
 
-export const dial = defineDoc({
+const DIAL_PAGE = defineDoc({
   blocks: [
     demo("dial"),
     section(
@@ -62,7 +62,7 @@ export const dial = defineDoc({
       keys([
         { keys: [["left"], ["right"]], text: "lower or raise the angle by 1°" },
         { keys: [["up"], ["down"]], text: "raise or lower the angle by 1°" },
-        { keys: [["shift", "arrow"]], text: "the same by 10°" },
+        { keys: [["shift", "arrow keys"]], text: "the same by 10°" },
         {
           keys: [["page up"], ["page down"]],
           text: "raise or lower the angle by 10°",
@@ -160,3 +160,5 @@ export const dial = defineDoc({
   ],
   lede: "the ruler that levels a tilted photo, up to 45° each way, like the one in ios photos.",
 });
+
+export { DIAL_PAGE };

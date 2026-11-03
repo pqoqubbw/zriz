@@ -8,7 +8,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const introduction = defineDoc({
+const INTRODUCTION_PAGE = defineDoc({
   blocks: [
     demo("introduction"),
     section(
@@ -73,3 +73,5 @@ export const introduction = defineDoc({
   ],
   lede: "zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.",
 });
+
+export { INTRODUCTION_PAGE };

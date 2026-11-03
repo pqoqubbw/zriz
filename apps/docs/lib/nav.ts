@@ -1,4 +1,4 @@
-export const groups = [
+const NAV_GROUPS = [
   {
     items: [
       { slug: "introduction", title: "introduction" },
@@ -60,23 +60,44 @@ export const groups = [
   },
 ] as const;
 
-export type Slug = (typeof groups)[number]["items"][number]["slug"];
+type Slug = (typeof NAV_GROUPS)[number]["items"][number]["slug"];
 
-export interface Entry {
+type Entry = {
   slug: Slug;
   title: string;
-}
+};
 
-export const entries: readonly Entry[] = groups.flatMap(
+const NAV_ENTRIES: readonly Entry[] = NAV_GROUPS.flatMap(
   (group): readonly Entry[] => group.items
 );
 
-export const order: readonly Slug[] = entries.map((entry) => entry.slug);
+const PAGE_ORDER: readonly Slug[] = NAV_ENTRIES.map((entry) => entry.slug);
 
-export const isSlug = (candidate: string): candidate is Slug =>
-  order.some((slug) => slug === candidate);
+const isSlug = (candidate: string): candidate is Slug =>
+  PAGE_ORDER.some((slug) => slug === candidate);
 
-export const titleOf = (slug: Slug): string =>
-  entries.find((entry) => entry.slug === slug)?.title ?? slug;
+const titleOf = (slug: Slug): string =>
+  NAV_ENTRIES.find((entry) => entry.slug === slug)?.title ?? slug;
 
-export const pathOf = (slug: Slug): string => `/docs/${slug}`;
+const withAnchor = (path: string, anchor: string): string =>
+  anchor === "" ? path : `${path}#${anchor}`;
+
+const pagePath = (slug: Slug, anchor = ""): string =>
+  withAnchor(`/docs/${slug}`, anchor);
+
+const markdownPath = (slug: Slug, anchor = ""): string =>
+  withAnchor(`/docs/${slug}.md`, anchor);
+
+const slugParams = (): { slug: Slug }[] => PAGE_ORDER.map((slug) => ({ slug }));
+
+export type { Slug };
+export {
+  isSlug,
+  markdownPath,
+  NAV_ENTRIES,
+  NAV_GROUPS,
+  PAGE_ORDER,
+  pagePath,
+  slugParams,
+  titleOf,
+};

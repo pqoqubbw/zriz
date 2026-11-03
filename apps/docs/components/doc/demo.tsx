@@ -1,29 +1,37 @@
-import { demos } from "@/demos/registry";
+import { cva } from "class-variance-authority";
+
+import { Panel } from "@/components/ui/panel";
+import { TALL_DEMO } from "@/demos/registry";
 import type { DemoName } from "@/demos/registry";
-import { cn } from "@/lib/cn";
-import { bleed } from "@/lib/styles";
+import type { DemoSpace } from "@/lib/doc/schema";
 
-const heights = { 320: "h-80", 454: "h-113.5" } as const;
-
-export const Demo = ({
-  className,
-  name,
-}: {
+type DemoProps = {
   className: string;
   name: DemoName;
-}) => (
-  <div
-    className={cn(
-      cn(
-        "rounded-demo bg-surface text-caption text-muted flex items-center justify-center",
-        bleed
-      ),
-      heights[demos[name].height],
-      className
-    )}
+  space?: DemoSpace;
+};
+
+const demoVariants = cva("text-caption text-muted", {
+  variants: {
+    space: {
+      40: "mb-10",
+      48: "mb-12",
+      56: "mb-14",
+    } satisfies Record<DemoSpace, string>,
+    tall: { false: "h-80", true: "h-113.5" },
+  },
+});
+
+const Demo = ({ className, name, space }: DemoProps) => (
+  <Panel
+    className={demoVariants({ className, space, tall: name === TALL_DEMO })}
     data-demo={name}
     data-markdown-ignore=""
+    layout="center"
+    radius="demo"
   >
     demo
-  </div>
+  </Panel>
 );
+
+export { Demo };

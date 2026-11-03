@@ -7,44 +7,43 @@ import shellscript from "shiki/langs/shellscript.mjs";
 import tsx from "shiki/langs/tsx.mjs";
 import ts from "shiki/langs/typescript.mjs";
 
-import { roleOfMark, roles, theme } from "@/lib/doc/code-theme";
-import { languageOf } from "@/lib/doc/snippets";
+import { CODE_THEME, ROLE_BY_MARK, ROLE_CLASSES } from "@/lib/doc/code-theme";
+import { isFragment, languageOf } from "@/lib/doc/snippets";
 
 const highlighter = createHighlighterCore({
   engine: createJavaScriptRegexEngine(),
   langs: [css, html, json, shellscript, ts, tsx],
-  themes: [theme],
+  themes: [CODE_THEME],
 });
 
 const escape = (text: string): string =>
   text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
-export const highlight = async (
-  code: string,
-  file: string
-): Promise<string> => {
+const highlight = async (code: string, file: string): Promise<string> => {
   const engine = await highlighter;
   const lines = engine.codeToTokensBase(code, {
     lang: languageOf(file).shiki,
     theme: "zriz",
-    ...(file.endsWith(".jsx.tsx")
-      ? { grammarContextCode: "const _ = <>" }
-      : {}),
+    ...(isFragment(file) ? { grammarContextCode: "const _ = <>" } : {}),
   });
+
   return lines
     .map((tokens) => {
       const runs: [string, string][] = [];
+
       for (const token of tokens) {
         const role =
-          roleOfMark.get((token.color ?? "").toLowerCase()) ?? "plain";
+          ROLE_BY_MARK.get((token.color ?? "").toLowerCase()) ?? "plain";
         const blank = token.content.trim() === "";
         const last = runs.at(-1);
-        if (last !== undefined && (blank || last[1] === roles[role])) {
+
+        if (last !== undefined && (blank || last[1] === ROLE_CLASSES[role])) {
           last[0] += token.content;
         } else {
-          runs.push([token.content, blank ? "" : roles[role]]);
+          runs.push([token.content, blank ? "" : ROLE_CLASSES[role]]);
         }
       }
+
       return runs
         .map(([text, name]) =>
           name === ""
@@ -55,3 +54,5 @@ export const highlight = async (
     })
     .join("\n");
 };
+
+export { highlight };

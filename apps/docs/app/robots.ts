@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-import { origin } from "@/lib/site";
+import { SITE_ORIGIN } from "@/lib/site";
 
 const robots = (): MetadataRoute.Robots => ({
   rules: { allow: "/", disallow: "/md/", userAgent: "*" },
-  sitemap: `${origin}/sitemap.xml`,
+  sitemap: `${SITE_ORIGIN}/sitemap.xml`,
 });
 
 export default robots;

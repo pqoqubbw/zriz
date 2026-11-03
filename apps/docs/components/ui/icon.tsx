@@ -1,4 +1,10 @@
-const paths = {
+import type { ComponentProps } from "react";
+
+type IconProps = ComponentProps<"svg"> & {
+  name: keyof typeof ICON_PATHS;
+};
+
+const ICON_PATHS = {
   check: ["M4 10.5L8 14.5L16 6.5"],
   close: ["M5 5L15 15M15 5L5 15"],
   copy: [
@@ -8,38 +14,23 @@ const paths = {
   menu: ["M3.5 7.5H16.5M3.5 12.5H16.5"],
 } as const;
 
-export const Icon = ({
-  className,
-  name,
-}: {
-  className: string;
-  name: keyof typeof paths;
-}) => (
+const Icon = ({ name, ...props }: IconProps) => (
   <svg
     aria-hidden="true"
-    className={className}
+    data-slot="icon"
     fill="none"
     stroke="currentColor"
     strokeLinecap="round"
     strokeLinejoin="round"
     strokeWidth="1.25"
     viewBox="0 0 20 20"
+    {...props}
   >
-    {paths[name].map((d) => (
+    {ICON_PATHS[name].map((d) => (
       <path d={d} key={d} />
     ))}
   </svg>
 );
 
-export const Mark = ({ className }: { className: string }) => (
-  <svg aria-hidden="true" className={className} fill="none" viewBox="6 6 36 36">
-    <path
-      d="M10 20V12H18M30 12H38V20M38 28V36H30M18 36H10V28"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="3.8"
-      transform="rotate(-5 24 24)"
-    />
-  </svg>
-);
+export type { IconProps };
+export { Icon };

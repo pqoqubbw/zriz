@@ -1,6 +1,6 @@
 import { code, column, defineDoc, p, section, table } from "@/lib/doc/define";
 
-export const vanillaJs = defineDoc({
+const VANILLA_JS_PAGE = defineDoc({
   blocks: [
     section(
       "install the core package",
@@ -118,3 +118,5 @@ export const vanillaJs = defineDoc({
   ],
   lede: "run the same cropper in plain javascript or any framework, with `createCropper` and the dom binders.",
 });
+
+export { VANILLA_JS_PAGE };

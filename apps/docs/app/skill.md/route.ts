@@ -1,15 +1,14 @@
-import { origin } from "@/lib/site";
+import { textResponse } from "@/lib/responses";
+import { LLMS_FULL_URL, LLMS_URL, markdownUrl } from "@/lib/site";
 
-export const dynamic = "force-static";
-
-const skill = `---
+const SKILL = `---
 name: zriz
 description: add an image cropper with a straighten dial to a react app with zriz (@zriz/react), the way the crop tool in ios photos works.
 ---
 
 # zriz
 
-> [llms.txt](${origin}/llms.txt)
+> [llms.txt](${LLMS_URL})
 
 use this when a react app needs a user to crop, straighten, rotate or flip a photo, or pick an avatar.
 
@@ -28,20 +27,20 @@ import * as Cropper from "@zriz/react/cropper";
 
 ## steps
 
-1. read ${origin}/docs/quick-start.md and follow it.
-2. render \`Cropper.Root\` with \`src\`, then \`Cropper.Viewport\` with a height, \`Cropper.Image\`, \`Cropper.Mask\` and \`Cropper.Area\` with \`Cropper.Handle\` parts inside it so the crop can be resized (${origin}/docs/crop-area.md).
+1. read ${markdownUrl("quick-start")} and follow it.
+2. render \`Cropper.Root\` with \`src\`, then \`Cropper.Viewport\` with a height, \`Cropper.Image\`, \`Cropper.Mask\` and \`Cropper.Area\` with \`Cropper.Handle\` parts inside it so the crop can be resized (${markdownUrl("crop-area")}).
 3. add \`Cropper.Dial\` with \`Cropper.DialTicks\` to straighten.
-4. read the crop in \`onValueCommit\`. to make a file, pass a ref to \`actionsRef\` on \`Root\` and call \`exportCrop(ref.current)\` from \`@zriz/core/dom\` after \`onLoad\` fires (${origin}/docs/exporting.md).
+4. read the crop in \`onValueCommit\`. to make a file, pass a ref to \`actionsRef\` on \`Root\` and call \`exportCrop(ref.current)\` from \`@zriz/core/dom\` after \`onLoad\` fires (${markdownUrl("exporting")}).
 
 ## rules
 
 - give every part that asks for a name an \`aria-label\`; development builds warn otherwise.
 - \`Viewport\` has no height of its own.
 - the parts ship unstyled except for the optional stylesheet.
-- every docs page is markdown at its url plus \`.md\`; the full set is ${origin}/llms-full.txt.
+- every docs page is markdown at its url plus \`.md\`; the full set is ${LLMS_FULL_URL}.
 `;
 
-export const GET = () =>
-  new Response(skill, {
-    headers: { "Content-Type": "text/markdown; charset=utf-8" },
-  });
+const GET = () => textResponse(SKILL, "text/markdown");
+
+export { GET };
+export const dynamic = "force-static";

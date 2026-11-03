@@ -1,6 +1,6 @@
 import { code, defineDoc, intro, p, props, section } from "@/lib/doc/define";
 
-export const cropper = defineDoc({
+const CROPPER_PAGE = defineDoc({
   blocks: [
     intro(
       p(
@@ -18,41 +18,41 @@ export const cropper = defineDoc({
           {
             default: "null",
             name: "image",
-            text: "sets the photo's natural size. most writes wait for it.",
+            text: "sets the photo's natural size. most writes wait for it",
             type: "Size | null",
           },
           {
             name: "value",
-            text: "sets the start in place of `defaultValue`. `reset()` still goes to `defaultValue`.",
+            text: "sets the start in place of `defaultValue`. `reset()` still goes to `defaultValue`",
             type: "CropValue",
           },
           {
             name: "defaultValue",
-            text: "merges over the core `defaultValue`. the cropper starts here and `reset()` returns here. read once.",
+            text: "merges over the core `defaultValue`. the cropper starts here and `reset()` returns here. read once",
             type: "Partial<CropValue>",
           },
           {
             default: "{ width: 1, height: 1 }",
             name: "minSize",
-            text: "sets the smallest crop in source pixels.",
+            text: "sets the smallest crop in source pixels",
             type: "Size",
           },
           {
             default: "15",
             name: "maxZoom",
-            text: "sets the largest zoom. 1 is the largest crop.",
+            text: "sets the largest zoom. 1 is the largest crop",
             type: "number",
           },
           {
             default: "26",
             name: "focalLength",
-            text: "sets the lens as a 35 mm equivalent, for perspective correction.",
+            text: "sets the lens as a 35 mm equivalent, for perspective correction",
             type: "number",
           },
           {
             default: "false",
             name: "disabled",
-            text: "refuses gestures and most writes.",
+            text: "refuses gestures and most writes",
             type: "boolean",
           },
           {
@@ -63,12 +63,12 @@ export const cropper = defineDoc({
           },
           {
             name: "onValueChange",
-            text: "runs at most once per frame while the crop moves.",
+            text: "runs at most once per frame while the crop moves",
             type: "(value, details) => void",
           },
           {
             name: "onValueCommit",
-            text: "runs when a gesture or write commits.",
+            text: "runs when a gesture or write commits",
             type: "(value, details) => void",
           },
           {
@@ -90,37 +90,37 @@ export const cropper = defineDoc({
         [
           {
             name: "getValue",
-            text: "returns the live [value](value), frames inside a gesture included.",
+            text: "returns the live [value](value), frames inside a gesture included",
             type: "() => CropValue",
           },
           {
             name: "getState",
-            text: "returns the snapshot that `useCropperState` reads, see [hooks](hooks).",
+            text: "returns the snapshot that `useCropperState` reads, see [hooks](hooks)",
             type: "() => CropperSnapshot",
           },
           {
             name: "getCropState",
-            text: "returns the crop in image pixels, or `null` before a photo.",
+            text: "returns the crop in image pixels, or `null` before a photo",
             type: "() => CropState | null",
           },
           {
             name: "getZoom",
-            text: "returns the zoom, 1 before a photo loads. 1 is the largest crop that fits.",
+            text: "returns the zoom, 1 before a photo loads. 1 is the largest crop that fits",
             type: "() => number",
           },
           {
             name: "getMaxZoom",
-            text: "returns the `maxZoom` option, 15 by default.",
+            text: "returns the `maxZoom` option, 15 by default",
             type: "() => number",
           },
           {
             name: "getRotationLimit",
-            text: "returns 45, or less when `minSize` leaves too little room.",
+            text: "returns 45, or less when `minSize` leaves too little room",
             type: "() => number",
           },
           {
             name: "getPixelCrop",
-            text: "returns the export plan, or `null` before a photo, see [exporting](exporting).",
+            text: "returns the export plan, or `null` before a photo, see [exporting](exporting)",
             type: "(scale?) => ExportPlan | null",
           },
         ],
@@ -133,57 +133,57 @@ export const cropper = defineDoc({
         [
           {
             name: "setValue",
-            text: "merges the fields you pass into the current value.",
+            text: "merges the fields you pass into the current value",
             type: "(value, options?) => void",
           },
           {
             name: "setRotation",
-            text: "straightens the photo.",
+            text: "straightens the photo",
             type: "(degrees, options?) => void",
           },
           {
             name: "setZoom",
-            text: "zooms around `anchor`, a point from 0 to 1 on the photo, or the crop's centre.",
+            text: "zooms around `anchor`, a point from 0 to 1 on the photo, or the crop's centre",
             type: "(zoom, options?) => void",
           },
           {
             name: "panBy",
-            text: "moves the crop by fractions of the photo's width and height.",
+            text: "moves the crop by fractions of the photo's width and height",
             type: "(dx, dy, options?) => void",
           },
           {
             name: "setAspect",
-            text: "locks the crop to an aspect.",
+            text: "locks the crop to an aspect",
             type: "(aspect, options?) => void",
           },
           {
             name: "setCropState",
-            text: 'sets the crop in image pixels. `keep: "centre"` holds the centre. the default, `keep: "size"`, holds the size.',
+            text: 'sets the crop in image pixels. `keep: "centre"` holds the centre. the default, `keep: "size"`, holds the size',
             type: "(state, options?) => void",
           },
           {
             name: "rotate90",
-            text: 'turns counter-clockwise by default, or clockwise with `"cw"`. a numeric aspect turns with it, so 4:3 becomes 3:4.',
+            text: 'turns counter-clockwise by default, or clockwise with `"cw"`. a numeric aspect turns with it, so 4:3 becomes 3:4',
             type: "(direction?, options?) => void",
           },
           {
             name: "flip",
-            text: 'mirrors left to right by default. `"y"` mirrors top to bottom.',
+            text: 'mirrors left to right by default. `"y"` mirrors top to bottom',
             type: "(axis?, options?) => void",
           },
           {
             name: "reset",
-            text: "returns to `defaultValue`, with or without a photo.",
+            text: "returns to `defaultValue`, with or without a photo",
             type: "(options?) => void",
           },
           {
             name: "setImage",
-            text: "sets the photo's natural size. a new size refits the crop with reason `coverage`. a size that is not finite and positive counts as `null`.",
+            text: "sets the photo's natural size. a new size refits the crop with reason `coverage`. a size that is not finite and positive counts as `null`",
             type: "(size | null) => void",
           },
           {
             name: "setOptions",
-            text: "changes `disabled`, `maxZoom`, `minSize`, `focalLength` and the two callbacks. `image`, `value`, `defaultValue`, `clock` and `plugins` stay as created. a new `focalLength` takes effect on the next `setValue()`, `reset()` or `setImage()`. call `setImage()` for a new photo.",
+            text: "changes `disabled`, `maxZoom`, `minSize`, `focalLength` and the two callbacks. `image`, `value`, `defaultValue`, `clock` and `plugins` stay as created. a new `focalLength` takes effect on the next `setValue()`, `reset()` or `setImage()`. call `setImage()` for a new photo",
             type: "(options) => void",
           },
         ],
@@ -203,17 +203,17 @@ export const cropper = defineDoc({
         [
           {
             name: "reason",
-            text: "names the change for listeners, see [events](events).",
+            text: "names the change for listeners, see [events](events)",
             type: "ChangeReason",
           },
           {
             name: "event",
-            text: "passes the dom event behind the change.",
+            text: "passes the dom event behind the change",
             type: "Event",
           },
           {
             name: "emit",
-            text: "with `false`, no change or commit fires, and the new value counts as committed. it also drops a change still waiting from the same frame.",
+            text: "with `false`, no change or commit fires, and the new value counts as committed. it also drops a change still waiting from the same frame",
             type: "boolean",
           },
         ],
@@ -230,37 +230,37 @@ export const cropper = defineDoc({
         [
           {
             name: "begin",
-            text: "starts a gesture and stops any animation that holds the commit. returns `false` when the cropper is disabled or another owner holds a gesture.",
+            text: "starts a gesture and stops any animation that holds the commit. returns `false` when the cropper is disabled or another owner holds a gesture",
             type: "(reason, event?, owner?) => boolean",
           },
           {
             name: "end",
-            text: "ends the gesture. the commit follows once blocking tasks stop.",
+            text: "ends the gesture. the commit follows once blocking tasks stop",
             type: "(event?, owner?) => void",
           },
           {
             name: "cancel",
-            text: "ends the gesture and restores the crop from before it.",
+            text: "ends the gesture and restores the crop from before it",
             type: "(event?, owner?) => void",
           },
           {
             name: "run",
-            text: "calls `task(time, delta)` every frame until it returns `false`. blocking tasks, the default, hold the commit back. returns a cancel function.",
+            text: "calls `task(time, delta)` every frame until it returns `false`. blocking tasks, the default, hold the commit back. returns a cancel function",
             type: "(task, blocking?) => () => void",
           },
           {
             name: "invalidate",
-            text: "asks for one more `frame` event.",
+            text: "asks for one more `frame` event",
             type: "() => void",
           },
           {
             name: "on",
-            text: "listens to one event, see [events](events). returns a remove function.",
+            text: "listens to one event, see [events](events). returns a remove function",
             type: "(type, listener) => () => void",
           },
           {
             name: "subscribe",
-            text: "runs the listener when the snapshot changes.",
+            text: "runs the listener when the snapshot changes",
             type: "(listener) => () => void",
           },
         ],
@@ -293,12 +293,12 @@ export const cropper = defineDoc({
         [
           {
             name: "stop",
-            text: "ends any gesture, drops all motion, commits what is there and emits `stop`. the cropper keeps working.",
+            text: "ends any gesture, drops all motion, commits what is there and emits `stop`. the cropper keeps working",
             type: "() => void",
           },
           {
             name: "destroy",
-            text: "runs each plugin's `destroy`, emits `destroy` and drops every listener. the cropper is finished, and every later write is ignored.",
+            text: "runs each plugin's `destroy`, emits `destroy` and drops every listener. the cropper is finished, and every later write is ignored",
             type: "() => void",
           },
         ],
@@ -308,3 +308,5 @@ export const cropper = defineDoc({
   ],
   lede: "`createCropper` makes the store behind every `Root`. use it for [vanilla js](vanilla-js), or to test your crop logic without a browser.",
 });
+
+export { CROPPER_PAGE };

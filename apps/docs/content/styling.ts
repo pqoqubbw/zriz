@@ -8,7 +8,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const styling = defineDoc({
+const STYLING_PAGE = defineDoc({
   blocks: [
     section(
       "add the stylesheet",
@@ -126,3 +126,5 @@ export const styling = defineDoc({
   ],
   lede: "the parts carry no colour. paint them with the optional stylesheet, your own css or tailwind.",
 });
+
+export { STYLING_PAGE };

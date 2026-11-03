@@ -8,7 +8,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const errors = defineDoc({
+const ERRORS_PAGE = defineDoc({
   blocks: [
     section(
       "where errors arrive",
@@ -31,38 +31,38 @@ export const errors = defineDoc({
         rows: [
           [
             "cross-origin",
-            "the server sent the photo without `Access-Control-Allow-Origin`, the network dropped, or an `img`, `video` or `canvas` you pass is tainted.",
-            'send the header. if the request needs cookies, pass `crossOrigin="use-credentials"` to `Root`.',
+            "the server sent the photo without `Access-Control-Allow-Origin`, the network dropped, or an `img`, `video` or `canvas` you pass is tainted",
+            'send the header. if the request needs cookies, pass `crossOrigin="use-credentials"` to `Root`',
           ],
           [
             "unsupported-format",
-            "the file is heic, jpeg xl or tiff and this browser cannot decode it, either on load or when an export decodes the original again.",
-            "call `loadImage` yourself with your own `decode` function, as in [loading images](loading-images), or convert the file to jpeg first.",
+            "the file is heic, jpeg xl or tiff and this browser cannot decode it, either on load or when an export decodes the original again",
+            "call `loadImage` yourself with your own `decode` function, as in [loading images](loading-images), or convert the file to jpeg first",
           ],
           [
             "decode",
-            "the url answered with an error status, the bytes are not an image, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, the browser gave no 2d canvas, or an export could not decode the original again.",
-            "open the url and check the response. if you are offline, try again once the network is back.",
+            "the url answered with an error status, the bytes are not an image, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, the browser gave no 2d canvas, or an export could not decode the original again",
+            "open the url and check the response. if you are offline, try again once the network is back",
           ],
           [
             "timeout",
-            "a photo took over 15 s to load, or an export took over 30 s.",
-            "send a smaller file or export a smaller `maxSize`. for a slow network, load the photo yourself with a longer `timeout`, as in [loading images](loading-images).",
+            "a photo took over 15 s to load, or an export took over 30 s",
+            "send a smaller file or export a smaller `maxSize`. for a slow network, load the photo yourself with a longer `timeout`, as in [loading images](loading-images)",
           ],
           [
             "aborted",
-            "the `signal` you passed fired. `Root` also aborts its own load when `src` changes and never reports it.",
-            "nothing. skip this code in your catch.",
+            "the `signal` you passed fired. `Root` also aborts its own load when `src` changes and never reports it",
+            "nothing. skip this code in your catch",
           ],
           [
             "blank",
-            "the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones.",
-            "set `maxSize` to 2048 by 2048 or less.",
+            "the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones",
+            "set `maxSize` to 2048 by 2048 or less",
           ],
           [
             "no-image",
-            "an export ran before a photo loaded, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo.",
-            "disable the export button until `onLoad` fires. keep `@zriz/core` at the same version as `@zriz/react`.",
+            "an export ran before a photo loaded, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo",
+            "disable the export button until `onLoad` fires. keep `@zriz/core` at the same version as `@zriz/react`",
           ],
         ],
       })
@@ -74,15 +74,15 @@ export const errors = defineDoc({
       ),
       messages("message", [
         {
-          fix: "move the part inside `Root`. a part in a portal still needs `Root` above it in the react tree.",
+          fix: "move the part inside `Root`. a part in a portal still needs `Root` above it in the react tree",
           message: "zriz: parts must be inside <Cropper.Root>",
         },
         {
-          fix: "a hook such as `useCropperValue` or `useZoom` ran outside `Root`. pass it the cropper from `useCropper`, or move the component inside `Root`.",
+          fix: "a hook such as `useCropperValue` or `useZoom` ran outside `Root`. pass it the cropper from `useCropper`, or move the component inside `Root`",
           message: "zriz: pass a cropper or render inside <Cropper.Root>",
         },
         {
-          fix: "`Root` got `cropper` on its first render and none later. keep passing the same cropper, or give `Root` a new `key` to start a new one.",
+          fix: "`Root` got `cropper` on its first render and none later. keep passing the same cropper, or give `Root` a new `key` to start a new one",
           message: "zriz: no cropper",
         },
       ])
@@ -94,7 +94,7 @@ export const errors = defineDoc({
       ),
       messages("message", [
         {
-          fix: "name the part. [accessibility](accessibility) shows how to label each part.",
+          fix: "name the part. [accessibility](accessibility) shows how to label each part",
           message:
             "zriz: <Cropper.Area> needs aria-label, aria-labelledby or text. zriz ships no words, so screen readers get nothing otherwise.",
         },
@@ -103,3 +103,5 @@ export const errors = defineDoc({
   ],
   lede: "every error zriz throws or reports, when it happens and how to fix it.",
 });
+
+export { ERRORS_PAGE };

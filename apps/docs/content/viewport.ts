@@ -12,7 +12,7 @@ import {
   variables,
 } from "@/lib/doc/define";
 
-export const viewport = defineDoc({
+const VIEWPORT_PAGE = defineDoc({
   blocks: [
     demo("viewport"),
     section(
@@ -148,3 +148,5 @@ export const viewport = defineDoc({
   ],
   lede: "`Viewport` takes the gestures, `Image` draws the photo in it and `Mask` dims everything outside the crop.",
 });
+
+export { VIEWPORT_PAGE };

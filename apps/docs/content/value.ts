@@ -9,7 +9,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const value = defineDoc({
+const VALUE_PAGE = defineDoc({
   blocks: [
     intro(
       p(
@@ -30,43 +30,43 @@ export const value = defineDoc({
           {
             default: "{ x: 0.5, y: 0.5 }",
             name: "center",
-            text: "marks the middle of the crop. 0.5, 0.5 is the middle of the photo.",
+            text: "marks the middle of the crop. 0.5, 0.5 is the middle of the photo",
             type: "Point",
           },
           {
             default: "{ width: 1, height: 1 }",
             name: "size",
-            text: "sets the crop's width and height as fractions of the photo's sides.",
+            text: "sets the crop's width and height as fractions of the photo's sides",
             type: "Size",
           },
           {
             default: "0",
             name: "rotation",
-            text: "straightens the photo, in degrees from −45 to 45. a big `minSize` on a small photo lowers the limit, see `getRotationLimit()` on [cropper](cropper).",
+            text: "straightens the photo, in degrees from −45 to 45. a big `minSize` on a small photo lowers the limit, see `getRotationLimit()` on [cropper](cropper)",
             type: "number",
           },
           {
             default: "0",
             name: "quarterTurns",
-            text: "counts clockwise 90° turns. one counter-clockwise turn reads 3.",
+            text: "counts clockwise 90° turns. one counter-clockwise turn reads 3",
             type: "0 | 1 | 2 | 3",
           },
           {
             default: "false",
             name: "mirrored",
-            text: "swaps left and right. each flip toggles it and negates `rotation`. a left to right flip also turns a `quarterTurns` of 1 into 3, and a top to bottom flip turns 0 into 2.",
+            text: "swaps left and right. each flip toggles it and negates `rotation`. a left to right flip also turns a `quarterTurns` of 1 into 3, and a top to bottom flip turns 0 into 2",
             type: "boolean",
           },
           {
             default: "{ vertical: 0, horizontal: 0 }",
             name: "perspective",
-            text: "tilts the photo by `vertical` and `horizontal` degrees. no part or gesture sets it, only `setValue()`, `value` and `defaultValue`. keep each within −30 to 30. `parse` clamps to that range, `setValue()` does not.",
+            text: "tilts the photo by `vertical` and `horizontal` degrees. no part or gesture sets it, only `setValue()`, `value` and `defaultValue`. keep each within −30 to 30. `parse` clamps to that range, `setValue()` does not",
             type: "object",
           },
           {
             default: '"free"',
             name: "aspect",
-            text: 'locks the crop\'s shape to a ratio such as `16 / 9`, to `"original"` for the photo\'s own shape, or to nothing with `"free"`.',
+            text: 'locks the crop\'s shape to a ratio such as `16 / 9`, to `"original"` for the photo\'s own shape, or to nothing with `"free"`',
             type: "Aspect",
           },
         ],
@@ -120,26 +120,26 @@ export const value = defineDoc({
       table({
         columns: [column("export", "mono"), column("what it does", "prose")],
         rows: [
-          ["defaultValue", "is the whole photo, level, with a free aspect."],
+          ["defaultValue", "is the whole photo, level, with a free aspect"],
           [
             "valuesEqual",
-            "takes `(a, b)` and returns `true` when every field matches.",
+            "takes `(a, b)` and returns `true` when every field matches",
           ],
           [
             "changedFields",
-            "takes `(a, b)` and returns the names of the fields that differ.",
+            "takes `(a, b)` and returns the names of the fields that differ",
           ],
           [
             "aspectRatio",
-            "takes `(aspect, image, quarterTurns)` and returns the ratio as a number, or `null` for a free aspect.",
+            "takes `(aspect, image, quarterTurns)` and returns the ratio as a number, or `null` for a free aspect",
           ],
           [
             "valueToState",
-            "takes `(value, image, focal?)` and returns the crop in image pixels. `focal` is a length in pixels and defaults to a 26 mm lens on the photo's long side.",
+            "takes `(value, image, focal?)` and returns the crop in image pixels. `focal` is a length in pixels and defaults to a 26 mm lens on the photo's long side",
           ],
           [
             "stateToValue",
-            "takes `(state, aspect)` and turns a crop in image pixels back into a value.",
+            "takes `(state, aspect)` and turns a crop in image pixels back into a value",
           ],
         ],
       })
@@ -147,3 +147,5 @@ export const value = defineDoc({
   ],
   lede: "a plain object that describes the crop. read it to save a crop, and set it to restore or control one.",
 });
+
+export { VALUE_PAGE };

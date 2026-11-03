@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, excerpt, p, section } from "@/lib/doc/define";
 
-export const undo = defineDoc({
+const UNDO_PAGE = defineDoc({
   blocks: [
     demo("undo", 56),
     section(
@@ -47,3 +47,5 @@ export const undo = defineDoc({
   ],
   lede: "an undo button for the crop, built from what each commit hands you.",
 });
+
+export { UNDO_PAGE };

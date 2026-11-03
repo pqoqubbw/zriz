@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, excerpt, p, section } from "@/lib/doc/define";
 
-export const avatar = defineDoc({
+const AVATAR_PAGE = defineDoc({
   blocks: [
     demo("avatar", 56),
     section(
@@ -58,3 +58,5 @@ export const avatar = defineDoc({
   ],
   lede: "a profile photo picker: the visitor picks a file, moves it under a circle and saves a round png.",
 });
+
+export { AVATAR_PAGE };

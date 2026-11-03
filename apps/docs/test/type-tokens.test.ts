@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { typeTokens } from "@/lib/doc/schema";
+import { typeTokens } from "@/lib/doc/type-tokens";
 
 describe(typeTokens, () => {
   it.each([

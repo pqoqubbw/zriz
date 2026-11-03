@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const markdown = [
+import { pagePath } from "./lib/nav";
+
+const ACCEPTS_MARKDOWN = [
   { key: "accept", type: "header", value: ".*text/markdown.*" },
 ] as const;
 
@@ -16,19 +18,27 @@ const config: NextConfig = {
   reactCompiler: true,
   redirects: async () => [
     {
-      destination: "/docs/introduction",
-      missing: [...markdown],
+      destination: pagePath("introduction"),
+      missing: [...ACCEPTS_MARKDOWN],
       permanent: true,
       source: "/",
     },
-    { destination: "/docs/introduction", permanent: true, source: "/docs" },
+    { destination: pagePath("introduction"), permanent: true, source: "/docs" },
   ],
   rewrites: async () => ({
     afterFiles: [],
     beforeFiles: [
-      { destination: "/md/introduction", has: [...markdown], source: "/" },
+      {
+        destination: "/md/introduction",
+        has: [...ACCEPTS_MARKDOWN],
+        source: "/",
+      },
       { destination: "/md/:slug", source: "/docs/:slug.md" },
-      { destination: "/md/:slug", has: [...markdown], source: "/docs/:slug" },
+      {
+        destination: "/md/:slug",
+        has: [...ACCEPTS_MARKDOWN],
+        source: "/docs/:slug",
+      },
     ],
     fallback: [],
   }),

@@ -1,6 +1,6 @@
 import { code, defineDoc, p, section } from "@/lib/doc/define";
 
-export const composition = defineDoc({
+const COMPOSITION_PAGE = defineDoc({
   blocks: [
     section(
       "render your own element",
@@ -46,3 +46,5 @@ export const composition = defineDoc({
   ],
   lede: "render the zriz parts as your own components, and add your own handlers next to zriz's.",
 });
+
+export { COMPOSITION_PAGE };

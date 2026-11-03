@@ -1,55 +1,59 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Page } from "@/components/doc/blocks";
+import { DocBody } from "@/components/doc/blocks";
 import { Text } from "@/components/doc/text";
 import { Footer } from "@/components/shell/footer";
+import { PageHeader } from "@/components/shell/page-header";
 import { Pager } from "@/components/shell/pager";
 import { anchorsOf } from "@/lib/doc/anchors";
 import { plain } from "@/lib/doc/inline";
-import { docs } from "@/lib/docs";
-import { isSlug, order, pathOf, titleOf } from "@/lib/nav";
+import { DOCS } from "@/lib/docs";
+import { isSlug, markdownPath, pagePath, slugParams, titleOf } from "@/lib/nav";
 
-export const dynamic = "force-static";
-export const dynamicParams = false;
-export const generateStaticParams = () => order.map((slug) => ({ slug }));
+const generateStaticParams = slugParams;
 
-export const generateMetadata = async ({
+const generateMetadata = async ({
   params,
 }: PageProps<"/docs/[slug]">): Promise<Metadata> => {
   const { slug } = await params;
+
   if (!isSlug(slug)) {
     return {};
   }
+
   return {
     alternates: {
-      canonical: pathOf(slug),
-      types: { "text/markdown": `${pathOf(slug)}.md` },
+      canonical: pagePath(slug),
+      types: { "text/markdown": markdownPath(slug) },
     },
-    description: plain(docs[slug].lede),
+    description: plain(DOCS[slug].lede),
     title: titleOf(slug),
   };
 };
 
 const DocPage = async ({ params }: PageProps<"/docs/[slug]">) => {
   const { slug } = await params;
+
   if (!isSlug(slug)) {
     notFound();
   }
-  const doc = docs[slug];
+
+  const doc = DOCS[slug];
+
   return (
     <>
-      <header className="flex flex-col gap-2 pb-9">
-        <h1 className="text-title">{titleOf(slug)}</h1>
-        <p className="text-lede text-muted">
-          <Text source={doc.lede} />
-        </p>
-      </header>
-      <Page anchors={anchorsOf(doc.blocks)} blocks={doc.blocks} />
+      <PageHeader className="pb-9" title={titleOf(slug)}>
+        <Text source={doc.lede} />
+      </PageHeader>
+      <DocBody anchors={anchorsOf(doc.blocks)} blocks={doc.blocks} />
       <Pager slug={slug} />
       <Footer />
     </>
   );
 };
 
+export { generateMetadata, generateStaticParams };
+export const dynamic = "force-static";
+export const dynamicParams = false;
 export default DocPage;

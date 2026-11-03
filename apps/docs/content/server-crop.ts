@@ -1,6 +1,6 @@
 import { code, defineDoc, demo, excerpt, p, section } from "@/lib/doc/define";
 
-export const serverCrop = defineDoc({
+const SERVER_CROP_PAGE = defineDoc({
   blocks: [
     demo("server-crop", 56),
     section(
@@ -67,3 +67,5 @@ export const serverCrop = defineDoc({
   ],
   lede: "send the photo and its crop plan to your server, and cut the full-size original there with sharp.",
 });
+
+export { SERVER_CROP_PAGE };

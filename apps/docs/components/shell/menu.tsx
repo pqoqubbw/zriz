@@ -1,66 +1,72 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
-import { Icon } from "@/components/doc/icon";
 import { NavList } from "@/components/shell/nav-list";
+import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
-const button =
-  "group -mr-3 flex size-11 cursor-pointer items-center justify-center rounded-control focus-visible:[border-image-source:none]";
+type MenuProps = {
+  logo: ReactNode;
+};
 
-export const Menu = ({ logo }: { logo: React.ReactNode }) => {
+const Menu = ({ logo }: MenuProps) => {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+
   useEffect(() => {
     const element = dialog.current;
+
     const handleClick = (event: MouseEvent) => {
       if (event.target instanceof Element && event.target.closest("a")) {
         element?.close();
       }
     };
+
     element?.addEventListener("click", handleClick);
+
     return () => {
       element?.removeEventListener("click", handleClick);
     };
   }, []);
+
   return (
     <>
-      <button
+      <Button
         aria-label="Menu"
-        className={button}
+        className="-mr-3"
         onClick={() => {
           dialog.current?.showModal();
           setOpen(true);
         }}
-        type="button"
+        size="bar"
+        variant="ghost"
       >
-        <span className="group-focus-visible:corners flex">
-          <Icon className="size-5" name="menu" />
-        </span>
-      </button>
+        <Icon className="size-5" name="menu" />
+      </Button>
       <dialog
         aria-label="menu"
-        className="bg-page text-ink m-0 h-dvh max-h-none w-full max-w-none backdrop:bg-transparent"
+        className="m-0 h-dvh max-h-none w-full max-w-none bg-page text-ink backdrop:bg-transparent"
         onClose={() => {
           setOpen(false);
         }}
         ref={dialog}
       >
-        <div className="mx-auto flex h-full w-[min(35rem,100%-2rem)] flex-col">
+        <div className="mx-auto flex h-full page-column flex-col">
           <div className="flex h-11 shrink-0 items-center justify-between">
             {logo}
-            <button
+            <Button
               aria-label="Close menu"
-              className={button}
+              className="-mr-3"
               onClick={() => {
                 dialog.current?.close();
               }}
-              type="button"
+              size="bar"
+              variant="ghost"
             >
-              <span className="group-focus-visible:corners flex">
-                <Icon className="size-5" name="close" />
-              </span>
-            </button>
+              <Icon className="size-5" name="close" />
+            </Button>
           </div>
           <nav
             aria-label="docs"
@@ -73,3 +79,5 @@ export const Menu = ({ logo }: { logo: React.ReactNode }) => {
     </>
   );
 };
+
+export { Menu };

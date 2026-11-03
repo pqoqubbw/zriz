@@ -8,7 +8,7 @@ import {
   section,
 } from "@/lib/doc/define";
 
-export const quickStart = defineDoc({
+const QUICK_START_PAGE = defineDoc({
   blocks: [
     section(
       "set it up with an agent",
@@ -59,3 +59,5 @@ export const quickStart = defineDoc({
   ],
   lede: "go from an empty project to a cropper that hands you the crop.",
 });
+
+export { QUICK_START_PAGE };

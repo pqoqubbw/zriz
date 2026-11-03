@@ -11,7 +11,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const buttons = defineDoc({
+const BUTTONS_PAGE = defineDoc({
   blocks: [
     demo("buttons"),
     section(
@@ -108,3 +108,5 @@ export const buttons = defineDoc({
   ],
   lede: "`Rotate` turns the photo a quarter turn, `Flip` mirrors it and `Reset` undoes every change.",
 });
+
+export { BUTTONS_PAGE };

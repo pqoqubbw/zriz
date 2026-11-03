@@ -13,7 +13,7 @@ import {
   toggle,
 } from "@/lib/doc/define";
 
-export const playground = defineDoc({
+const PLAYGROUND_PAGE = defineDoc({
   blocks: [
     demo("playground", 48),
     section(
@@ -80,3 +80,5 @@ export const playground = defineDoc({
   ],
   lede: "change the main props on a live cropper and copy the code that matches what you see.",
 });
+
+export { PLAYGROUND_PAGE };

@@ -1,21 +1,27 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/cn";
-import { hrefOf, typeset } from "@/lib/doc/inline";
+import { typeset } from "@/lib/doc/inline";
 import type { Piece } from "@/lib/doc/inline";
+import { pagePath } from "@/lib/nav";
 
-const long = 28;
+type TextProps = {
+  source: string;
+};
 
-const render = (pieces: Piece[], prefix: string) =>
+const LONG_CODE = 28;
+
+const renderPieces = (pieces: Piece[], prefix: string) =>
   pieces.map((piece, i) => {
     const key = `${prefix}${i}`;
+
     if (piece.kind === "code") {
       return (
         <code
           className={cn(
             "chip",
-            piece.text.length > long &&
-              "max-sm:inline max-sm:[box-decoration-break:clone] max-sm:[overflow-wrap:anywhere] max-sm:whitespace-pre-wrap"
+            piece.text.length > LONG_CODE &&
+              "max-sm:inline max-sm:box-decoration-clone"
           )}
           key={key}
         >
@@ -23,22 +29,32 @@ const render = (pieces: Piece[], prefix: string) =>
         </code>
       );
     }
+
     if (piece.kind === "link") {
       return (
-        <Link className="link" href={hrefOf(piece)} key={key} prefetch={false}>
+        <Link
+          className="link"
+          href={pagePath(piece.slug, piece.anchor)}
+          key={key}
+          prefetch={false}
+        >
           {piece.text}
         </Link>
       );
     }
+
     return piece.text;
   });
 
-export const Text = ({ source }: { source: string }) => {
+const Text = ({ source }: TextProps) => {
   const { lead, tail } = typeset(source);
+
   return (
     <>
-      {render(lead, "l")}
-      <span className="inline-block max-w-full">{render(tail, "t")}</span>
+      {renderPieces(lead, "l")}
+      <span className="inline-block max-w-full">{renderPieces(tail, "t")}</span>
     </>
   );
 };
+
+export { Text };

@@ -9,7 +9,7 @@ import {
   table,
 } from "@/lib/doc/define";
 
-export const accessibility = defineDoc({
+const ACCESSIBILITY_PAGE = defineDoc({
   blocks: [
     section(
       "label every control",
@@ -128,3 +128,5 @@ export const accessibility = defineDoc({
   ],
   lede: "zriz sets roles, keys and announcements. you write every word a screen reader says.",
 });
+
+export { ACCESSIBILITY_PAGE };

@@ -3,37 +3,58 @@ import path from "node:path";
 
 import type { BlockOf } from "@/lib/doc/schema";
 
-const root = path.join(process.cwd(), "snippets");
+const SNIPPETS_DIR = path.join(process.cwd(), "snippets");
+
+const EXAMPLE_PREFIX = "export const example = ";
+
+const LANGUAGES = {
+  css: { fence: "css", shiki: "css" },
+  html: { fence: "html", shiki: "html" },
+  json: { fence: "json", shiki: "json" },
+  sh: { fence: "sh", shiki: "shellscript" },
+  ts: { fence: "ts", shiki: "ts" },
+  tsx: { fence: "tsx", shiki: "tsx" },
+} as const;
+
+type Language = (typeof LANGUAGES)[keyof typeof LANGUAGES];
 
 const read = (file: string): string =>
-  readFileSync(path.join(root, file), "utf-8").replace(/\n+$/u, "");
-
-const head = "export const example = ";
+  readFileSync(path.join(SNIPPETS_DIR, file), "utf-8").replace(/\n+$/u, "");
 
 const fragment = (source: string, file: string): string => {
   const lines = source.split("\n");
-  const start = lines.findIndex((line) => line.startsWith(head));
+  const start = lines.findIndex((line) => line.startsWith(EXAMPLE_PREFIX));
   const first = lines[start];
+
   if (first === undefined) {
-    throw new Error(`${file}: no ${head}`);
+    throw new Error(`${file}: no ${EXAMPLE_PREFIX}`);
   }
+
   if (!first.endsWith("(")) {
-    return first.slice(head.length).replace(/;$/u, "");
+    return first.slice(EXAMPLE_PREFIX.length).replace(/;$/u, "");
   }
+
   const end = lines.findIndex((line, i) => i > start && line === ");");
+
   if (end === -1) {
     throw new Error(`${file}: no closing );`);
   }
+
   let body = lines.slice(start + 1, end).map((line) => line.slice(2));
+
   if (body[0] === "<>" && body.at(-1) === "</>") {
     body = body.slice(1, -1).map((line) => line.slice(2));
   }
+
   return body.join("\n");
 };
 
-export const sourceOf = (file: string): string => {
+const isFragment = (file: string): boolean => file.endsWith(".jsx.tsx");
+
+const sourceOf = (file: string): string => {
   const source = read(file);
-  return file.endsWith(".jsx.tsx") ? fragment(source, file) : source;
+
+  return isFragment(file) ? fragment(source, file) : source;
 };
 
 const lineOf = (
@@ -46,9 +67,11 @@ const lineOf = (
     i >= from && line.trim().startsWith(prefix) ? [i] : []
   );
   const [hit] = hits;
+
   if (hit === undefined) {
     throw new Error(`${file}: no line starts with ${prefix}`);
   }
+
   return hit;
 };
 
@@ -58,40 +81,36 @@ const dedent = (lines: readonly string[]): string => {
       .filter((line) => line.trim() !== "")
       .map((line) => line.length - line.trimStart().length)
   );
+
   return lines.map((line) => line.slice(cut)).join("\n");
 };
 
-export const excerptOf = ({ file, ranges }: BlockOf<"excerpt">): string => {
+const excerptOf = ({ file, ranges }: BlockOf<"excerpt">): string => {
   const lines = sourceOf(file).split("\n");
   const chunks: string[] = [];
   let after = 0;
+
   for (const [start, end] of ranges) {
     const from = lineOf(lines, start, after, file);
     const to = end === null ? from : lineOf(lines, end, from, file);
+
     chunks.push(dedent(lines.slice(from, to + 1)));
     after = to + 1;
   }
+
   return chunks.join("\n\n");
 };
 
-export const textOf = (block: BlockOf<"code" | "excerpt">): string =>
+const textOf = (block: BlockOf<"code" | "excerpt">): string =>
   block.kind === "code" ? sourceOf(block.file) : excerptOf(block);
 
-export const languages = {
-  css: { fence: "css", shiki: "css" },
-  html: { fence: "html", shiki: "html" },
-  json: { fence: "json", shiki: "json" },
-  sh: { fence: "sh", shiki: "shellscript" },
-  ts: { fence: "ts", shiki: "ts" },
-  tsx: { fence: "tsx", shiki: "tsx" },
-} as const;
+const isExtension = (ext: string): ext is keyof typeof LANGUAGES =>
+  Object.hasOwn(LANGUAGES, ext);
 
-export type Language = (typeof languages)[keyof typeof languages];
-
-const isExtension = (ext: string): ext is keyof typeof languages =>
-  Object.hasOwn(languages, ext);
-
-export const languageOf = (file: string): Language => {
+const languageOf = (file: string): Language => {
   const ext = file.split(".").pop() ?? "";
-  return isExtension(ext) ? languages[ext] : languages.tsx;
+
+  return isExtension(ext) ? LANGUAGES[ext] : LANGUAGES.tsx;
 };
+
+export { isFragment, languageOf, textOf };

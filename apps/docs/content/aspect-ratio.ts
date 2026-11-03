@@ -10,7 +10,7 @@ import {
   section,
 } from "@/lib/doc/define";
 
-export const aspectRatio = defineDoc({
+const ASPECT_RATIO_PAGE = defineDoc({
   blocks: [
     demo("aspect-ratio"),
     section(
@@ -120,3 +120,5 @@ export const aspectRatio = defineDoc({
   ],
   lede: "buttons that lock the crop to a ratio such as 1:1 or 4:5, and one that swaps portrait and landscape.",
 });
+
+export { ASPECT_RATIO_PAGE };

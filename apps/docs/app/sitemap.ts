@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 
-import { order, pathOf } from "@/lib/nav";
-import { origin } from "@/lib/site";
+import { PAGE_ORDER } from "@/lib/nav";
+import { pageUrl } from "@/lib/site";
 
 const sitemap = (): MetadataRoute.Sitemap =>
-  order.map((slug) => ({ url: `${origin}${pathOf(slug)}` }));
+  PAGE_ORDER.map((slug) => ({ url: pageUrl(slug) }));
 
 export default sitemap;

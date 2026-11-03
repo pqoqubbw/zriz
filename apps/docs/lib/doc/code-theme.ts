@@ -1,6 +1,6 @@
 import type { ThemeRegistration } from "shiki";
 
-export const roles = {
+const ROLE_CLASSES = {
   attr: "a",
   comment: "c",
   keyword: "k",
@@ -11,9 +11,9 @@ export const roles = {
   tag: "t",
 } as const;
 
-export type Role = keyof typeof roles;
+type Role = keyof typeof ROLE_CLASSES;
 
-const marks = {
+const ROLE_MARKS = {
   attr: "#000005",
   comment: "#000001",
   keyword: "#000002",
@@ -24,31 +24,28 @@ const marks = {
   tag: "#000004",
 } as const satisfies Record<Role, string>;
 
-const names: readonly Role[] = [
-  "attr",
-  "comment",
-  "keyword",
-  "number",
-  "plain",
-  "punct",
-  "string",
-  "tag",
-];
+const isRole = (name: string): name is Role =>
+  Object.hasOwn(ROLE_CLASSES, name);
 
-export const roleOfMark = new Map<string, Role>(
-  names.map((role) => [marks[role], role])
+const ROLE_BY_MARK = new Map<string, Role>(
+  Object.entries(ROLE_MARKS).flatMap(([role, mark]) =>
+    isRole(role) ? [[mark, role] as const] : []
+  )
 );
 
 const rule = (scope: string[], role: Role) => ({
   scope,
-  settings: { foreground: marks[role] },
+  settings: { foreground: ROLE_MARKS[role] },
 });
 
-export const theme: ThemeRegistration = {
-  colors: { "editor.background": "#ffffff", "editor.foreground": marks.plain },
+const CODE_THEME: ThemeRegistration = {
+  colors: {
+    "editor.background": "#ffffff",
+    "editor.foreground": ROLE_MARKS.plain,
+  },
   name: "zriz",
   settings: [
-    { settings: { foreground: marks.plain } },
+    { settings: { foreground: ROLE_MARKS.plain } },
     rule(["comment", "punctuation.definition.comment"], "comment"),
     rule(["string", "punctuation.definition.string"], "string"),
     rule(
@@ -175,3 +172,5 @@ export const theme: ThemeRegistration = {
   ],
   type: "light",
 };
+
+export { CODE_THEME, ROLE_BY_MARK, ROLE_CLASSES };
