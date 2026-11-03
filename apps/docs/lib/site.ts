@@ -4,7 +4,7 @@ import type { Slug } from "@/lib/nav";
 const SITE_ORIGIN = "https://zriz.dev";
 
 const SITE_LINKS = {
-  github: "https://github.com/zriz-dev/zriz",
+  github: "https://github.com/pqoqubbw/zriz",
   npm: "https://www.npmjs.com/package/@zriz/react",
 } as const;
 

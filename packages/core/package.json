@@ -11,7 +11,13 @@
     "straighten"
   ],
   "homepage": "https://zriz.dev",
+  "bugs": "https://github.com/pqoqubbw/zriz/issues",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pqoqubbw/zriz.git",
+    "directory": "packages/core"
+  },
   "files": [
     "dist",
     "src"
