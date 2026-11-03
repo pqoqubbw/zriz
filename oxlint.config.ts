@@ -7,11 +7,7 @@ import vitest from "ultracite/oxlint/vitest";
 export default defineConfig({
   env: core.env ?? {},
   extends: [core, react, vitest],
-  ignorePatterns: [
-    ...(core.ignorePatterns ?? []),
-    "notes/**",
-    "apps/docs/snippets/**",
-  ],
+  ignorePatterns: [...(core.ignorePatterns ?? []), "apps/docs/snippets/**"],
   options: { typeAware: true },
   overrides: [
     {

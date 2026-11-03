@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a new prop, part or behavior.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        zriz keeps a small API and no runtime dependencies. Start with the problem. We can work out the API together.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The product or screen you are building, and where zriz gets in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What do you do today?
+      description: Your current workaround, if you have one.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like zriz to do?
+      description: Optional. A sketch of the prop or part you have in mind.

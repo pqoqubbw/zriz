@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/pqoqubbw/zriz/security/advisories/new
+    about: Private report. Only the maintainer sees it.
+  - name: Ask a question
+    url: https://github.com/pqoqubbw/zriz/discussions/categories/q-a
+    about: How do I, and is this possible.
+  - name: Read the docs
+    url: https://zriz.dev
+    about: Guides, examples and API tables.

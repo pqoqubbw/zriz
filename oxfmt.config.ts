@@ -7,8 +7,6 @@ export default defineConfig({
   ...ultracite,
   ignorePatterns: [
     ...(ultracite.ignorePatterns ?? []),
-    "notes/**",
-    "BRIEF.md",
     "apps/docs/snippets/**/*.html",
   ],
   overrides: [

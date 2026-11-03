@@ -1,0 +1,80 @@
+name: Bug report
+description: Something in @zriz/core or @zriz/react does not work as the docs say.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search [open and closed issues](https://github.com/pqoqubbw/zriz/issues?q=is%3Aissue) first. Security problems go to the [private report form](https://github.com/pqoqubbw/zriz/security/advisories/new), never here.
+  - type: input
+    id: reproduction
+    attributes:
+      label: Reproduction link
+      description: A StackBlitz, CodeSandbox or public GitHub repo with the smallest code that shows the bug. No localhost links. I close issues that come without a working link.
+      placeholder: https://stackblitz.com/edit/...
+    validations:
+      required: true
+      min_length: 20
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What to click, drag, pinch or press in the reproduction.
+      placeholder: |
+        1. Turn the dial to 30 degrees
+        2. Pinch to zoom out
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+      description: What you expected, and what happened instead. For motion bugs, say how it differs from iOS Photos.
+    validations:
+      required: true
+  - type: upload
+    id: recording
+    attributes:
+      label: Screen recording
+      description: Optional. A recording shows a motion bug better than words.
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: zriz version
+      description: The exact version from your lockfile, not "latest".
+      placeholder: 0.3.1
+    validations:
+      required: true
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: Browsers
+      multiple: true
+      options:
+        - Chrome
+        - Safari
+        - Firefox
+        - Edge
+        - Safari on iOS
+        - Chrome on Android
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: input
+    attributes:
+      label: Input
+      multiple: true
+      options:
+        - Mouse
+        - Trackpad
+        - Touch
+        - Keyboard
+        - Screen reader
+  - type: input
+    id: environment
+    attributes:
+      label: OS, device and React version
+      placeholder: macOS 26.1, iPhone 17, React 19.2
