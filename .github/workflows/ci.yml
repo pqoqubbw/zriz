@@ -76,9 +76,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [chromium, firefox, webkit]
-        os: [ubuntu-24.04]
         include:
+          - engine: chromium
+            os: ubuntu-24.04
+          - engine: firefox
+            os: macos-26
           - engine: webkit
             os: macos-26
     env:
