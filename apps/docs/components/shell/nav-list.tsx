@@ -32,7 +32,7 @@ const navGroupTitleVariants = cva("text-caption text-group", {
 
 const navItemVariants = cva("block w-full text-nav hover:text-ink", {
   variants: {
-    active: { false: "text-muted", true: "font-strong text-ink" },
+    active: { false: "text-soft", true: "font-strong text-ink" },
     roomy: { false: "py-0.5", true: "py-1.5" },
   },
 });
