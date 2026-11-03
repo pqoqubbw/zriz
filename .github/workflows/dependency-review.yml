@@ -12,6 +12,7 @@ concurrency:
 jobs:
   dependency-review:
     name: dependency review
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
