@@ -36,8 +36,15 @@
     "vitest": "catalog:",
     "vitest-browser-react": "2.3.0"
   },
-  "engines": {
-    "node": ">=22.18"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "10.34.9",
+      "onFail": "error"
+    }
   },
-  "packageManager": "pnpm@10.25.0"
+  "engines": {
+    "node": "^22.22.2 || >=24.15.0"
+  },
+  "packageManager": "pnpm@10.34.9"
 }

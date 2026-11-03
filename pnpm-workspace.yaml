@@ -20,5 +20,15 @@ catalog:
 
 minimumReleaseAge: 1440
 
-onlyBuiltDependencies:
-  - sharp
+allowBuilds:
+  esbuild: false
+
+strictDepBuilds: true
+
+blockExoticSubdeps: true
+
+trustPolicy: no-downgrade
+
+engineStrict: true
+
+packageManagerStrictVersion: true
