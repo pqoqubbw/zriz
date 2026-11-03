@@ -16,6 +16,7 @@ export interface VelocityTracker {
 }
 
 const fallbackFrame = 1000 / 60;
+const MIN_FIT_SPAN = 10;
 
 export const frameClock = (): Clock => {
   if (typeof globalThis.requestAnimationFrame === "function") {
@@ -138,8 +139,14 @@ export const velocityTracker = (
     },
     velocity(time) {
       const n = times.length;
+      const [first] = times;
       const last = times[n - 1];
-      if (n < 2 || last === undefined || time - last > stale) {
+      if (
+        first === undefined ||
+        last === undefined ||
+        last - first < MIN_FIT_SPAN ||
+        time - last > stale
+      ) {
         return 0;
       }
       let st = 0;
@@ -157,7 +164,7 @@ export const velocityTracker = (
         num += dt * ((values[i] ?? 0) - mv);
         den += dt * dt;
       }
-      return den === 0 ? 0 : (num / den) * 1000;
+      return (num / den) * 1000;
     },
   };
 };

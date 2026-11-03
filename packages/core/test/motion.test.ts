@@ -86,6 +86,14 @@ describe(decay, () => {
   });
 });
 
+const fed = (samples: readonly (readonly [number, number])[]) => {
+  const tracker = velocityTracker();
+  for (const [time, value] of samples) {
+    tracker.push(time, value);
+  }
+  return tracker;
+};
+
 describe(velocityTracker, () => {
   it("fits a steady motion exactly", () => {
     const tracker = velocityTracker();
@@ -110,6 +118,40 @@ describe(velocityTracker, () => {
     }
     tracker.push(130, 80);
     expect(tracker.velocity(131)).toBe(0);
+  });
+
+  it("gives zero for samples less than 10 ms apart", () => {
+    const twitch = fed([
+      [0, 0],
+      [1, 2],
+    ]);
+    expect(twitch.velocity(1)).toBe(0);
+    const longer = fed([
+      [0, 0],
+      [1, 2],
+      [2, 2],
+      [9, 2],
+    ]);
+    expect(longer.velocity(9)).toBe(0);
+  });
+
+  it("forgets the motion before a pause when a twitch follows", () => {
+    const tracker = fed([
+      [0, 0],
+      [8, 16],
+      [16, 32],
+      [130, 33],
+      [131, 35],
+    ]);
+    expect(tracker.velocity(132)).toBe(0);
+  });
+
+  it("keeps two samples one 60 hz frame apart", () => {
+    const tracker = fed([
+      [0, 0],
+      [1000 / 60, 10],
+    ]);
+    expect(tracker.velocity(1000 / 60)).toBeCloseTo(600, 6);
   });
 
   it("gives zero after a 40 ms pause", () => {

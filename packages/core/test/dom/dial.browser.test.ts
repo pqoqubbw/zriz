@@ -8,9 +8,11 @@ import {
   bindDialTicks,
   bindDialValue,
   bindViewport,
+  dialHandlers,
   dialState,
   viewOf,
 } from "../../src/dom";
+import { fakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -102,6 +104,64 @@ const mount = (): DialFixture => {
   });
   return fixture;
 };
+
+const at = (clientX: number, timeStamp: number): PointerEvent => {
+  const event = new PointerEvent("pointermove", {
+    clientX,
+    pointerId: 1,
+    pointerType: "mouse",
+  });
+  Object.defineProperty(event, "timeStamp", { value: timeStamp });
+  return event;
+};
+
+const turnAfter = (path: readonly (readonly [number, number])[]): number => {
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    image: { height: 3000, width: 4000 },
+  });
+  const handlers = dialHandlers(cropper);
+  const [first, ...rest] = path;
+  let last = first ?? [0, 0];
+  handlers.onPointerDown(at(last[0], last[1]));
+  for (const sample of rest) {
+    handlers.onPointerMove(at(sample[0], sample[1]));
+    last = sample;
+  }
+  handlers.onPointerUp(at(last[0], last[1] + 1));
+  time.frames(200);
+  const { rotation } = cropper.getValue();
+  cropper.destroy();
+  return rotation;
+};
+
+describe("dial release", () => {
+  it("stays put when a stopped pointer twitches just before the release", () => {
+    expect(
+      turnAfter([
+        [180, 0],
+        [170, 8],
+        [150, 16],
+        [130, 24],
+        [129, 124],
+        [127, 125],
+      ])
+    ).toBeCloseTo(-10.75, 1);
+  });
+
+  it("still throws after a real flick", () => {
+    expect(
+      turnAfter([
+        [100, 0],
+        [115, 8],
+        [130, 16],
+        [145, 24],
+        [160, 32],
+      ])
+    ).toBeGreaterThan(20);
+  });
+});
 
 describe("dial", () => {
   afterEach(() => {
