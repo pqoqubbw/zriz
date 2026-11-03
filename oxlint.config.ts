@@ -15,20 +15,68 @@ export default defineConfig({
   options: { typeAware: true },
   overrides: [
     {
+      excludeFiles: ["apps/docs/snippets/**"],
       files: ["apps/docs/**"],
+      jsPlugins: ["@stylistic/eslint-plugin", "./apps/docs/lint/style.mjs"],
       plugins: next.plugins ?? [],
-      rules: { ...next.rules, "nextjs/no-html-link-for-pages": "off" },
+      rules: {
+        ...next.rules,
+        "@stylistic/padding-line-between-statements": [
+          "error",
+          { blankLine: "always", next: "return", prev: "*" },
+          { blankLine: "always", next: "*", prev: ["const", "let"] },
+          { blankLine: "any", next: ["const", "let"], prev: ["const", "let"] },
+          {
+            blankLine: "always",
+            next: "*",
+            prev: ["block-like", "multiline-expression"],
+          },
+          {
+            blankLine: "always",
+            next: ["block-like", "multiline-expression"],
+            prev: "*",
+          },
+          { blankLine: "always", next: "*", prev: "directive" },
+        ],
+        "docs/constant-case": "error",
+        "docs/export-list": "error",
+        "docs/no-class-variable": "error",
+        "docs/props-type": "error",
+        "import/exports-last": "error",
+        "import/group-exports": "error",
+        "nextjs/no-html-link-for-pages": "off",
+        "typescript/consistent-type-definitions": ["error", "type"],
+      },
     },
     {
-      files: ["apps/docs/components/doc/code-block.tsx"],
+      files: ["apps/docs/lint/**"],
+      rules: {
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/strict-boolean-expressions": "off",
+      },
+    },
+    {
+      files: ["apps/docs/components/doc/code-figure.tsx"],
       rules: {
         "jsx-a11y/no-noninteractive-tabindex": "off",
         "react/no-danger": "off",
       },
     },
     {
+      files: ["apps/docs/components/doc/blocks.tsx"],
+      rules: { "eslint/no-use-before-define": ["error", { variables: false }] },
+    },
+    {
       files: ["apps/docs/components/doc/controls.tsx"],
       rules: { "jsx-a11y/role-has-required-aria-props": "off" },
+    },
+    {
+      files: ["apps/docs/app/**"],
+      rules: { "import/group-exports": "off" },
     },
     {
       files: ["apps/docs/next.config.ts"],

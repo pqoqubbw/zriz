@@ -1,6 +1,8 @@
 import { defineConfig } from "oxfmt";
 import ultracite from "ultracite/oxfmt";
 
+const { sortTailwindcss } = ultracite;
+
 export default defineConfig({
   ...ultracite,
   ignorePatterns: [
@@ -19,4 +21,8 @@ export default defineConfig({
       options: { printWidth: 66, sortImports: false },
     },
   ],
+  sortTailwindcss: {
+    ...(typeof sortTailwindcss === "object" ? sortTailwindcss : {}),
+    stylesheet: "./apps/docs/app/globals.css",
+  },
 });

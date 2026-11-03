@@ -22,6 +22,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "5.10.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdast": "4.0.4",
     "@types/node": "^22",
