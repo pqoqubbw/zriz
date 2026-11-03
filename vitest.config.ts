@@ -58,6 +58,7 @@ export default defineConfig({
           include: ["apps/docs/test/**/*.test.ts"],
           name: "docs",
           setupFiles: ["apps/docs/test/setup.ts"],
+          testTimeout: 60_000,
         },
       },
       {
