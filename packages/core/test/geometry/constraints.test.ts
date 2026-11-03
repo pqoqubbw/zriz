@@ -295,13 +295,13 @@ describe("handle drag constraints", () => {
 
   it("keeps the minimum size when the planes leave no strictly feasible corner", () => {
     const s = {
-      angle: 2.558_124_670_234_012_3e-10,
+      angle: 2.5581246702340123e-10,
       aspect: null,
       crop: {
-        height: 0.999_999_999_995_534_2,
-        width: 0.999_999_999_995_534_2,
-        x: -2240.257_499_999_996_5,
-        y: -1.000_223_406_877_332e-8,
+        height: 0.9999999999955342,
+        width: 0.9999999999955342,
+        x: -2240.2574999999965,
+        y: -1.000223406877332e-8,
       },
       flip: false,
       image: { height: 4486, width: 1 },
@@ -310,7 +310,7 @@ describe("handle drag constraints", () => {
     };
     const { minHeight, minWidth, planes, tolerance } = limitsFor(
       s,
-      0.999_999_999_999_998_9
+      0.9999999999999989
     );
     const r = dragHandle(
       toRect(s),
