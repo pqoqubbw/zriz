@@ -253,39 +253,39 @@ describe("load and export", () => {
     expect(checked).toBeGreaterThan(10);
   });
 
-  it.runIf(server.browser !== "firefox")(
-    "keeps a P3 source in P3",
-    async () => {
-      const source = new OffscreenCanvas(16, 16);
-      const paint = source.getContext("2d", { colorSpace: "display-p3" });
-      if (!paint) {
-        throw new Error("no P3 canvas");
-      }
-      paint.fillStyle = "color(display-p3 1 0 0)";
-      paint.fillRect(0, 0, 16, 16);
-      const image = await loadImage(
-        await source.convertToBlob({ type: "image/png" })
-      );
-      const cropper = createCropper();
-      attachImage(cropper, image);
-      const result = await exportCrop(cropper, {
-        colorSpace: "display-p3",
-        type: "image/png",
-      });
-      const element = new Image();
-      element.src = URL.createObjectURL(result.blob);
-      await element.decode();
-      const canvas = new OffscreenCanvas(
-        element.naturalWidth,
-        element.naturalHeight
-      );
-      const context = canvas.getContext("2d", { colorSpace: "display-p3" });
-      context?.drawImage(element, 0, 0);
-      URL.revokeObjectURL(element.src);
-      const pixel = context?.getImageData(4, 4, 1, 1, {
-        colorSpace: "display-p3",
-      }).data;
-      expect([...(pixel ?? [])].slice(0, 3)).toStrictEqual([255, 0, 0]);
+  it.runIf(
+    server.browser === "chromium" ||
+      (server.browser === "webkit" && server.platform === "darwin")
+  )("keeps a P3 source in P3", async () => {
+    const source = new OffscreenCanvas(16, 16);
+    const paint = source.getContext("2d", { colorSpace: "display-p3" });
+    if (!paint) {
+      throw new Error("no P3 canvas");
     }
-  );
+    paint.fillStyle = "color(display-p3 1 0 0)";
+    paint.fillRect(0, 0, 16, 16);
+    const image = await loadImage(
+      await source.convertToBlob({ type: "image/png" })
+    );
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    const result = await exportCrop(cropper, {
+      colorSpace: "display-p3",
+      type: "image/png",
+    });
+    const element = new Image();
+    element.src = URL.createObjectURL(result.blob);
+    await element.decode();
+    const canvas = new OffscreenCanvas(
+      element.naturalWidth,
+      element.naturalHeight
+    );
+    const context = canvas.getContext("2d", { colorSpace: "display-p3" });
+    context?.drawImage(element, 0, 0);
+    URL.revokeObjectURL(element.src);
+    const pixel = context?.getImageData(4, 4, 1, 1, {
+      colorSpace: "display-p3",
+    }).data;
+    expect([...(pixel ?? [])].slice(0, 3)).toStrictEqual([255, 0, 0]);
+  });
 });

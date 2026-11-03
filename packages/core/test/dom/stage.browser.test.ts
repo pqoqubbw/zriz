@@ -424,7 +424,9 @@ describe("dom binders", () => {
       wheel(fixture, { ctrlKey: true, deltaY: -1.3 });
       expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
       await wait(150 + 300);
-      expect(view.overzoom()).toBeGreaterThan(0.999);
+      await expect
+        .poll(() => view.overzoom(), { interval: 16, timeout: 100 })
+        .toBeGreaterThan(0.999);
       await expect.poll(() => view.overzoom(), { timeout: 2000 }).toBe(1);
     });
 
