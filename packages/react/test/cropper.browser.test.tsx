@@ -166,6 +166,7 @@ describe("react parts", () => {
       [230, 150],
       [260, 150],
     ]);
+    await expect.poll(() => commits, { timeout: 5000 }).toBe(1);
     await frames(3);
     expect(commits).toBe(1);
   });

@@ -36,10 +36,15 @@ const frames = async (n = 2): Promise<void> => {
   }
 };
 
-const wait = async (ms: number): Promise<void> => {
-  await new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+const scrollStopped = async (): Promise<void> => {
+  let still = 0;
+  let last = window.scrollY;
+  for (let i = 0; i < 600 && still < 5; i += 1) {
+    await frames(1);
+    still = window.scrollY === last ? still + 1 : 0;
+    last = window.scrollY;
+  }
+  expect(still).toBe(5);
 };
 
 interface DialFixture {
@@ -133,9 +138,9 @@ describe("dial", () => {
       [130, 20],
       [130, 20, 80],
     ]);
-    await wait(50);
+    await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
     expect(fixture.cropper.getValue().rotation).toBeCloseTo(-10, 0);
-    expect(fixture.label.textContent).toBe("-10");
+    await expect.poll(() => fixture.label.textContent).toBe("-10");
   });
 
   it("keeps turning after a throw and commits once when it stops", async () => {
@@ -147,7 +152,8 @@ describe("dial", () => {
     }
     await commands.drag(`#${fixture.id}`, path);
     const released = fixture.cropper.getValue().rotation;
-    await wait(1200);
+    await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
+    await frames(3);
     const rested = fixture.cropper.getValue().rotation;
     expect(Math.abs(rested)).toBeGreaterThanOrEqual(Math.abs(released));
     expect(fixture.commits).toBe(1);
@@ -164,27 +170,35 @@ describe("dial", () => {
       [355, 20],
     ]);
     expect(fixture.cropper.getValue().rotation).toBe(45);
-    await wait(800);
-    expect(dialState(fixture.cropper).overshoot()).toBe(0);
+    await expect
+      .poll(() => dialState(fixture.cropper).overshoot(), { timeout: 5000 })
+      .toBe(0);
     expect(fixture.cropper.getValue().rotation).toBe(45);
   });
 
-  it("still springs the ruler back when a key is pressed during the bounce", async (context) => {
+  it("still springs the ruler back when a key is pressed during the bounce", async () => {
     const fixture = mount();
     await frames();
+    fixture.dial.focus();
+    let bounce = 0;
+    fixture.dial.addEventListener("pointerup", () => {
+      bounce = dialState(fixture.cropper).overshoot();
+      for (const type of ["keydown", "keyup"]) {
+        fixture.dial.dispatchEvent(
+          new KeyboardEvent(type, { bubbles: true, key: "ArrowLeft" })
+        );
+      }
+    });
     await commands.drag(`#${fixture.id}`, [
       [10, 20],
       [30, 20],
       [200, 20],
       [355, 20],
     ]);
-    if (dialState(fixture.cropper).overshoot() === 0) {
-      context.skip("the bounce ended before the drag command returned");
-    }
-    fixture.dial.focus();
-    await userEvent.keyboard("{ArrowLeft}");
-    await wait(800);
-    expect(dialState(fixture.cropper).overshoot()).toBe(0);
+    await expect.poll(() => bounce).not.toBe(0);
+    await expect
+      .poll(() => dialState(fixture.cropper).overshoot(), { timeout: 5000 })
+      .toBe(0);
     expect(fixture.cropper.getValue().rotation).toBe(44);
   });
 
@@ -251,6 +265,10 @@ describe("dial", () => {
       const spacer = document.createElement("div");
       spacer.style.height = "3000px";
       document.body.append(spacer);
+      cleanups.push(() => {
+        spacer.remove();
+        window.scrollTo(0, 0);
+      });
       window.scrollTo(0, 0);
       await frames();
       await commands.touch(`#${fixture.id}`, [
@@ -260,9 +278,9 @@ describe("dial", () => {
         [181, -40],
         [181, -90],
       ]);
-      await frames(3);
-      expect(window.scrollY).toBeGreaterThan(0);
+      await expect.poll(() => window.scrollY).toBeGreaterThan(0);
       expect(fixture.cropper.getValue().rotation).toBe(0);
+      await scrollStopped();
       window.scrollTo(0, 0);
       await frames();
       await commands.touch(`#${fixture.id}`, [
@@ -272,9 +290,9 @@ describe("dial", () => {
         [120, 20],
         [120, 20, 80],
       ]);
-      await frames(3);
-      expect(fixture.cropper.getValue().rotation).toBeLessThan(-5);
-      spacer.remove();
+      await expect
+        .poll(() => fixture.cropper.getValue().rotation)
+        .toBeLessThan(-5);
     }
   );
 });

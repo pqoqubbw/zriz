@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 
 import { createCropper } from "../../src";
-import type { Cropper, CropperEvents } from "../../src";
+import type { Clock, Cropper, CropperEvents } from "../../src";
 import {
   bindArea,
   bindHandle,
@@ -12,6 +12,7 @@ import {
   viewOf,
 } from "../../src/dom";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
+import { fakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -55,7 +56,12 @@ interface Fixture {
   commits: number;
 }
 
-const mount = (width = 400, height = 300, hidden = false): Fixture => {
+const mount = (
+  width = 400,
+  height = 300,
+  hidden = false,
+  clock?: Clock
+): Fixture => {
   count += 1;
   const id = `zriz-${count}`;
   const viewport = document.createElement("div");
@@ -78,6 +84,7 @@ const mount = (width = 400, height = 300, hidden = false): Fixture => {
     area,
     commits: 0,
     cropper: createCropper({
+      clock,
       image: photo,
       onValueCommit: () => {
         fixture.commits += 1;
@@ -203,6 +210,7 @@ describe("dom binders", () => {
         [240, 150],
         [250, 150],
       ]);
+      await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
       await frames(3);
       const moved =
         (before - fixture.cropper.getValue().center.x) * 4000 * scale;
@@ -223,9 +231,10 @@ describe("dom binders", () => {
         [260, 150],
         [320, 150],
       ]);
-      await wait(700);
-      expect(changes.some((t) => t !== rest)).toBeTruthy();
-      expect(fixture.image.style.transform).toBe(rest);
+      await expect.poll(() => changes.some((t) => t !== rest)).toBeTruthy();
+      await expect
+        .poll(() => fixture.image.style.transform, { timeout: 5000 })
+        .toBe(rest);
       expect(fixture.commits).toBe(0);
     });
 
@@ -240,6 +249,7 @@ describe("dom binders", () => {
         [x - 40, y - 30],
         [x - 80, y - 60],
       ]);
+      await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
       await frames(2);
       const { size } = fixture.cropper.getValue();
       expect(size.width).toBeLessThan(0.9);
@@ -259,9 +269,13 @@ describe("dom binders", () => {
         [x + 10, y + 8],
         [x + 22, y + 16],
       ]);
-      await frames(2);
+      await expect
+        .poll(() => {
+          const moved = local(fixture, fixture.area);
+          return moved.x + moved.width;
+        })
+        .toBeGreaterThan(x + 1);
       const after = local(fixture, fixture.area);
-      expect(after.x + after.width).toBeGreaterThan(x + 1);
       expect(after.x + after.width).toBeLessThanOrEqual(380.5);
       expect(after.y + after.height).toBeLessThanOrEqual(280.5);
     });
@@ -338,8 +352,10 @@ describe("dom binders", () => {
     });
 
     it("stretches past the smallest zoom with ctrl and springs back", async () => {
-      const fixture = mount();
+      const time = fakeClock();
+      const fixture = mount(400, 300, false, time.clock);
       await frames();
+      time.frames(2);
       const view = viewOf(fixture.cropper);
       for (let i = 0; i < 6; i += 1) {
         wheel(fixture, { ctrlKey: true, deltaY: 50 });
@@ -347,14 +363,15 @@ describe("dom binders", () => {
       expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
       expect(view.overzoom()).toBeLessThan(0.9);
       expect(view.overzoom()).toBeGreaterThan(Math.exp(-0.5));
-      await frames();
+      time.frames(2);
       const shrunk = view.frame()?.matrix[0] ?? 0;
       wheel(fixture, { ctrlKey: true, deltaY: -20 });
       expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
-      await frames();
+      time.frames(2);
       expect(view.frame()?.matrix[0] ?? 0).toBeGreaterThan(shrunk);
       await wait(200);
-      await expect.poll(() => view.overzoom(), { timeout: 2000 }).toBe(1);
+      time.frames(120);
+      await expect.poll(() => view.overzoom()).toBe(1);
     });
 
     it("only stretches once the zoom reaches its minimum", async () => {
@@ -382,8 +399,10 @@ describe("dom binders", () => {
     });
 
     it("shrinks around the crop centre with even gaps, never below two thirds", async () => {
-      const fixture = mount();
+      const time = fakeClock();
+      const fixture = mount(400, 300, false, time.clock);
       await frames();
+      time.frames(2);
       const view = viewOf(fixture.cropper);
       const box = fixture.viewport.getBoundingClientRect();
       for (let i = 0; i < 40; i += 1) {
@@ -394,7 +413,7 @@ describe("dom binders", () => {
           deltaY: 4,
         });
       }
-      await frames();
+      time.frames(2);
       const frame = view.frame();
       if (!frame) {
         throw new Error("no frame");
@@ -413,8 +432,10 @@ describe("dom binders", () => {
     });
 
     it("only nudges past the smallest zoom on a trackpad, then snaps back quickly", async () => {
-      const fixture = mount();
+      const time = fakeClock();
+      const fixture = mount(400, 300, false, time.clock);
       await frames();
+      time.frames(2);
       const view = viewOf(fixture.cropper);
       for (let i = 0; i < 60; i += 1) {
         wheel(fixture, { ctrlKey: true, deltaY: 3.7 });
@@ -423,11 +444,11 @@ describe("dom binders", () => {
       expect(view.overzoom()).toBeGreaterThan(Math.exp(-0.08));
       wheel(fixture, { ctrlKey: true, deltaY: -1.3 });
       expect(fixture.cropper.getZoom()).toBeCloseTo(1, 6);
-      await wait(150 + 300);
-      await expect
-        .poll(() => view.overzoom(), { interval: 16, timeout: 100 })
-        .toBeGreaterThan(0.999);
-      await expect.poll(() => view.overzoom(), { timeout: 2000 }).toBe(1);
+      await wait(150);
+      time.frames(24);
+      expect(view.overzoom()).toBeGreaterThan(0.999);
+      time.frames(120);
+      expect(view.overzoom()).toBe(1);
     });
 
     it("lets a trackpad pinch start right after the page took a scroll", async () => {
@@ -502,6 +523,9 @@ describe("dom binders", () => {
           b.push([mid.x + r * Math.cos(angle), mid.y + r * Math.sin(angle)]);
         }
         await commands.pinch(`#${fixture.id}`, a, b, true);
+        await expect
+          .poll(() => Math.round(fixture.cropper.getValue().rotation))
+          .toBe(15);
         await frames(2);
         const end = view.frame();
         if (!end) {
@@ -539,9 +563,11 @@ describe("dom binders", () => {
           ]);
         }
         await commands.pinch(`#${fixture.id}`, a, b, true);
+        await expect
+          .poll(() => fixture.cropper.getValue().rotation)
+          .toBeGreaterThan(10);
         await frames(2);
         off();
-        expect(fixture.cropper.getValue().rotation).toBeGreaterThan(10);
         expect(smallest).toBe(1);
       }
     );

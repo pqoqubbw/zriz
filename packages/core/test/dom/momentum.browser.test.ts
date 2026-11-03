@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 
 import { createCropper } from "../../src";
-import type { Cropper } from "../../src";
+import type { Clock, Cropper } from "../../src";
 import {
   bindArea,
   bindHandle,
@@ -10,6 +10,8 @@ import {
   bindViewport,
   viewOf,
 } from "../../src/dom";
+import { fakeClock } from "../fake-clock";
+import type { FakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -35,7 +37,7 @@ interface Stage {
   area: HTMLElement;
 }
 
-const mount = (): Stage => {
+const mount = (clock?: Clock): Stage => {
   count += 1;
   const id = `feel-${count}`;
   const element = document.createElement("div");
@@ -50,7 +52,10 @@ const mount = (): Stage => {
   area.append(handle);
   element.append(image, area);
   document.body.append(element);
-  const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+  const cropper = createCropper({
+    clock,
+    image: { height: 3000, width: 4000 },
+  });
   const off = [
     bindViewport(cropper, element),
     bindImage(cropper, image),
@@ -94,6 +99,9 @@ const wheel = (stage: Stage, init: WheelEventInit): void => {
   );
 };
 
+const WHEEL_IDLE = 150;
+const FRAME = 1000 / 60;
+
 interface Trace {
   peak: number;
   atRelease: number;
@@ -133,6 +141,46 @@ const watch = async (
   return { atRelease, biggestStep, peak, settledAfter };
 };
 
+const watchWheel = async (
+  stage: Stage,
+  time: FakeClock,
+  drive: () => void
+): Promise<Trace> => {
+  const view = viewOf(stage.cropper);
+  const size = (): number =>
+    Math.hypot(view.overscroll().x, view.overscroll().y) +
+    Math.abs(Math.log(view.overzoom())) * 400;
+  let peak = 0;
+  const off = view.onFrame(() => {
+    peak = Math.max(peak, size());
+  });
+  drive();
+  const atRelease = size();
+  await new Promise((resolve) => {
+    setTimeout(resolve, WHEEL_IDLE);
+  });
+  let settledAfter = Number.POSITIVE_INFINITY;
+  for (let i = 1; i <= 120; i += 1) {
+    time.frame(FRAME);
+    if (size() < 1) {
+      settledAfter = WHEEL_IDLE + i * FRAME;
+      break;
+    }
+  }
+  off();
+  return { atRelease, biggestStep: 0, peak, settledAfter };
+};
+
+const shrunkStage = async (): Promise<{ stage: Stage; time: FakeClock }> => {
+  const time = fakeClock();
+  const stage = mount(time.clock);
+  await raf();
+  time.frames(2);
+  await shrink(stage);
+  time.frames(2);
+  return { stage, time };
+};
+
 describe("feel at the limits, with a shrunk crop", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
@@ -156,46 +204,41 @@ describe("feel at the limits, with a shrunk crop", () => {
   });
 
   it("trackpad scroll, with momentum, stops at the edge without overscroll", async () => {
-    const stage = mount();
-    await shrink(stage);
-    const trace = await watch(stage, async () => {
+    const { stage, time } = await shrunkStage();
+    const trace = await watchWheel(stage, time, () => {
       for (let i = 0; i < 6; i += 1) {
         wheel(stage, { deltaY: 25 });
-        await raf();
+        time.frame(FRAME);
       }
       let delta = 30;
       while (delta > 0.5) {
         wheel(stage, { deltaY: delta });
         delta *= 0.94;
-        await raf();
+        time.frame(FRAME);
       }
     });
     expect(trace.peak).toBe(0);
   });
 
   it("mouse wheel notches stop at the edge without overscroll", async () => {
-    const stage = mount();
-    await shrink(stage);
-    const trace = await watch(stage, async () => {
+    const { stage, time } = await shrunkStage();
+    const trace = await watchWheel(stage, time, () => {
       for (let i = 0; i < 6; i += 1) {
         wheel(stage, { deltaY: 100 });
-        for (let j = 0; j < 4; j += 1) {
-          await raf();
-        }
+        time.frames(4, FRAME);
       }
     });
     expect(trace.peak).toBe(0);
   });
 
   it("a trackpad pinch past the smallest zoom springs back after the fingers stop", async () => {
-    const stage = mount();
-    await shrink(stage);
+    const { stage, time } = await shrunkStage();
     stage.cropper.setZoom(1, { emit: false });
-    await raf();
-    const trace = await watch(stage, async () => {
+    time.frame(FRAME);
+    const trace = await watchWheel(stage, time, () => {
       for (let i = 0; i < 40; i += 1) {
         wheel(stage, { ctrlKey: true, deltaY: 3.7 });
-        await raf();
+        time.frame(FRAME);
       }
     });
     expect(trace.peak).toBeGreaterThan(5);
@@ -203,16 +246,13 @@ describe("feel at the limits, with a shrunk crop", () => {
   });
 
   it("a ctrl mouse wheel past the smallest zoom springs back", async () => {
-    const stage = mount();
-    await shrink(stage);
+    const { stage, time } = await shrunkStage();
     stage.cropper.setZoom(1, { emit: false });
-    await raf();
-    const trace = await watch(stage, async () => {
+    time.frame(FRAME);
+    const trace = await watchWheel(stage, time, () => {
       for (let i = 0; i < 4; i += 1) {
         wheel(stage, { ctrlKey: true, deltaY: 100 });
-        for (let j = 0; j < 4; j += 1) {
-          await raf();
-        }
+        time.frames(4, FRAME);
       }
     });
     expect(trace.peak).toBeGreaterThan(5);

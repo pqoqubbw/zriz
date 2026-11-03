@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 
 import { createCropper } from "../../src";
-import type { Cropper } from "../../src";
+import type { Clock, Cropper } from "../../src";
 import {
   bindArea,
   bindHandle,
@@ -14,6 +14,7 @@ import {
 } from "../../src/dom";
 import type { ViewFrame } from "../../src/dom";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
+import { fakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -23,6 +24,8 @@ declare module "vitest/browser" {
     ) => Promise<void>;
   }
 }
+
+const TIMER_ROUNDING = 2;
 
 const cleanups: (() => void)[] = [];
 let count = 0;
@@ -49,7 +52,10 @@ interface Fixture {
   commits: number;
 }
 
-const mount = (motion: "always" | "reduce" = "always"): Fixture => {
+const mount = (
+  motion: "always" | "reduce" = "always",
+  clock?: Clock
+): Fixture => {
   count += 1;
   const id = `motion-${count}`;
   const root = document.createElement("div");
@@ -69,6 +75,7 @@ const mount = (motion: "always" | "reduce" = "always"): Fixture => {
     changes: 0,
     commits: 0,
     cropper: createCropper({
+      clock,
       image: { height: 3000, width: 4000 },
       onValueChange: () => {
         fixture.changes += 1;
@@ -118,6 +125,41 @@ const shrinkFromCorner = async (fixture: Fixture): Promise<void> => {
   ]);
 };
 
+interface Rest {
+  ended: number;
+  moved: number;
+  offCentre: number;
+}
+
+const shrinkAndWatch = async (fixture: Fixture): Promise<Rest> => {
+  const view = viewOf(fixture.cropper);
+  const rest: Rest = { ended: 0, moved: 0, offCentre: 0 };
+  const offEnd = fixture.cropper.on("gestureend", () => {
+    rest.ended = performance.now();
+    rest.offCentre = centreOf(view.frame()).x;
+  });
+  const offFrame = view.onFrame((frame) => {
+    if (
+      rest.ended > 0 &&
+      rest.moved === 0 &&
+      Math.abs(centreOf(frame).x - rest.offCentre) > 0.5
+    ) {
+      rest.moved = performance.now();
+    }
+  });
+  cleanups.push(offEnd, offFrame);
+  await shrinkFromCorner(fixture);
+  return rest;
+};
+
+const centred = async (fixture: Fixture): Promise<void> => {
+  await expect
+    .poll(() => Math.round(centreOf(viewOf(fixture.cropper).frame()).x), {
+      timeout: 5000,
+    })
+    .toBe(200);
+};
+
 describe("view motion", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
@@ -128,11 +170,11 @@ describe("view motion", () => {
   it("waits 0.5 s, then recentres with the same pixels under the crop", async () => {
     const fixture = mount();
     await frames();
-    await shrinkFromCorner(fixture);
-    await frames();
     const view = viewOf(fixture.cropper);
-    const offCentre = centreOf(view.frame());
-    expect(offCentre.x).toBeLessThan(190);
+    const rest = await shrinkAndWatch(fixture);
+    expect(rest.offCentre).toBeLessThan(190);
+    await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
+    await frames();
     const { changes } = fixture;
     const corners: { x: number; y: number }[][] = [];
     const off = view.onFrame((frame) => {
@@ -146,12 +188,11 @@ describe("view motion", () => {
         }),
       ]);
     });
-    await wait(250);
-    expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
-    await expect
-      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
-      .toBe(200);
+    await centred(fixture);
     off();
+    expect(rest.moved - rest.ended).toBeGreaterThanOrEqual(
+      500 - TIMER_ROUNDING
+    );
     expect(fixture.changes).toBe(changes);
     const [first] = corners;
     const tolerance = (1.25 * 4000) / 360;
@@ -170,44 +211,44 @@ describe("view motion", () => {
     await frames();
     const view = viewOf(fixture.cropper);
     view.setOptions({ recentreDelay: 1060 });
-    await shrinkFromCorner(fixture);
-    await frames();
-    const offCentre = centreOf(view.frame());
-    await wait(800);
-    expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
-    await expect
-      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
-      .toBe(200);
+    const rest = await shrinkAndWatch(fixture);
+    await centred(fixture);
+    expect(rest.moved - rest.ended).toBeGreaterThanOrEqual(
+      1060 - TIMER_ROUNDING
+    );
   });
 
   it("cancels the wait when a new touch lands", async () => {
     const fixture = mount();
     await frames();
-    await shrinkFromCorner(fixture);
-    const view = viewOf(fixture.cropper);
-    const offCentre = centreOf(view.frame());
-    await wait(250);
-    fixture.cropper.begin("pan");
-    await wait(900);
-    expect(centreOf(view.frame()).x).toBeCloseTo(offCentre.x, 0);
+    const off = fixture.cropper.on("gestureend", () => {
+      off();
+      setTimeout(() => {
+        fixture.cropper.begin("pan");
+      }, 250);
+    });
+    const rest = await shrinkAndWatch(fixture);
+    await wait(1150);
+    expect(rest.moved).toBe(0);
+    expect(fixture.cropper.getState().interacting).toBe("pan");
     fixture.cropper.end();
-    await expect
-      .poll(() => Math.round(centreOf(view.frame()).x), { timeout: 3000 })
-      .toBe(200);
+    await centred(fixture);
   });
 
   it("animates a quarter turn without change events in between", async () => {
-    const fixture = mount();
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
     await frames();
+    time.frames(2);
     const seen = new Set<string>();
     const view = viewOf(fixture.cropper);
     const off = view.onFrame((frame) => {
       seen.add(Math.atan2(frame.matrix[3], frame.matrix[0]).toFixed(2));
     });
     fixture.cropper.rotate90();
-    await frames(2);
+    time.frames(2);
     expect(fixture.root.dataset.transition).toBe("rotate");
-    await wait(600);
+    time.frames(36);
     off();
     expect(fixture.root.dataset.transition).toBeUndefined();
     expect(seen.size).toBeGreaterThan(5);
@@ -216,28 +257,32 @@ describe("view motion", () => {
   });
 
   it("passes through zero width when flipping", async () => {
-    const fixture = mount();
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
     await frames();
+    time.frames(2);
     let narrowest = Number.POSITIVE_INFINITY;
     const off = viewOf(fixture.cropper).onFrame((frame) => {
       narrowest = Math.min(narrowest, Math.abs(frame.matrix[0]));
     });
     fixture.cropper.flip();
-    await wait(700);
+    time.frames(42);
     off();
     expect(narrowest).toBeLessThan(0.02);
     expect(fixture.cropper.getValue().mirrored).toBeTruthy();
   });
 
   it("morphs the crop to a new aspect", async () => {
-    const fixture = mount();
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
     await frames();
+    time.frames(2);
     const widths: number[] = [];
     const off = viewOf(fixture.cropper).onFrame((frame) => {
       widths.push(frame.rect.width);
     });
     fixture.cropper.setAspect(1);
-    await wait(700);
+    time.frames(42);
     off();
     const start = widths[0] ?? 0;
     const end = widths.at(-1) ?? 0;
@@ -247,12 +292,16 @@ describe("view motion", () => {
   });
 
   it("finishes in about 150 ms under reduced motion", async () => {
-    const fixture = mount("reduce");
+    const time = fakeClock();
+    const fixture = mount("reduce", time.clock);
     await frames();
+    time.frames(2);
     fixture.cropper.rotate90();
-    await frames(2);
+    time.frames(2);
     expect(fixture.root.dataset.transition).toBe("rotate");
-    await wait(250);
+    time.frames(6);
+    expect(fixture.root.dataset.transition).toBe("rotate");
+    time.frames(4);
     expect(fixture.root.dataset.transition).toBeUndefined();
   });
 
@@ -264,11 +313,25 @@ describe("view motion", () => {
     await frames();
     expect(fixture.root.dataset.grid).toBe("coarse");
     expect(Object.hasOwn(fixture.root.dataset, "panning")).toBeTruthy();
+    let cleared = 0;
+    const observer = new MutationObserver(() => {
+      if (cleared === 0 && fixture.root.dataset.grid !== "coarse") {
+        cleared = performance.now();
+      }
+    });
+    observer.observe(fixture.root, {
+      attributeFilter: ["data-grid"],
+      attributes: true,
+    });
+    cleanups.push(() => {
+      observer.disconnect();
+    });
+    const ended = performance.now();
     fixture.cropper.end();
-    await wait(1000);
-    expect(fixture.root.dataset.grid).toBe("coarse");
-    await wait(600);
-    expect(fixture.root.dataset.grid).toBe("none");
+    await expect
+      .poll(() => fixture.root.dataset.grid, { timeout: 5000 })
+      .toBe("none");
+    expect(cleared - ended).toBeGreaterThanOrEqual(1380 - TIMER_ROUNDING);
     expect(Object.hasOwn(fixture.root.dataset, "interacting")).toBeFalsy();
   });
 });

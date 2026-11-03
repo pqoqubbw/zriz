@@ -119,8 +119,10 @@ describe("photo layer", () => {
   it("refreshes the region from the original past the preview's detail", async () => {
     const { cropper, photo } = await mount(400);
     cropper.setZoom(6);
-    await sharp(photo);
     const canvas = photo.querySelector("canvas");
-    expect(canvas ? contrast(canvas) : 0).toBeGreaterThan(150);
+    await expect
+      .poll(() => (canvas ? contrast(canvas) : 0), { timeout: 5000 })
+      .toBeGreaterThan(150);
+    await sharp(photo);
   });
 });
