@@ -38,9 +38,9 @@ const browser = () => ({
   enabled: true,
   headless: true,
   instances: [
-    { browser: "chromium" as const },
-    { browser: "firefox" as const },
-    { browser: "webkit" as const },
+    { browser: "chromium" as const, maxWorkers: 1 },
+    { browser: "firefox" as const, maxWorkers: 1 },
+    { browser: "webkit" as const, maxWorkers: 1 },
   ],
   provider: playwright(),
 });
