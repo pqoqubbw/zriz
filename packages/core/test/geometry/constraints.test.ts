@@ -293,6 +293,35 @@ describe("handle drag constraints", () => {
     );
   });
 
+  it("keeps the minimum size when the planes leave no strictly feasible corner", () => {
+    const s = {
+      angle: 2.558_124_670_234_012_3e-10,
+      aspect: null,
+      crop: {
+        height: 0.999_999_999_995_534_2,
+        width: 0.999_999_999_995_534_2,
+        x: -2240.257_499_999_996_5,
+        y: -1.000_223_406_877_332e-8,
+      },
+      flip: false,
+      image: { height: 4486, width: 1 },
+      perspective: { focal: 1, horizontal: 0, vertical: 0 },
+      turns: 3 as const,
+    };
+    const { minHeight, minWidth, planes, tolerance } = limitsFor(
+      s,
+      0.999_999_999_999_998_9
+    );
+    const r = dragHandle(
+      toRect(s),
+      "nw",
+      { x: 0, y: 0 },
+      { aspect: null, minHeight, minWidth, planes }
+    );
+    expect(r.x1 - r.x0).toBeGreaterThanOrEqual(minWidth - tolerance);
+    expect(r.y1 - r.y0).toBeGreaterThanOrEqual(minHeight - tolerance);
+  });
+
   it("gives the exact straighten limit for a minimum crop size", () => {
     assert(
       property(
