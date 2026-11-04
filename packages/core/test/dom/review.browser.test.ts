@@ -1244,6 +1244,29 @@ describe("slider attributes", () => {
     cropper.destroy();
   });
 
+  it("holds a silent write on a dial until the run ends", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const element = document.createElement("div");
+    const off = bindDial(cropper, element);
+    let running = true;
+    cropper.run(() => running);
+    time.frames(1);
+    cropper.setRotation(5, { emit: false });
+    time.frames(3);
+    expect("snapped" in element.dataset).toBeTruthy();
+    expect(element.getAttribute("aria-valuenow")).toBe("0");
+    running = false;
+    time.frames(2);
+    expect("snapped" in element.dataset).toBeFalsy();
+    expect(element.getAttribute("aria-valuenow")).toBe("5");
+    off();
+    cropper.destroy();
+  });
+
   it("writes bounds once through a zoom drag", async () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const element = document.createElement("div");

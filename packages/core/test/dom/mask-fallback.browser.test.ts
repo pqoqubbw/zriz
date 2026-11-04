@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
-import { bindMask, bindViewport } from "../../src/dom";
+import { bindMask, bindViewport, setCropShape } from "../../src/dom";
 
 const photo = { height: 3000, width: 4000 };
 
@@ -39,6 +39,34 @@ describe("a circle mask without css shape()", () => {
     cropper.setImage(photo);
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).not.toBe("");
+    for (const stop of off) {
+      stop();
+    }
+    cropper.destroy();
+    viewport.remove();
+  });
+
+  it("swaps clip and gradient when the shape changes on a live bind", async () => {
+    vi.spyOn(CSS, "supports").mockReturnValue(false);
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const mask = document.createElement("div");
+    viewport.append(mask);
+    document.body.append(viewport);
+    const cropper = createCropper({ image: photo });
+    const off = [bindViewport(cropper, viewport), bindMask(cropper, mask)];
+    await frames();
+    expect(mask.style.clipPath).not.toBe("");
+    setCropShape(cropper, "circle");
+    cropper.invalidate();
+    await frames();
+    expect(mask.style.getPropertyValue("mask-image")).not.toBe("");
+    expect(mask.style.clipPath).toBe("");
+    setCropShape(cropper, "rect");
+    cropper.invalidate();
+    await frames();
+    expect(mask.style.getPropertyValue("mask-image")).toBe("");
+    expect(mask.style.clipPath).not.toBe("");
     for (const stop of off) {
       stop();
     }
