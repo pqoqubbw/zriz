@@ -4,7 +4,7 @@ export const TIMEOUT = 15_000;
 export const MAX_DELAY = 2_147_483_647;
 const SUSPENDED = 1000;
 
-const noop = (): void => undefined;
+export const noop = (): void => undefined;
 
 export const aborted = (): ZrizError =>
   new ZrizError("aborted", "zriz: aborted");

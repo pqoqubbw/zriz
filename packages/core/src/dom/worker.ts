@@ -1,6 +1,6 @@
 import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
-import { MAX_DELAY, aborted, withTimeout } from "./turn";
+import { MAX_DELAY, aborted, noop, withTimeout } from "./turn";
 
 interface Waiting {
   resolve: (value: never) => void;
@@ -121,8 +121,6 @@ export const via = async <
   }
   return await target.here()[op](...args);
 };
-
-const noop = (): void => undefined;
 
 export type Turn = <T>(
   start: () => Promise<T>,

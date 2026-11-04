@@ -2,7 +2,7 @@ import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { fitEdge, textOf } from "./media";
-import { TIMEOUT, aborted, deadline } from "./turn";
+import { TIMEOUT, aborted, deadline, noop } from "./turn";
 import { decodeOff, decodeTurn, keepOff, releaseOff } from "./worker";
 
 export type ImageSource =
@@ -124,8 +124,6 @@ export const raster = (
   }
   return { animated: false, mime: null };
 };
-
-const noop = (): void => undefined;
 
 const isMobile = (): boolean =>
   typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;

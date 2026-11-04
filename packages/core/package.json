@@ -147,7 +147,7 @@
       "name": "exportCrop",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "584 B",
+      "limit": "590 B",
       "entry": [
         "index"
       ]
@@ -171,7 +171,7 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3481 B"
+      "limit": "3485 B"
     },
     {
       "name": "lazy chunk dom/svg",
