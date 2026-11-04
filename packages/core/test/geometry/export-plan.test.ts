@@ -411,6 +411,10 @@ describe(toSharp, () => {
     }
     const refused: Record<string, unknown>[] = [
       { forward: [1, 0, 0, 1, 0] },
+      { forward: 5 },
+      { forward: null },
+      { forward: "abcdef" },
+      { forward: { length: 6 } },
       { forward: [Number.NaN, 0, 0, 1, 0, 0] },
       { forward: [1, 0, 0, 1, Number.POSITIVE_INFINITY, 0] },
       { forward: [0, 0, 0, 0, 0, 0] },

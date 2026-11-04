@@ -33,6 +33,7 @@ export type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
 
 const MARGIN = 2;
 const SIMILAR = 1e-6;
+const NOT_A_PLAN = "zriz: this is not an export plan";
 
 const affineOrigin = (
   m: readonly [number, number, number, number],
@@ -59,6 +60,9 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     };
   }
   const { forward, height, width } = plan;
+  if (!Array.isArray(forward)) {
+    throw new RangeError(NOT_A_PLAN);
+  }
   const [a, b, c, d, e0, f0]: AffineMatrix = forward;
   const across = Math.hypot(a, b);
   const pad = Math.ceil(MARGIN / Math.min(1, across));
@@ -72,7 +76,7 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     Math.abs(a * c + b * d) > SIMILAR * across * across ||
     pad > 2 * Math.min(image.width, image.height) + 1
   ) {
-    throw new RangeError("zriz: this is not an export plan");
+    throw new RangeError(NOT_A_PLAN);
   }
   const e = e0 - (a + c) * pad;
   const f = f0 - (b + d) * pad;
