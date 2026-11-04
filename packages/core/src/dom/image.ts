@@ -253,6 +253,19 @@ export const loadImage = async (
   const work = async (): Promise<LoadedImage> => {
     let mime: string | null = null;
     let animated = false;
+    const loaded = (
+      preview: ImageBitmap,
+      source: LoadedImage["source"],
+      { width, height }: Size
+    ): LoadedImage => ({
+      animated,
+      height,
+      id,
+      mime,
+      preview,
+      source,
+      width,
+    });
     if (typeof src === "string" || src instanceof Blob) {
       const blob =
         typeof src === "string"
@@ -272,15 +285,7 @@ export const loadImage = async (
         mime = "image/svg+xml";
         const preview = await vector.fromSvg(blob, edge);
         await keepOff(id, preview);
-        return {
-          animated,
-          height: preview.height,
-          id,
-          mime,
-          preview,
-          source: preview,
-          width: preview.width,
-        };
+        return loaded(preview, preview, preview);
       }
       const decoded = await decodeOff(blob, edge, id).catch(
         async (error: unknown) => {
@@ -293,16 +298,11 @@ export const loadImage = async (
           return { full, height: full.height, preview, width: full.width };
         }
       );
-      const { preview, width, height } = decoded;
-      return {
-        animated,
-        height,
-        id,
-        mime,
-        preview,
-        source: "full" in decoded ? decoded.full : blob,
-        width,
-      };
+      return loaded(
+        decoded.preview,
+        "full" in decoded ? decoded.full : blob,
+        decoded
+      );
     }
     let source: ImageBitmap;
     if (src instanceof ImageBitmap) {
@@ -319,15 +319,7 @@ export const loadImage = async (
       throw toZriz(error);
     });
     await keepOff(id, preview);
-    return {
-      animated,
-      height: source.height,
-      id,
-      mime,
-      preview,
-      source,
-      width: source.width,
-    };
+    return loaded(preview, source, source);
   };
   const pending = work();
   try {

@@ -142,8 +142,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const finite = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-const clamp = (value: number, min: number, max: number): number =>
-  positiveZero(Math.min(Math.max(value, min), max));
+const clamp = (value: number, limit: number): number =>
+  positiveZero(Math.min(Math.max(value, -limit), limit));
 
 const positive = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) && value > 0
@@ -184,19 +184,11 @@ export const parse = (input: unknown): CropValue | null => {
     },
     mirrored: raw.mirrored === true,
     perspective: {
-      horizontal: clamp(
-        finite(perspective.horizontal, 0),
-        -PERSPECTIVE_LIMIT,
-        PERSPECTIVE_LIMIT
-      ),
-      vertical: clamp(
-        finite(perspective.vertical, 0),
-        -PERSPECTIVE_LIMIT,
-        PERSPECTIVE_LIMIT
-      ),
+      horizontal: clamp(finite(perspective.horizontal, 0), PERSPECTIVE_LIMIT),
+      vertical: clamp(finite(perspective.vertical, 0), PERSPECTIVE_LIMIT),
     },
     quarterTurns: toQuarterTurns(Math.round(turns)),
-    rotation: clamp(finite(raw.rotation, 0), -ROTATION_LIMIT, ROTATION_LIMIT),
+    rotation: clamp(finite(raw.rotation, 0), ROTATION_LIMIT),
     size: {
       height: positive(size.height, 1),
       width: positive(size.width, 1),
