@@ -18,7 +18,7 @@ import {
   useMemo,
   useSyncExternalStore,
 } from "react";
-import type { Ref } from "react";
+import type { Ref, RefCallback } from "react";
 
 import { CropperContext } from "../context";
 import { attach, mergeRefs } from "../merge-props";
@@ -64,6 +64,31 @@ export interface RootProps
   /** Called with a typed ZrizError when the photo cannot load. */
   onError?: ((error: ZrizError) => void) | undefined;
 }
+
+const actionHolders = new WeakMap<object, Cropper>();
+
+const holdActions = (
+  ref: Ref<Cropper> | undefined,
+  cropper: Cropper
+): (() => unknown) | null => {
+  if (!ref) {
+    return null;
+  }
+  actionHolders.set(ref, cropper);
+  let cleanup: ReturnType<RefCallback<Cropper>>;
+  if (typeof ref === "function") {
+    cleanup = ref(cropper);
+  } else {
+    ref.current = cropper;
+  }
+  return () => {
+    if (typeof cleanup === "function") {
+      cleanup();
+    } else if (actionHolders.get(ref) === cropper) {
+      attach(ref, null);
+    }
+  };
+};
 
 const IDLE: Chrome = {
   active: false,
@@ -144,7 +169,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     zoom,
   });
   useHold(
-    useCallback(() => attach(actionsRef, cropper), [actionsRef, cropper])
+    useCallback(() => holdActions(actionsRef, cropper), [actionsRef, cropper])
   );
   const view = viewOf(cropper);
   useIsomorphicLayoutEffect(() => {

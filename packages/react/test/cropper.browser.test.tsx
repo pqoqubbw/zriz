@@ -1143,6 +1143,39 @@ describe("callbacks on a shared cropper", () => {
     expect(stays).toHaveBeenCalledOnce();
   });
 
+  it("keeps an object actionsRef on the new cropper across a keyed remount", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root key="a" actionsRef={api} image={PHOTO} />
+    );
+    const first = api.current;
+    await screen.rerender(
+      <Cropper.Root key="b" actionsRef={api} image={PHOTO} />
+    );
+    await frames(2);
+    expect(api.current).not.toBeNull();
+    expect(api.current).not.toBe(first);
+    await screen.unmount();
+    expect(api.current).toBeNull();
+  });
+
+  it("keeps a function actionsRef on the new cropper across a keyed remount", async () => {
+    const seen: (CropperApi | null)[] = [];
+    const remember = (next: CropperApi | null): void => {
+      seen.push(next);
+    };
+    const screen = await render(
+      <Cropper.Root key="a" actionsRef={remember} image={PHOTO} />
+    );
+    await screen.rerender(
+      <Cropper.Root key="b" actionsRef={remember} image={PHOTO} />
+    );
+    await frames(2);
+    expect(seen.at(-1)).not.toBeNull();
+    await screen.unmount();
+    expect(seen.at(-1)).toBeNull();
+  });
+
   it("delivers the final commit of its own cropper on unmount", async () => {
     const api = createRef<CropperApi>();
     const save = vi.fn<() => void>();
