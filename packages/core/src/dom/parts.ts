@@ -104,6 +104,7 @@ export const bindImage = (
   style.left = "0";
   style.top = "0";
   style.maxWidth = "none";
+  style.maxHeight = "none";
   style.transformOrigin = "0 0";
   style.pointerEvents = "none";
   style.setProperty("-webkit-user-drag", "none");

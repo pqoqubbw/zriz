@@ -247,6 +247,18 @@ describe("dom binders", () => {
       );
     });
 
+    it("keeps the photo at its own size under a page max-height", async () => {
+      const sheet = document.createElement("style");
+      sheet.textContent = "div{max-height:100%}";
+      document.head.append(sheet);
+      cleanups.push(() => {
+        sheet.remove();
+      });
+      const fixture = mount();
+      await frames();
+      expect(fixture.image.offsetHeight).toBe(photo.height);
+    });
+
     it("lays out once a hidden viewport is revealed", async () => {
       const fixture = mount(400, 300, true);
       await frames();

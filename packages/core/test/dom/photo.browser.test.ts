@@ -203,6 +203,26 @@ const stalled = (op: string) => {
   };
 };
 
+const pageRule = (css: string): void => {
+  const sheet = document.createElement("style");
+  sheet.textContent = css;
+  document.head.append(sheet);
+  cleanups.push(() => {
+    sheet.remove();
+  });
+};
+
+const visibleImage = async (photo: HTMLElement): Promise<HTMLImageElement> => {
+  const image = photo.querySelector("img");
+  if (!image) {
+    throw new Error("no moving image");
+  }
+  await expect
+    .poll(() => image.style.visibility, { timeout: 3000 })
+    .toBe("visible");
+  return image;
+};
+
 const waitForLayout = async (
   cropper: Cropper,
   width: number
@@ -607,5 +627,44 @@ describe("photo layer", () => {
     }
     cropper.end();
     expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["img{max-height:100%}"],
+    ["*{max-height:100%}"],
+    ["img{border:4px solid red;padding:4px}"],
+    ["img{min-width:3000px;min-height:3000px}"],
+  ])("keeps the moving image at photo size under %s", async (css) => {
+    pageRule(css);
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    cropper.begin("pan");
+    const image = await visibleImage(photo);
+    expect([image.offsetWidth, image.offsetHeight]).toStrictEqual([1600, 1200]);
+    expect([image.clientLeft, image.clientTop]).toStrictEqual([0, 0]);
+    cropper.end();
+  });
+
+  it("moves with the pointer under a global transition on the page", async () => {
+    pageRule("*,*::before,*::after{transition:all .2s}");
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    cropper.setZoom(2);
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    if (!canvas) {
+      throw new Error("no canvas");
+    }
+    cropper.begin("pan");
+    const image = await visibleImage(photo);
+    expect(getComputedStyle(canvas).visibility).toBe("hidden");
+    for (let step = 0; step < 6; step += 1) {
+      cropper.panBy(0.02, 0);
+      await nextFrame();
+      const wanted = new DOMMatrix(image.style.transform);
+      const drawn = new DOMMatrix(getComputedStyle(image).transform);
+      expect(Math.abs(wanted.e - drawn.e)).toBeLessThan(0.5);
+    }
+    cropper.end();
   });
 });

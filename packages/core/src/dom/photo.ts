@@ -55,11 +55,17 @@ export const bindPhoto = (
   motion.draggable = false;
   motion.decoding = "async";
   Object.assign(motion.style, {
+    border: "0",
     left: "0",
+    maxHeight: "none",
     maxWidth: "none",
+    minHeight: "0",
+    minWidth: "0",
+    padding: "0",
     position: "absolute",
     top: "0",
     transformOrigin: "0 0",
+    transition: "none",
     visibility: "hidden",
   });
   Object.assign(rest.style, {
@@ -67,6 +73,7 @@ export const bindPhoto = (
     left: "0",
     position: "absolute",
     top: "0",
+    transition: "none",
     visibility: "hidden",
     width: "100%",
   });
