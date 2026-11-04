@@ -372,6 +372,7 @@ export const bindPhoto = (
   const offImage = onImage(cropper, load);
   const offFrame = view.onFrame(write);
   const offState = cropper.subscribe(sync);
+  sync();
   return () => {
     offImage();
     offFrame();

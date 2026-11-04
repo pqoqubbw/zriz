@@ -952,4 +952,57 @@ describe("photo layer", () => {
     expect(image.style.willChange).toBe("transform");
     cropper.end();
   });
+
+  it.each<[string, (cropper: Cropper) => void]>([
+    [
+      "a turn",
+      (cropper) => {
+        cropper.rotate90();
+      },
+    ],
+    [
+      "a gesture",
+      (cropper) => {
+        cropper.begin("pan");
+      },
+    ],
+  ])("turns sharp when it is bound during %s", async (_, start) => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const photo = document.createElement("div");
+    viewport.append(photo);
+    document.body.append(viewport);
+    const cropper = createCropper();
+    const off = [bindViewport(cropper, viewport)];
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+      attachImage(cropper, null);
+      viewOf(cropper).destroy();
+      cropper.destroy();
+      viewport.remove();
+    });
+    await waitForLayout(cropper, 400);
+    cropper.invalidate();
+    await nextFrame();
+    await nextFrame();
+    start(cropper);
+    await expect
+      .poll(() => {
+        const { interacting, settling } = cropper.getState();
+        return interacting !== null || settling;
+      })
+      .toBeTruthy();
+    off.push(bindPhoto(cropper, photo));
+    if (cropper.getState().interacting !== null) {
+      cropper.end();
+    }
+    await sharp(photo);
+    expect(photo.querySelector("img")?.style.willChange).toBe("");
+  });
 });
