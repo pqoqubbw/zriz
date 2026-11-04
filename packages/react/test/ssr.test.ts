@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { useZoom } from "../src";
 import * as Cropper from "../src/cropper";
-import { preventZrizHandler } from "../src/merge-props";
+import { mergeProps, preventZrizHandler } from "../src/merge-props";
 
 describe("server rendering", () => {
   it("renders every part without window", () => {
@@ -152,6 +152,20 @@ describe("part props", () => {
     const vetoed = propsOf(Cropper.Flip, { onClick: preventZrizHandler });
     click(vetoed.props);
     expect(vetoed.cropper.getValue().mirrored).toBeFalsy();
+  });
+
+  it("chains only onX props, other functions and lookalikes take the user's value", () => {
+    const ours = vi.fn<() => void>();
+    const theirs = vi.fn<() => void>();
+    const merged = mergeProps(
+      { onClick: ours, once: ours, onfocus: ours },
+      { onClick: theirs, once: theirs, onfocus: theirs }
+    );
+    expect(merged.once).toBe(theirs);
+    expect(merged.onfocus).toBe(theirs);
+    fire(merged.onClick, {});
+    expect(theirs).toHaveBeenCalledOnce();
+    expect(ours).toHaveBeenCalledOnce();
   });
 
   it("resolves a className function against the part state", () => {

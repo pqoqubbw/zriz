@@ -20,7 +20,7 @@ export interface ZoomState {
 }
 
 export interface ZoomProps extends PartProps<"div", ZoomState> {
-  /** Highest zoom the slider reaches. @default 15 */
+  /** Highest zoom the slider reaches. @default maxZoom on Root */
   max?: number;
   /** Formatting of the spoken value. @default percent */
   format?: Intl.NumberFormatOptions;

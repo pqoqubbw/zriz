@@ -9,11 +9,7 @@ export const preventZrizHandler = (event: object): void => {
 type Handler = (event: object) => void;
 
 const isHandler = (key: string, value: unknown): value is Handler =>
-  key.length > 2 &&
-  key.startsWith("on") &&
-  (key.codePointAt(2) ?? 0) >= 65 &&
-  (key.codePointAt(2) ?? 0) <= 90 &&
-  typeof value === "function";
+  /^on[A-Z]/u.test(key) && typeof value === "function";
 
 const isStyle = (value: unknown): value is CSSProperties =>
   typeof value === "object" && value !== null;
