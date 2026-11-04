@@ -244,6 +244,11 @@ describe("lane failures", () => {
       });
       dispatch(type);
       await expect(reply).resolves.toBe("here");
+      const post = vi.spyOn(FakeWorker.prototype, "postMessage");
+      const later = via(target, "ping", [2]);
+      expect(post).not.toHaveBeenCalled();
+      await expect(later).resolves.toBe("here");
+      expect(FakeWorker.made).toHaveLength(1);
     }
   );
 
