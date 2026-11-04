@@ -149,7 +149,9 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   const view = viewOf(cropper);
   useIsomorphicLayoutEffect(() => {
     setCropShape(cropper, shape);
-    return shape === "circle" ? cropper.retarget({ aspect: 1 }) : undefined;
+    return shape === "circle"
+      ? cropper.retarget({ aspect: 1, lock: true })
+      : undefined;
   }, [cropper, shape]);
   useIsomorphicLayoutEffect(() => {
     view.setOptions({ motion, recentreDelay });

@@ -149,7 +149,7 @@ const appliedOf = (
 ): Applied => {
   const known = memory.get(cropper) ?? {
     busy: false,
-    had: given && cropper.getState().ready,
+    had: given && cropper.getState().ready && !cropper.getState().pristine,
     options: new Set(),
     rotation: {},
     zoom: {},

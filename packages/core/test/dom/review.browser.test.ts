@@ -5,14 +5,20 @@ import {
   areaKeyHandlers,
   bindArea,
   bindDial,
+  bindDialValue,
   bindHandle,
+  bindMask,
+  bindPhoto,
   bindViewport,
+  cropShapeOf,
   dialHandlers,
   dialState,
   exportImage,
   loadImage,
+  setCropShape,
   viewOf,
   viewportController,
+  zoomAria,
   zoomHandlers,
 } from "../../src/dom";
 import { bindPointers } from "../../src/dom/input";
@@ -1085,3 +1091,6 @@ describe("writes during a held gesture", () => {
     expect((rect?.x ?? 0) + (rect?.width ?? 0) / 2).toBeCloseTo(200, 0);
   });
 });
+
+const keyDown = (name: string): KeyboardEvent =>
+  new KeyboardEvent("keydown", { bubbles: true, code: name, key: name });

@@ -1663,3 +1663,100 @@ describe("useZoom gesture", () => {
     firePointer("pointerup", 1);
   });
 });
+
+const ReadMax = memo(function ReadMax() {
+  const { max } = useZoom();
+  return <output id="zoom-max">{max}</output>;
+});
+
+const ZoomMaxHost = ({ top }: { top: number }) => (
+  <Cropper.Root image={PHOTO} maxZoom={top}>
+    <ReadMax />
+  </Cropper.Root>
+);
+
+const press = (id: string, type: string, pointerId: number): void => {
+  document.querySelector(id)?.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      pointerId,
+    })
+  );
+};
+
+describe("a circle holds its aspect", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("refuses another aspect from setAspect and setValue", async () => {
+    const api = createRef<CropperApi>();
+    await render(
+      <Cropper.Root actionsRef={api} image={PHOTO} shape="circle" />
+    );
+    await frames();
+    const commit = vi.fn<() => void>();
+    api.current?.on("commit", commit);
+    api.current?.setAspect(2);
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+    expect(commit).not.toHaveBeenCalled();
+    api.current?.setValue({ aspect: "free", rotation: 3 });
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+    expect(api.current?.getValue().rotation).toBe(3);
+  });
+
+  it("frees the aspect once the circle goes", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ shape }: { shape: "rect" | "circle" }) => (
+      <Cropper.Root actionsRef={api} image={PHOTO} shape={shape} />
+    );
+    const screen = await render(<Host shape="circle" />);
+    await frames();
+    await screen.rerender(<Host shape="rect" />);
+    await frames();
+    api.current?.setAspect(2);
+    await frames();
+    expect(api.current?.getValue().aspect).toBe(2);
+  });
+
+  it("starts clean on a cropper from useCropper with a photo in it", async () => {
+    const commit = vi.fn<() => void>();
+    const seen = createRef<CropperApi>();
+    const Host = () => {
+      const cropper = useCropper({ image: PHOTO, onValueCommit: commit });
+      return (
+        <Cropper.Root actionsRef={seen} cropper={cropper} shape="circle">
+          <Cropper.Reset id="again">again</Cropper.Reset>
+        </Cropper.Root>
+      );
+    };
+    await render(<Host />);
+    await frames(3);
+    expect(commit).not.toHaveBeenCalled();
+    expect(seen.current?.getValue().aspect).toBe(1);
+    expect(seen.current?.getState().pristine).toBeTruthy();
+    expect(document.querySelector<HTMLElement>("#again")?.hidden).toBeTruthy();
+  });
+
+  it("starts clean when the photo reaches a cropper from useCropper later", async () => {
+    const commit = vi.fn<() => void>();
+    const seen = createRef<CropperApi>();
+    const Host = () => {
+      const cropper = useCropper({ onValueCommit: commit });
+      return (
+        <Cropper.Root actionsRef={seen} cropper={cropper} shape="circle" />
+      );
+    };
+    await render(<Host />);
+    await frames();
+    seen.current?.setImage(PHOTO);
+    await frames(3);
+    expect(commit).not.toHaveBeenCalled();
+    expect(seen.current?.getState().pristine).toBeTruthy();
+  });
+});

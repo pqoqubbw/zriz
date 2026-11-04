@@ -1,6 +1,7 @@
-import type { Cropper as CropperApi } from "@zriz/core";
+import type { Cropper as CropperApi, CropValue } from "@zriz/core";
 import axe from "axe-core";
 import { createRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { userEvent } from "vitest/browser";
@@ -190,7 +191,8 @@ describe("accessibility", () => {
     warn.mockRestore();
   });
 
-  it("keeps the app mounted with a malformed locale", async () => {
+  it("keeps the app mounted with a malformed locale and warns once per slider", async () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
     const screen = await render(
       <Cropper.Root locale="pt_BR">
         <Cropper.Dial aria-label="straighten" />
@@ -200,6 +202,11 @@ describe("accessibility", () => {
     expect(
       screen.container.querySelector('[data-zriz-item="dial"]')
     ).not.toBeNull();
+    expect(warn.mock.calls.map((call) => String(call[0]))).toStrictEqual([
+      expect.stringContaining("Cropper.Dial"),
+      expect.stringContaining("Cropper.Zoom"),
+    ]);
+    warn.mockRestore();
   });
 });
 
@@ -310,4 +317,81 @@ describe("part states", () => {
       )
     ).toStrictEqual(["true", "true"]);
   });
+});
+
+const PHOTO = { height: 300, width: 400 };
+
+const item = (container: Element, name: string): HTMLElement => {
+  const node = container.querySelector<HTMLElement>(
+    `[data-zriz-item="${name}"]`
+  );
+  if (!node) {
+    throw new Error(`no ${name}`);
+  }
+  return node;
+};
+
+const Group = ({ api }: { api: React.Ref<CropperApi> }) => (
+  <Cropper.Root actionsRef={api} defaultValue={{ aspect: 1 }} image={PHOTO}>
+    <Cropper.AspectGroup aria-label="Aspect">
+      <Cropper.AspectItem render={<div />} value={1}>
+        Square
+      </Cropper.AspectItem>
+      <Cropper.AspectItem disabled render={<div />} value={2}>
+        Wide
+      </Cropper.AspectItem>
+      <Cropper.AspectItem render={<div />} value={3}>
+        Wider
+      </Cropper.AspectItem>
+    </Cropper.AspectGroup>
+  </Cropper.Root>
+);
+
+const Parts = ({ disabled }: { disabled: boolean }) => (
+  <Cropper.Root disabled={disabled} image={PHOTO}>
+    <Cropper.Area aria-label="Crop" />
+    <Cropper.Dial aria-label="Dial" />
+    <Cropper.Zoom aria-label="Zoom" />
+    <Cropper.Rotate>Rotate</Cropper.Rotate>
+    <Cropper.Flip>Flip</Cropper.Flip>
+    <Cropper.Orientation>Turn</Cropper.Orientation>
+    <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+    <Cropper.ZoomStep factor={2}>In</Cropper.ZoomStep>
+    <Cropper.Reset hidden={false}>Reset</Cropper.Reset>
+  </Cropper.Root>
+);
+const NAMES = [
+  "area",
+  "dial",
+  "zoom",
+  "rotate",
+  "flip",
+  "orientation",
+  "aspect-item",
+  "zoom-step",
+  "reset",
+];
+
+const Sliders = ({
+  api,
+  ...props
+}: { api?: React.Ref<CropperApi> } & React.ComponentProps<
+  typeof Cropper.Root
+>) => (
+  <Cropper.Root actionsRef={api} image={PHOTO} {...props}>
+    <Cropper.Dial aria-label="Dial" />
+    <Cropper.Zoom aria-label="Zoom">
+      <Cropper.ZoomThumb />
+    </Cropper.Zoom>
+  </Cropper.Root>
+);
+
+const value = (rotation: number): CropValue => ({
+  aspect: "free",
+  center: { x: 0.5, y: 0.5 },
+  mirrored: false,
+  perspective: { horizontal: 0, vertical: 0 },
+  quarterTurns: 0,
+  rotation,
+  size: { height: 1, width: 1 },
 });

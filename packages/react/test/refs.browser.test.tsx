@@ -398,3 +398,63 @@ describe("refs on React 18 and 19", () => {
     expect(count("attach")).toBe(count("cleanup"));
   });
 });
+
+const FormatHost = ({
+  digits,
+  dial,
+  zoom,
+}: {
+  digits: number;
+  dial: () => void;
+  zoom: () => void;
+}) => (
+  <Cropper.Root image={{ height: 300, width: 400 }}>
+    <Cropper.Dial
+      aria-label="Dial"
+      format={{ maximumFractionDigits: digits }}
+      ref={dial}
+    />
+    <Cropper.Zoom
+      aria-label="Zoom"
+      format={{ maximumFractionDigits: digits }}
+      ref={zoom}
+    />
+  </Cropper.Root>
+);
+
+const SpokenHost = ({ kind }: { kind: "percent" | "decimal" }) => (
+  <Cropper.Root image={{ height: 300, width: 400 }}>
+    <Cropper.Zoom aria-label="Zoom" format={{ style: kind }} />
+  </Cropper.Root>
+);
+
+const UnitHost = ({ unit }: { unit: string }) => (
+  <Cropper.Root image={{ height: 300, width: 400 }}>
+    <Cropper.DialValue format={(angle) => `${angle}${unit}`} />
+  </Cropper.Root>
+);
+
+const ChildHost = ({ on }: { on: boolean }) => {
+  const loose: Record<string, unknown> = { children: on ? <b>x</b> : null };
+  return (
+    <Cropper.Root image={{ height: 300, width: 400 }}>
+      <Cropper.DialValue {...loose} />
+    </Cropper.Root>
+  );
+};
+
+const MaskHost = ({ shape }: { shape: "rect" | "circle" }) => (
+  <Cropper.Root image={{ height: 300, width: 400 }} shape={shape}>
+    <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
+      <Cropper.Mask />
+    </Cropper.Viewport>
+  </Cropper.Root>
+);
+
+const LiveHost = ({ live }: { live: boolean }) => (
+  <Cropper.Root image={{ height: 300, width: 400 }}>
+    <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
+      <Cropper.Area aria-label="Crop" liveVariables={live} />
+    </Cropper.Viewport>
+  </Cropper.Root>
+);

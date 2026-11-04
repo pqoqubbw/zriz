@@ -267,6 +267,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const firstReset = readValue(initial.defaultValue ?? {}, defaultValue);
   const targets = new Set<Record<string, unknown>>();
   let resetValue = firstReset;
+  let locked: Aspect | undefined;
   let image: Size | null = initial.image ?? null;
   let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
   let state: CropState | null = null;
@@ -852,8 +853,12 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     retarget(next) {
       const aim = (): void => {
         resetValue = firstReset;
+        locked = undefined;
         for (const patch of targets) {
           resetValue = readValue(patch, resetValue);
+          if (patch.lock === true) {
+            locked = resetValue.aspect;
+          }
         }
         fitReset();
         refresh();
@@ -890,10 +895,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       };
     },
     setAspect(given, action = {}) {
-      if (!state || disabled()) {
+      const aspect = toAspect(given);
+      if (!state || disabled() || (locked !== undefined && aspect !== locked)) {
         return;
       }
-      const aspect = toAspect(given);
       const ratio = aspectRatio(aspect, state.image, state.turns);
       let next: CropState = { ...state, aspect: ratio };
       if (ratio !== null) {
@@ -1048,7 +1053,12 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return;
       }
-      applyValue(readValue(partial, value), action, "imperative");
+      const next = readValue(partial, value);
+      applyValue(
+        locked === undefined ? next : { ...next, aspect: locked },
+        action,
+        "imperative"
+      );
     },
     setZoom(zoom, action = {}) {
       if (!state || disabled()) {
