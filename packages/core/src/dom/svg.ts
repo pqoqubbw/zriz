@@ -1,17 +1,19 @@
-import { drawn, fitEdge, loadElement } from "./media";
+import { drawn, fitEdge, loadElement, textOf } from "./media";
 import { svgSize } from "./svg-size";
 
-export { sniff } from "./svg-size";
+export { isSvg } from "./svg-size";
 
 export const fromSvg = async (
   blob: Blob,
   edge: number
 ): Promise<ImageBitmap> => {
-  const size = fitEdge(svgSize(await blob.text()), edge);
-  const url = URL.createObjectURL(blob);
-  try {
-    return await drawn(await loadElement(url), size);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const size = fitEdge(svgSize(textOf(bytes)), edge);
+  const reader = new FileReader();
+  await new Promise((resolve) => {
+    reader.onloadend = resolve;
+    reader.readAsDataURL(blob.slice(0, blob.size, "image/svg+xml"));
+  });
+  const url = typeof reader.result === "string" ? reader.result : "";
+  return await drawn(await loadElement(url), size);
 };

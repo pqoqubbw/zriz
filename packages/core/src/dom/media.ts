@@ -45,8 +45,8 @@ export const drawn = async (
   size: Size
 ): Promise<ImageBitmap> => {
   const canvas = canvasFor(size);
-  context2d(canvas).drawImage(source, 0, 0, size.width, size.height);
   try {
+    context2d(canvas).drawImage(source, 0, 0, size.width, size.height);
     return await createImageBitmap(canvas);
   } finally {
     free(canvas);
@@ -60,7 +60,22 @@ export const loadElement = async (url: string): Promise<HTMLImageElement> => {
   try {
     await image.decode();
   } catch {
-    throw new ZrizError("decode", `zriz: could not load ${url.slice(0, 80)}`);
+    throw new ZrizError(
+      "decode",
+      `zriz: could not load the image. It may be damaged, or img-src may block ${url.split(":", 1)[0]}: urls.`
+    );
   }
   return image;
+};
+
+export const textOf = (bytes: Uint8Array): string => {
+  const [first, second] = bytes;
+  let encoding = "utf-8";
+  if (first === 0xff && second === 0xfe) {
+    encoding = "utf-16le";
+  }
+  if (first === 0xfe && second === 0xff) {
+    encoding = "utf-16be";
+  }
+  return new TextDecoder(encoding).decode(bytes);
 };

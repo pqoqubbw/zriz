@@ -1,7 +1,7 @@
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
-import { fitEdge } from "./media";
+import { fitEdge, textOf } from "./media";
 import { decodeOff, keepOff } from "./worker";
 
 export type ImageSource =
@@ -53,6 +53,7 @@ export const TIMEOUT = 15_000;
 let nextId = 0;
 const MOBILE_AREA = 16_777_216;
 const DESKTOP_AREA = 268_435_456;
+const HEAD = 4096;
 
 const startsWith = (
   bytes: Uint8Array,
@@ -271,17 +272,16 @@ export const loadImage = async (
         typeof src === "string"
           ? await toBlob(src, options.crossOrigin, options.signal)
           : src;
-      const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
+      const head = new Uint8Array(await blob.slice(0, HEAD).arrayBuffer());
       ({ mime, animated } = raster(head));
-      const typed = blob.type === "image/svg+xml";
+      const typed = blob.type.startsWith("image/svg+xml");
       const vector =
-        mime === null &&
-        (typed || /<svg/iu.test(new TextDecoder().decode(head)))
+        mime === null && (typed || /<svg/iu.test(textOf(head)))
           ? await import("./svg").catch((error: unknown) => {
               throw toZriz(error, mime);
             })
           : null;
-      if (vector && (typed || vector.sniff(head).mime !== null)) {
+      if (vector && (typed || vector.isSvg(head))) {
         mime = "image/svg+xml";
         const preview = await vector.fromSvg(blob, edge);
         await keepOff(id, preview);

@@ -1,55 +1,112 @@
 import type { Size } from "../geometry/types";
 import { raster } from "./image";
+import { textOf } from "./media";
+
+const FALLBACK: Size = { height: 150, width: 300 };
+
+const CLOSERS: Record<string, RegExp> = {
+  "-": /-->/gu,
+  "?": /\?>/gu,
+  "[": /\]\s*>/gu,
+};
+
+const UNITS: Record<string, number> = {
+  cm: 96 / 2.54,
+  in: 96,
+  mm: 96 / 25.4,
+  pc: 16,
+  pt: 4 / 3,
+  px: 1,
+  q: 96 / 101.6,
+};
+
+const rootStart = (text: string): number => {
+  const step =
+    /\s*(?:(?<root><svg[\s>])|(?<open><\?|<!--|<!doctype[^>[]*[>[]))/iuy;
+  let at = 0;
+  for (;;) {
+    step.lastIndex = at;
+    const { root, open } = step.exec(text)?.groups ?? {};
+    if (root !== undefined) {
+      return step.lastIndex - root.length;
+    }
+    if (open === undefined) {
+      return -1;
+    }
+    at = step.lastIndex;
+    const close = CLOSERS[open.slice(-1)];
+    if (close) {
+      close.lastIndex = at;
+      if (!close.test(text)) {
+        return -1;
+      }
+      at = close.lastIndex;
+    }
+  }
+};
+
+export const isSvg = (bytes: Uint8Array): boolean =>
+  rootStart(textOf(bytes)) !== -1;
 
 export const sniff = (
   bytes: Uint8Array
 ): { mime: string | null; animated: boolean } => {
   const known = raster(bytes);
-  if (known.mime !== null) {
-    return known;
-  }
-  const text = new TextDecoder().decode(bytes.subarray(0, 512));
-  if (
-    /^\s*(?:<\?xml[^>]*\?>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>[]*(?:\[[\s\S]*?\])?\s*>)\s*)*<svg[\s>]/iu.test(
-      text
-    )
-  ) {
-    return { animated: false, mime: "image/svg+xml" };
-  }
-  return known;
+  return known.mime === null && isSvg(bytes)
+    ? { animated: false, mime: "image/svg+xml" }
+    : known;
 };
 
-const svgLength = (value: string | undefined): number => {
-  if (value === undefined || value.endsWith("%")) {
-    return 0;
-  }
-  const parsed = Number(value.replace(/px$/u, ""));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+const svgLength = (value = ""): number => {
+  let scale = 1;
+  const parsed = Number(
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/(?:px|in|cm|mm|pt|pc|q)$/u, (unit) => {
+        scale = UNITS[unit] ?? 1;
+        return "";
+      })
+  );
+  return Number.isFinite(parsed) && parsed > 0 ? parsed * scale : 0;
+};
+
+const rootTag = (text: string): string => {
+  const start = rootStart(text);
+  const tag = /<svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/iuy;
+  tag.lastIndex = Math.max(start, 0);
+  return start === -1 ? "" : (tag.exec(text)?.[0] ?? "");
 };
 
 export const svgSize = (text: string): Size => {
-  const tag = /<svg\b[^>]*>/iu.exec(text)?.[0] ?? "";
-  const attribute = (name: string): string | undefined =>
-    new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, "iu").exec(tag)?.[1];
-  const [boxWidth = 0, boxHeight = 0] = (attribute("viewBox") ?? "")
+  const attributes = new Map(
+    [
+      ...rootTag(text).matchAll(
+        /(?<name>[^\s=]+)\s*=\s*(?:"(?<double>[^"]*)"|'(?<single>[^']*)')|\S+/gu
+      ),
+    ].map(({ groups }) => [
+      groups?.name?.toLowerCase(),
+      groups?.double ?? groups?.single,
+    ])
+  );
+  const [boxWidth = 0, boxHeight = 0] = (attributes.get("viewbox") ?? "")
     .trim()
     .split(/[\s,]+/u)
     .map(Number)
     .slice(2, 4);
   const ratio = boxWidth > 0 && boxHeight > 0 ? boxWidth / boxHeight : 0;
-  const width = svgLength(attribute("width"));
-  const height = svgLength(attribute("height"));
+  const width = svgLength(attributes.get("width"));
+  const height = svgLength(attributes.get("height"));
+  let size = FALLBACK;
   if (width > 0 && height > 0) {
-    return { height, width };
+    size = { height, width };
+  } else if (width > 0 && ratio > 0) {
+    size = { height: width / ratio, width };
+  } else if (height > 0 && ratio > 0) {
+    size = { height, width: height * ratio };
+  } else if (ratio > 0) {
+    size = { height: boxHeight, width: boxWidth };
   }
-  if (width > 0 && ratio > 0) {
-    return { height: width / ratio, width };
-  }
-  if (height > 0 && ratio > 0) {
-    return { height, width: height * ratio };
-  }
-  if (ratio > 0) {
-    return { height: boxHeight, width: boxWidth };
-  }
-  return { height: 150, width: 300 };
+  const area = size.width * size.height;
+  return area > 0 && area < Number.POSITIVE_INFINITY ? size : FALLBACK;
 };

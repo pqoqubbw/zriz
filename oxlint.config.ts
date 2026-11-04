@@ -90,6 +90,7 @@ export default defineConfig({
     {
       files: [
         "packages/core/src/dom/image.ts",
+        "packages/core/src/dom/svg.ts",
         "packages/core/src/dom/worker.ts",
       ],
       rules: { "promise/avoid-new": "off" },
