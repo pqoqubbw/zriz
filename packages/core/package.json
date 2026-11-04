@@ -110,7 +110,7 @@
     },
     {
       "name": "motion",
-      "path": "dist/index.js",
+      "path": "dist/motion.js",
       "import": "{ spring, decay, velocityTracker }",
       "limit": "600 B"
     },

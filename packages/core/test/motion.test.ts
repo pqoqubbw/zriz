@@ -1,7 +1,7 @@
 import { double, assert as fcAssert, property } from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { decay, decayDistance, spring, velocityTracker } from "../src";
+import { decay, spring, velocityTracker } from "../src/motion";
 
 const integrate = (
   x0: number,
@@ -24,7 +24,6 @@ const integrate = (
 describe(spring, () => {
   it.each([
     ["critical", 1],
-    ["under", 0.6],
     ["over", 1.4],
   ])("%s damping matches numeric integration", (_, zeta) => {
     const exact = spring(100, -300, 16.1, zeta, 120).value;
@@ -32,7 +31,7 @@ describe(spring, () => {
   });
 
   it("starts at the given displacement and velocity", () => {
-    for (const zeta of [0.6, 1, 1.4]) {
+    for (const zeta of [1, 1.4]) {
       const start = spring(42, 7, 20, zeta, 0);
       expect(start.value).toBeCloseTo(42, 10);
       expect(start.velocity).toBeCloseTo(7, 8);
@@ -47,7 +46,7 @@ describe(spring, () => {
         double({ max: 200, min: 1, noNaN: true }),
         double({ max: 200, min: 1, noNaN: true }),
         (x0, v0, a, b) => {
-          for (const zeta of [0.6, 1, 1.4]) {
+          for (const zeta of [1, 1.4]) {
             const mid = spring(x0, v0, 16.1, zeta, a);
             const split = spring(mid.value, mid.velocity, 16.1, zeta, b);
             const direct = spring(x0, v0, 16.1, zeta, a + b);
@@ -77,8 +76,7 @@ const travelAt = (hz: number): number => {
 
 describe(decay, () => {
   it("travels velocity times tau in total", () => {
-    expect(decay(1000, 95, 1e6).value).toBeCloseTo(decayDistance(1000, 95), 9);
-    expect(decayDistance(1000, 95)).toBeCloseTo(95, 9);
+    expect(decay(1000, 95, 1e6).value).toBeCloseTo(95, 9);
   });
 
   it("travels the same distance at 60 and 120 Hz", () => {

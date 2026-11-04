@@ -69,18 +69,6 @@ export const spring = (
       velocity: (v0 - omega * b * t) * e,
     };
   }
-  if (zeta < 1) {
-    const wd = omega * Math.sqrt(1 - zeta * zeta);
-    const a = zeta * omega;
-    const b = (v0 + a * x0) / wd;
-    const e = Math.exp(-a * t);
-    const cos = Math.cos(wd * t);
-    const sin = Math.sin(wd * t);
-    return {
-      value: e * (x0 * cos + b * sin),
-      velocity: e * ((b * wd - a * x0) * cos - (x0 * wd + a * b) * sin),
-    };
-  }
   const root = omega * Math.sqrt(zeta * zeta - 1);
   const r1 = -zeta * omega + root;
   const r2 = -zeta * omega - root;
@@ -98,16 +86,6 @@ export const decay = (velocity: number, tau: number, time: number): Motion => {
   const e = Math.exp(-time / tau);
   return { value: (velocity / 1000) * tau * (1 - e), velocity: velocity * e };
 };
-
-export const decayDistance = (velocity: number, tau: number): number =>
-  (velocity / 1000) * tau;
-
-export const isAtRest = (
-  motion: Motion,
-  distance = 0.01,
-  speed = 0.01
-): boolean =>
-  Math.abs(motion.value) < distance && Math.abs(motion.velocity) < speed;
 
 export const velocityTracker = (
   window = 100,

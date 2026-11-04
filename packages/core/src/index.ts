@@ -23,14 +23,7 @@ export type {
   CropperSnapshot,
   FrameTask,
 } from "./cropper";
-export {
-  decay,
-  decayDistance,
-  frameClock,
-  isAtRest,
-  spring,
-  velocityTracker,
-} from "./motion";
+export { decay, frameClock, velocityTracker } from "./motion";
 export type { Clock, Motion, VelocityTracker } from "./motion";
 export {
   aspectRatio,
