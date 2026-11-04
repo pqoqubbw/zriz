@@ -21,20 +21,34 @@ describe("sniffing svg text", () => {
     '<!DOCTYPE svg PUBLIC "a" "b"><svg>',
     '<!DOCTYPE svg [ <!ENTITY a "b"> ] ><svg>',
     "  <!---->  <!-- x --><svg\n>",
+    '<svg:svg xmlns:svg="http://www.w3.org/2000/svg">',
+    '<?xml version="1.0"?><my-ns.1:svg xmlns:my-ns.1="a">',
   ])("accepts %s", (text) => {
     expect(sniff(encode(text)).mime).toBe("image/svg+xml");
   });
 
-  it.each(["<svgx>", "<html><svg>", "<!-- open <svg>", "<?xml <svg>", "text"])(
-    "refuses %s",
-    (text) => {
-      expect(sniff(encode(text)).mime).toBeNull();
-    }
-  );
+  it.each([
+    "<svgx>",
+    "<html><svg>",
+    "<!-- open <svg>",
+    "<?xml <svg>",
+    "text",
+    "<svg:svgx>",
+    "<:svg>",
+    "<a:b:svg>",
+  ])("refuses %s", (text) => {
+    expect(sniff(encode(text)).mime).toBeNull();
+  });
 
   it("reads a prolog longer than the old head", () => {
     const text = `<?xml version="1.0"?><!-- ${"x".repeat(1000)} --><svg>`;
     expect(sniff(encode(text)).mime).toBe("image/svg+xml");
+  });
+
+  it("stays fast on a long name with no prefix", () => {
+    quick(() => {
+      expect(sniff(encode(`<${"a".repeat(1_000_000)}`)).mime).toBeNull();
+    });
   });
 
   it("reads little and big endian text", () => {
@@ -59,7 +73,7 @@ describe("sniffing svg text", () => {
     ["<!DOCTYPE >", 26],
     ["<!-- a -->\n", 30],
     ["<?a?>", 500],
-  ])("stays fast on repeats of %s", (unit, count) => {
+  ])("stays fast on a long prolog, case %#", (unit, count) => {
     quick(() => {
       expect(sniff(encode(`${unit.repeat(count)}<svgx`)).mime).toBeNull();
     });
@@ -79,6 +93,8 @@ describe("the size of an svg", () => {
     ["<svg>", 300, 150],
     ['<svg width="100%" height="100%">', 300, 150],
     ['<svg width="1em" height="2ex">', 300, 150],
+    ['<svg:svg xmlns:svg="a" width="400" height="200"/>', 400, 200],
+    ['<?xml version="1.0"?><s:svg viewBox="0 0 30 20"/>', 30, 20],
   ])("reads %s", (text, width, height) => {
     const size = svgSize(text);
     expect(size.width).toBeCloseTo(width);
@@ -123,7 +139,7 @@ describe("the size of an svg", () => {
     ['<svg "', 60_000],
     ["<!--", 200_000],
     ["<!DOCTYPE a", 100_000],
-  ])("stays fast on repeats of %s", (unit, count) => {
+  ])("stays fast on text with no closed root, case %#", (unit, count) => {
     quick(() => {
       expect(svgSize(unit.repeat(count))).toStrictEqual({
         height: 150,

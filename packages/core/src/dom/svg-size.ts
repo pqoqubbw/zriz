@@ -22,7 +22,7 @@ const UNITS: Record<string, number> = {
 
 const rootStart = (text: string): number => {
   const step =
-    /\s*(?:(?<root><svg[\s>])|(?<open><\?|<!--|<!doctype[^>[]*[>[]))/iuy;
+    /\s*(?:(?<root><(?:[\w.-]+:)?svg[\s>])|(?<open><\?|<!--|<!doctype[^>[]*[>[]))/iuy;
   let at = 0;
   for (;;) {
     step.lastIndex = at;
@@ -73,9 +73,12 @@ const svgLength = (value = ""): number => {
 
 const rootTag = (text: string): string => {
   const start = rootStart(text);
-  const tag = /<svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/iuy;
-  tag.lastIndex = Math.max(start, 0);
-  return start === -1 ? "" : (tag.exec(text)?.[0] ?? "");
+  if (start === -1) {
+    return "";
+  }
+  const tag = /<(?:[\w.-]+:)?svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/iuy;
+  tag.lastIndex = start;
+  return tag.exec(text)?.[0] ?? "";
 };
 
 export const svgSize = (text: string): Size => {
