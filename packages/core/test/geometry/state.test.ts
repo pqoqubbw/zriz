@@ -83,12 +83,9 @@ describe("state", () => {
     for (let k = -16; k <= 16; k += 1) {
       const { sin, cos } = sinCosDegrees(k * 45);
       const quarter = k % 2 === 0;
-      expect(Math.abs(sin)).toBe(
-        quarter ? Math.abs((((k / 2) % 2) + 2) % 2) : Math.SQRT1_2
-      );
-      expect(Math.abs(cos)).toBe(
-        quarter ? 1 - Math.abs((((k / 2) % 2) + 2) % 2) : Math.SQRT1_2
-      );
+      const sine = quarter ? ((k / 2) % 2) ** 2 : Math.SQRT1_2;
+      expect(Math.abs(sin)).toBe(sine);
+      expect(Math.abs(cos)).toBe(quarter ? 1 - sine : Math.SQRT1_2);
     }
   });
 
