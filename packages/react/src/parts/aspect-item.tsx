@@ -3,6 +3,7 @@
 import { sameAspect } from "@zriz/core";
 import type { Aspect } from "@zriz/core";
 import { forwardRef, useContext } from "react";
+import type { MouseEvent } from "react";
 
 import { AspectGroupContext } from "../aspect-group-context";
 import { useCropperContext } from "../context";
@@ -31,7 +32,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   const disabled = off === true || (shape === "circle" && value !== 1);
   const checked = useCropperState((s) => sameAspect(s.aspect, value));
   const rootDisabled = useAriaDisabled();
-  const onClick = (event: React.MouseEvent): void => {
+  const onClick = (event: MouseEvent): void => {
     if (!disabled) {
       cropper.setAspect(value, { event: event.nativeEvent });
     }

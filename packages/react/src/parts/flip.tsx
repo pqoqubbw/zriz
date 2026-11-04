@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
@@ -22,7 +23,7 @@ export const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
 >(function Flip({ axis = "x", ...props }, ref) {
   const cropper = useCropperContext();
   const mirrored = useCropperState((s) => s.mirrored);
-  const onClick = (event: React.MouseEvent): void => {
+  const onClick = (event: MouseEvent): void => {
     cropper.flip(axis, { event: event.nativeEvent });
   };
   return usePart(

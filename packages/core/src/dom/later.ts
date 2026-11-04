@@ -1,9 +1,7 @@
-const ignore = (): null => null;
-
 export const afterPaint = (load: () => Promise<unknown>): void => {
   const run = (): void => {
     setTimeout(() => {
-      load().catch(ignore);
+      load().catch(() => null);
     }, 0);
   };
   if (typeof requestAnimationFrame === "function") {

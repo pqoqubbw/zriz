@@ -3,7 +3,6 @@
   "compilerOptions": {
     "isolatedDeclarations": true,
     "declaration": true,
-    "types": ["react"],
     "paths": { "@zriz/react/warn": ["./src/warn.ts"] }
   },
   "include": ["src"]

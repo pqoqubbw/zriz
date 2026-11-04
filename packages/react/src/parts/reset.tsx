@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useContext } from "react";
+import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import {
@@ -46,7 +47,7 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
       }
     }
   }, [box, focused, pristine, root]);
-  const onClick = (event: React.MouseEvent): void => {
+  const onClick = (event: MouseEvent): void => {
     cropper.reset({ event: event.nativeEvent });
   };
   return usePart(

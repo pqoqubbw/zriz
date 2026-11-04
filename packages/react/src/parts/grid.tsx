@@ -2,7 +2,7 @@
 
 import { viewOf } from "@zriz/core/dom";
 import type { Grid as GridMode } from "@zriz/core/dom";
-import { forwardRef, useState, useSyncExternalStore } from "react";
+import { forwardRef, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
@@ -58,11 +58,6 @@ const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
   ]);
 };
 
-const lines: Partial<Record<"coarse" | "fine", ReactElement[]>> = {};
-
-const linesOf = (mode: "coarse" | "fine"): ReactElement[] =>
-  (lines[mode] ??= linesFor(mode));
-
 export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   GridProps
@@ -78,11 +73,13 @@ export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
   if (grid !== "none" && grid !== shown) {
     setShown(grid);
   }
+  const children = useMemo(() => linesFor(shown), [shown]);
+
   return usePart(
     "div",
     {
       "aria-hidden": true,
-      children: linesOf(shown),
+      children,
       "data-grid": grid,
       "data-visible": grid === "none" ? undefined : "",
       "data-zriz-item": "grid",

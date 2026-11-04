@@ -3,6 +3,7 @@
 import { handleHandlers, viewOf } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
 import { forwardRef, useCallback, useMemo, useState } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 
 import { useCropperContext } from "../context";
 import {
@@ -27,9 +28,9 @@ export interface HandleProps extends PartProps<"div", HandleState> {
   position: HandleEdge;
 }
 
-const placement = (position: HandleEdge): React.CSSProperties => {
+const placement = (position: HandleEdge): CSSProperties => {
   const size = "var(--zriz-handle-size, 44px)";
-  const style: React.CSSProperties = {
+  const style: CSSProperties = {
     WebkitTapHighlightColor: "transparent",
     height: size,
     position: "absolute",
@@ -86,7 +87,7 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   if (mine && !active) {
     setMine(false);
   }
-  const onPointerDown = (event: React.PointerEvent): void => {
+  const onPointerDown = (event: PointerEvent): void => {
     const free = cropper.getState().interacting === null;
     handlers.onPointerDown(event.nativeEvent);
     if (free) {
@@ -102,7 +103,7 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
       "data-zriz-item": "handle",
       ...nativeProps(handlers),
       onPointerDown,
-      onPointerDownCapture: (event: React.PointerEvent): void => {
+      onPointerDownCapture: (event: PointerEvent): void => {
         viewOf(cropper).claim(event.nativeEvent);
       },
       style: placement(position),

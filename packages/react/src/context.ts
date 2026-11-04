@@ -2,8 +2,9 @@
 
 import type { Cropper } from "@zriz/core";
 import { createContext, useContext } from "react";
+import type { Context } from "react";
 
-export const CropperContext: React.Context<Cropper | null> =
+export const CropperContext: Context<Cropper | null> =
   createContext<Cropper | null>(null);
 
 export const useCropperContext = (): Cropper => {

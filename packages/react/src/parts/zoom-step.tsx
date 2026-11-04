@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
@@ -17,7 +18,7 @@ export const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
   ZoomStepProps
 >(function ZoomStep({ factor, ...props }, ref) {
   const cropper = useCropperContext();
-  const onClick = (event: React.MouseEvent): void => {
+  const onClick = (event: MouseEvent): void => {
     cropper.setZoom(cropper.getZoom() * factor, {
       event: event.nativeEvent,
       reason: "zoom-control",

@@ -2,6 +2,7 @@
 
 import { orientationOf } from "@zriz/core/dom";
 import { forwardRef } from "react";
+import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
@@ -21,7 +22,7 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
       const aspect = useCropperState((s) => s.aspect);
       const orientation = orientationOf(aspect);
       const disabled = orientation === "square";
-      const onClick = (event: React.MouseEvent): void => {
+      const onClick = (event: MouseEvent): void => {
         const current = cropper.getValue().aspect;
         if (typeof current === "number") {
           cropper.setAspect(1 / current, {

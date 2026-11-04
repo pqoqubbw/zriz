@@ -2,6 +2,7 @@
 
 import type { Aspect } from "@zriz/core";
 import { forwardRef, useCallback } from "react";
+import type { KeyboardEvent } from "react";
 
 import { AspectGroupContext } from "../aspect-group-context";
 import { useCropperContext } from "../context";
@@ -69,7 +70,7 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
     },
     [box]
   );
-  const onKeyDown = (event: React.KeyboardEvent): void => {
+  const onKeyDown = (event: KeyboardEvent): void => {
     const element = box.get();
     const { disabled, ready } = cropper.getState();
     if (

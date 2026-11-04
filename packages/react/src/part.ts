@@ -1,9 +1,12 @@
 "use client";
 
 import type {
+  CSSProperties,
   ComponentPropsWithoutRef,
+  Context,
   ForwardRefExoticComponent,
   JSX,
+  KeyboardEvent,
   PropsWithoutRef,
   Ref,
   RefAttributes,
@@ -50,7 +53,7 @@ export interface RootContextValue {
   locale: string | undefined;
 }
 
-export const RootContext: React.Context<RootContextValue> =
+export const RootContext: Context<RootContextValue> =
   createContext<RootContextValue>({
     dir: "ltr",
     instructions: undefined,
@@ -78,7 +81,7 @@ export const useLatest = <T>(value: T): { readonly current: T } => {
 };
 
 export const keepStyle =
-  (base: React.CSSProperties) =>
+  (base: CSSProperties) =>
   (node: HTMLElement | null): undefined => {
     if (node) {
       const { style } = node;
@@ -209,9 +212,7 @@ export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
   )) {
     if (key === "onKeyDown") {
       const send = native(handler);
-      props[key] = (
-        event: React.KeyboardEvent & { nativeEvent: never }
-      ): void => {
+      props[key] = (event: KeyboardEvent & { nativeEvent: never }): void => {
         if (event.target === event.currentTarget) {
           send(event);
         }
