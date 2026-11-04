@@ -102,10 +102,45 @@ const solve3 = (a: Row, b: Row, c: Row, rhs: Row): Row | null => {
   return [solveColumn(0), solveColumn(1), solveColumn(2)];
 };
 
+const flatFit = (
+  planes: readonly HalfPlane[],
+  view: Size
+): { center: Point; scale: number } | null => {
+  const [a, b, c, d] = planes;
+  if (
+    !a ||
+    !b ||
+    !c ||
+    !d ||
+    planes.length !== 4 ||
+    a.nx !== -b.nx ||
+    a.ny !== -b.ny ||
+    c.nx !== -d.nx ||
+    c.ny !== -d.ny
+  ) {
+    return null;
+  }
+  const u = (a.d - b.d) / 2;
+  const v = (c.d - d.d) / 2;
+  return {
+    center: { x: u * a.nx + v * c.nx, y: u * a.ny + v * c.ny },
+    scale:
+      1 /
+      Math.min(
+        (a.d + b.d) / (2 * planeSupport(a, view.width, view.height)),
+        (c.d + d.d) / (2 * planeSupport(c, view.width, view.height))
+      ),
+  };
+};
+
 export const largestFit = (
   planes: readonly HalfPlane[],
   view: Size
 ): { center: Point; scale: number } => {
+  const flat = flatFit(planes, view);
+  if (flat) {
+    return flat;
+  }
   const rows = planes.map((plane) => ({
     d: plane.d,
     row: [

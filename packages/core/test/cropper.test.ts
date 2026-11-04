@@ -29,7 +29,7 @@ import type {
   CropperEvents,
   CropperOptions,
 } from "../src";
-import { isCropCovered } from "../src/geometry";
+import { isCropCovered, isPerspectiveValid } from "../src/geometry";
 import { fakeClock } from "./fake-clock";
 
 const photo = { height: 3000, width: 4000 };
@@ -1479,5 +1479,117 @@ describe("input validation", () => {
         expect(sound(cropper.getValue())).toBe(true);
       })
     );
+  });
+});
+
+describe("large photos", () => {
+  it.each<[string, CropperOptions["image"], Partial<CropValue>]>([
+    ["level", { height: 65_535, width: 32_767 }, { rotation: 1.3335e-11 }],
+    ["a tiny angle", { height: 1_000_000, width: 300_000 }, { rotation: 1e-12 }],
+    ["a tilt", { height: 1e8, width: 1e8 }, { perspective: { horizontal: 0, vertical: -30 } }],
+    ["a thin photo near the limit", { height: 1e8, width: 2 }, { quarterTurns: 1, rotation: 44.999 }],
+  ])("keeps the crop covered at a corner with %s", (_, image, first) => {
+    const { cropper } = setup({ image });
+    cropper.setValue(first);
+    cropper.setValue({ center: { x: 0, y: 0 } });
+    expect(isCropCovered(cropState(cropper.getCropState()))).toBe(true);
+  });
+
+  it("keeps any tiny angle or tilt on any large photo covered", () => {
+    fcAssert(
+      property(
+        record({
+          height: integer({ max: 2_147_483_647, min: 1 }),
+          horizontal: oneof(constant(0), double({ max: 30, min: -30, noNaN: true })),
+          rotation: double({ max: 1e-6, min: -1e-6, noNaN: true }),
+          turns: integer({ max: 3, min: 0 }),
+          vertical: oneof(constant(0), double({ max: 30, min: -30, noNaN: true })),
+          width: integer({ max: 2_147_483_647, min: 1 }),
+          x: constantFrom(0, 0.5, 1),
+          y: constantFrom(0, 0.5, 1),
+        }),
+        ({ height, horizontal, rotation, turns, vertical, width, x, y }) => {
+          const { cropper } = setup({ image: { height, width } });
+          cropper.setValue({
+            perspective: { horizontal, vertical },
+            quarterTurns: turns as CropValue["quarterTurns"],
+            rotation,
+          });
+          cropper.setValue({ center: { x, y } });
+          expect(isCropCovered(cropState(cropper.getCropState()))).toBe(true);
+        }
+      )
+    );
+  });
+});
+
+describe("short lens", () => {
+  it.each([13, 6, 0.5])("keeps a %s mm crop on the photo at full tilt", (mm) => {
+    const { cropper } = setup({
+      defaultValue: { perspective: { horizontal: 30, vertical: 30 } },
+      focalLength: mm,
+    });
+    const state = cropState(cropper.getCropState());
+    expect(isCropCovered(state)).toBe(true);
+    const { center } = cropper.getValue();
+    expect(center.x).toBeGreaterThan(0);
+    expect(center.x).toBeLessThan(1);
+    expect(center.y).toBeGreaterThan(0);
+    expect(center.y).toBeLessThan(1);
+    expect(isPerspectiveValid(state.image, state.perspective, 0.05)).toBe(true);
+  });
+
+  it("uses the lens as given when it is long enough", () => {
+    const { cropper } = setup({
+      defaultValue: { perspective: { horizontal: 30, vertical: 30 } },
+    });
+    expect(cropper.getCropState()?.perspective.focal).toBeCloseTo(
+      (26 / 36) * 4000,
+      9
+    );
+  });
+});
+
+describe("setCropState", () => {
+  it("keeps the aspect the value holds", () => {
+    const { cropper } = setup();
+    const state = cropState(cropper.getCropState());
+    cropper.setCropState({ ...state, aspect: 2 });
+    expect(cropper.getCropState()?.aspect).toBeNull();
+    cropper.setAspect(1);
+    const locked = cropState(cropper.getCropState());
+    cropper.setCropState({
+      ...locked,
+      aspect: null,
+      crop: { ...locked.crop, height: 200, width: 1000 },
+    });
+    const after = cropState(cropper.getCropState());
+    expect(after.aspect).toBe(1);
+    expect(after.crop.width).toBeCloseTo(after.crop.height, 6);
+    cropper.setValue(cropper.getValue());
+    expect(cropper.getCropState()?.crop.width).toBeCloseTo(after.crop.width, 6);
+  });
+
+  it("keeps the photo and the lens the cropper holds", () => {
+    const { cropper } = setup({
+      defaultValue: { perspective: { horizontal: 0, vertical: 20 } },
+    });
+    const state = cropState(cropper.getCropState());
+    cropper.setCropState({
+      ...state,
+      image: { height: 10, width: 10 },
+      perspective: { ...state.perspective, focal: 100 },
+    });
+    const after = cropState(cropper.getCropState());
+    expect(after.image).toStrictEqual(photo);
+    expect(after.perspective.focal).toBe(state.perspective.focal);
+  });
+
+  it("whole-numbers the turns it is given", () => {
+    const { cropper } = setup();
+    const state = cropState(cropper.getCropState());
+    cropper.setCropState({ ...state, turns: 5 as CropState["turns"] });
+    expect(cropper.getCropState()?.turns).toBe(1);
+    expect(cropper.getValue().quarterTurns).toBe(1);
   });
 });

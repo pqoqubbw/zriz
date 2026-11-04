@@ -46,7 +46,7 @@ const CROPPER_PAGE = defineDoc({
           {
             default: "26",
             name: "focalLength",
-            text: "sets the lens as a 35 mm equivalent, for perspective correction",
+            text: "sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it",
             type: "number",
           },
           {

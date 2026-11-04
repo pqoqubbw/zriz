@@ -10,9 +10,13 @@ import {
 
 describe(parse, () => {
   it("returns null for garbage", () => {
-    for (const input of ["", "{", "null", "3", 3, null, undefined, "[]x"]) {
+    for (const input of ["", "{", "null", "3", 3, null, undefined, "[]x", "[]", "[1,2,3]", [], [1]]) {
       expect(parse(input)).toBeNull();
     }
+  });
+
+  it("takes a nested array as a missing field", () => {
+    expect(parse('{"center":[],"size":[1,2]}')).toStrictEqual(defaultValue);
   });
 
   it("fills defaults and clamps", () => {

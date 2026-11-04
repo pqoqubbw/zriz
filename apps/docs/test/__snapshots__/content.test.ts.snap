@@ -5403,7 +5403,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   sets the largest zoom. 1 is the largest crop
 - \`focalLength\` \`number\` = \`26\`
 
-  sets the lens as a 35 mm equivalent, for perspective correction
+  sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it
 - \`disabled\` \`boolean\` = \`false\`
 
   refuses gestures and most writes
@@ -7517,7 +7517,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
   formats the values screen readers hear
 - \`focalLength\` \`number\` = \`26\`
 
-  the lens as a 35 mm equivalent, used for perspective correction
+  the lens as a 35 mm equivalent, used for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it
 
 | attribute | when |
 | - | - |

@@ -146,7 +146,7 @@ export const valuesEqual = (a: CropValue, b: CropValue): boolean =>
   a === b || fields.every((field) => fieldEqual(a, b, field));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const finite = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;

@@ -93,9 +93,7 @@ export const projectOntoPlanes = (
     y: Math.min(Math.max(given.y, -reach), reach),
   };
   const candidates: Point[] = planes.map((plane) => {
-    const k =
-      (plane.nx * point.x + plane.ny * point.y - plane.d) /
-      (plane.nx * plane.nx + plane.ny * plane.ny);
+    const k = plane.nx * point.x + plane.ny * point.y - plane.d;
     return { x: point.x - k * plane.nx, y: point.y - k * plane.ny };
   });
   for (const [index, a] of planes.entries()) {

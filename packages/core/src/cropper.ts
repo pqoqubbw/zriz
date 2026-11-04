@@ -1,3 +1,4 @@
+import { sinCosDegrees, toQuarterTurns } from "./geometry/angle";
 import { straightenLimit } from "./geometry/constraints";
 import { largestFit, minScaleAt } from "./geometry/coverage";
 import { exportPlan } from "./geometry/export-plan";
@@ -202,6 +203,18 @@ const attempt = <T>(call: () => T): T | undefined => {
 
 const noop = (): void => undefined;
 
+const lengthenLens = (state: CropState): CropState => {
+  const { focal, horizontal, vertical } = state.perspective;
+  const h = sinCosDegrees(horizontal);
+  const shortest =
+    (Math.abs(h.sin) * state.image.width +
+      Math.abs(h.cos * sinCosDegrees(vertical).sin) * state.image.height) /
+    1.8;
+  return focal < shortest
+    ? { ...state, perspective: { ...state.perspective, focal: shortest } }
+    : state;
+};
+
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
   1 / largestFit(planes, size).scale;
 
@@ -287,7 +300,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
     const angle = limitAngle(next.angle);
-    const shaped = angle === next.angle ? next : setAngle(next, angle);
+    const shaped = lengthenLens(
+      angle === next.angle ? next : setAngle(next, angle)
+    );
     const planes = imagePlanes(shaped);
     const { x, y } = shaped.crop;
     const reach = 1e6 * Math.max(shaped.image.width, shaped.image.height);
@@ -744,7 +759,19 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (!state || disabled()) {
         return;
       }
-      commitState(next, action.keep ?? "size", action, "imperative");
+      const turns = toQuarterTurns(next.turns);
+      commitState(
+        {
+          ...next,
+          aspect: aspectRatio(value.aspect, state.image, turns),
+          image: state.image,
+          perspective: { ...next.perspective, focal: state.perspective.focal },
+          turns,
+        },
+        action.keep ?? "size",
+        action,
+        "imperative"
+      );
     },
     setImage(given) {
       if (destroyed) {
