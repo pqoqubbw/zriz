@@ -53,14 +53,8 @@ export const drawn = async (
   }
 };
 
-export const loadElement = async (
-  url: string,
-  crossOrigin: "anonymous" | "use-credentials" | undefined
-): Promise<HTMLImageElement> => {
+export const loadElement = async (url: string): Promise<HTMLImageElement> => {
   const image = new Image();
-  if (crossOrigin) {
-    image.crossOrigin = crossOrigin;
-  }
   image.decoding = "async";
   image.src = url;
   try {

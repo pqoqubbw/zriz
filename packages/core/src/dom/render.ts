@@ -64,7 +64,7 @@ export const exportImage = async (
       ? URL.createObjectURL(image.source)
       : null;
   try {
-    const element = url === null ? null : await loadElement(url, undefined);
+    const element = url === null ? null : await loadElement(url);
     const source = element
       ? {
           drawable: element,

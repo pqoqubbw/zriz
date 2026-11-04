@@ -11,6 +11,7 @@ import {
   setCropShape,
   sniff,
 } from "../../src/dom";
+import { fromSvg } from "../../src/dom/svg";
 import { workerActive } from "../../src/dom/worker";
 import { workingToSource } from "../../src/geometry";
 import orientations from "../fixtures/orient.json";
@@ -119,6 +120,18 @@ describe("load and export", () => {
     const result = await exportImage(cropper, image, { type: "image/webp" });
     expect(result.type).toBe(result.blob.type);
     expect(["image/webp", "image/png"]).toContain(result.type);
+  });
+
+  it("fits a tall svg to the edge from its own size, without an extra rounding", async () => {
+    const svg = new Blob(
+      [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="5468" viewBox="0 0 8 5468"/>',
+      ],
+      { type: "image/svg+xml" }
+    );
+    const bitmap = await fromSvg(svg, 1024);
+    expect([bitmap.width, bitmap.height]).toStrictEqual([1, 1024]);
+    bitmap.close();
   });
 
   it("sizes an SVG with only a viewBox from the viewBox", async () => {

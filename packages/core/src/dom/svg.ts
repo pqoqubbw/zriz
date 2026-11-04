@@ -7,10 +7,10 @@ export const fromSvg = async (
   blob: Blob,
   edge: number
 ): Promise<ImageBitmap> => {
-  const size = fitEdge(svgSize(await blob.text()), edge * 4);
+  const size = fitEdge(svgSize(await blob.text()), edge);
   const url = URL.createObjectURL(blob);
   try {
-    return await drawn(await loadElement(url, undefined), fitEdge(size, edge));
+    return await drawn(await loadElement(url), size);
   } finally {
     URL.revokeObjectURL(url);
   }
