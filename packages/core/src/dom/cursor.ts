@@ -1,12 +1,13 @@
-const held = new Map<string, { sheet: CSSStyleSheet; count: number }>();
+import { windowOf } from "./input";
 
 const swap: Record<string, string> = { grab: "grabbing" };
 
 export const holdCursor = (element: Element | null): (() => void) | null => {
+  const win = windowOf(element);
   if (
     !element ||
-    typeof CSSStyleSheet !== "function" ||
-    !("adoptedStyleSheets" in document)
+    typeof win.CSSStyleSheet !== "function" ||
+    !("adoptedStyleSheets" in win.document)
   ) {
     return null;
   }
@@ -14,29 +15,21 @@ export const holdCursor = (element: Element | null): (() => void) | null => {
   if (computed === "" || computed === "auto" || computed === "default") {
     return null;
   }
-  const cursor = swap[computed] ?? computed;
-  const entry = held.get(cursor) ?? {
-    count: 0,
-    sheet: new CSSStyleSheet(),
-  };
-  if (!held.has(cursor)) {
-    entry.sheet.replaceSync(`*{cursor:${cursor}!important}`);
-    held.set(cursor, entry);
+  const sheet = new win.CSSStyleSheet();
+  sheet.replaceSync(`*{cursor:${swap[computed] ?? computed}!important}`);
+  const holders: DocumentOrShadowRoot[] = [win.document];
+  let root = element.getRootNode();
+  while ("host" in root) {
+    holders.push(root as ShadowRoot);
+    root = (root as ShadowRoot).host.getRootNode();
   }
-  entry.count += 1;
-  if (entry.count === 1) {
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, entry.sheet];
+  for (const holder of holders) {
+    holder.adoptedStyleSheets = [...holder.adoptedStyleSheets, sheet];
   }
-  let released = false;
   return () => {
-    if (released) {
-      return;
-    }
-    released = true;
-    entry.count -= 1;
-    if (entry.count === 0) {
-      document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
-        (item) => item !== entry.sheet
+    for (const holder of holders) {
+      holder.adoptedStyleSheets = holder.adoptedStyleSheets.filter(
+        (item) => item !== sheet
       );
     }
   };

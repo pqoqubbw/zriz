@@ -269,11 +269,13 @@ export const loadImage = async (
       width,
     });
     checkpoint();
-    if (typeof src === "string" || src instanceof Blob) {
-      const blob =
-        typeof src === "string"
-          ? await toBlob(src, options.crossOrigin, signal)
-          : src;
+    if (typeof src === "string" || "arrayBuffer" in src) {
+      let blob: Blob;
+      if (typeof src === "string") {
+        blob = await toBlob(src, options.crossOrigin, signal);
+      } else {
+        blob = src instanceof Blob ? src : new Blob([src], { type: src.type });
+      }
       const head = new Uint8Array(await blob.slice(0, HEAD).arrayBuffer());
       checkpoint();
       ({ mime, animated } = raster(head));

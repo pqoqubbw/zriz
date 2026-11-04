@@ -53,10 +53,7 @@ export const fromElement = async (
     | ImageBitmap,
   areaLimit: number
 ): Promise<ImageBitmap> => {
-  if (
-    typeof HTMLVideoElement !== "undefined" &&
-    src instanceof HTMLVideoElement
-  ) {
+  if ("videoWidth" in src) {
     if (!(await showsFrame(src))) {
       throw new ZrizError(
         "decode",
@@ -68,10 +65,7 @@ export const fromElement = async (
       width: src.videoWidth,
     });
   }
-  if (
-    typeof HTMLImageElement !== "undefined" &&
-    src instanceof HTMLImageElement
-  ) {
+  if ("naturalWidth" in src) {
     if (!src.complete || src.naturalWidth === 0) {
       await src.decode();
     }

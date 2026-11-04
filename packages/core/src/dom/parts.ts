@@ -14,12 +14,14 @@ import {
   MIN_HANDLE_SPAN,
   bindPointers,
   capture,
+  claimTouch,
   outside,
   pressLost,
   presses,
   stopAtZoomCeiling,
   targetOf,
   watchLoss,
+  windowOf,
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
@@ -419,16 +421,18 @@ export const handleHandlers = (
         cropper.end(event, owner);
         return;
       }
-      globalThis.addEventListener("keydown", onEscape, true);
       const target = targetOf(event, element);
+      const win = windowOf(target);
+      win.addEventListener("keydown", onEscape, true);
       const offLoss = watchLoss(
         cropper,
         lost,
-        (next) => next.pointerId === drag?.id && outside(target, next)
+        (next) => next.pointerId === drag?.id && outside(target, next),
+        target
       );
       unwatch = () => {
         offLoss();
-        globalThis.removeEventListener("keydown", onEscape, true);
+        win.removeEventListener("keydown", onEscape, true);
       };
       if (target) {
         capture(target, event.pointerId);
@@ -499,13 +503,13 @@ export const bindHandle = (
   edge: HandleEdge
 ): (() => void) => {
   const handlers = handleHandlers(cropper, edge);
-  element.style.touchAction = "none";
-  element.style.setProperty("-webkit-tap-highlight-color", "transparent");
+  const unclaim = claimTouch(element, "none");
   element.dataset.edge = edge;
   const off = bindPointers(element, handlers);
   return () => {
     off();
     handlers.release();
+    unclaim();
   };
 };
 

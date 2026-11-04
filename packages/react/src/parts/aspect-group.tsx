@@ -57,10 +57,8 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
     if (!element || event.altKey || event.ctrlKey || event.metaKey) {
       return;
     }
-    const { target } = event;
     const enabled = itemsOf(element).filter((item) => !item.disabled);
-    const index =
-      target instanceof HTMLButtonElement ? enabled.indexOf(target) : -1;
+    const index = enabled.indexOf(event.target as HTMLButtonElement);
     if (index === -1) {
       return;
     }

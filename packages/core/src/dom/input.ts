@@ -67,11 +67,38 @@ export interface PointerHandlers {
 export const capture = (element: Element, id: number): void => {
   try {
     element.setPointerCapture(id);
-  } catch (error) {
-    if (!(error instanceof DOMException)) {
-      throw error;
-    }
+  } catch {
+    return;
   }
+};
+
+export const isElement = (node: EventTarget | null): node is Element =>
+  node !== null && "matches" in node;
+
+export const windowOf = (element?: Element | null): typeof globalThis =>
+  element?.ownerDocument.defaultView ?? globalThis;
+
+const TOUCH_STYLES = [
+  ["user-select", "none"],
+  ["-webkit-user-select", "none"],
+  ["-webkit-touch-callout", "none"],
+  ["-webkit-tap-highlight-color", "transparent"],
+];
+
+export const claimTouch = (
+  { style }: HTMLElement,
+  touch: string
+): (() => void) => {
+  style.touchAction = touch;
+  for (const [name = "", value = ""] of TOUCH_STYLES) {
+    style.setProperty(name, value);
+  }
+  return () => {
+    style.touchAction = "";
+    for (const [name = ""] of TOUCH_STYLES) {
+      style.removeProperty(name);
+    }
+  };
 };
 
 export const targetOf = (
@@ -79,7 +106,7 @@ export const targetOf = (
   element?: () => Element | null
 ): Element | null =>
   element?.() ??
-  (event.currentTarget instanceof Element ? event.currentTarget : null);
+  (isElement(event.currentTarget) ? event.currentTarget : null);
 
 const claims = new WeakSet<Event>();
 
@@ -114,10 +141,13 @@ export const outside = (element: Element | null, event: Event): boolean =>
 export const watchLoss = (
   cropper: Cropper,
   lost: (event?: Event) => void,
-  stolen: (event: PointerEvent) => boolean
+  stolen: (event: PointerEvent) => boolean,
+  element?: Element | null
 ): (() => void) => {
+  const win = windowOf(element);
+  const doc = win.document;
   const onHidden = (event: Event): void => {
-    if (document.visibilityState === "hidden") {
+    if (doc.visibilityState === "hidden") {
       lost(event);
     }
   };
@@ -130,16 +160,16 @@ export const watchLoss = (
     lost();
   };
   const off = cropper.on("stop", onStop);
-  document.addEventListener("visibilitychange", onHidden);
-  globalThis.addEventListener("blur", lost);
-  globalThis.addEventListener("pointerup", onPointer, true);
-  globalThis.addEventListener("pointercancel", onPointer, true);
+  doc.addEventListener("visibilitychange", onHidden);
+  win.addEventListener("blur", lost);
+  win.addEventListener("pointerup", onPointer, true);
+  win.addEventListener("pointercancel", onPointer, true);
   return () => {
     off();
-    document.removeEventListener("visibilitychange", onHidden);
-    globalThis.removeEventListener("blur", lost);
-    globalThis.removeEventListener("pointerup", onPointer, true);
-    globalThis.removeEventListener("pointercancel", onPointer, true);
+    doc.removeEventListener("visibilitychange", onHidden);
+    win.removeEventListener("blur", lost);
+    win.removeEventListener("pointerup", onPointer, true);
+    win.removeEventListener("pointercancel", onPointer, true);
   };
 };
 

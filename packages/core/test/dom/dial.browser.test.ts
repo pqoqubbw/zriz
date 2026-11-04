@@ -970,3 +970,56 @@ describe("the ruler under an ancestor or a border", () => {
     expect(Math.abs(moved - 40)).toBeLessThanOrEqual(1.5);
   });
 });
+
+describe("the ruler in another document", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("lays out ticks made by that document", async () => {
+    const frame = document.createElement("iframe");
+    frame.srcdoc = "<!doctype html><body></body>";
+    await new Promise((resolve) => {
+      frame.addEventListener("load", resolve, { once: true });
+      document.body.append(frame);
+    });
+    const doc = frame.contentDocument as Document;
+    const host = doc.createElement("div");
+    host.style.cssText = "position:relative;width:200px;height:40px;";
+    const strip = doc.createElement("div");
+    for (let i = 0; i < 41; i += 1) {
+      strip.append(doc.createElement("span"));
+    }
+    host.append(strip);
+    doc.body.append(host);
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const off = bindDialTicks(cropper, strip);
+    cleanups.push(() => {
+      off();
+      cropper.destroy();
+      frame.remove();
+    });
+    await frames();
+    const spans = [...strip.children] as HTMLElement[];
+    expect(spans.filter((span) => span.style.left !== "")).toHaveLength(41);
+    expect(strip.querySelectorAll("[data-zero]")).toHaveLength(1);
+  });
+});
+
+describe("bindDial on an element", () => {
+  it("clears the tap highlight and gets its styles back after", () => {
+    const element = document.createElement("div");
+    document.body.append(element);
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const off = bindDial(cropper, element);
+    expect(element.style.touchAction).toBe("pan-y");
+    expect(element.style.userSelect).toBe("none");
+    off();
+    expect(element.style.touchAction).toBe("");
+    expect(element.style.userSelect).toBe("");
+    cropper.destroy();
+    element.remove();
+  });
+});

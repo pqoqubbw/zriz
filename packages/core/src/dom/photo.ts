@@ -35,7 +35,7 @@ const childOf = <K extends "img" | "canvas">(
   if (found) {
     return found;
   }
-  const made = document.createElement(tag);
+  const made = container.ownerDocument.createElement(tag);
   container.append(made);
   return made;
 };

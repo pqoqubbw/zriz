@@ -4,6 +4,7 @@ import { ZrizError, imageOf } from "@zriz/core/dom";
 import type { LoadedImage } from "@zriz/core/dom";
 import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, userEvent } from "vitest/browser";
@@ -708,5 +709,51 @@ describe("work a render does not need", () => {
     expect(isActive("#left")).toBeTruthy();
     expect(isActive("#right")).toBeFalsy();
     pointerOn("#left", "pointerup");
+  });
+});
+
+describe("parts portaled into another document", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("arrow keys move an aspect group and the ruler lays out", async () => {
+    const frame = document.createElement("iframe");
+    frame.srcdoc = "<!doctype html><body></body>";
+    await new Promise((resolve) => {
+      frame.addEventListener("load", resolve, { once: true });
+      document.body.append(frame);
+    });
+    const { body } = frame.contentDocument as Document;
+    await render(
+      createPortal(
+        <Cropper.Root image={{ height: 300, width: 400 }}>
+          <Cropper.AspectGroup aria-label="Aspect">
+            <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
+            <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          </Cropper.AspectGroup>
+          <Cropper.Dial aria-label="Straighten" style={{ width: 200 }}>
+            <Cropper.DialTicks />
+          </Cropper.Dial>
+        </Cropper.Root>,
+        body
+      )
+    );
+    await frames();
+    const items = [...body.querySelectorAll("button")];
+    items[0]?.focus();
+    items[0]?.dispatchEvent(
+      new (frame.contentWindow as Window & typeof globalThis).KeyboardEvent(
+        "keydown",
+        { bubbles: true, key: "ArrowRight" }
+      )
+    );
+    await frames();
+    expect(items[1]?.getAttribute("aria-checked")).toBe("true");
+    expect(
+      body.querySelectorAll('[data-zero][style*="left"]')
+    ).toHaveLength(1);
+    await cleanup();
+    frame.remove();
   });
 });

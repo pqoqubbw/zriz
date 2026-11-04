@@ -13,10 +13,13 @@ import { holdCursor } from "./cursor";
 import {
   bindPointers,
   capture,
+  claimTouch,
+  isElement,
   outside,
   pressLost,
   presses,
   watchLoss,
+  windowOf,
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { localOf, viewOf } from "./view";
@@ -165,11 +168,9 @@ const wheelDelta = (
 };
 
 const padStep = (event: WheelEvent): boolean => {
-  const physical = event.deltaY * (globalThis.devicePixelRatio || 1);
+  const physical = event.deltaY * ((event.view ?? globalThis).devicePixelRatio || 1);
   return event.ctrlKey && Math.abs(physical - Math.round(physical)) > 1e-3;
 };
-
-const isElement = (node: EventTarget): node is Element => "matches" in node;
 
 const notPhoto = (event: Event, element: Element): boolean => {
   const path = event.composedPath();
@@ -243,7 +244,10 @@ export const viewportController = (
   let wheelOwned = false;
   let wheelZoom = 0;
   let wheelPad = false;
-  let observer: ResizeObserver | null = null;
+  let observers: ResizeObserver[] = [];
+  let win: typeof globalThis = globalThis;
+  let positioned = false;
+  let unclaim: (() => void) | null = null;
   let dprQuery: MediaQueryList | null = null;
   let unwatch: (() => void) | null = null;
 
@@ -271,8 +275,12 @@ export const viewportController = (
       return;
     }
     const style = getComputedStyle(element);
+    if (style.position === "static") {
+      element.style.position = "relative";
+      positioned = true;
+    }
     const layout: Layout = {
-      dpr: globalThis.devicePixelRatio || 1,
+      dpr: win.devicePixelRatio || 1,
       height: element.clientHeight,
       inset: {
         bottom: pixels(style.paddingBottom),
@@ -294,9 +302,7 @@ export const viewportController = (
   const onDpr = (): void => {
     dprQuery?.removeEventListener("change", onDpr);
     dprQuery =
-      globalThis.matchMedia?.(
-        `(resolution: ${globalThis.devicePixelRatio || 1}dppx)`
-      ) ?? null;
+      win.matchMedia?.(`(resolution: ${win.devicePixelRatio || 1}dppx)`) ?? null;
     dprQuery?.addEventListener("change", onDpr);
     measure();
   };
@@ -304,7 +310,7 @@ export const viewportController = (
   const onAncestorSettle = (event: Event): void => {
     if (
       element &&
-      event.target instanceof Node &&
+      isElement(event.target) &&
       event.target.contains(element)
     ) {
       measure();
@@ -772,21 +778,29 @@ export const viewportController = (
     if (!element) {
       return;
     }
-    observer?.disconnect();
-    observer = null;
+    for (const observer of observers) {
+      observer.disconnect();
+    }
+    observers = [];
     dprQuery?.removeEventListener("change", onDpr);
     dprQuery = null;
     element.removeEventListener("wheel", onWheel);
     element.removeEventListener("gesturestart", onGestureStart);
     element.removeEventListener("gesturechange", onGestureChange);
     element.removeEventListener("gestureend", onGestureEnd);
-    document.removeEventListener("transitionend", onAncestorSettle, true);
-    document.removeEventListener("animationend", onAncestorSettle, true);
+    win.document.removeEventListener("transitionend", onAncestorSettle, true);
+    win.document.removeEventListener("animationend", onAncestorSettle, true);
     unwatch?.();
     unwatch = null;
-    globalThis.removeEventListener("keydown", onEscape, true);
+    win.removeEventListener("keydown", onEscape, true);
     releaseAll(new Event("lostpointercapture"));
     view.setLayout(null, element);
+    unclaim?.();
+    unclaim = null;
+    if (positioned) {
+      element.style.position = "";
+      positioned = false;
+    }
     element = null;
   };
 
@@ -805,28 +819,26 @@ export const viewportController = (
       if (!next) {
         return;
       }
-      if (getComputedStyle(next).position === "static") {
-        next.style.position = "relative";
-      }
-      next.style.touchAction = "none";
-      next.style.userSelect = "none";
-      next.style.setProperty("-webkit-user-select", "none");
-      next.style.setProperty("-webkit-touch-callout", "none");
-      next.style.setProperty("-webkit-tap-highlight-color", "transparent");
+      win = windowOf(next);
+      unclaim = claimTouch(next, "none");
       next.addEventListener("wheel", onWheel, { passive: false });
       next.addEventListener("gesturestart", onGestureStart);
       next.addEventListener("gesturechange", onGestureChange);
       next.addEventListener("gestureend", onGestureEnd);
-      document.addEventListener("transitionend", onAncestorSettle, true);
-      document.addEventListener("animationend", onAncestorSettle, true);
+      win.document.addEventListener("transitionend", onAncestorSettle, true);
+      win.document.addEventListener("animationend", onAncestorSettle, true);
       unwatch = watchLoss(
         cropper,
         onLoss,
-        (event) => pointers.has(event.pointerId) && outside(element, event)
+        (event) => pointers.has(event.pointerId) && outside(element, event),
+        next
       );
-      globalThis.addEventListener("keydown", onEscape, true);
-      observer = new ResizeObserver(measure);
-      observer.observe(next);
+      win.addEventListener("keydown", onEscape, true);
+      observers = (["content-box", "border-box"] as const).map((box) => {
+        const observer = new win.ResizeObserver(measure);
+        observer.observe(next, { box });
+        return observer;
+      });
       onDpr();
     },
     setOptions(next) {

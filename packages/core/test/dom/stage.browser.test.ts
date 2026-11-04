@@ -969,3 +969,224 @@ describe("a fractional width with no scale", () => {
     element.remove();
   });
 });
+
+const frameDocument = async (): Promise<HTMLIFrameElement> => {
+  const frame = document.createElement("iframe");
+  frame.srcdoc = "<!doctype html><body style='margin:0'></body>";
+  frame.style.cssText = "width:420px;height:320px;border:0;";
+  await new Promise((resolve) => {
+    frame.addEventListener("load", resolve, { once: true });
+    document.body.append(frame);
+  });
+  cleanups.push(() => {
+    frame.remove();
+  });
+  return frame;
+};
+
+describe("a viewport in another document", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const inFrame = async () => {
+    const frame = await frameDocument();
+    const doc = frame.contentDocument as Document;
+    const win = frame.contentWindow as Window & typeof globalThis;
+    const element = doc.createElement("div");
+    element.style.cssText = "width:400px;height:300px;";
+    doc.body.append(element);
+    const cropper = createCropper({ image: photo });
+    const off = bindViewport(cropper, element);
+    cleanups.push(() => {
+      off();
+      cropper.destroy();
+    });
+    return { cropper, doc, element, frame, win };
+  };
+
+  const pressOn = (element: HTMLElement, win: typeof globalThis): void => {
+    element.dispatchEvent(
+      new win.PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        buttons: 1,
+        clientX: 50,
+        clientY: 50,
+        composed: true,
+        pointerId: 1,
+        pointerType: "mouse",
+      })
+    );
+  };
+
+  it("escape in that window cancels the pan", async () => {
+    const { cropper, element, win } = await inFrame();
+    await frames();
+    pressOn(element, win);
+    expect(cropper.getState().interacting).toBe("pan");
+    win.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape" }));
+    expect(cropper.getState().interacting).toBeNull();
+  });
+
+  it("a blur of that window ends the pan, a blur of this one does not", async () => {
+    const { cropper, element, win } = await inFrame();
+    await frames();
+    pressOn(element, win);
+    globalThis.dispatchEvent(new Event("blur"));
+    expect(cropper.getState().interacting).toBe("pan");
+    win.dispatchEvent(new win.Event("blur"));
+    expect(cropper.getState().interacting).toBeNull();
+  });
+
+  it("an ancestor there re-measures when its animation ends", async () => {
+    const { cropper, element, doc, win } = await inFrame();
+    await frames();
+    const before = viewOf(cropper).frame()?.layout.inset.left;
+    element.style.padding = "0";
+    const wrapper = doc.createElement("div");
+    doc.body.append(wrapper);
+    wrapper.append(element);
+    element.style.boxSizing = "content-box";
+    element.style.paddingLeft = "7px";
+    element.style.width = "393px";
+    wrapper.dispatchEvent(
+      new win.Event("transitionend", { bubbles: true, composed: false })
+    );
+    expect(viewOf(cropper).frame()?.layout.inset.left).toBe(7);
+    expect(before).toBe(0);
+  });
+
+  it("the pressed element takes the capture error from that realm", async () => {
+    const { doc } = await frameDocument().then((frame) => ({
+      doc: frame.contentDocument as Document,
+    }));
+    const cropper = createCropper({ image: photo });
+    cleanups.push(() => {
+      cropper.destroy();
+    });
+    const element = doc.createElement("div");
+    doc.body.append(element);
+    const handlers = zoomHandlers(cropper, {}, () => element);
+    expect(() => {
+      handlers.onPointerDown(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          buttons: 1,
+          clientX: 1,
+          clientY: 1,
+          pointerId: 999,
+        })
+      );
+    }).not.toThrow();
+    expect(cropper.getState().interacting).toBe("zoom-control");
+  });
+
+  it("a handler with no getter still finds an element from that realm", async () => {
+    const frame = await frameDocument();
+    const doc = frame.contentDocument as Document;
+    const win = frame.contentWindow as Window & typeof globalThis;
+    const cropper = createCropper({ image: photo });
+    cleanups.push(() => {
+      cropper.destroy();
+    });
+    const track = doc.createElement("div");
+    track.style.cssText = "width:200px;height:20px;";
+    doc.body.append(track);
+    const handlers = zoomHandlers(cropper);
+    track.addEventListener("pointerdown", handlers.onPointerDown);
+    track.dispatchEvent(
+      new win.PointerEvent("pointerdown", {
+        button: 0,
+        buttons: 1,
+        clientX: 100,
+        clientY: 5,
+        pointerId: 1,
+      })
+    );
+    expect(cropper.getZoom()).toBeGreaterThan(1);
+    handlers.release();
+  });
+});
+
+describe("a viewport's own box", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const bare = (css: string) => {
+    const element = document.createElement("div");
+    element.style.cssText = css;
+    const cropper = createCropper({ image: photo });
+    cleanups.push(() => {
+      cropper.destroy();
+      element.remove();
+    });
+    return { cropper, element, view: viewOf(cropper) };
+  };
+
+  it("refits when padding changes and the content box does not", async () => {
+    const { cropper, element, view } = bare(
+      "width:400px;height:300px;padding:24px;box-sizing:content-box;"
+    );
+    document.body.append(element);
+    const off = bindViewport(cropper, element);
+    cleanups.push(off);
+    await frames(3);
+    expect(view.frame()?.layout.inset.left).toBe(24);
+    element.style.padding = "8px";
+    await expect.poll(() => view.frame()?.layout.inset.left).toBe(8);
+  });
+
+  it("refits inside a shadow tree when percent padding follows its parent", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const parent = document.createElement("div");
+    parent.style.width = "400px";
+    host.attachShadow({ mode: "open" }).append(parent);
+    const { cropper, element, view } = bare(
+      "width:400px;height:300px;padding:5%;box-sizing:content-box;"
+    );
+    parent.append(element);
+    const off = bindViewport(cropper, element);
+    cleanups.push(() => {
+      off();
+      host.remove();
+    });
+    await frames(3);
+    expect(view.frame()?.layout.inset.left).toBe(20);
+    parent.style.width = "800px";
+    await expect.poll(() => view.frame()?.layout.inset.left).toBe(40);
+  });
+
+  it("becomes positioned when it is connected after the bind", async () => {
+    const { cropper, element } = bare("width:400px;height:300px;");
+    const off = bindViewport(cropper, element);
+    cleanups.push(off);
+    document.body.append(element);
+    await expect
+      .poll(() => getComputedStyle(element).position)
+      .toBe("relative");
+  });
+
+  it("gets back what the bind wrote, and keeps a position of its own", async () => {
+    const { cropper, element } = bare("width:400px;height:300px;");
+    document.body.append(element);
+    const off = bindViewport(cropper, element);
+    expect(element.style.position).toBe("relative");
+    expect(element.style.touchAction).toBe("none");
+    off();
+    expect(element.style.position).toBe("");
+    expect(element.style.touchAction).toBe("");
+    expect(element.style.userSelect).toBe("");
+    const placed = bare("position:absolute;width:40px;height:30px;");
+    document.body.append(placed.element);
+    bindViewport(placed.cropper, placed.element)();
+    expect(placed.element.style.position).toBe("absolute");
+    await frames();
+  });
+});

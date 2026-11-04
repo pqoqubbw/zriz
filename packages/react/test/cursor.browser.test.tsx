@@ -7,6 +7,18 @@ import { cleanup, render } from "vitest-browser-react";
 import * as Cropper from "../src/cropper";
 import { preventZrizHandler } from "../src/merge-props";
 
+const shadowCss = (): string =>
+  [...document.styleSheets]
+    .flatMap((sheet) => {
+      try {
+        return [...sheet.cssRules];
+      } catch {
+        return [];
+      }
+    })
+    .map((rule) => rule.cssText)
+    .join("\n");
+
 const edges = [
   ["top-left", "nwse-resize"],
   ["top", "ns-resize"],
@@ -67,6 +79,52 @@ const press = (target: Element, type: string, x: number, y: number) =>
 describe("cursors", () => {
   afterEach(async () => {
     await cleanup();
+  });
+
+  it("a held cursor reaches parts inside a shadow tree, and leaves with the press", async () => {
+    const outer = document.createElement("div");
+    document.body.append(outer);
+    const middle = document.createElement("div");
+    outer.attachShadow({ mode: "open" }).append(middle);
+    const shadow = middle.attachShadow({ mode: "open" });
+    const stylesheet = document.createElement("style");
+    stylesheet.textContent = shadowCss();
+    const inside = document.createElement("div");
+    shadow.append(stylesheet, inside);
+    const screen = await render(<Editor />, { container: inside });
+    await frames();
+    const cursors = (): string[] =>
+      [
+        find(screen.container, '[data-zriz-item="viewport"]'),
+        find(screen.container, '[data-edge="top"]'),
+      ].map((element) => getComputedStyle(element).cursor);
+    const handle = find(screen.container, '[data-edge="top-left"]');
+    const resting = cursors();
+    press(handle, "pointerdown", 30, 30);
+    expect(cursors()).toStrictEqual(["nwse-resize", "nwse-resize"]);
+    press(handle, "pointerup", 30, 30);
+    expect(cursors()).toStrictEqual(resting);
+    expect(document.adoptedStyleSheets).toHaveLength(0);
+    expect(shadow.adoptedStyleSheets).toHaveLength(0);
+    outer.remove();
+  });
+
+  it("a zoom drag holds a cursor the page gave the track", async () => {
+    const screen = await render(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.Zoom
+          aria-label="Zoom"
+          style={{ cursor: "pointer", height: 20, width: 200 }}
+        />
+      </Cropper.Root>
+    );
+    await frames();
+    const track = find(screen.container, '[role="slider"]');
+    const box = track.getBoundingClientRect();
+    press(track, "pointerdown", box.x + 50, box.y + 5);
+    expect(document.adoptedStyleSheets).toHaveLength(1);
+    press(track, "pointerup", box.x + 50, box.y + 5);
+    expect(document.adoptedStyleSheets).toHaveLength(0);
   });
 
   it("shows a resize cursor on every handle and grab on the photo and dial", async () => {

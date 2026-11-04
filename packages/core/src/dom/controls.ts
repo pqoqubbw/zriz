@@ -2,6 +2,7 @@ import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
 import { minScaleAt } from "../geometry/coverage";
 import { imagePlanes, panPlanes } from "../geometry/planes";
+import { holdCursor } from "./cursor";
 import {
   MIN_HANDLE_SPAN,
   capture,
@@ -133,6 +134,7 @@ export const zoomHandlers = (
   const owner = {};
   let pointer: number | null = null;
   let unwatch: (() => void) | null = null;
+  let releaseCursor: (() => void) | null = null;
   const read = (): ZoomOptions =>
     typeof options === "function" ? options() : options;
   const max = (): number => read().max ?? cropper.getMaxZoom();
@@ -156,6 +158,8 @@ export const zoomHandlers = (
       pointer = null;
       unwatch?.();
       unwatch = null;
+      releaseCursor?.();
+      releaseCursor = null;
       cropper.end(event, owner);
     }
   };
@@ -202,10 +206,12 @@ export const zoomHandlers = (
       unwatch = watchLoss(
         cropper,
         lost,
-        (next) => next.pointerId === pointer && outside(own, next)
+        (next) => next.pointerId === pointer && outside(own, next),
+        own
       );
       if (own) {
         capture(own, event.pointerId);
+        releaseCursor = holdCursor(own);
       }
       fromPointer(event);
     },

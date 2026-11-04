@@ -7,11 +7,13 @@ import {
   bindPointers,
   capture,
   claim,
+  claimTouch,
   outside,
   pressLost,
   presses,
   targetOf,
   watchLoss,
+  windowOf,
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
@@ -317,7 +319,8 @@ export const dialHandlers = (
       unwatch = watchLoss(
         cropper,
         lost,
-        (next) => next.pointerId === pointer && outside(target, next)
+        (next) => next.pointerId === pointer && outside(target, next),
+        target
       );
       if (event.pointerType !== "touch" && target) {
         capture(target, event.pointerId);
@@ -424,8 +427,7 @@ export const bindDial = (
 ): (() => void) => {
   const offAria = dialAria(cropper, element, options);
   const handlers = dialHandlers(cropper, options);
-  element.style.touchAction = "pan-y";
-  element.style.userSelect = "none";
+  const unclaim = claimTouch(element, "pan-y");
   element.setAttribute("role", "slider");
   element.setAttribute("aria-orientation", "horizontal");
   element.tabIndex = 0;
@@ -451,6 +453,7 @@ export const bindDial = (
     handlers.release();
     offChange();
     offAria();
+    unclaim();
     sync();
   };
 };
@@ -483,13 +486,13 @@ export const bindDialTicks = (
   const created: HTMLElement[] = [];
   if (strip.children.length === 0) {
     for (let i = 0; i < count; i += 1) {
-      created.push(document.createElement("span"));
+      created.push(strip.ownerDocument.createElement("span"));
     }
     strip.append(...created);
   }
   const spacing = (): number => positive(dial.options().gain, GAIN) * DIAL_STEP;
   const ticks = [...strip.children].filter(
-    (child): child is HTMLElement => child instanceof HTMLElement
+    (child): child is HTMLElement => "offsetWidth" in child
   );
   for (const [i, tick] of ticks.entries()) {
     const data = tickData(i, ticks.length);
@@ -504,12 +507,13 @@ export const bindDialTicks = (
     }
   }
   const host = strip.parentElement;
+  const win = windowOf(strip);
   let centre = 0;
   const measure = (): void => {
     centre = ((host?.clientWidth ?? 0) - (ticks[0]?.offsetWidth ?? 0)) / 2;
     cropper.invalidate();
   };
-  const observer = host ? new ResizeObserver(measure) : null;
+  const observer = host ? new win.ResizeObserver(measure) : null;
   if (host) {
     observer?.observe(host);
   }
@@ -523,7 +527,7 @@ export const bindDialTicks = (
         tick.style.left = `${i * gap}px`;
       }
     }
-    const dpr = globalThis.devicePixelRatio || 1;
+    const dpr = win.devicePixelRatio || 1;
     const middle = ((ticks.length - 1) / 2) * spacing();
     const sign = dial.options().dir === "rtl" ? -1 : 1;
     const offset =
