@@ -1009,6 +1009,23 @@ describe("sharing and freeing a photo", () => {
     }).toThrow(ZrizError);
   });
 
+  it("frees a photo attached to a destroyed cropper", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const empty = createCropper();
+    empty.destroy();
+    attachImage(empty, image);
+    expect(imageOf(empty)).toBeNull();
+    expect(image.preview.width).toBe(0);
+    const late = await loadImage(await fixture("orient-1.jpg"));
+    const held = createCropper();
+    const first = await loadImage(await fixture("orient-1.jpg"));
+    attachImage(held, first);
+    held.destroy();
+    attachImage(held, late);
+    expect(imageOf(held)).toBeNull();
+    expect(late.preview.width).toBe(0);
+  });
+
   it("keeps a photo open when one of two croppers is destroyed", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const one = createCropper();

@@ -37,6 +37,11 @@ const release = (image: LoadedImage): void => {
   }
 };
 
+const drop = (cropper: Cropper, image: LoadedImage): void => {
+  attached.delete(cropper);
+  release(image);
+};
+
 export const attachImage = (
   cropper: Cropper,
   image: LoadedImage | null
@@ -57,6 +62,10 @@ export const attachImage = (
   if (image) {
     attached.set(cropper, image);
     cropper.setImage({ height: image.height, width: image.width });
+    if (!cropper.getCropState()) {
+      drop(cropper, image);
+      return;
+    }
   } else {
     attached.delete(cropper);
     cropper.setImage(null);
@@ -69,8 +78,7 @@ export const attachImage = (
     cropper.on("destroy", () => {
       const held = attached.get(cropper);
       if (held) {
-        attached.delete(cropper);
-        release(held);
+        drop(cropper, held);
       }
     });
   }

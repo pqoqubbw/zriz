@@ -765,6 +765,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         attempt(() => plugin.destroy?.());
       }
       emit("destroy");
+      state = null;
       gesture = null;
       commitPending = null;
       dirty = false;
