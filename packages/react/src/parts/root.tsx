@@ -236,6 +236,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       "data-settling": snapshot.settling ? "" : undefined,
       "data-shape": shape,
       "data-transition": chrome.transition ?? undefined,
+      "data-vaul-no-drag": "",
       "data-zooming":
         gesture === "wheel" || gesture === "zoom-control" ? "" : undefined,
       "data-zriz-item": "root",

@@ -1761,6 +1761,30 @@ describe("a circle holds its aspect", () => {
   });
 });
 
+describe("Root inside a drawer", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("marks itself so drawer libraries leave its touches alone", async () => {
+    const screen = await render(<Cropper.Root id="drawer-root" />);
+    const root = screen.container.querySelector<HTMLElement>("#drawer-root");
+    expect(root?.dataset.vaulNoDrag).toBe("");
+    expect(root?.dataset.baseUiSwipeIgnore).toBe("");
+  });
+
+  it("takes the marks off with null", async () => {
+    const open: Record<string, unknown> = {
+      "data-base-ui-swipe-ignore": null,
+      "data-vaul-no-drag": null,
+    };
+    const screen = await render(<Cropper.Root id="drawer-root" {...open} />);
+    const root = screen.container.querySelector<HTMLElement>("#drawer-root");
+    expect(root?.dataset.vaulNoDrag).toBeUndefined();
+    expect(root?.dataset.baseUiSwipeIgnore).toBeUndefined();
+  });
+});
+
 describe("maxZoom changes", () => {
   afterEach(async () => {
     await cleanup();
