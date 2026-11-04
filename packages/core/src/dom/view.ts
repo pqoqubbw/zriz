@@ -84,6 +84,19 @@ export interface View {
   destroy: () => void;
 }
 
+export const LAYER_BOX: Record<string, string> = {
+  border: "0",
+  left: "0",
+  margin: "0",
+  maxHeight: "none",
+  maxWidth: "none",
+  minHeight: "0",
+  minWidth: "0",
+  padding: "0",
+  position: "absolute",
+  top: "0",
+};
+
 export const snap = (value: number, dpr: number): number =>
   Math.round(value * dpr) / dpr;
 

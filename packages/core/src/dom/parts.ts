@@ -25,7 +25,7 @@ import {
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
-import { cssMatrix, viewOf } from "./view";
+import { LAYER_BOX, cssMatrix, viewOf } from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
 export type MaskShape = "rect" | "circle";
@@ -100,11 +100,7 @@ export const bindImage = (
   element: HTMLElement
 ): (() => void) => {
   const { style } = element;
-  style.position = "absolute";
-  style.left = "0";
-  style.top = "0";
-  style.maxWidth = "none";
-  style.maxHeight = "none";
+  Object.assign(style, LAYER_BOX);
   style.transformOrigin = "0 0";
   style.pointerEvents = "none";
   style.setProperty("-webkit-user-drag", "none");

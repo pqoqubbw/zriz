@@ -820,6 +820,7 @@ describe("photo layer", () => {
     ["*{max-height:100%}"],
     ["img{border:4px solid red;padding:4px}"],
     ["img{min-width:3000px;min-height:3000px}"],
+    ["img{margin:10px}"],
   ])("keeps the moving image at photo size under %s", async (css) => {
     pageRule(css);
     const { cropper, photo } = await mount(1024);
@@ -828,7 +829,27 @@ describe("photo layer", () => {
     const image = await visibleImage(photo);
     expect([image.offsetWidth, image.offsetHeight]).toStrictEqual([1600, 1200]);
     expect([image.clientLeft, image.clientTop]).toStrictEqual([0, 0]);
+    expect([image.offsetLeft, image.offsetTop]).toStrictEqual([0, 0]);
     cropper.end();
+  });
+
+  it.each([
+    ["canvas{min-width:3000px;min-height:3000px}"],
+    ["canvas{border:4px solid red;padding:4px}"],
+    ["canvas{margin:10px}"],
+  ])("keeps the canvas at its own size and place under %s", async (css) => {
+    pageRule(css);
+    const { photo } = await mount(1024);
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    if (!canvas) {
+      throw new Error("no canvas");
+    }
+    const box = canvas.getBoundingClientRect();
+    const outer = photo.getBoundingClientRect();
+    expect([box.width, box.height]).toStrictEqual([400, 300]);
+    expect([box.x - outer.x, box.y - outer.y]).toStrictEqual([0, 0]);
+    expect([canvas.clientLeft, canvas.clientTop]).toStrictEqual([0, 0]);
   });
 
   it("keeps the canvas at its own size under a page max size", async () => {

@@ -247,6 +247,28 @@ describe("dom binders", () => {
       );
     });
 
+    it.each([
+      ["min-width:5000px;min-height:5000px"],
+      ["border:4px solid red;padding:4px"],
+      ["margin:10px"],
+    ])("keeps the photo at its own size and place under %s", async (css) => {
+      const fixture = mount();
+      const sheet = document.createElement("style");
+      sheet.textContent = `#${fixture.id}>:first-child{${css}}`;
+      document.head.append(sheet);
+      cleanups.push(() => {
+        sheet.remove();
+      });
+      await frames();
+      const { image } = fixture;
+      expect([image.offsetWidth, image.offsetHeight]).toStrictEqual([
+        photo.width,
+        photo.height,
+      ]);
+      expect([image.clientLeft, image.clientTop]).toStrictEqual([0, 0]);
+      expect([image.offsetLeft, image.offsetTop]).toStrictEqual([0, 0]);
+    });
+
     it("keeps the photo at its own size under a page max-height", async () => {
       const sheet = document.createElement("style");
       sheet.textContent = "div{max-height:100%}";

@@ -6,7 +6,7 @@ import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { TIMEOUT, withTimeout } from "./turn";
-import { cssMatrix, viewOf } from "./view";
+import { LAYER_BOX, cssMatrix, viewOf } from "./view";
 import type { ViewFrame } from "./view";
 import { motionOff } from "./worker";
 
@@ -92,29 +92,9 @@ export const bindPhoto = (
   motion.alt = "";
   motion.draggable = false;
   motion.decoding = "async";
-  Object.assign(motion.style, {
-    border: "0",
-    left: "0",
-    maxHeight: "none",
-    maxWidth: "none",
-    minHeight: "0",
-    minWidth: "0",
-    padding: "0",
-    position: "absolute",
-    top: "0",
-    transformOrigin: "0 0",
-    transition: "none",
-    visibility: "hidden",
-  });
-  Object.assign(rest.style, {
-    left: "0",
-    maxHeight: "none",
-    maxWidth: "none",
-    position: "absolute",
-    top: "0",
-    transition: "none",
-    visibility: "hidden",
-  });
+  const layer = { ...LAYER_BOX, transition: "none", visibility: "hidden" };
+  Object.assign(rest.style, layer);
+  Object.assign(motion.style, layer, { transformOrigin: "0 0" });
   let image: LoadedImage | null = null;
   let motionReady = false;
   let drawn: Drawn | null = null;
