@@ -530,10 +530,10 @@ export const viewOf = (cropper: Cropper): View => {
 
   const animate = (kind: Transition, from: ViewFrame): void => {
     const start = (blend && shown) ?? pose(from.rect, from.matrix);
+    endTransition();
     if (!start) {
       return;
     }
-    endTransition();
     blend = { from: start, t: 0 };
     setChrome({ transition: kind });
     let elapsed = 0;

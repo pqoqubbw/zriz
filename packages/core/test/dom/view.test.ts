@@ -2,7 +2,7 @@ import { double, assert as fcAssert, property, record } from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper, defaultValue } from "../../src";
-import type { Aspect, CropperEvents, CropperOptions } from "../../src";
+import type { Aspect, Cropper, CropperEvents, CropperOptions } from "../../src";
 import {
   areaKeyHandlers,
   dialAria,
@@ -1253,5 +1253,122 @@ describe("the frame between two paints", () => {
     cropper.flip();
     time.frame(0);
     expect(view.frame()?.matrix[0]).toBeCloseTo(shown?.[0] ?? 0, 6);
+  });
+});
+
+const TILT = { horizontal: 0, vertical: 10 };
+
+const tiltSetup = () => {
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    image: { height: 3000, width: 4000 },
+  });
+  const view = viewOf(cropper);
+  view.setOptions({ motion: "always" });
+  view.setLayout({
+    dpr: 2,
+    height: 300,
+    inset: { bottom: 0, left: 0, right: 0, top: 0 },
+    width: 400,
+  });
+  time.frame();
+  const transitions: (string | null)[] = [];
+  view.onChrome(() => {
+    transitions.push(view.chrome().transition);
+  });
+  return { cropper, time, transitions, view };
+};
+
+describe("view under perspective", () => {
+  it.each([
+    [
+      "rotate",
+      (cropper: Cropper) => {
+        cropper.rotate90("cw");
+      },
+    ],
+    [
+      "flip",
+      (cropper: Cropper) => {
+        cropper.flip();
+      },
+    ],
+    [
+      "reset",
+      (cropper: Cropper) => {
+        cropper.reset();
+      },
+    ],
+    [
+      "aspect",
+      (cropper: Cropper) => {
+        cropper.setAspect(1);
+      },
+    ],
+  ])("jumps on %s from a tilted photo, with no transition", (_, act) => {
+    const { cropper, time, transitions, view } = tiltSetup();
+    cropper.setValue({ perspective: TILT });
+    time.frames(2);
+    const tilted = view.frame()?.matrix ?? [];
+    expect(tilted[6] !== 0 || tilted[7] !== 0).toBeTruthy();
+    const frames: number[][] = [];
+    view.onFrame((frame) => {
+      frames.push([...frame.matrix]);
+    });
+    act(cropper);
+    time.frames(120);
+    expect(transitions).toStrictEqual([]);
+    expect(time.pending()).toBe(0);
+    const end = view.frame()?.matrix ?? [];
+    for (const [i, value] of (frames[0] ?? []).entries()) {
+      expect(value).toBeCloseTo(end[i] ?? 0, 9);
+    }
+    view.destroy();
+  });
+
+  it("clears the transition when a morph lands on a tilted photo", () => {
+    const { cropper, time, transitions, view } = tiltSetup();
+    const frames: number[][] = [];
+    view.onFrame((frame) => {
+      frames.push([...frame.matrix]);
+    });
+    cropper.setValue({ perspective: TILT }, { reason: "history" });
+    time.frames(120);
+    expect(transitions).toStrictEqual(["morph", null]);
+    expect(time.pending()).toBe(0);
+    const end = view.frame()?.matrix ?? [];
+    expect(frames.length).toBeGreaterThan(1);
+    for (const matrix of frames) {
+      for (const [i, value] of matrix.entries()) {
+        expect(value).toBeCloseTo(end[i] ?? 0, 9);
+      }
+    }
+    view.destroy();
+  });
+
+  it("ends a running recentre when a rotate starts from a tilted photo", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { cropper, time, view } = tiltSetup();
+    cropper.setValue({ perspective: TILT });
+    time.frames(2);
+    cropper.begin("resize", undefined, "handle");
+    view.hold();
+    cropper.setZoom(2);
+    time.frames(2);
+    view.release();
+    cropper.end(undefined, "handle");
+    time.frames(2);
+    vi.advanceTimersByTime(500);
+    time.frames(3);
+    expect(view.chrome().transition).toBe("recentre");
+    cropper.rotate90("cw");
+    time.frame();
+    const fit = view.frame()?.rect;
+    expect(view.chrome().transition).toBeNull();
+    time.frame();
+    expect(view.frame()?.rect).toStrictEqual(fit);
+    vi.useRealTimers();
+    view.destroy();
   });
 });
