@@ -4257,21 +4257,37 @@ export const POST = async (request: Request) => {
   [
     "saving-state",
     "saving-state/saved-crop.tsx",
-    "const key = \`zriz-crop:\${id}\`;
+    "const read = (key: string) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const key = \`zriz-crop:\${id}\`;
 
 const [saved, setSaved] = useState<Saved>();
 
 useEffect(() => {
-  setSaved({ id, value: parse(localStorage.getItem(key)) });
+  setSaved({ id, value: parse(read(key)) });
 }, [id, key]);
 
 if (saved?.id !== id) return null;",
-    "<span class=k>const</span> key <span class=p>= </span><span class=s>\`zriz-crop:</span><span class=p>\${</span>id<span class=p>}</span><span class=s>\`</span><span class=p>;</span>
+    "<span class=k>const </span><span class=t>read </span><span class=p>= (</span>key<span class=p>:</span> string<span class=p>) =&gt; {</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>return</span> localStorage<span class=p>.</span><span class=t>getItem</span><span class=p>(</span>key<span class=p>);</span>
+  <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
+    <span class=k>return null</span><span class=p>;</span>
+  <span class=p>}</span>
+<span class=p>};</span>
+
+<span class=k>const</span> key <span class=p>= </span><span class=s>\`zriz-crop:</span><span class=p>\${</span>id<span class=p>}</span><span class=s>\`</span><span class=p>;</span>
 
 <span class=k>const </span><span class=p>[</span>saved<span class=p>,</span> setSaved<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>Saved<span class=p>&gt;();</span>
 
 <span class=t>useEffect</span><span class=p>(() =&gt; {</span>
-  <span class=t>setSaved</span><span class=p>({</span> id<span class=p>,</span> value<span class=p>: </span><span class=t>parse</span><span class=p>(</span>localStorage<span class=p>.</span><span class=t>getItem</span><span class=p>(</span>key<span class=p>)) });</span>
+  <span class=t>setSaved</span><span class=p>({</span> id<span class=p>,</span> value<span class=p>: </span><span class=t>parse</span><span class=p>(</span><span class=t>read</span><span class=p>(</span>key<span class=p>)) });</span>
 <span class=p>}, [</span>id<span class=p>,</span> key<span class=p>]);</span>
 
 <span class=k>if </span><span class=p>(</span>saved<span class=p>?.</span>id <span class=p>!==</span> id<span class=p>) </span><span class=k>return null</span><span class=p>;</span>",
@@ -4282,8 +4298,13 @@ if (saved?.id !== id) return null;",
     "<Cropper.Root
   src={src}
   defaultValue={saved.value ?? undefined}
-  onValueCommit={(value) => {
-    localStorage.setItem(key, serialize(value));
+  onValueCommit={(value, details) => {
+    if (details.reason === "coverage") return;
+    try {
+      localStorage.setItem(key, serialize(value));
+    } catch (error) {
+      console.warn("the crop was not saved", error);
+    }
   }}
 >
   <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -4295,8 +4316,13 @@ if (saved?.id !== id) return null;",
     "<span class=p>&lt;</span><span class=t>Cropper.Root</span>
   <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
   <span class=a>defaultValue</span><span class=p>={</span>saved<span class=p>.</span>value <span class=p>?? </span><span class=k>undefined</span><span class=p>}</span>
-  <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>) =&gt; {</span>
-    localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+  <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>,</span> details<span class=p>) =&gt; {</span>
+    <span class=k>if </span><span class=p>(</span>details<span class=p>.</span>reason <span class=p>=== </span><span class=s>"coverage"</span><span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>try </span><span class=p>{</span>
+      localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+    <span class=p>} </span><span class=k>catch </span><span class=p>(</span>error<span class=p>) {</span>
+      console<span class=p>.</span><span class=t>warn</span><span class=p>(</span><span class=s>"the crop was not saved"</span><span class=p>,</span> error<span class=p>);</span>
+    <span class=p>}</span>
   <span class=p>}}</span>
 <span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
@@ -4320,12 +4346,20 @@ import { useEffect, useState } from "react";
 type Props = { id: string; src: string };
 type Saved = { id: string; value: CropValue | null };
 
+const read = (key: string) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
 export const SavedCrop = ({ id, src }: Props) => {
   const key = \`zriz-crop:\${id}\`;
   const [saved, setSaved] = useState<Saved>();
 
   useEffect(() => {
-    setSaved({ id, value: parse(localStorage.getItem(key)) });
+    setSaved({ id, value: parse(read(key)) });
   }, [id, key]);
 
   if (saved?.id !== id) return null;
@@ -4334,8 +4368,13 @@ export const SavedCrop = ({ id, src }: Props) => {
     <Cropper.Root
       src={src}
       defaultValue={saved.value ?? undefined}
-      onValueCommit={(value) => {
-        localStorage.setItem(key, serialize(value));
+      onValueCommit={(value, details) => {
+        if (details.reason === "coverage") return;
+        try {
+          localStorage.setItem(key, serialize(value));
+        } catch (error) {
+          console.warn("the crop was not saved", error);
+        }
       }}
     >
       <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -4357,12 +4396,20 @@ export const SavedCrop = ({ id, src }: Props) => {
 <span class=k>type</span> Props <span class=p>= {</span> id<span class=p>:</span> string<span class=p>;</span> src<span class=p>:</span> string <span class=p>};</span>
 <span class=k>type</span> Saved <span class=p>= {</span> id<span class=p>:</span> string<span class=p>;</span> value<span class=p>:</span> CropValue <span class=p>|</span> null <span class=p>};</span>
 
+<span class=k>const </span><span class=t>read </span><span class=p>= (</span>key<span class=p>:</span> string<span class=p>) =&gt; {</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>return</span> localStorage<span class=p>.</span><span class=t>getItem</span><span class=p>(</span>key<span class=p>);</span>
+  <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
+    <span class=k>return null</span><span class=p>;</span>
+  <span class=p>}</span>
+<span class=p>};</span>
+
 <span class=k>export const </span><span class=t>SavedCrop </span><span class=p>= ({</span> id<span class=p>,</span> src <span class=p>}:</span> Props<span class=p>) =&gt; {</span>
   <span class=k>const</span> key <span class=p>= </span><span class=s>\`zriz-crop:</span><span class=p>\${</span>id<span class=p>}</span><span class=s>\`</span><span class=p>;</span>
   <span class=k>const </span><span class=p>[</span>saved<span class=p>,</span> setSaved<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>Saved<span class=p>&gt;();</span>
 
   <span class=t>useEffect</span><span class=p>(() =&gt; {</span>
-    <span class=t>setSaved</span><span class=p>({</span> id<span class=p>,</span> value<span class=p>: </span><span class=t>parse</span><span class=p>(</span>localStorage<span class=p>.</span><span class=t>getItem</span><span class=p>(</span>key<span class=p>)) });</span>
+    <span class=t>setSaved</span><span class=p>({</span> id<span class=p>,</span> value<span class=p>: </span><span class=t>parse</span><span class=p>(</span><span class=t>read</span><span class=p>(</span>key<span class=p>)) });</span>
   <span class=p>}, [</span>id<span class=p>,</span> key<span class=p>]);</span>
 
   <span class=k>if </span><span class=p>(</span>saved<span class=p>?.</span>id <span class=p>!==</span> id<span class=p>) </span><span class=k>return null</span><span class=p>;</span>
@@ -4371,8 +4418,13 @@ export const SavedCrop = ({ id, src }: Props) => {
     <span class=p>&lt;</span><span class=t>Cropper.Root</span>
       <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
       <span class=a>defaultValue</span><span class=p>={</span>saved<span class=p>.</span>value <span class=p>?? </span><span class=k>undefined</span><span class=p>}</span>
-      <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>) =&gt; {</span>
-        localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+      <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>,</span> details<span class=p>) =&gt; {</span>
+        <span class=k>if </span><span class=p>(</span>details<span class=p>.</span>reason <span class=p>=== </span><span class=s>"coverage"</span><span class=p>) </span><span class=k>return</span><span class=p>;</span>
+        <span class=k>try </span><span class=p>{</span>
+          localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+        <span class=p>} </span><span class=k>catch </span><span class=p>(</span>error<span class=p>) {</span>
+          console<span class=p>.</span><span class=t>warn</span><span class=p>(</span><span class=s>"the crop was not saved"</span><span class=p>,</span> error<span class=p>);</span>
+        <span class=p>}</span>
       <span class=p>}}</span>
     <span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
@@ -7795,13 +7847,23 @@ each photo gets its own key, built from an \`id\` you pass, such as the photo's 
 
 \`Root\` reads \`defaultValue\` once, when it mounts. the component renders nothing until it has read storage for this \`id\`. that empty render unmounts the old cropper, so each photo starts fresh.
 
+storage can refuse a read, such as in a sandboxed iframe. \`read\` treats that as no saved crop, so the cropper still opens.
+
 \`\`\`tsx
+const read = (key: string) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
 const key = \`zriz-crop:\${id}\`;
 
 const [saved, setSaved] = useState<Saved>();
 
 useEffect(() => {
-  setSaved({ id, value: parse(localStorage.getItem(key)) });
+  setSaved({ id, value: parse(read(key)) });
 }, [id, key]);
 
 if (saved?.id !== id) return null;
@@ -7813,12 +7875,19 @@ if (saved?.id !== id) return null;
 
 \`Reset\` goes back to \`defaultValue\`, which is now the saved crop. to keep \`Reset\` on the whole photo, pass \`saved.value ?? undefined\` as \`value\` instead. it stays the same object, so it moves the crop only once, see [value](https://zriz.dev/docs/value.md).
 
+the recipe skips \`coverage\` commits. that is zriz fitting the crop to a new photo, and nobody chose it, so it must not replace the saved crop. a full quota throws on write, so the \`try\` keeps the error away from the commit listeners and the crop goes on working unsaved.
+
 \`\`\`tsx
 <Cropper.Root
   src={src}
   defaultValue={saved.value ?? undefined}
-  onValueCommit={(value) => {
-    localStorage.setItem(key, serialize(value));
+  onValueCommit={(value, details) => {
+    if (details.reason === "coverage") return;
+    try {
+      localStorage.setItem(key, serialize(value));
+    } catch (error) {
+      console.warn("the crop was not saved", error);
+    }
   }}
 >
   <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -7845,12 +7914,20 @@ import { useEffect, useState } from "react";
 type Props = { id: string; src: string };
 type Saved = { id: string; value: CropValue | null };
 
+const read = (key: string) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
 export const SavedCrop = ({ id, src }: Props) => {
   const key = \`zriz-crop:\${id}\`;
   const [saved, setSaved] = useState<Saved>();
 
   useEffect(() => {
-    setSaved({ id, value: parse(localStorage.getItem(key)) });
+    setSaved({ id, value: parse(read(key)) });
   }, [id, key]);
 
   if (saved?.id !== id) return null;
@@ -7859,8 +7936,13 @@ export const SavedCrop = ({ id, src }: Props) => {
     <Cropper.Root
       src={src}
       defaultValue={saved.value ?? undefined}
-      onValueCommit={(value) => {
-        localStorage.setItem(key, serialize(value));
+      onValueCommit={(value, details) => {
+        if (details.reason === "coverage") return;
+        try {
+          localStorage.setItem(key, serialize(value));
+        } catch (error) {
+          console.warn("the crop was not saved", error);
+        }
       }}
     >
       <Cropper.Viewport style={{ width: 640, height: 480 }}>
