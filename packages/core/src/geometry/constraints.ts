@@ -115,7 +115,7 @@ export const aspectHeightRange = (
       }
     }
   }
-  return { max, min };
+  return { max, min: Math.min(min, start.y1 - start.y0) };
 };
 
 const movingXEdge = (handle: CropHandle): XEdge | null => {
@@ -179,17 +179,19 @@ const freePlanes = (
       }
     }
   }
+  const minWidth = Math.min(limits.minWidth, start.x1 - start.x0);
+  const minHeight = Math.min(limits.minHeight, start.y1 - start.y0);
   if (movesX === "x1") {
-    planes.push({ d: -(start.x0 + limits.minWidth), nx: -1, ny: 0 });
+    planes.push({ d: -(start.x0 + minWidth), nx: -1, ny: 0 });
   }
   if (movesX === "x0") {
-    planes.push({ d: start.x1 - limits.minWidth, nx: 1, ny: 0 });
+    planes.push({ d: start.x1 - minWidth, nx: 1, ny: 0 });
   }
   if (movesY === "y1") {
-    planes.push({ d: -(start.y0 + limits.minHeight), nx: 0, ny: -1 });
+    planes.push({ d: -(start.y0 + minHeight), nx: 0, ny: -1 });
   }
   if (movesY === "y0") {
-    planes.push({ d: start.y1 - limits.minHeight, nx: 0, ny: 1 });
+    planes.push({ d: start.y1 - minHeight, nx: 0, ny: 1 });
   }
   return planes;
 };
@@ -206,7 +208,7 @@ export const dragHandle = (
       ...limits,
       aspect: limits.aspect,
     });
-    return at(Math.min(Math.max(desired(pointer), min), Math.max(min, max)));
+    return at(Math.min(Math.max(desired(pointer), min), max));
   }
   const movesX = movingXEdge(handle);
   const movesY = movingYEdge(handle);

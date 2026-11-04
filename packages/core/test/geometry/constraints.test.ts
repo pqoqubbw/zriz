@@ -166,8 +166,6 @@ describe("handle drag constraints", () => {
           const aspect = s.crop.width / s.crop.height;
           const start = toRect(s);
           const limits = { aspect, minHeight, minWidth, planes };
-          const { min, max } = aspectHeightRange(start, h, limits);
-          pre(min <= max);
           const r = dragHandle(
             start,
             h,
@@ -202,6 +200,56 @@ describe("handle drag constraints", () => {
             w: [],
           };
           expect(anchors[h].every(Boolean)).toBeTruthy();
+        }
+      )
+    );
+  });
+
+  it("leaves a crop under its minimum alone at zero motion and never turns it inside out", () => {
+    assert(
+      property(
+        stateArb,
+        handleArb,
+        pointerArb,
+        double({ max: 4, min: 1.01, noNaN: true }),
+        constantFrom(null, "shape"),
+        (s, h, [u, v], minFraction, locked) => {
+          const { turned, planes, tolerance } = limitsFor(s, 0);
+          const start = toRect(s);
+          const limits = {
+            aspect: locked ? s.crop.width / s.crop.height : null,
+            minHeight: s.crop.height * minFraction,
+            minWidth: s.crop.width * minFraction,
+            planes,
+          };
+          const edge = {
+            x: h.includes("e") ? start.x1 : start.x0,
+            y: h.includes("s") ? start.y1 : start.y0,
+          };
+          const still = dragHandle(
+            start,
+            h,
+            locked
+              ? {
+                  x: h.includes("e") || h.includes("w") ? edge.x : 0,
+                  y: h.includes("n") || h.includes("s") ? edge.y : 0,
+                }
+              : edge,
+            limits
+          );
+          for (const key of ["x0", "x1", "y0", "y1"] as const) {
+            expect(Math.abs(still[key] - start[key])).toBeLessThanOrEqual(
+              tolerance
+            );
+          }
+          const r = dragHandle(
+            start,
+            h,
+            { x: u * turned.width, y: v * turned.height },
+            limits
+          );
+          expect(r.x1 - r.x0).toBeGreaterThanOrEqual(s.crop.width - tolerance);
+          expect(r.y1 - r.y0).toBeGreaterThanOrEqual(s.crop.height - tolerance);
         }
       )
     );

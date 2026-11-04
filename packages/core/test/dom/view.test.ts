@@ -2,7 +2,7 @@ import { double, assert as fcAssert, property, record } from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper, defaultValue } from "../../src";
-import type { Aspect, CropperOptions } from "../../src";
+import type { Aspect, CropperEvents, CropperOptions } from "../../src";
 import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
 import type { HandleEdge } from "../../src/dom";
 import { bindZoomThumb } from "../../src/dom/controls";
@@ -584,6 +584,111 @@ describe("a handle at minSize", () => {
       top: 350,
       width: 200,
     });
+  });
+});
+
+const held = (
+  { cropper }: ReturnType<typeof minCropper>,
+  edge: HandleEdge,
+  dx: number,
+  dy = 0
+) => {
+  const rect = viewOf(cropper).frame()?.rect;
+  const x =
+    (rect?.x ?? 0) + (rect?.width ?? 0) * edgeShare(edge, "left", "right");
+  const y =
+    (rect?.y ?? 0) + (rect?.height ?? 0) * edgeShare(edge, "top", "bottom");
+  const handlers = handleHandlers(cropper, edge);
+  Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
+  Reflect.apply(handlers.onPointerMove, undefined, pointerAt(x + dx, y + dy));
+  return cropper.getCropState()?.crop ?? { height: 0, width: 0, x: 0, y: 0 };
+};
+
+const thinCropper = (
+  image: Size,
+  viewport: number,
+  options: CropperOptions & { aspect?: Aspect } = {}
+) => minCropper(1, viewport, { image, minSize: undefined, ...options });
+
+describe("a handle on a crop under the 88 px floor", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each<[string, Size, number, number]>([
+    ["a panorama inward", { height: 1500, width: 8000 }, 382, 111],
+    ["a panorama outward", { height: 1500, width: 8000 }, 382, -20],
+    [
+      "onto the far edge of a clean scale",
+      { height: 100, width: 1000 },
+      500,
+      50,
+    ],
+    ["past the far edge", { height: 100, width: 2000 }, 400, 400],
+  ])("keeps the crop whole when pulled %s", (_, image, viewport, dy) => {
+    const crop = held(thinCropper(image, viewport), "top", 0, dy);
+    expect(crop).toStrictEqual({
+      height: image.height,
+      width: image.width,
+      x: 0,
+      y: 0,
+    });
+  });
+
+  it("keeps a corner inside the photo", () => {
+    const context = thinCropper({ height: 1500, width: 8000 }, 382);
+    const crop = held(context, "top-left", 400, 400);
+    expect(crop.width).toBeLessThanOrEqual(8000);
+    expect(crop.width * (382 / 8000)).toBeGreaterThanOrEqual(88 - 1e-6);
+    expect(crop.height).toBe(1500);
+    expect(crop.x + crop.width / 2).toBeCloseTo(4000, 6);
+  });
+
+  it.each<[string, Size, number, Aspect, number, HandleEdge]>([
+    ["a free crop", { height: 2000, width: 2000 }, 400, "free", 1, "bottom"],
+    ["a locked banner", { height: 3000, width: 4000 }, 400, 5, 2, "right"],
+    ["a locked strip", { height: 3000, width: 4000 }, 64, 16 / 9, 2, "bottom"],
+    [
+      "the original shape",
+      { height: 1800, width: 8000 },
+      390,
+      "original",
+      2,
+      "top",
+    ],
+  ])(
+    "does not jump or commit at zero motion on %s",
+    (_, image, viewport, aspect, zoom, edge) => {
+      const context = thinCropper(image, viewport, { aspect });
+      const { cropper, time } = context;
+      if (aspect === "free") {
+        cropper.setValue({ size: { height: 0.12, width: 1 } });
+      }
+      cropper.setZoom(zoom);
+      time.frames(2);
+      const onCommit = vi.fn<CropperEvents["commit"]>();
+      cropper.on("commit", (...args) => {
+        onCommit(...args);
+      });
+      const before = cropper.getCropState()?.crop;
+      dragEdge(context, edge, 0);
+      const crop = cropper.getCropState()?.crop;
+      expect(crop?.width).toBeCloseTo(before?.width ?? 0, 6);
+      expect(crop?.height).toBeCloseTo(before?.height ?? 0, 6);
+      expect(crop?.x).toBeCloseTo(before?.x ?? 0, 6);
+      expect(crop?.y).toBeCloseTo(before?.y ?? 0, 6);
+      expect(onCommit).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    ["grows from where it is", 1, 245],
+    ["cannot shrink", -30, 240],
+  ])("%s", (_, dy, height) => {
+    const context = thinCropper({ height: 2000, width: 2000 }, 400);
+    context.cropper.setValue({ size: { height: 0.12, width: 1 } });
+    context.time.frames(2);
+    expect(held(context, "bottom", 0, dy).height).toBeCloseTo(height);
   });
 });
 
