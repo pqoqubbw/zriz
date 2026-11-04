@@ -20,6 +20,7 @@ import {
   useRelease,
 } from "../part";
 import type { Part, PartProps } from "../part";
+import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface DialState {
@@ -52,12 +53,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     state.dragging,
     () => false
   );
-  const readDisabled = (): boolean => cropper.getState().disabled;
-  const disabled = useSyncExternalStore(
-    cropper.subscribe,
-    readDisabled,
-    readDisabled
-  );
+  const disabled = useCropperState((s) => s.disabled);
   const own = useCallback(
     (node: HTMLDivElement) => {
       const clear = box.set(node);

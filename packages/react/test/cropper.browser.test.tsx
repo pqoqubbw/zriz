@@ -1293,6 +1293,68 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
   });
 });
 
+const hydrated = async (tree: ReactNode, html: string, write: () => void) => {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  document.body.append(container);
+  write();
+  await frames(2);
+  const errors = vi.spyOn(console, "error");
+  const recoverable = vi.fn<() => void>();
+  const root = hydrateRoot(container, tree, {
+    onRecoverableError: recoverable,
+  });
+  await frames(3);
+  const logged = errors.mock.calls.length + recoverable.mock.calls.length;
+  errors.mockRestore();
+  return {
+    container,
+    logged,
+    remove: () => {
+      root.unmount();
+      container.remove();
+    },
+  };
+};
+
+describe("hydrating a cropper that changed after the server render", () => {
+  it("patches a Dial that was disabled in between", async () => {
+    const cropper = photoCropper();
+    const tree = (
+      <Cropper.Root cropper={cropper}>
+        <Cropper.Dial aria-label="Straighten" id="hydrated-dial" />
+      </Cropper.Root>
+    );
+    const { container, logged, remove } = await hydrated(
+      tree,
+      renderToString(tree),
+      () => {
+        cropper.setOptions({ disabled: true });
+      }
+    );
+    expect(logged).toBe(0);
+    expect(
+      container.querySelector("#hydrated-dial")?.getAttribute("aria-disabled")
+    ).toBe("true");
+    remove();
+  });
+
+  it("patches useCropperValue after a commit in between", async () => {
+    const cropper = photoCropper();
+    const tree = <ShownValue cropper={cropper} />;
+    const { logged, remove } = await hydrated(
+      tree,
+      renderToString(tree),
+      () => {
+        cropper.setRotation(3);
+      }
+    );
+    expect(logged).toBe(0);
+    expect(shownValue()).toStrictEqual(cropper.getValue());
+    remove();
+  });
+});
+
 const reduced = (container: Element): boolean =>
   container.querySelector("[data-reduced-motion]") !== null;
 
