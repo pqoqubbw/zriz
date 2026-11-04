@@ -69,6 +69,18 @@ const FAQ_PAGE = defineDoc({
         )
       ),
       qa(
+        "can i put it in a dialog or a drawer",
+        p(
+          "yes. a native `<dialog>` does not lock the page, so a wheel at the pan limit or over the dial scrolls what is behind it. `html:has(dialog[open]) { overflow: hidden; }` holds the page. keep `Announcer` inside the dialog, see [accessibility](accessibility)."
+        ),
+        p(
+          "radix `forceMount` with css hiding keeps `aria-hidden` on your app and the scroll lock while closed, so mount the dialog only when it is open. base ui `keepMounted` leaves the page clean."
+        ),
+        p(
+          "vaul starts with focus on the page, and the first presses of tab land behind the drawer. pass `autoFocus` to `Drawer.Root`. [viewport](viewport) and [root](root) have the layout and swipe notes."
+        )
+      ),
+      qa(
         "can i crop on the server",
         p(
           "yes. send the original file and the plan from `getPixelCrop()`, then turn that plan into sharp calls with `toSharp`. [server crop](server-crop) has the route."

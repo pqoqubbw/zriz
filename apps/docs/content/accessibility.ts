@@ -44,8 +44,8 @@ const ACCESSIBILITY_PAGE = defineDoc({
             "a `radiogroup` with one tab stop. each `AspectItem` is a radio. outside a group, an item is a button with `aria-pressed`",
           ],
           [
-            "Rotate, Orientation",
-            "buttons. `Orientation` is disabled for a free, original or square crop",
+            "Rotate, Orientation, ZoomStep",
+            "buttons. name a `ZoomStep` with `aria-label`. `Orientation` is disabled for a free, original or square crop",
           ],
           ["Flip", "a toggle button. `aria-pressed` follows `mirrored`"],
           [
@@ -57,7 +57,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
             "`aria-disabled` while `Root` is disabled. a press does nothing, and the control stays in the tab order",
           ],
           ["Image", "an image named by its `alt`. without `alt`, nothing"],
-          ["Handle, Grid, Mask", "hidden"],
+          ["Handle, Grid, Mask, DialTicks, DialValue, ZoomThumb", "hidden"],
         ],
       })
     ),
@@ -130,7 +130,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
       "api",
       part(
         "Announcer",
-        'renders a visually hidden `<div role="status" aria-live="polite">` anywhere inside `Root`.',
+        'renders a visually hidden `<div role="status" aria-live="polite">` anywhere inside `Root`. with a native modal `<dialog>`, keep it inside the dialog, because `showModal` makes everything outside inert and screen readers lose it.',
         props([
           {
             name: "announce",

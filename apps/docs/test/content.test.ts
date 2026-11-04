@@ -1,5 +1,9 @@
+import * as Cropper from "@zriz/react/cropper";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { ACCESSIBILITY_PAGE } from "@/content/accessibility";
 import { anchorsOf, walkBlocks } from "@/lib/doc/anchors";
 import { highlight } from "@/lib/doc/highlight";
 import { pageMarkdown } from "@/lib/doc/markdown";
@@ -62,6 +66,33 @@ describe("content", () => {
 
   it.each(PAGE_ORDER)("writes %s as markdown", (slug) => {
     expect(pageMarkdown(slug)).toMatchSnapshot();
+  });
+
+  it("lists every hidden part and every button in the screen reader table", () => {
+    const table = walkBlocks(ACCESSIBILITY_PAGE.blocks).find(
+      (block) => block.kind === "table"
+    );
+    const rows = table?.kind === "table" ? table.rows : [];
+    const rowOf = (name: keyof typeof Cropper) =>
+      rows.find((row) => row[0]?.split(", ").includes(name) === true);
+    const markup = renderToStaticMarkup(
+      createElement(
+        Cropper.Root,
+        { src: "/p.jpg" },
+        createElement(Cropper.DialTicks),
+        createElement(Cropper.DialValue),
+        createElement(Cropper.ZoomThumb),
+        createElement(Cropper.ZoomStep, { factor: 2 })
+      )
+    );
+
+    for (const name of ["DialTicks", "DialValue", "ZoomThumb"] as const) {
+      expect(rowOf(name)?.[1]).toBe("hidden");
+    }
+
+    expect(markup).toContain("<button");
+    expect(rowOf("ZoomStep")?.[1]).toContain("buttons");
+    expect(markup.match(/aria-hidden="true"/gu)).toHaveLength(3);
   });
 
   it("shows the approved code and colours", async () => {

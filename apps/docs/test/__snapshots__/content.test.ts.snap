@@ -5086,12 +5086,12 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
 | \`Dial\` | a slider that reads "4 degrees" in your \`locale\`. \`format\` changes the wording |
 | \`Zoom\` | a slider that reads "150%" in your \`locale\`. \`format\` changes the wording |
 | \`AspectGroup\` | a \`radiogroup\` with one tab stop. each \`AspectItem\` is a radio. outside a group, an item is a button with \`aria-pressed\` |
-| \`Rotate, Orientation\` | buttons. \`Orientation\` is disabled for a free, original or square crop |
+| \`Rotate, Orientation, ZoomStep\` | buttons. name a \`ZoomStep\` with \`aria-label\`. \`Orientation\` is disabled for a free, original or square crop |
 | \`Flip\` | a toggle button. \`aria-pressed\` follows \`mirrored\` |
 | \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the next control in \`Root\` when there is no \`Area\` or it cannot take focus |
 | \`every control above\` | \`aria-disabled\` while \`Root\` is disabled. a press does nothing, and the control stays in the tab order |
 | \`Image\` | an image named by its \`alt\`. without \`alt\`, nothing |
-| \`Handle, Grid, Mask\` | hidden |
+| \`Handle, Grid, Mask, DialTicks, DialValue, ZoomThumb\` | hidden |
 
 ## describe the crop
 
@@ -5208,7 +5208,7 @@ the stylesheet's fades keep their length in both modes: the mask dims over 200 m
 
 ### \`Announcer\`
 
-renders a visually hidden \`<div role="status" aria-live="polite">\` anywhere inside \`Root\`.
+renders a visually hidden \`<div role="status" aria-live="polite">\` anywhere inside \`Root\`. with a native modal \`<dialog>\`, keep it inside the dialog, because \`showModal\` makes everything outside inert and screen readers lose it.
 
 - \`announce\` \`(value, details) => string | null\` required
 
@@ -6931,6 +6931,14 @@ safari decodes heic, so iphone photos open there. in other browsers the load fai
 ### how do i get the cropped file
 
 call \`exportCrop\` from \`@zriz/core/dom\` with the cropper from \`actionsRef\`. it resolves with a \`Blob\` and its width and height. [exporting](https://zriz.dev/docs/exporting.md) has the code.
+
+### can i put it in a dialog or a drawer
+
+yes. a native \`<dialog>\` does not lock the page, so a wheel at the pan limit or over the dial scrolls what is behind it. \`html:has(dialog[open]) { overflow: hidden; }\` holds the page. keep \`Announcer\` inside the dialog, see [accessibility](https://zriz.dev/docs/accessibility.md).
+
+radix \`forceMount\` with css hiding keeps \`aria-hidden\` on your app and the scroll lock while closed, so mount the dialog only when it is open. base ui \`keepMounted\` leaves the page clean.
+
+vaul starts with focus on the page, and the first presses of tab land behind the drawer. pass \`autoFocus\` to \`Drawer.Root\`. [viewport](https://zriz.dev/docs/viewport.md) and [root](https://zriz.dev/docs/root.md) have the layout and swipe notes.
 
 ### can i crop on the server
 
