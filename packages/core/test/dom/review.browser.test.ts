@@ -12,6 +12,7 @@ import {
   exportImage,
   loadImage,
   viewOf,
+  viewportController,
   zoomHandlers,
 } from "../../src/dom";
 import { bindPointers } from "../../src/dom/input";
@@ -717,7 +718,11 @@ describe("writes during a held gesture", () => {
       drag(r, part);
       r.cropper.setImage({ height: 900, width: 300 });
       fire(part, "pointermove", 170, 45);
-      fire(part, "pointerup", 170, 45);
+      r.time.frames(1);
+      const moved = r.cropper.getValue();
+      fire(part, "pointermove", 150, 25);
+      expect(r.cropper.getValue()).not.toBe(moved);
+      fire(part, "pointerup", 150, 25);
       r.time.frames(2);
       expect(r.cropper.getCropState()?.image.width).toBe(300);
       const plan = r.cropper.getPixelCrop();
@@ -950,5 +955,133 @@ describe("writes during a held gesture", () => {
       press(document.body);
       expect(r.cropper.getState().interacting).toBeNull();
     }
+  });
+
+  it("a write mid-resize survives the next move", () => {
+    const r = rig();
+    fire(r.handle, "pointerdown", 10);
+    fire(r.handle, "pointermove", 0);
+    r.cropper.setZoom(2);
+    const { height, width } = r.cropper.getValue().size;
+    fire(r.handle, "pointermove", 1);
+    expect(r.cropper.getValue().size.width).toBeCloseTo(width, 1);
+    expect(r.cropper.getValue().size.height).toBeCloseTo(height, 1);
+    fire(r.handle, "pointerup", 1);
+  });
+
+  it("a write mid safari pinch survives the next change", () => {
+    const r = rig();
+    safari(r.viewport, "gesturestart");
+    safari(r.viewport, "gesturechange", { scale: 1.1 });
+    r.cropper.setZoom(3);
+    safari(r.viewport, "gesturechange", { scale: 1.1 });
+    expect(r.cropper.getZoom()).toBeCloseTo(3, 3);
+    safari(r.viewport, "gestureend", { scale: 1.1 });
+  });
+
+  it("a new photo during a safari pinch keeps pinching the new photo", () => {
+    const r = rig();
+    safari(r.viewport, "gesturestart");
+    r.cropper.setImage(null);
+    safari(r.viewport, "gesturechange", { scale: 1.2 });
+    r.cropper.setImage({ height: 900, width: 300 });
+    r.time.frames(1);
+    safari(r.viewport, "gesturechange", { scale: 1.2 });
+    safari(r.viewport, "gesturechange", { scale: 2.4 });
+    expect(r.cropper.getZoom()).toBeCloseTo(2, 1);
+    safari(r.viewport, "gestureend", { scale: 2.4 });
+    expect(r.cropper.getState().interacting).toBeNull();
+  });
+
+  it("blur and teardown end a safari pinch", () => {
+    for (const lose of ["blur", "unbind"]) {
+      const r = rig();
+      safari(r.viewport, "gesturestart");
+      expect(r.cropper.getState().interacting).toBe("pinch");
+      if (lose === "blur") {
+        blurWindow();
+      } else {
+        r.unbind();
+      }
+      expect(r.cropper.getState().interacting).toBeNull();
+    }
+  });
+
+  it("stop mid-resize and before a recentre puts the crop back in the middle", () => {
+    for (const released of [false, true]) {
+      const r = rig();
+      fire(r.handle, "pointerdown", 10);
+      fire(r.handle, "pointermove", -120, -80);
+      r.time.frames(1);
+      if (released) {
+        fire(r.handle, "pointerup", -120, -80);
+      }
+      const rect = viewOf(r.cropper).frame()?.rect;
+      expect(
+        Math.abs((rect?.x ?? 0) + (rect?.width ?? 0) / 2 - 200)
+      ).toBeGreaterThan(5);
+      r.cropper.stop();
+      const fit = viewOf(r.cropper).frame()?.rect;
+      expect((fit?.x ?? 0) + (fit?.width ?? 0) / 2).toBeCloseTo(200, 0);
+      expect((fit?.y ?? 0) + (fit?.height ?? 0) / 2).toBeCloseTo(150, 0);
+    }
+  });
+
+  it("a second flip starts from the exact pose the first one reached", () => {
+    const r = rig();
+    r.cropper.setRotation(7, { emit: false });
+    r.time.frames(2);
+    r.cropper.flip("x");
+    r.time.frames(3);
+    const before = viewOf(r.cropper).frame()?.matrix;
+    r.cropper.flip("x");
+    r.time.frame(0);
+    const after = viewOf(r.cropper).frame()?.matrix;
+    expect(viewOf(r.cropper).chrome().transition).toBe("flip");
+    for (const [index, value] of (before ?? []).entries()) {
+      expect(after?.[index]).toBeCloseTo(value, 6);
+    }
+  });
+
+  it("a press from a portal reaches the viewport handler and starts no pan", () => {
+    const r = rig();
+    r.unbind();
+    const portal = document.createElement("div");
+    document.body.append(portal);
+    const controller = viewportController(r.cropper);
+    controller.setElement(r.viewport);
+    portal.addEventListener("pointerdown", controller.handlers.onPointerDown);
+    cleanups.push(() => {
+      controller.destroy();
+      portal.remove();
+    });
+    fire(portal, "pointerdown", 50);
+    expect(r.cropper.getState().interacting).toBeNull();
+  });
+
+  it("a second finger on dial handlers inside the photo starts no pinch", () => {
+    const r = rig();
+    const ruler = document.createElement("div");
+    r.viewport.append(ruler);
+    cleanups.push(bindPointers(ruler, dialHandlers(r.cropper)));
+    const touch = { pointerId: 2, pointerType: "touch" };
+    fire(r.viewport, "pointerdown", 100, 100, { pointerType: "touch" });
+    fire(ruler, "pointerdown", 200, 100, touch);
+    expect(r.cropper.getState().interacting).toBe("pan");
+    fire(ruler, "pointerup", 200, 100, touch);
+    fire(r.viewport, "pointerup", 100, 100, { pointerType: "touch" });
+  });
+
+  it("escape after a write mid-resize leaves the crop fitted, with no pin", () => {
+    const r = rig();
+    fire(r.handle, "pointerdown", 10);
+    fire(r.handle, "pointermove", 0);
+    r.cropper.setZoom(2);
+    pressEscape();
+    r.time.frames(1);
+    expect(r.cropper.getZoom()).toBeCloseTo(2, 3);
+    const rect = viewOf(r.cropper).frame()?.rect;
+    expect(rect?.height).toBe(300);
+    expect((rect?.x ?? 0) + (rect?.width ?? 0) / 2).toBeCloseTo(200, 0);
   });
 });

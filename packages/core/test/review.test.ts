@@ -173,7 +173,11 @@ describe("gesture and commit edges", () => {
 
   it("one cropper cannot reach another through the shared defaults", () => {
     const first = setup().cropper.getValue();
-    expect(Object.isFrozen(first.center)).toBeTruthy();
+    expect(Reflect.set(first.center, "x", 0.9)).toBeFalsy();
+    expect(Reflect.set(first.size, "width", 0.1)).toBeFalsy();
+    const second = setup().cropper.getValue();
+    expect(second.center.x).toBe(0.5);
+    expect(second.size.width).toBe(1);
   });
 
   it("a coasting gesture ends before an outside write picks its reason", () => {
