@@ -629,6 +629,23 @@ describe("what the cropper holds on to", () => {
 const isTurns = (value: number): value is CropValue["quarterTurns"] =>
   Number.isFinite(value);
 
+const sweepAndBack = (options: CropperOptions) => {
+  const { cropper } = setup({
+    image: { height: 1000, width: 1000 },
+    ...options,
+  });
+  cropper.setValue({
+    center: { x: 0.75, y: 0.75 },
+    size: { height: 0.4, width: 0.4 },
+  });
+  const start = cropper.getValue();
+  cropper.begin("dial");
+  for (const angle of [10, 20, 30, 20, 10, 0]) {
+    cropper.setRotation(angle, { reason: "dial" });
+  }
+  return { back: cropper.getValue(), start };
+};
+
 describe("value edges", () => {
   it("treats an angle that reads as level as level", () => {
     const { cropper } = setup();
@@ -699,5 +716,28 @@ describe("value edges", () => {
     });
     late.cropper.setImage(photo);
     expect(late.cropper.getValue().quarterTurns).toBe(turns);
+  });
+
+  it.each([
+    ["with no minimum", {}],
+    [
+      "with a minimum that holds the crop",
+      { minSize: { height: 400, width: 400 } },
+    ],
+  ])("returns a dial sweep to the same crop %s", (_, options) => {
+    const { back, start } = sweepAndBack(options);
+    expect(back.size.width).toBeCloseTo(start.size.width, 9);
+    expect(back.center.x).toBeCloseTo(start.center.x, 9);
+    expect(back.center.y).toBeCloseTo(start.center.y, 9);
+  });
+
+  it("keeps a pan when a pan gesture also sets the rotation", () => {
+    const { cropper } = setup();
+    cropper.setValue({ size: { height: 0.5, width: 0.5 } });
+    cropper.begin("pan");
+    cropper.panBy(0.1, 0);
+    const moved = cropper.getValue().center.x;
+    cropper.setRotation(0.001);
+    expect(cropper.getValue().center.x).toBeCloseTo(moved, 3);
   });
 });

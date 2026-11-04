@@ -727,7 +727,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         next = {
           ...next,
           crop: {
-            ...next.crop,
+            ...(gesture?.reason === "dial" && start.flip === state.flip
+              ? setAngle(start, degrees)
+              : next
+            ).crop,
             height: start.crop.height,
             width: start.crop.width,
           },
