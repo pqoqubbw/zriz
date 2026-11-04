@@ -793,11 +793,10 @@ describe("photo layer", () => {
     expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
     await act(cropper);
     await jobs.release();
-    const { interacting } = cropper.getState();
-    if (interacting !== null) {
-      expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
-      cropper.end();
-    }
+    const moving = cropper.getState().interacting !== null;
+    const sharpWhileMoving = moving && Object.hasOwn(photo.dataset, "sharp");
+    cropper.end();
+    expect(sharpWhileMoving).toBeFalsy();
     expect(errors).toStrictEqual([]);
   });
 

@@ -922,14 +922,12 @@ describe("releasing a separate source bitmap", () => {
     copyFails = false;
     gate = Promise.resolve();
     stub(false);
-    vi.stubGlobal("OffscreenCanvas", () => {
-      return {
-        getContext: () => ({
-          drawImage: noop,
-          getImageData: () => ({ data: [1] }),
-        }),
-      };
-    });
+    vi.stubGlobal("OffscreenCanvas", () => ({
+      getContext: () => ({
+        drawImage: noop,
+        getImageData: () => ({ data: [1] }),
+      }),
+    }));
   });
 
   afterEach(() => {
