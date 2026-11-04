@@ -11,6 +11,7 @@ import sharp from "sharp";
 import type { Sharp } from "sharp";
 import { describe, expect, it } from "vitest";
 
+import { createCropper } from "../../src";
 import {
   applyAffine,
   applyMatrix2,
@@ -266,6 +267,49 @@ describe("toSharp", () => {
       { numRuns: 300 }
     );
     expect(ran).toBeGreaterThanOrEqual(30);
+  });
+
+  it("cuts at the planned size at every low scale", async () => {
+    await assert(
+      asyncProperty(
+        integer({ max: 640, min: 40 }),
+        integer({ max: 640, min: 40 }),
+        double({ max: 3, min: -3, noNaN: true }),
+        double({ max: 0.5, min: 0.05, noNaN: true }),
+        constantFrom(-1, 1),
+        async (width, height, rotation, scale, side) => {
+          const image = { height, width };
+          const cropper = createCropper({
+            defaultValue: {
+              center: { x: 0.5 + side * 0.4, y: 0.5 + side * 0.4 },
+              rotation,
+              size: { height: 0.3, width: 0.3 },
+            },
+            image,
+          });
+          const plan = cropper.getPixelCrop(scale);
+          pre(plan !== null && plan.pixelRect === null);
+          if (!plan) {
+            return;
+          }
+          const output = await runSharp(
+            sharp({
+              create: { background: "#808080", channels: 3, ...image },
+            }),
+            plan,
+            image
+          );
+          const { info } = await output
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+          expect([info.width, info.height]).toStrictEqual([
+            plan.width,
+            plan.height,
+          ]);
+        }
+      ),
+      { numRuns: 400 }
+    );
   });
 
   it("matches the EXIF orientation table with sharp auto-orient", async () => {

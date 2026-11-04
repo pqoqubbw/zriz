@@ -31,7 +31,7 @@ export interface SharpAffineRecipe {
 
 export type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
 
-const PAD = 2;
+const MARGIN = 2;
 
 const affineOrigin = (
   m: readonly [number, number, number, number],
@@ -58,15 +58,16 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     };
   }
   const [a, b, c, d, e0, f0]: AffineMatrix = plan.forward;
-  const e = e0 - (a + c) * PAD;
-  const f = f0 - (b + d) * PAD;
+  const pad = Math.ceil(MARGIN / Math.min(1, Math.hypot(a, b)));
+  const e = e0 - (a + c) * pad;
+  const f = f0 - (b + d) * pad;
   const bx = a * 0.5 + c * 0.5 + e - 0.5;
   const by = b * 0.5 + d * 0.5 + f - 0.5;
   const ix = Math.floor(bx);
   const iy = Math.floor(by);
   const origin = affineOrigin([a, c, b, d], {
-    height: image.height + 2 * PAD,
-    width: image.width + 2 * PAD,
+    height: image.height + 2 * pad,
+    width: image.width + 2 * pad,
   });
   return {
     affine: [
@@ -74,11 +75,11 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
       [b, d],
     ],
     extend: {
-      bottom: PAD,
+      bottom: pad,
       extendWith: "copy",
-      left: PAD,
-      right: PAD,
-      top: PAD,
+      left: pad,
+      right: pad,
+      top: pad,
     },
     extract: {
       height: plan.height,

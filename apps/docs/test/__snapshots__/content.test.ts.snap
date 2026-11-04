@@ -7723,7 +7723,7 @@ const upload = async () => {
 
 \`rotate()\` with no angle turns the upload upright from its exif tag. \`toSharp\` takes the plan and the size of that upright image and returns the steps for sharp.
 
-a crop with no straighten and no perspective comes back as \`"extract"\`: a rectangle, a flop and a turn in steps of 90°. any other crop comes back as \`"affine"\`: pad 2 px on each side by copying the edge, turn with a bicubic affine, then extract the crop.
+a crop with no straighten and no perspective comes back as \`"extract"\`: a rectangle, a flop and a turn in steps of 90°. any other crop comes back as \`"affine"\`: pad at least 2 px on each side by copying the edge, turn with a bicubic affine, then extract the crop.
 
 in one pipeline sharp runs \`extend()\` after \`affine()\`, and \`affine()\` after \`extract()\` and \`rotate()\`, so the route ends each stage as a raw buffer and opens a new pipeline for the next one. each new pipeline passes \`limitInputPixels: false\`, since the upload already passed the check and a turned crop can grow past it.
 
