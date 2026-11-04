@@ -862,4 +862,13 @@ describe("writes during a held gesture", () => {
       r.time.frames(1);
     }
   });
+
+  it("a safari pinch with its photo removed still ends on gestureend", () => {
+    const r = rig();
+    safari(r.viewport, "gesturestart");
+    r.cropper.setImage(null);
+    safari(r.viewport, "gesturechange", { scale: 1.2 });
+    safari(r.viewport, "gestureend", { scale: 1.2 });
+    expect(r.cropper.getState().interacting).toBeNull();
+  });
 });

@@ -709,9 +709,9 @@ export const viewportController = (
     }
     const frame = view.frame();
     if (cropper.rebase(owner) && frame) {
-      safari = safariStart(event, frame.scale);
+      safari = safariStart(event, frame.scale) ?? safari;
     }
-    if (!safari) {
+    if (!cropper.getCropState()) {
       return;
     }
     const excess = pinch(
