@@ -134,15 +134,6 @@ export const touch: BrowserCommand<[selector: string, path: Path]> = async (
   await session.detach();
 };
 
-export const emulate: BrowserCommand<
-  [forcedColors: "active" | "none"]
-> = async (context, forcedColors) => {
-  if (!("page" in context)) {
-    throw new Error("playwright only");
-  }
-  await context.page.emulateMedia({ forcedColors });
-};
-
 export const choose: BrowserCommand<[selector: string, file: string]> = async (
   context,
   selector,

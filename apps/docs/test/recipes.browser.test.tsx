@@ -24,11 +24,11 @@ type Pending = {
 
 type Tools = {
   choose: (selector: string, file: string) => Promise<void>;
-  emulate: (forcedColors: "active" | "none") => Promise<void>;
+  forcedColors: (mode: "active" | "none") => Promise<void>;
 };
 
 const isTools = (value: object): value is Tools =>
-  "choose" in value && "emulate" in value;
+  "choose" in value && "forcedColors" in value;
 
 const toolsOf = (value: object): Tools => {
   if (!isTools(value)) {
@@ -278,7 +278,7 @@ const FIXTURE = "packages/core/test/fixtures/orient-1.jpg";
 describe("docs recipes", () => {
   afterEach(async () => {
     vi.restoreAllMocks();
-    await commands.emulate("none");
+    await commands.forcedColors("none");
     await cleanup();
   });
 
@@ -671,7 +671,7 @@ describe("docs recipes", () => {
         </Cropper.Root>
       );
 
-      await commands.emulate("active");
+      await commands.forcedColors("active");
       const colour = thumbColour();
 
       style.remove();
@@ -682,7 +682,7 @@ describe("docs recipes", () => {
     it("paints the thumb and the track of the full editor", async () => {
       await render(<Editor onSave={noop} src={await objectUrl(400, 300)} />);
 
-      await commands.emulate("active");
+      await commands.forcedColors("active");
 
       expect(thumbColour()).not.toBe(canvasColour());
 
@@ -696,7 +696,7 @@ describe("docs recipes", () => {
 
       host.innerHTML = zoomMarkup;
       document.body.append(host);
-      await commands.emulate("active");
+      await commands.forcedColors("active");
       const colour = thumbColour();
 
       host.remove();
