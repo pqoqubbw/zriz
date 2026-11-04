@@ -1,14 +1,14 @@
 import type { ExportPlan } from "./geometry/export-plan";
 import type { AffineMatrix, PixelRect, Size } from "./geometry/types";
 
-export type SharpExtractRecipe = {
+type SharpExtractRecipe = {
   readonly kind: "extract";
   readonly extract: PixelRect;
   readonly flop: boolean;
   readonly rotate: number;
 };
 
-export type SharpAffineRecipe = {
+type SharpAffineRecipe = {
   readonly kind: "affine";
   readonly extend: {
     readonly top: number;
@@ -29,7 +29,7 @@ export type SharpAffineRecipe = {
   readonly extract: PixelRect;
 };
 
-export type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
+type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
 
 const MARGIN = 2;
 const SIMILAR = 1e-6;
@@ -52,7 +52,7 @@ const affineOrigin = (
   return { x: Math.round(Math.min(...xs)), y: Math.round(Math.min(...ys)) };
 };
 
-export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
+const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
   if (plan.pixelRect) {
     return {
       extract: plan.pixelRect,
@@ -118,3 +118,6 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     options: { interpolator: "bicubic", odx: bx - ix, ody: by - iy },
   };
 };
+
+export type { SharpAffineRecipe, SharpExtractRecipe, SharpRecipe };
+export { toSharp };

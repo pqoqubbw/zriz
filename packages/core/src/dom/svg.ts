@@ -1,12 +1,7 @@
 import { drawn, fitEdge, loadElement, textOf } from "./media";
 import { svgSize } from "./svg-size";
 
-export { isSvg } from "./svg-size";
-
-export const fromSvg = async (
-  blob: Blob,
-  edge: number
-): Promise<ImageBitmap> => {
+const fromSvg = async (blob: Blob, edge: number): Promise<ImageBitmap> => {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const size = fitEdge(svgSize(textOf(bytes)), edge);
   const reader = new FileReader();
@@ -20,3 +15,6 @@ export const fromSvg = async (
 
   return await drawn(await loadElement(url), size);
 };
+
+export { isSvg } from "./svg-size";
+export { fromSvg };

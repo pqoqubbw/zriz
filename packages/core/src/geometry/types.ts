@@ -1,16 +1,16 @@
-export type Point = {
+type Point = {
   x: number;
   y: number;
 };
 
-export type Size = {
+type Size = {
   readonly width: number;
   readonly height: number;
 };
 
-export type Matrix2 = [number, number, number, number];
+type Matrix2 = [number, number, number, number];
 
-export type Matrix3 = [
+type Matrix3 = [
   number,
   number,
   number,
@@ -22,37 +22,37 @@ export type Matrix3 = [
   number,
 ];
 
-export type AffineMatrix = [number, number, number, number, number, number];
+type AffineMatrix = [number, number, number, number, number, number];
 
-export type QuarterTurns = 0 | 1 | 2 | 3;
+type QuarterTurns = 0 | 1 | 2 | 3;
 
-export type HalfPlane = {
+type HalfPlane = {
   nx: number;
   ny: number;
   d: number;
 };
 
-export type Rect = {
+type Rect = {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
 };
 
-export type Crop = {
+type Crop = {
   x: number;
   y: number;
   width: number;
   height: number;
 };
 
-export type Perspective = {
+type Perspective = {
   vertical: number;
   horizontal: number;
   focal: number;
 };
 
-export type CropState = {
+type CropState = {
   readonly image: Size;
   readonly turns: QuarterTurns;
   readonly flip: boolean;
@@ -62,9 +62,24 @@ export type CropState = {
   readonly perspective: Readonly<Perspective>;
 };
 
-export type PixelRect = {
+type PixelRect = {
   left: number;
   top: number;
   width: number;
   height: number;
+};
+
+export type {
+  AffineMatrix,
+  Crop,
+  CropState,
+  HalfPlane,
+  Matrix2,
+  Matrix3,
+  Perspective,
+  PixelRect,
+  Point,
+  QuarterTurns,
+  Rect,
+  Size,
 };

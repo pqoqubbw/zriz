@@ -1,9 +1,9 @@
 import { projectOntoPlanes } from "./planes";
 import type { HalfPlane, Point, Rect, Size } from "./types";
 
-export type CropHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+type CropHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
-export type DragLimits = {
+type DragLimits = {
   planes: readonly HalfPlane[];
   minWidth: number;
   minHeight: number;
@@ -105,7 +105,7 @@ const aspectFamily = (
   return { at, desired };
 };
 
-export const aspectHeightRange = (
+const aspectHeightRange = (
   start: Rect,
   handle: CropHandle,
   limits: DragLimits & { aspect: number }
@@ -228,7 +228,7 @@ const freePlanes = (
   return planes;
 };
 
-export const dragHandle = (
+const dragHandle = (
   start: Rect,
   handle: CropHandle,
   pointer: Point,
@@ -279,7 +279,7 @@ const straightenLimitFor = (side: number, a: number, b: number): number => {
   );
 };
 
-export const straightenLimit = (
+const straightenLimit = (
   image: Size,
   minWidth: number,
   minHeight: number
@@ -288,3 +288,6 @@ export const straightenLimit = (
     straightenLimitFor(image.width, minWidth, minHeight),
     straightenLimitFor(image.height, minHeight, minWidth)
   );
+
+export type { CropHandle, DragLimits };
+export { aspectHeightRange, dragHandle, straightenLimit };

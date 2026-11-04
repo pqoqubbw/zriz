@@ -2,7 +2,7 @@ import type { QuarterTurns } from "./types";
 
 const QUARTER_TURNS: readonly QuarterTurns[] = [0, 1, 2, 3];
 
-export const toQuarterTurns = (turns: number): QuarterTurns =>
+const toQuarterTurns = (turns: number): QuarterTurns =>
   QUARTER_TURNS[((turns % 4) + 4) % 4] ?? 0;
 
 const rotateByQuarters = (
@@ -27,9 +27,7 @@ const rotateByQuarters = (
   return { cos: sin, sin: -cos };
 };
 
-export const sinCosDegrees = (
-  degrees: number
-): { sin: number; cos: number } => {
+const sinCosDegrees = (degrees: number): { sin: number; cos: number } => {
   const turns = Math.round(degrees / 90);
   const rest = degrees - 90 * turns;
 
@@ -42,7 +40,7 @@ export const sinCosDegrees = (
   return rotateByQuarters(Math.sin(radians), Math.cos(radians), turns);
 };
 
-export const splitAngle = (
+const splitAngle = (
   degrees: number
 ): { turns: QuarterTurns; angle: number } => {
   const turns = Math.round(degrees / 90);
@@ -50,4 +48,6 @@ export const splitAngle = (
   return { angle: degrees - 90 * turns, turns: toQuarterTurns(turns) };
 };
 
-export const positiveZero = (value: number): number => value + 0;
+const positiveZero = (value: number): number => value + 0;
+
+export { positiveZero, sinCosDegrees, splitAngle, toQuarterTurns };

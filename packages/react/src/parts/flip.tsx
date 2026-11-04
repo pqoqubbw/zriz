@@ -8,16 +8,16 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type FlipState = {
+type FlipState = {
   mirrored: boolean;
 };
 
-export type FlipProps = {
+type FlipProps = PartProps<"button", FlipState> & {
   /** Mirror axis. @default "x" */
   axis?: "x" | "y" | undefined;
-} & PartProps<"button", FlipState>;
+};
 
-export const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
+const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   FlipProps
 >(function Flip({ axis = "x", ...props }, ref) {
@@ -43,3 +43,6 @@ export const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
     { mirrored }
   );
 });
+
+export type { FlipProps, FlipState };
+export { Flip };

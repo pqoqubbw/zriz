@@ -1,6 +1,6 @@
 const noop = (): void => undefined;
 
-export const deferred = <T>(): {
+const deferred = <T>(): {
   promise: Promise<T>;
   resolve: (value: T) => void;
 } => {
@@ -16,3 +16,5 @@ export const deferred = <T>(): {
     },
   };
 };
+
+export { deferred };

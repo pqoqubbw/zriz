@@ -3,4 +3,6 @@
 import { createContext } from "react";
 import type { Context } from "react";
 
-export const AspectGroupContext: Context<boolean> = createContext(false);
+const AspectGroupContext: Context<boolean> = createContext(false);
+
+export { AspectGroupContext };

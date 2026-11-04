@@ -13,7 +13,7 @@ type Reply = {
   error?: string;
 };
 
-export type Lane<K> = {
+type Lane<K> = {
   call: <T>(op: string, args: readonly unknown[]) => Promise<T>;
   here: () => K;
 };
@@ -21,7 +21,7 @@ export type Lane<K> = {
 const program = (kernel: string): string =>
   `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:error instanceof ReferenceError?"zriz:worker:failed":String(error&&error.message||error)})}finally{for(const arg of args){const held=arg&&arg.source||arg;if(held instanceof ImageBitmap)held.close()}}}`;
 
-export const lane = <K>(kernel: () => K): Lane<K> => {
+const lane = <K>(kernel: () => K): Lane<K> => {
   let worker: Worker | null | undefined;
   let local: K | null = null;
   let next = 0;
@@ -111,7 +111,7 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
 const fallback = (error: unknown): boolean =>
   error instanceof Error && error.message.startsWith("zriz:worker:");
 
-export const via = async <
+const via = async <
   K extends Record<O, (...args: A) => Promise<T>>,
   O extends keyof K & string,
   const A extends readonly unknown[],
@@ -132,13 +132,13 @@ export const via = async <
   return await target.here()[op](...args);
 };
 
-export type Turn = <T>(
+type Turn = <T>(
   start: () => Promise<T>,
   ms: number,
   signal: AbortSignal | undefined
 ) => Promise<T>;
 
-export const gate = (size: number): Turn => {
+const gate = (size: number): Turn => {
   let free = size;
   const turns: (() => void)[] = [];
 
@@ -191,7 +191,7 @@ export const gate = (size: number): Turn => {
   };
 };
 
-export const decodeTurn: Turn = gate(3);
+const decodeTurn: Turn = gate(3);
 
 let decoder: Lane<Kernel> | undefined;
 
@@ -201,23 +201,20 @@ const decoding = (): Lane<Kernel> => {
   return decoder;
 };
 
-export const decodeOff = async (
+const decodeOff = async (
   blob: Blob,
   edge: number,
   keep?: number
 ): Promise<DecodeReply> => await via(decoding(), "decode", [blob, edge, keep]);
 
-export const keepOff = async (
-  id: number,
-  bitmap: ImageBitmap
-): Promise<void> => {
+const keepOff = async (id: number, bitmap: ImageBitmap): Promise<void> => {
   await via(decoding(), "keep", [id, bitmap]);
 };
 
-export const motionOff = async (id: number, type: string): Promise<Blob> =>
+const motionOff = async (id: number, type: string): Promise<Blob> =>
   await via(decoding(), "motion", [id, type]);
 
-export const resampleOff = async (
+const resampleOff = async (
   id: number,
   rect: Region,
   width: number,
@@ -225,7 +222,7 @@ export const resampleOff = async (
 ): Promise<ImageBitmap> =>
   await via(decoding(), "resample", [id, rect, width, height]);
 
-export const regionOff = async (
+const regionOff = async (
   source: Blob | ImageBitmap,
   rect: Region,
   width: number,
@@ -233,6 +230,20 @@ export const regionOff = async (
 ): Promise<ImageBitmap> =>
   await via(decoding(), "region", [source, rect, width, height]);
 
-export const releaseOff = async (id: number): Promise<void> => {
+const releaseOff = async (id: number): Promise<void> => {
   await via(decoding(), "release", [id]);
+};
+
+export type { Lane, Turn };
+export {
+  decodeOff,
+  decodeTurn,
+  gate,
+  keepOff,
+  lane,
+  motionOff,
+  regionOff,
+  releaseOff,
+  resampleOff,
+  via,
 };

@@ -8,16 +8,16 @@ import { useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type DialTicksState = {
+type DialTicksState = {
   count: number;
 };
 
-export type DialTicksProps = {
+type DialTicksProps = PartProps<"div", DialTicksState> & {
   /** Number of ticks across ±45°. @default 41 */
   count?: number | undefined;
-} & PartProps<"div", DialTicksState>;
+};
 
-export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
+const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   DialTicksProps
 >(function DialTicks({ count = DIAL_TICKS, ...props }, ref) {
@@ -51,3 +51,6 @@ export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
     { count }
   );
 });
+
+export type { DialTicksProps, DialTicksState };
+export { DialTicks };

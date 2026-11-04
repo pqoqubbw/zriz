@@ -20,7 +20,7 @@ import { visualScale } from "../../src/dom/view";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
 
-const photo = { height: 3000, width: 4000 };
+const PHOTO = { height: 3000, width: 4000 };
 const cleanups: (() => void)[] = [];
 let count = 0;
 
@@ -85,7 +85,7 @@ const mount = (
     commits: 0,
     cropper: createCropper({
       clock,
-      image: photo,
+      image: PHOTO,
       onValueCommit: () => {
         fixture.commits += 1;
       },
@@ -162,7 +162,7 @@ const pressers: Record<
 };
 
 const startsGesture = (part: string, init: PointerEventInit): boolean => {
-  const cropper = createCropper({ image: photo });
+  const cropper = createCropper({ image: PHOTO });
   const element = document.createElement("div");
 
   element.style.cssText = "width:400px;height:300px;";
@@ -317,8 +317,8 @@ describe("dom binders", () => {
       const { image } = fixture;
 
       expect([image.offsetWidth, image.offsetHeight]).toStrictEqual([
-        photo.width,
-        photo.height,
+        PHOTO.width,
+        PHOTO.height,
       ]);
 
       expect([image.clientLeft, image.clientTop]).toStrictEqual([0, 0]);
@@ -338,7 +338,7 @@ describe("dom binders", () => {
       const fixture = mount();
 
       await frames();
-      expect(fixture.image.offsetHeight).toBe(photo.height);
+      expect(fixture.image.offsetHeight).toBe(PHOTO.height);
     });
 
     it("lays out once a hidden viewport is revealed", async () => {
@@ -657,9 +657,9 @@ describe("dom binders", () => {
       const [a, , e, , d, f] = frame.matrix;
       const { rect } = frame;
       const left = e - rect.x;
-      const right = rect.x + rect.width - (e + a * photo.width);
+      const right = rect.x + rect.width - (e + a * PHOTO.width);
       const top = f - rect.y;
-      const bottom = rect.y + rect.height - (f + d * photo.height);
+      const bottom = rect.y + rect.height - (f + d * PHOTO.height);
 
       expect(left).toBeGreaterThan(5);
       expect(Math.abs(left - right)).toBeLessThan(0.5);
@@ -710,7 +710,7 @@ describe("dom binders", () => {
     });
 
     it("ends the wheel gesture when the viewport goes away", async () => {
-      const cropper = createCropper({ image: photo });
+      const cropper = createCropper({ image: PHOTO });
       const element = document.createElement("div");
 
       element.style.cssText = "position:relative;width:400px;height:300px;";
@@ -1185,7 +1185,7 @@ describe("two viewports on one cropper", () => {
   });
 
   it("cleanup lets go of the element", async () => {
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
     const element = document.createElement("div");
 
     element.style.cssText =
@@ -1263,7 +1263,7 @@ describe("a removed photo", () => {
       mask.style.clipPath,
     ]).toStrictEqual(["", "", ""]);
 
-    fixture.cropper.setImage(photo);
+    fixture.cropper.setImage(PHOTO);
     await frames();
     expect(area.style.width).toBe(width);
     expect(mask.style.clipPath).not.toBe("");
@@ -1502,7 +1502,7 @@ const inFrame = async () => {
 
   element.style.cssText = "width:400px;height:300px;";
   doc.body.append(element);
-  const cropper = createCropper({ image: photo });
+  const cropper = createCropper({ image: PHOTO });
   const off = bindViewport(cropper, element);
 
   cleanups.push(() => {
@@ -1582,7 +1582,7 @@ describe("a viewport in another document", () => {
 
   it("the pressed element takes the capture error from that realm", async () => {
     const doc = documentOf(await frameDocument());
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
 
     cleanups.push(() => {
       cropper.destroy();
@@ -1610,7 +1610,7 @@ describe("a viewport in another document", () => {
 
   it("a handler with no getter still finds an element from that realm", async () => {
     const doc = documentOf(await frameDocument());
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
 
     cleanups.push(() => {
       cropper.destroy();
@@ -1643,7 +1643,7 @@ const bare = (css: string) => {
   const element = document.createElement("div");
 
   element.style.cssText = css;
-  const cropper = createCropper({ image: photo });
+  const cropper = createCropper({ image: PHOTO });
 
   cleanups.push(() => {
     cropper.destroy();
@@ -2030,7 +2030,7 @@ describe("re-measure after an ancestor settles", () => {
       viewport.remove();
     });
 
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
     const controller = viewportController(cropper);
 
     controller.setElement(viewport);

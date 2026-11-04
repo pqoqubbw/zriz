@@ -31,7 +31,7 @@ type ElementOf<T> = T extends keyof HTMLElementTagNameMap
     ? SVGElementTagNameMap[T]
     : Element;
 
-export type PartProps<T extends keyof JSX.IntrinsicElements, S> = Omit<
+type PartProps<T extends keyof JSX.IntrinsicElements, S> = Omit<
   ComponentPropsWithoutRef<T>,
   "className"
 > & {
@@ -41,11 +41,11 @@ export type PartProps<T extends keyof JSX.IntrinsicElements, S> = Omit<
   render?: RenderProp<S> | undefined;
 } & RefAttributes<ElementOf<T>>;
 
-export type Part<P, E> = ForwardRefExoticComponent<
+type Part<P, E> = ForwardRefExoticComponent<
   PropsWithoutRef<P> & RefAttributes<E>
 >;
 
-export type RootContextValue = {
+type RootContextValue = {
   box?: ElementBox;
   shape: "rect" | "circle";
   instructions: string | undefined;
@@ -53,18 +53,17 @@ export type RootContextValue = {
   locale: string | undefined;
 };
 
-export const RootContext: Context<RootContextValue> =
-  createContext<RootContextValue>({
-    dir: "ltr",
-    instructions: undefined,
-    locale: undefined,
-    shape: "rect",
-  });
+const RootContext: Context<RootContextValue> = createContext<RootContextValue>({
+  dir: "ltr",
+  instructions: undefined,
+  locale: undefined,
+  shape: "rect",
+});
 
-export const useIsomorphicLayoutEffect: typeof useEffect =
+const useIsomorphicLayoutEffect: typeof useEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export const useSameJson = <T>(value: T): T => {
+const useSameJson = <T>(value: T): T => {
   const [held, setHeld] = useState(value);
 
   if (JSON.stringify(held) !== JSON.stringify(value)) {
@@ -74,7 +73,7 @@ export const useSameJson = <T>(value: T): T => {
   return held;
 };
 
-export const useLatest = <T>(value: T): { readonly current: T } => {
+const useLatest = <T>(value: T): { readonly current: T } => {
   const ref = useRef(value);
 
   useIsomorphicLayoutEffect(() => {
@@ -84,7 +83,7 @@ export const useLatest = <T>(value: T): { readonly current: T } => {
   return ref;
 };
 
-export const keepStyle =
+const keepStyle =
   (base: CSSProperties) =>
   (node: HTMLElement | null): undefined => {
     if (node) {
@@ -100,12 +99,12 @@ export const keepStyle =
     return undefined;
   };
 
-export const useKeptStyle = (
+const useKeptStyle = (
   keep: (node: HTMLElement | null) => undefined,
   ref: Ref<HTMLElement> | undefined
 ): Ref<HTMLElement> => useMemo(() => mergeRefs(keep, ref), [keep, ref]);
 
-export type ElementBox = {
+type ElementBox = {
   get: () => Element | null;
   set: (node: Element) => () => void;
 };
@@ -125,9 +124,9 @@ const createBox = (): ElementBox => {
   };
 };
 
-export const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
+const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
 
-export const useHold = (hold: () => (() => unknown) | null): void => {
+const useHold = (hold: () => (() => unknown) | null): void => {
   const held = useRef<{
     from: typeof hold;
     release: (() => unknown) | null;
@@ -149,7 +148,7 @@ export const useHold = (hold: () => (() => unknown) | null): void => {
   );
 };
 
-export const useMergedRef = <T>(
+const useMergedRef = <T>(
   own: (node: T) => (() => void) | undefined,
   theirs: Ref<T> | undefined
 ): ((node: T | null) => void) => {
@@ -219,13 +218,13 @@ export const useMergedRef = <T>(
   );
 };
 
-export const native =
+const native =
   <E extends Event>(handler: (event: E) => void) =>
   (event: { nativeEvent: E }): void => {
     handler(event.nativeEvent);
   };
 
-export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
+const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
   handlers: H
 ): Record<string, unknown> => {
   const props: Record<string, unknown> = {};
@@ -249,6 +248,22 @@ export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
   return props;
 };
 
-export const useRelease = (handlers: { release: () => void }): void => {
+const useRelease = (handlers: { release: () => void }): void => {
   useIsomorphicLayoutEffect(() => handlers.release, [handlers]);
+};
+
+export type { ElementBox, Part, PartProps, RootContextValue };
+export {
+  RootContext,
+  keepStyle,
+  native,
+  nativeProps,
+  useElementBox,
+  useHold,
+  useIsomorphicLayoutEffect,
+  useKeptStyle,
+  useLatest,
+  useMergedRef,
+  useRelease,
+  useSameJson,
 };

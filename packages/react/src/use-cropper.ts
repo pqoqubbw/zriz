@@ -22,7 +22,7 @@ import {
 import { CropperContext } from "./context";
 import { useHold, useIsomorphicLayoutEffect, useLatest } from "./part";
 
-export type UseCropperOptions = {
+type UseCropperOptions = Omit<CropperOptions, "clock"> & {
   /** Use this instance instead of creating one. */
   cropper?: Cropper | undefined;
   /** Controlled aspect: a ratio, "free" or "original". */
@@ -31,7 +31,7 @@ export type UseCropperOptions = {
   rotation?: number | undefined;
   /** Controlled zoom, 1 is the largest crop. */
   zoom?: number | undefined;
-} & Omit<CropperOptions, "clock">;
+};
 
 type Slot = {
   prop?: number | undefined;
@@ -246,13 +246,13 @@ const firstValues = (
 const firstSnapshot = (cropper: Cropper): CropperSnapshot =>
   firstValues(cropper)[0];
 
-export const firstZoom = (cropper: Cropper, max?: number): number => {
+const firstZoom = (cropper: Cropper, max?: number): number => {
   const [, zoom, top] = firstValues(cropper);
 
   return Math.round(Math.min(zoom, max ?? top) * 100) / 100;
 };
 
-export const useCropper = (options: UseCropperOptions = {}): Cropper => {
+const useCropper = (options: UseCropperOptions = {}): Cropper => {
   const {
     cropper: external,
     value,
@@ -373,7 +373,7 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
   return cropper;
 };
 
-export const useTarget = (cropper?: Cropper): Cropper => {
+const useTarget = (cropper?: Cropper): Cropper => {
   const context = useContext(CropperContext);
   const target = cropper ?? context;
 
@@ -384,7 +384,7 @@ export const useTarget = (cropper?: Cropper): Cropper => {
   return target;
 };
 
-export const useCropperState = <T>(
+const useCropperState = <T>(
   selector: (snapshot: CropperSnapshot) => T,
   cropper?: Cropper
 ): T => {
@@ -397,13 +397,13 @@ export const useCropperState = <T>(
   );
 };
 
-export const useAriaDisabled = (): true | undefined =>
+const useAriaDisabled = (): true | undefined =>
   useCropperState((s) => s.disabled) || undefined;
 
-export const firstCommitted = (cropper: Cropper): CropValue =>
+const firstCommitted = (cropper: Cropper): CropValue =>
   firstSnapshot(cropper).committed;
 
-export const useCropperValue = (cropper?: Cropper): CropValue => {
+const useCropperValue = (cropper?: Cropper): CropValue => {
   const target = useTarget(cropper);
   const subscribe = useCallback(
     (listener: () => void) => {
@@ -431,7 +431,7 @@ export const useCropperValue = (cropper?: Cropper): CropValue => {
   );
 };
 
-export const useCropperFrame = (
+const useCropperFrame = (
   listener: (frame: CropperFrame) => void,
   cropper?: Cropper
 ): void => {
@@ -445,4 +445,16 @@ export const useCropperFrame = (
       }),
     [latest, target]
   );
+};
+
+export type { UseCropperOptions };
+export {
+  firstCommitted,
+  firstZoom,
+  useAriaDisabled,
+  useCropper,
+  useCropperFrame,
+  useCropperState,
+  useCropperValue,
+  useTarget,
 };

@@ -1,12 +1,6 @@
 import type { Size } from "./geometry/types";
 
-export type { Size } from "./geometry/types";
-
-export const coverScale = (
-  image: Size,
-  crop: Size,
-  radians: number
-): number => {
+const coverScale = (image: Size, crop: Size, radians: number): number => {
   const cos = Math.abs(Math.cos(radians));
   const sin = Math.abs(Math.sin(radians));
 
@@ -16,7 +10,7 @@ export const coverScale = (
   );
 };
 
-export const covers = (
+const covers = (
   image: Size,
   crop: Size,
   radians: number,
@@ -49,3 +43,6 @@ export const covers = (
 
   return true;
 };
+
+export type { Size } from "./geometry/types";
+export { coverScale, covers };

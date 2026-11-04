@@ -86,10 +86,7 @@ const childOf = <K extends "img" | "canvas">(
   return made;
 };
 
-export const bindPhoto = (
-  cropper: Cropper,
-  container: HTMLElement
-): (() => void) => {
+const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   const view = viewOf(cropper);
   const motion = childOf(container, "img");
   const rest = childOf(container, "canvas");
@@ -489,3 +486,5 @@ export const bindPhoto = (
     rest.height = 0;
   };
 };
+
+export { bindPhoto };

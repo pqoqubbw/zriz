@@ -4,10 +4,11 @@ import type { Cropper } from "@zriz/core";
 import { createContext, useContext } from "react";
 import type { Context } from "react";
 
-export const CropperContext: Context<Cropper | null> =
-  createContext<Cropper | null>(null);
+const CropperContext: Context<Cropper | null> = createContext<Cropper | null>(
+  null
+);
 
-export const useCropperContext = (): Cropper => {
+const useCropperContext = (): Cropper => {
   const cropper = useContext(CropperContext);
 
   if (!cropper) {
@@ -16,3 +17,5 @@ export const useCropperContext = (): Cropper => {
 
   return cropper;
 };
+
+export { CropperContext, useCropperContext };

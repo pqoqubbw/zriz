@@ -20,7 +20,7 @@ const shadowCss = (): string =>
     .map((rule) => rule.cssText)
     .join("\n");
 
-const edges = [
+const EDGES = [
   ["top-left", "nwse-resize"],
   ["top", "ns-resize"],
   ["top-right", "nesw-resize"],
@@ -55,7 +55,7 @@ const Editor = () => (
       style={{ height: 300, padding: 20, position: "relative", width: 400 }}
     >
       <Cropper.Area aria-label="Crop">
-        {edges.map(([edge]) => (
+        {EDGES.map(([edge]) => (
           <Cropper.Handle key={edge} position={edge} />
         ))}
       </Cropper.Area>
@@ -150,8 +150,8 @@ describe("cursors", () => {
     };
 
     expect(
-      edges.map(([edge]) => cursorOf(`[data-edge="${edge}"]`))
-    ).toStrictEqual(edges.map(([, cursor]) => cursor));
+      EDGES.map(([edge]) => cursorOf(`[data-edge="${edge}"]`))
+    ).toStrictEqual(EDGES.map(([, cursor]) => cursor));
 
     expect(cursorOf('[data-zriz-item="viewport"]')).toBe("grab");
     expect(cursorOf('[data-zriz-item="dial"]')).toBe("grab");

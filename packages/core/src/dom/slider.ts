@@ -1,13 +1,13 @@
 import type { ChangeReason, Cropper } from "../cropper";
 
-export type KeyHandlers = {
+type KeyHandlers = {
   onKeyDown: (event: KeyboardEvent) => void;
   onKeyUp: (event: KeyboardEvent) => void;
   onBlur: (event: FocusEvent) => void;
   release: () => void;
 };
 
-export const numberFormat = (
+const numberFormat = (
   locale: string | undefined,
   defaults: Intl.NumberFormatOptions & { maximumFractionDigits: number },
   format?: Intl.NumberFormatOptions
@@ -36,10 +36,7 @@ export const numberFormat = (
   return new Intl.NumberFormat(undefined, defaults);
 };
 
-export const followDisabled = (
-  cropper: Cropper,
-  element: Element
-): (() => void) => {
+const followDisabled = (cropper: Cropper, element: Element): (() => void) => {
   let wrote = false;
 
   const clear = (): void => {
@@ -67,7 +64,7 @@ export const followDisabled = (
   };
 };
 
-export const keyed = (
+const keyed = (
   cropper: Cropper,
   plan: (event: KeyboardEvent) => (() => void) | null,
   owner: object = {},
@@ -126,7 +123,7 @@ export const keyed = (
   };
 };
 
-export const sliderKey = (
+const sliderKey = (
   event: KeyboardEvent,
   value: number,
   steps: number,
@@ -151,7 +148,7 @@ export const sliderKey = (
 
 const VALUES = ["min", "max", "now", "text"];
 
-export const sliderAria = (
+const sliderAria = (
   cropper: Cropper,
   element: HTMLElement,
   reason: ChangeReason,
@@ -193,3 +190,6 @@ export const sliderAria = (
     }
   };
 };
+
+export type { KeyHandlers };
+export { followDisabled, keyed, numberFormat, sliderAria, sliderKey };

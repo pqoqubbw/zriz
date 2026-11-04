@@ -19,16 +19,16 @@ import type { Part, PartProps } from "../part";
 import { firstZoom, useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type ZoomState = {
+type ZoomState = {
   dragging: boolean;
 };
 
-export type ZoomProps = {
+type ZoomProps = PartProps<"div", ZoomState> & {
   /** Highest zoom the slider reaches. @default maxZoom on Root */
   max?: number | undefined;
   /** Formatting of the spoken value. @default percent */
   format?: Intl.NumberFormatOptions | undefined;
-} & PartProps<"div", ZoomState>;
+};
 
 const STYLE = {
   WebkitTapHighlightColor: "transparent",
@@ -40,7 +40,7 @@ const STYLE = {
 
 const keep = keepStyle(STYLE);
 
-export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
+const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ZoomProps
 >(function Zoom({ max, format, ...props }, ref) {
@@ -93,3 +93,6 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
     { dragging }
   );
 });
+
+export type { ZoomProps, ZoomState };
+export { Zoom };

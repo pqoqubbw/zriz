@@ -11,7 +11,7 @@ const absSinCos = (degrees: number): { sin: number; cos: number } => {
   return { cos: Math.abs(cos), sin: Math.abs(sin) };
 };
 
-export const panBox = (
+const panBox = (
   image: Size,
   angle: number,
   width: number,
@@ -28,7 +28,7 @@ export const panBox = (
 const clamp = (value: number, limit: number): number =>
   Math.min(Math.max(value, -Math.max(limit, 0)), Math.max(limit, 0));
 
-export const clampPan = (
+const clampPan = (
   image: Size,
   angle: number,
   width: number,
@@ -49,7 +49,7 @@ export const clampPan = (
   return applyMatrix2(rotationMatrix(angle), clamped);
 };
 
-export const coverScaleAt = (
+const coverScaleAt = (
   image: Size,
   view: Size,
   angle: number,
@@ -66,7 +66,7 @@ export const coverScaleAt = (
   );
 };
 
-export const minScaleAt = (
+const minScaleAt = (
   planes: readonly HalfPlane[],
   view: Size,
   centre: Point
@@ -151,7 +151,7 @@ const flatFit = (
   };
 };
 
-export const largestFit = (
+const largestFit = (
   planes: readonly HalfPlane[],
   view: Size
 ): { center: Point; scale: number } => {
@@ -197,7 +197,7 @@ export const largestFit = (
   return { center: best.center, scale: 1 / best.t };
 };
 
-export const largestCropAt = (
+const largestCropAt = (
   image: Size,
   angle: number,
   aspect: number,
@@ -211,4 +211,13 @@ export const largestCropAt = (
   );
 
   return { height, width: aspect * height };
+};
+
+export {
+  clampPan,
+  coverScaleAt,
+  largestCropAt,
+  largestFit,
+  minScaleAt,
+  panBox,
 };

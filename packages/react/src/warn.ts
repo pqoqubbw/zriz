@@ -15,7 +15,7 @@ const isDev = (): boolean => {
   }
 };
 
-export const warnUnlabelled = (part: string, element: Element | null): void => {
+const warnUnlabelled = (part: string, element: Element | null): void => {
   if (!element || warned.has(part) || !isDev()) {
     return;
   }
@@ -33,7 +33,7 @@ export const warnUnlabelled = (part: string, element: Element | null): void => {
   }
 };
 
-export const warnFormat = (
+const warnFormat = (
   part: string,
   locale: string | undefined,
   format: Intl.NumberFormatOptions | undefined
@@ -54,3 +54,5 @@ export const warnFormat = (
     );
   }
 };
+
+export { warnFormat, warnUnlabelled };

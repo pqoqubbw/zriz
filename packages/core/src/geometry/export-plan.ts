@@ -18,7 +18,7 @@ import type {
   Size,
 } from "./types";
 
-export type ExportPlan = {
+type ExportPlan = {
   width: number;
   height: number;
   forward: AffineMatrix;
@@ -28,13 +28,11 @@ export type ExportPlan = {
   rotateExpand: { flop: boolean; degrees: number; dx: number; dy: number };
 };
 
-export const quantise = (value: number): number =>
-  Math.round(value * 1024) / 1024;
+const quantise = (value: number): number => Math.round(value * 1024) / 1024;
 
-export const snapEdge = (value: number): number =>
-  Math.floor(quantise(value) + 0.5);
+const snapEdge = (value: number): number => Math.floor(quantise(value) + 0.5);
 
-export const sourceToOutputMatrix = (
+const sourceToOutputMatrix = (
   state: CropState,
   plan: { width: number; height: number; scale: number; crop: Crop }
 ): Matrix3 => {
@@ -121,10 +119,7 @@ const snappedCrop = (
   };
 };
 
-export const exportPlan = (
-  state: CropState,
-  requestedScale = 1
-): ExportPlan => {
+const exportPlan = (state: CropState, requestedScale = 1): ExportPlan => {
   const linear = linearTransform(state);
   const hasPerspective = !isFlatPerspective(state.perspective);
   let pixelRect: PixelRect | null = null;
@@ -172,7 +167,7 @@ export const exportPlan = (
   };
 };
 
-export const rotatedBox = (image: Size, degrees: number): Size => {
+const rotatedBox = (image: Size, degrees: number): Size => {
   const { sin, cos } = sinCosDegrees(degrees);
 
   return {
@@ -180,3 +175,6 @@ export const rotatedBox = (image: Size, degrees: number): Size => {
     width: image.width * Math.abs(cos) + image.height * Math.abs(sin),
   };
 };
+
+export type { ExportPlan };
+export { exportPlan, quantise, rotatedBox, snapEdge, sourceToOutputMatrix };

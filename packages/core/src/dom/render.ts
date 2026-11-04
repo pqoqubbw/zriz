@@ -49,7 +49,7 @@ const firstScale = (
   );
 };
 
-export const exportImage = async (
+const exportImage = async (
   cropper: Cropper,
   image: LoadedImage,
   options: ExportOptions = {}
@@ -145,3 +145,5 @@ export const exportImage = async (
     }
   }
 };
+
+export { exportImage };

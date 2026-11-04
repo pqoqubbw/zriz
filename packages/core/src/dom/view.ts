@@ -15,33 +15,33 @@ import { sameFields } from "../same-fields";
 import type { Aspect } from "../value";
 import { claim, claimed } from "./input";
 
-export type Inset = {
+type Inset = {
   top: number;
   right: number;
   bottom: number;
   left: number;
 };
 
-export type Layout = {
+type Layout = {
   width: number;
   height: number;
   inset: Inset;
   dpr: number;
 };
 
-export type Box = {
+type Box = {
   x: number;
   y: number;
   width: number;
   height: number;
 };
 
-export type Placement = {
+type Placement = {
   scale: number;
   offset: Point;
 };
 
-export type ViewFrame = {
+type ViewFrame = {
   rect: Box;
   matrix: Matrix3;
   scale: number;
@@ -49,23 +49,23 @@ export type ViewFrame = {
   layout: Layout;
 };
 
-export type Transition = "recentre" | "rotate" | "flip" | "morph";
+type Transition = "recentre" | "rotate" | "flip" | "morph";
 
-export type Grid = "none" | "coarse" | "fine";
+type Grid = "none" | "coarse" | "fine";
 
-export type Chrome = {
+type Chrome = {
   grid: Grid;
   active: boolean;
   transition: Transition | null;
   overscroll: boolean;
 };
 
-export type ViewOptions = {
+type ViewOptions = {
   motion?: "auto" | "always" | "reduce" | undefined;
   recentreDelay?: number | undefined;
 };
 
-export type View = {
+type View = {
   frame: () => ViewFrame | null;
   chrome: () => Chrome;
   onChrome: (listener: () => void) => () => void;
@@ -87,7 +87,7 @@ export type View = {
   destroy: () => void;
 };
 
-export const LAYER_BOX: Record<string, string> = {
+const LAYER_BOX: Record<string, string> = {
   border: "0",
   left: "0",
   margin: "0",
@@ -100,10 +100,10 @@ export const LAYER_BOX: Record<string, string> = {
   top: "0",
 };
 
-export const snap = (value: number, dpr: number): number =>
+const snap = (value: number, dpr: number): number =>
   Math.round(value * dpr) / dpr;
 
-export const fitPlacement = (layout: Layout, state: CropState): Placement => {
+const fitPlacement = (layout: Layout, state: CropState): Placement => {
   const { inset } = layout;
   const width = Math.max(layout.width - inset.left - inset.right, 1);
   const height = Math.max(layout.height - inset.top - inset.bottom, 1);
@@ -120,7 +120,7 @@ export const fitPlacement = (layout: Layout, state: CropState): Placement => {
 
 const NO_SHIFT: Point = { x: 0, y: 0 };
 
-export const imageMatrix = (
+const imageMatrix = (
   state: CropState,
   placement: Placement,
   shift: Point = NO_SHIFT
@@ -156,7 +156,7 @@ export const imageMatrix = (
   return multiplyMatrix3(affine, keystone);
 };
 
-export const cssMatrix = (m: Matrix3): string => {
+const cssMatrix = (m: Matrix3): string => {
   if (m[6] === 0 && m[7] === 0 && m[8] === 1) {
     return `matrix(${m[0]},${m[3]},${m[1]},${m[4]},${m[2]},${m[5]})`;
   }
@@ -167,7 +167,7 @@ export const cssMatrix = (m: Matrix3): string => {
 const share = (seen: number, own: number): number =>
   own > 0 && seen > 0 && Math.abs(seen - own) >= 1 ? seen / own : 1;
 
-export const isHtml = (element: Element): element is HTMLElement =>
+const isHtml = (element: Element): element is HTMLElement =>
   "offsetWidth" in element;
 
 const scaleOf = (element: Element, box: DOMRect): Point =>
@@ -178,10 +178,10 @@ const scaleOf = (element: Element, box: DOMRect): Point =>
       }
     : { x: 1, y: 1 };
 
-export const visualScale = (element: Element): Point =>
+const visualScale = (element: Element): Point =>
   scaleOf(element, element.getBoundingClientRect());
 
-export const localOf = (
+const localOf = (
   element: Element
 ): ((event: { clientX: number; clientY: number }) => Point) => {
   const box = element.getBoundingClientRect();
@@ -360,9 +360,7 @@ const springProgress = (omega: number, ms: number): number => {
 
 const flag = (on: boolean): string | undefined => (on ? "" : undefined);
 
-export const orientationOf = (
-  aspect: Aspect
-): "portrait" | "landscape" | "square" => {
+const orientationOf = (aspect: Aspect): "portrait" | "landscape" | "square" => {
   if (typeof aspect !== "number" || aspect === 1) {
     return "square";
   }
@@ -370,7 +368,7 @@ export const orientationOf = (
   return aspect > 1 ? "landscape" : "portrait";
 };
 
-export const stateAttributes = (
+const stateAttributes = (
   state: CropperSnapshot,
   chrome: Chrome,
   reducedMotion: boolean
@@ -396,7 +394,7 @@ export const stateAttributes = (
   };
 };
 
-export const viewOf = (cropper: Cropper): View => {
+const viewOf = (cropper: Cropper): View => {
   const existing = views.get(cropper);
 
   if (existing) {
@@ -908,4 +906,30 @@ export const viewOf = (cropper: Cropper): View => {
   });
 
   return view;
+};
+
+export type {
+  Box,
+  Chrome,
+  Grid,
+  Inset,
+  Layout,
+  Placement,
+  Transition,
+  View,
+  ViewFrame,
+  ViewOptions,
+};
+export {
+  LAYER_BOX,
+  cssMatrix,
+  fitPlacement,
+  imageMatrix,
+  isHtml,
+  localOf,
+  orientationOf,
+  snap,
+  stateAttributes,
+  viewOf,
+  visualScale,
 };

@@ -1,17 +1,17 @@
-export type DecodeReply = {
+type DecodeReply = {
   width: number;
   height: number;
   preview: ImageBitmap;
 };
 
-export type Region = {
+type Region = {
   x: number;
   y: number;
   width: number;
   height: number;
 };
 
-export type Kernel = {
+type Kernel = {
   decode: (blob: Blob, edge: number, keep?: number) => Promise<DecodeReply>;
   keep: (id: number, bitmap: ImageBitmap) => Promise<undefined>;
   motion: (id: number, type: string) => Promise<Blob>;
@@ -30,7 +30,7 @@ export type Kernel = {
   release: (id: number) => Promise<undefined>;
 };
 
-export const imageKernel = (): Kernel => {
+const imageKernel = (): Kernel => {
   type Canvas = OffscreenCanvas | HTMLCanvasElement;
   type Context = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
 
@@ -213,3 +213,6 @@ export const imageKernel = (): Kernel => {
     },
   };
 };
+
+export type { DecodeReply, Kernel, Region };
+export { imageKernel };

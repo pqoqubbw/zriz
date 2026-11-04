@@ -13,9 +13,9 @@ import type { CropState, Matrix2, Point, QuarterTurns, Size } from "./types";
 
 const QUARTER_TURN_VALUES: ReadonlySet<unknown> = new Set([0, 1, 2, 3]);
 
-export type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
-export const exifOrientations: Readonly<
+const EXIF_ORIENTATIONS: Readonly<
   Record<
     ExifOrientation,
     { readonly turns: QuarterTurns; readonly flip: boolean }
@@ -31,7 +31,7 @@ export const exifOrientations: Readonly<
   8: { flip: false, turns: 3 },
 };
 
-export const linearTransform = (
+const linearTransform = (
   state: Pick<CropState, "turns" | "flip" | "angle">
 ): Matrix2 =>
   multiplyMatrix2(
@@ -39,10 +39,10 @@ export const linearTransform = (
     orientationMatrix(state.turns, state.flip)
   );
 
-export const turnedSize = (image: Size, turns: number): Size =>
+const turnedSize = (image: Size, turns: number): Size =>
   turns % 2 === 0 ? image : { height: image.width, width: image.height };
 
-export const sourceToWorking = (state: CropState, point: Point): Point => {
+const sourceToWorking = (state: CropState, point: Point): Point => {
   let centred = {
     x: point.x - state.image.width / 2,
     y: point.y - state.image.height / 2,
@@ -61,7 +61,7 @@ export const sourceToWorking = (state: CropState, point: Point): Point => {
   );
 };
 
-export const workingToSource = (state: CropState, point: Point): Point => {
+const workingToSource = (state: CropState, point: Point): Point => {
   let keystoned = applyMatrix2(
     transposeMatrix2(orientationMatrix(state.turns, state.flip)),
     applyMatrix2(rotationMatrix(-state.angle), point)
@@ -80,7 +80,7 @@ export const workingToSource = (state: CropState, point: Point): Point => {
   };
 };
 
-export const rotateRight = (state: CropState): CropState => ({
+const rotateRight = (state: CropState): CropState => ({
   ...state,
   aspect: state.aspect === null ? null : 1 / state.aspect,
   crop: {
@@ -92,7 +92,7 @@ export const rotateRight = (state: CropState): CropState => ({
   turns: toQuarterTurns(state.turns + 1),
 });
 
-export const rotateLeft = (state: CropState): CropState => ({
+const rotateLeft = (state: CropState): CropState => ({
   ...state,
   aspect: state.aspect === null ? null : 1 / state.aspect,
   crop: {
@@ -104,7 +104,7 @@ export const rotateLeft = (state: CropState): CropState => ({
   turns: toQuarterTurns(state.turns + 3),
 });
 
-export const mirrorX = (state: CropState): CropState => ({
+const mirrorX = (state: CropState): CropState => ({
   ...state,
   angle: positiveZero(-state.angle),
   crop: { ...state.crop, x: positiveZero(-state.crop.x) },
@@ -112,7 +112,7 @@ export const mirrorX = (state: CropState): CropState => ({
   turns: toQuarterTurns(4 - state.turns),
 });
 
-export const mirrorY = (state: CropState): CropState => ({
+const mirrorY = (state: CropState): CropState => ({
   ...state,
   angle: positiveZero(-state.angle),
   crop: { ...state.crop, y: positiveZero(-state.crop.y) },
@@ -120,7 +120,7 @@ export const mirrorY = (state: CropState): CropState => ({
   turns: toQuarterTurns(6 - state.turns),
 });
 
-export const setAngle = (state: CropState, angle: number): CropState => {
+const setAngle = (state: CropState, angle: number): CropState => {
   const centre = applyMatrix2(rotationMatrix(angle - state.angle), state.crop);
 
   return {
@@ -134,8 +134,7 @@ export const setAngle = (state: CropState, angle: number): CropState => {
   };
 };
 
-export const serialiseState = (state: CropState): string =>
-  JSON.stringify(state);
+const serialiseState = (state: CropState): string => JSON.stringify(state);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -150,8 +149,24 @@ const isCropState = (value: unknown): value is CropState =>
   QUARTER_TURN_VALUES.has(value.turns) &&
   (value.aspect === null || typeof value.aspect === "number");
 
-export const deserialiseState = (json: string): CropState | null => {
+const deserialiseState = (json: string): CropState | null => {
   const value: unknown = JSON.parse(json);
 
   return isCropState(value) ? value : null;
+};
+
+export type { ExifOrientation };
+export {
+  deserialiseState,
+  EXIF_ORIENTATIONS as exifOrientations,
+  linearTransform,
+  mirrorX,
+  mirrorY,
+  rotateLeft,
+  rotateRight,
+  serialiseState,
+  setAngle,
+  sourceToWorking,
+  turnedSize,
+  workingToSource,
 };

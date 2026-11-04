@@ -4,14 +4,14 @@ import path from "node:path";
 import sharp from "sharp";
 
 const dir = import.meta.dirname;
-const width = 30;
-const height = 20;
-const raw = Buffer.alloc(width * height * 3);
+const WIDTH = 30;
+const HEIGHT = 20;
+const raw = Buffer.alloc(WIDTH * HEIGHT * 3);
 
-for (let y = 0; y < height; y += 1) {
-  for (let x = 0; x < width; x += 1) {
-    const left = x < width / 2;
-    const top = y < height / 2;
+for (let y = 0; y < HEIGHT; y += 1) {
+  for (let x = 0; x < WIDTH; x += 1) {
+    const left = x < WIDTH / 2;
+    const top = y < HEIGHT / 2;
     let colour = [255, 255, 255];
 
     if (top && left) {
@@ -22,11 +22,11 @@ for (let y = 0; y < height; y += 1) {
       colour = [0, 0, 255];
     }
 
-    raw.set(colour, (y * width + x) * 3);
+    raw.set(colour, (y * WIDTH + x) * 3);
   }
 }
 
-const base = sharp(raw, { raw: { channels: 3, height, width } });
+const base = sharp(raw, { raw: { channels: 3, height: HEIGHT, width: WIDTH } });
 const expected: Record<
   string,
   { width: number; height: number; topLeft: number[] }

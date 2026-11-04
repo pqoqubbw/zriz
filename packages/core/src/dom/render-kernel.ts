@@ -1,17 +1,17 @@
-export type KernelPlan = {
+type KernelPlan = {
   width: number;
   height: number;
   forward: readonly number[];
   homography: readonly number[] | null;
 };
 
-export type Drawable = {
+type Drawable = {
   drawable: CanvasImageSource;
   width: number;
   height: number;
 };
 
-export type RenderJob = {
+type RenderJob = {
   source: Blob | ImageBitmap | Drawable;
   image: { width: number; height: number };
   plans: readonly KernelPlan[];
@@ -21,16 +21,16 @@ export type RenderJob = {
   circle: boolean;
 };
 
-export type RenderReply = {
+type RenderReply = {
   blob: Blob;
   index: number;
 };
 
-export type RenderKernel = {
+type RenderKernel = {
   render: (job: RenderJob) => Promise<RenderReply>;
 };
 
-export const renderKernel = (): RenderKernel => {
+const renderKernel = (): RenderKernel => {
   type Canvas = OffscreenCanvas | HTMLCanvasElement;
   type Context = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
   type M3 = number[];
@@ -397,3 +397,6 @@ export const renderKernel = (): RenderKernel => {
     },
   };
 };
+
+export type { Drawable, KernelPlan, RenderJob, RenderKernel, RenderReply };
+export { renderKernel };

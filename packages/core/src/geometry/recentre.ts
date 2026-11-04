@@ -1,32 +1,32 @@
 import type { Point } from "./types";
 
-export type ViewTransform = {
+type ViewTransform = {
   scale: number;
   translateX: number;
   translateY: number;
 };
 
-export type ScreenRect = {
+type ScreenRect = {
   centerX: number;
   centerY: number;
   width: number;
   height: number;
 };
 
-export type RecentreFrame = {
+type RecentreFrame = {
   rect: ScreenRect;
   view: ViewTransform;
   scale: number;
 };
 
-export type RecentrePlan = {
+type RecentrePlan = {
   factor: number;
   center: Point;
   at: (lambda: number) => RecentreFrame;
   origin: Point | null;
 };
 
-export const recentrePlan = (
+const recentrePlan = (
   rect: ScreenRect,
   view: ViewTransform,
   target: ScreenRect
@@ -73,7 +73,7 @@ export const recentrePlan = (
   return { at, center, factor, origin };
 };
 
-export const anchoredZoom = (
+const anchoredZoom = (
   center: Point,
   scale: number,
   nextScale: number,
@@ -82,3 +82,6 @@ export const anchoredZoom = (
   x: center.x + focus.x * (1 / scale - 1 / nextScale),
   y: center.y + focus.y * (1 / scale - 1 / nextScale),
 });
+
+export type { RecentreFrame, RecentrePlan, ScreenRect, ViewTransform };
+export { anchoredZoom, recentrePlan };

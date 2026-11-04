@@ -1,13 +1,13 @@
 import type { Clock } from "../src";
 
-export type FakeClock = {
+type FakeClock = {
   clock: Clock;
   frame: (ms?: number) => void;
   frames: (count: number, ms?: number) => void;
   pending: () => number;
 };
 
-export const fakeClock = (): FakeClock => {
+const fakeClock = (): FakeClock => {
   let time = 0;
   let id = 0;
   const queue = new Map<number, (time: number) => void>();
@@ -45,3 +45,6 @@ export const fakeClock = (): FakeClock => {
     pending: () => queue.size,
   };
 };
+
+export type { FakeClock };
+export { fakeClock };

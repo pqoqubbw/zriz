@@ -8,12 +8,15 @@ import { useIsomorphicLayoutEffect, useLatest, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type DialValueProps = {
+type DialValueProps = Omit<
+  PartProps<"span", object>,
+  "children" | "dangerouslySetInnerHTML"
+> & {
   /** Text for an angle in degrees. @default the rounded number */
   format?: ((rotation: number) => string) | undefined;
-} & Omit<PartProps<"span", object>, "children" | "dangerouslySetInnerHTML">;
+};
 
-export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
+const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
   HTMLSpanElement,
   DialValueProps
 >(function DialValue({ format, ...props }, ref) {
@@ -54,3 +57,6 @@ export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
     {}
   );
 });
+
+export type { DialValueProps };
+export { DialValue };

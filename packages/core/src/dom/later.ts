@@ -1,4 +1,4 @@
-export const afterPaint = (load: () => Promise<unknown>): void => {
+const afterPaint = (load: () => Promise<unknown>): void => {
   const run = (): void => {
     setTimeout(() => {
       load().catch(() => null);
@@ -11,3 +11,5 @@ export const afterPaint = (load: () => Promise<unknown>): void => {
     run();
   }
 };
+
+export { afterPaint };

@@ -18,15 +18,15 @@ import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type HandleState = {
+type HandleState = {
   position: HandleEdge;
   active: boolean;
 };
 
-export type HandleProps = {
+type HandleProps = PartProps<"div", HandleState> & {
   /** Which corner or edge this handle drags. */
   position: HandleEdge;
-} & PartProps<"div", HandleState>;
+};
 
 const placement = (position: HandleEdge): CSSProperties => {
   const size = "var(--zriz-handle-size, 44px)";
@@ -67,7 +67,7 @@ const restore = (node: HTMLElement, edge: { readonly current: HandleEdge }) => {
   keepStyle(placement(edge.current))(node);
 };
 
-export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
+const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   HandleProps
 >(function Handle({ position, ...props }, ref) {
@@ -124,3 +124,6 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
     { active, position }
   );
 });
+
+export type { HandleProps, HandleState };
+export { Handle };

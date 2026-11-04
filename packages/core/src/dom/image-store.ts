@@ -16,10 +16,7 @@ const watched = new WeakSet<Cropper>();
 
 let prefetched = false;
 
-export const onImage = (
-  cropper: Cropper,
-  listener: () => void
-): (() => void) => {
+const onImage = (cropper: Cropper, listener: () => void): (() => void) => {
   const set = imageListeners.get(cropper) ?? new Set<() => void>();
 
   imageListeners.set(cropper, set);
@@ -46,10 +43,7 @@ const drop = (cropper: Cropper, image: LoadedImage): void => {
   release(image);
 };
 
-export const attachImage = (
-  cropper: Cropper,
-  image: LoadedImage | null
-): void => {
+const attachImage = (cropper: Cropper, image: LoadedImage | null): void => {
   if (image && freed.has(image)) {
     throw new ZrizError(
       "no-image",
@@ -103,5 +97,7 @@ export const attachImage = (
   }
 };
 
-export const imageOf = (cropper: Cropper): LoadedImage | null =>
+const imageOf = (cropper: Cropper): LoadedImage | null =>
   attached.get(cropper) ?? null;
+
+export { attachImage, imageOf, onImage };

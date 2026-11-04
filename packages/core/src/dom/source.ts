@@ -7,7 +7,7 @@ const FRAME_POLL = 16;
 const UNSIZED_WIDTH = 300;
 const UNSIZED_HEIGHT = 150;
 
-export const assertReadable = (source: CanvasImageSource): boolean => {
+const assertReadable = (source: CanvasImageSource): boolean => {
   const canvas = canvasFor({ height: PROBE, width: PROBE });
 
   try {
@@ -51,7 +51,7 @@ const showsFrame = async (
   return await showsFrame(video, tries - 1);
 };
 
-export const fromElement = async (
+const fromElement = async (
   src:
     | HTMLImageElement
     | HTMLVideoElement
@@ -106,3 +106,5 @@ export const fromElement = async (
 
   return src instanceof ImageBitmap ? src : await createImageBitmap(src);
 };
+
+export { assertReadable, fromElement };

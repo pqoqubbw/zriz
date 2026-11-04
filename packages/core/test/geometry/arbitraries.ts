@@ -17,25 +17,25 @@ import {
 } from "../../src/geometry";
 import type { CropState, QuarterTurns, Size } from "../../src/geometry";
 
-export const sizeArb: Arbitrary<Size> = record({
+const sizeArb: Arbitrary<Size> = record({
   height: integer({ max: 8000, min: 1 }),
   width: integer({ max: 8000, min: 1 }),
 });
 
-export const angleArb: Arbitrary<number> = double({
+const angleArb: Arbitrary<number> = double({
   max: 45,
   min: -45,
   noNaN: true,
 }).map((a) => (a === 0 ? 0 : a));
 
-export const turnsArb: Arbitrary<QuarterTurns> = constantFrom<QuarterTurns>(
+const turnsArb: Arbitrary<QuarterTurns> = constantFrom<QuarterTurns>(
   0,
   1,
   2,
   3
 );
 
-export const stateArb: Arbitrary<CropState> = record({
+const stateArb: Arbitrary<CropState> = record({
   angle: oneof(angleArb, constantFrom(0, 45, -45)),
   aspect: double({ max: 10, min: 0.1, noNaN: true }),
   fill: double({ max: 1, min: 0.05, noNaN: true }),
@@ -68,3 +68,5 @@ export const stateArb: Arbitrary<CropState> = record({
     };
   }
 );
+
+export { angleArb, sizeArb, stateArb, turnsArb };

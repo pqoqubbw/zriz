@@ -10,18 +10,18 @@ import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type ViewportState = {
+type ViewportState = {
   interacting: boolean;
 };
 
-export type ViewportProps = {
+type ViewportProps = PartProps<"div", ViewportState> & {
   /** What a plain mouse wheel or two-finger trackpad drag does. @default "pan" */
   wheel?: WheelMode | undefined;
   /** Two fingers also straighten the photo. @default true */
   rotateGesture?: boolean | undefined;
-} & PartProps<"div", ViewportState>;
+};
 
-export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
+const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ViewportProps
 >(function Viewport({ wheel = "pan", rotateGesture = true, ...props }, ref) {
@@ -56,3 +56,6 @@ export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
     { interacting }
   );
 });
+
+export type { ViewportProps, ViewportState };
+export { Viewport };

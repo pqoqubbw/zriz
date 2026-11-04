@@ -52,10 +52,9 @@ const rootStart = (text: string): number => {
   }
 };
 
-export const isSvg = (bytes: Uint8Array): boolean =>
-  rootStart(textOf(bytes)) !== -1;
+const isSvg = (bytes: Uint8Array): boolean => rootStart(textOf(bytes)) !== -1;
 
-export const sniff = (
+const sniff = (
   bytes: Uint8Array
 ): { mime: string | null; animated: boolean } => {
   const known = raster(bytes);
@@ -95,7 +94,7 @@ const rootTag = (text: string): string => {
   return tag.exec(text)?.[0] ?? "";
 };
 
-export const svgSize = (text: string): Size => {
+const svgSize = (text: string): Size => {
   const attributes = new Map(
     [
       ...rootTag(text).matchAll(
@@ -130,3 +129,5 @@ export const svgSize = (text: string): Size => {
 
   return area > 0 && area < Number.POSITIVE_INFINITY ? size : FALLBACK;
 };
+
+export { isSvg, sniff, svgSize };

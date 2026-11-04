@@ -1,4 +1,4 @@
-export type ZrizErrorCode =
+type ZrizErrorCode =
   | "cross-origin"
   | "unsupported-format"
   | "decode"
@@ -7,7 +7,7 @@ export type ZrizErrorCode =
   | "blank"
   | "no-image";
 
-export class ZrizError extends Error {
+class ZrizError extends Error {
   readonly code: ZrizErrorCode;
 
   constructor(code: ZrizErrorCode, message: string) {
@@ -16,3 +16,6 @@ export class ZrizError extends Error {
     this.code = code;
   }
 }
+
+export type { ZrizErrorCode };
+export { ZrizError };

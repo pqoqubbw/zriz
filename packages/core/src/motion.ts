@@ -1,15 +1,15 @@
-export type Clock = {
+type Clock = {
   now: () => number;
   request: (step: (time: number) => void) => number;
   cancel: (handle: number) => void;
 };
 
-export type Motion = {
+type Motion = {
   value: number;
   velocity: number;
 };
 
-export type VelocityTracker = {
+type VelocityTracker = {
   push: (time: number, value: number) => void;
   velocity: (time: number) => number;
   reset: () => void;
@@ -19,7 +19,7 @@ const FALLBACK_FRAME_MS = 1000 / 60;
 const MIN_FIT_SPAN = 10;
 const BACKUP_FRAME = 250;
 
-export const frameClock = (): Clock => {
+const frameClock = (): Clock => {
   const hasFrames = typeof globalThis.requestAnimationFrame === "function";
   const pending = new Map<number, () => void>();
   let id = 0;
@@ -60,7 +60,7 @@ export const frameClock = (): Clock => {
   };
 };
 
-export const spring = (
+const spring = (
   displacement: number,
   velocity: number,
   omega: number,
@@ -95,13 +95,13 @@ export const spring = (
   };
 };
 
-export const decay = (velocity: number, tau: number, time: number): Motion => {
+const decay = (velocity: number, tau: number, time: number): Motion => {
   const e = Math.exp(-time / tau);
 
   return { value: (velocity / 1000) * tau * (1 - e), velocity: velocity * e };
 };
 
-export const velocityTracker = (
+const velocityTracker = (
   window = 100,
   limit = 20,
   stale = 40
@@ -171,3 +171,6 @@ export const velocityTracker = (
     },
   };
 };
+
+export type { Clock, Motion, VelocityTracker };
+export { decay, frameClock, spring, velocityTracker };

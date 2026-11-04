@@ -8,12 +8,12 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type ZoomStepProps = {
+type ZoomStepProps = PartProps<"button", object> & {
   /** Multiplies the zoom on each press, below 1 zooms out. */
   factor: number;
-} & PartProps<"button", object>;
+};
 
-export const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
+const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   ZoomStepProps
 >(function ZoomStep({ factor, ...props }, ref) {
@@ -39,3 +39,6 @@ export const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
     {}
   );
 });
+
+export type { ZoomStepProps };
+export { ZoomStep };

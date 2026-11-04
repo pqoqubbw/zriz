@@ -5,7 +5,7 @@ import { fitEdge, textOf } from "./media";
 import { TIMEOUT, aborted, deadline, noop } from "./turn";
 import { decodeOff, decodeTurn, keepOff, releaseOff } from "./worker";
 
-export type ImageSource =
+type ImageSource =
   | Blob
   | string
   | HTMLImageElement
@@ -14,7 +14,7 @@ export type ImageSource =
   | OffscreenCanvas
   | ImageBitmap;
 
-export type LoadOptions = {
+type LoadOptions = {
   previewEdge?: number | undefined;
   crossOrigin?: "anonymous" | "use-credentials" | undefined;
   signal?: AbortSignal | undefined;
@@ -22,7 +22,7 @@ export type LoadOptions = {
   decode?: ((blob: Blob) => Promise<ImageBitmap>) | undefined;
 };
 
-export type LoadedImage = {
+type LoadedImage = {
   id: number;
   width: number;
   height: number;
@@ -32,7 +32,7 @@ export type LoadedImage = {
   animated: boolean;
 };
 
-export type ExportOptions = {
+type ExportOptions = {
   type?: "image/png" | "image/jpeg" | "image/webp" | undefined;
   quality?: number | undefined;
   maxSize?: Size | undefined;
@@ -41,7 +41,7 @@ export type ExportOptions = {
   signal?: AbortSignal | undefined;
 };
 
-export type ExportResult = {
+type ExportResult = {
   blob: Blob;
   type: string;
   width: number;
@@ -89,7 +89,7 @@ const isoBrands = (bytes: Uint8Array): string[] => {
   return (ascii(bytes, 8, 12) + ascii(bytes, 16, end)).match(/.{4}/gsu) ?? [];
 };
 
-export const raster = (
+const raster = (
   bytes: Uint8Array
 ): { mime: string | null; animated: boolean } => {
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) {
@@ -143,10 +143,10 @@ export const raster = (
 const hasTouchScreen = (): boolean =>
   typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
 
-export const outputLimit = (): number =>
+const outputLimit = (): number =>
   hasTouchScreen() ? TOUCH_AREA : NON_TOUCH_AREA;
 
-export const defaultPreviewEdge = (): number => {
+const defaultPreviewEdge = (): number => {
   const dpr = typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
   const viewport =
     typeof screen === "undefined"
@@ -215,10 +215,7 @@ const toBlob = async (
   }
 };
 
-export const toZriz = (
-  error: unknown,
-  mime: string | null = null
-): ZrizError => {
+const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   if (error instanceof ZrizError) {
     return error;
   }
@@ -245,7 +242,7 @@ export const toZriz = (
   );
 };
 
-export const freeImage = (image: LoadedImage): void => {
+const freeImage = (image: LoadedImage): void => {
   void releaseOff(image.id);
   image.preview.close();
 
@@ -254,7 +251,7 @@ export const freeImage = (image: LoadedImage): void => {
   }
 };
 
-export const loadImage = async (
+const loadImage = async (
   src: ImageSource,
   options: LoadOptions = {}
 ): Promise<LoadedImage> => {
@@ -403,4 +400,20 @@ export const loadImage = async (
   } finally {
     limit.clear();
   }
+};
+
+export type {
+  ExportOptions,
+  ExportResult,
+  ImageSource,
+  LoadOptions,
+  LoadedImage,
+};
+export {
+  defaultPreviewEdge,
+  freeImage,
+  loadImage,
+  outputLimit,
+  raster,
+  toZriz,
 };

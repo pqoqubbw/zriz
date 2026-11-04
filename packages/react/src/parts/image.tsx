@@ -9,16 +9,16 @@ import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type ImageState = {
+type ImageState = {
   ready: boolean;
 };
 
-export type ImageProps = {
+type ImageProps = PartProps<"div", ImageState> & {
   /** Text for the photo. Empty when the crop is described elsewhere. @default "" */
   alt?: string | undefined;
-} & PartProps<"div", ImageState>;
+};
 
-export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
+const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ImageProps
 >(function Image({ alt = "", ...props }, ref) {
@@ -46,3 +46,6 @@ export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
     { ready }
   );
 });
+
+export type { ImageProps, ImageState };
+export { Image };

@@ -1,12 +1,11 @@
 import { version } from "react";
 import type { CSSProperties, Ref } from "react";
 
-export const legacy: boolean =
-  Number(version.slice(0, version.indexOf("."))) < 19;
+const legacy: boolean = Number(version.slice(0, version.indexOf("."))) < 19;
 
 const vetoes = new WeakMap<object, () => void>();
 
-export const preventZrizHandler = (event: object): void => {
+const preventZrizHandler = (event: object): void => {
   vetoes.get(event)?.();
 };
 
@@ -52,7 +51,7 @@ const isHandler = (key: string, value: unknown): value is Handler =>
 const isStyle = (value: unknown): value is CSSProperties =>
   typeof value === "object" && value !== null;
 
-export const attach = <T>(
+const attach = <T>(
   ref: Ref<T> | undefined,
   node: T | null
 ): (() => unknown) | null => {
@@ -83,7 +82,7 @@ const run = (cleanups: ((() => unknown) | null)[]): void => {
   }
 };
 
-export const mergeRefs = <T>(
+const mergeRefs = <T>(
   ...refs: (Ref<T> | undefined)[]
 ): ((node: T | null) => (() => void) | undefined) => {
   let cleanups: ((() => unknown) | null)[] | null = null;
@@ -114,10 +113,7 @@ export const mergeRefs = <T>(
   };
 };
 
-export const mergeProps = (
-  ours: object,
-  theirs: object
-): Record<string, unknown> => {
+const mergeProps = (ours: object, theirs: object): Record<string, unknown> => {
   const merged: Record<string, unknown> = { ...ours };
 
   for (const [key, value] of Object.entries<unknown>({ ...theirs })) {
@@ -140,3 +136,5 @@ export const mergeProps = (
 
   return merged;
 };
+
+export { attach, legacy, mergeProps, mergeRefs, preventZrizHandler };

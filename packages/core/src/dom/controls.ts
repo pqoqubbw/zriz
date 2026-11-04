@@ -18,9 +18,9 @@ import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
 import { viewOf } from "./view";
 
-export type ZoomHandlers = KeyHandlers & PointerHandlers;
+type ZoomHandlers = KeyHandlers & PointerHandlers;
 
-export type ZoomOptions = {
+type ZoomOptions = {
   max?: number | undefined;
   dir?: "ltr" | "rtl" | undefined;
   locale?: string | undefined;
@@ -36,13 +36,13 @@ const ARROWS: Partial<Record<string, readonly [number, number]>> = {
   ArrowUp: [0, -1],
 };
 
-export const zoomProgress = (zoom: number, max: number = MAX_ZOOM): number =>
+const zoomProgress = (zoom: number, max: number = MAX_ZOOM): number =>
   max <= 1 ? 0 : Math.min(Math.max(Math.log(zoom) / Math.log(max), 0), 1);
 
-export const zoomAt = (progress: number, max: number = MAX_ZOOM): number =>
+const zoomAt = (progress: number, max: number = MAX_ZOOM): number =>
   max ** Math.min(Math.max(progress, 0), 1);
 
-export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
+const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
   keyed(cropper, (event) => {
     const state = cropper.getCropState();
 
@@ -138,7 +138,7 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
     return null;
   });
 
-export const zoomHandlers = (
+const zoomHandlers = (
   cropper: Cropper,
   options: ZoomOptions | (() => ZoomOptions) = {},
   element?: () => Element | null
@@ -266,7 +266,7 @@ export const zoomHandlers = (
   };
 };
 
-export const zoomAria = (
+const zoomAria = (
   cropper: Cropper,
   element: HTMLElement,
   options: ZoomOptions = {}
@@ -290,7 +290,7 @@ export const zoomAria = (
   });
 };
 
-export const bindZoomThumb = (
+const bindZoomThumb = (
   cropper: Cropper,
   element: HTMLElement,
   options: ZoomOptions = {}
@@ -314,4 +314,14 @@ export const bindZoomThumb = (
   write();
 
   return cropper.on("frame", write);
+};
+
+export type { ZoomHandlers, ZoomOptions };
+export {
+  areaKeyHandlers,
+  bindZoomThumb,
+  zoomAria,
+  zoomAt,
+  zoomHandlers,
+  zoomProgress,
 };

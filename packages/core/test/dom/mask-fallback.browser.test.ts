@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import { bindMask, bindViewport, setCropShape } from "../../src/dom";
 
-const photo = { height: 3000, width: 4000 };
+const PHOTO = { height: 3000, width: 4000 };
 
 const frames = async (n = 2): Promise<void> => {
   for (let i = 0; i < n; i += 1) {
@@ -27,7 +27,7 @@ describe("a circle mask without css shape()", () => {
 
     viewport.append(mask);
     document.body.append(viewport);
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
     const off = [
       bindViewport(cropper, viewport),
       bindMask(cropper, mask, "circle"),
@@ -39,7 +39,7 @@ describe("a circle mask without css shape()", () => {
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).toBe("");
     expect(mask.style.getPropertyValue("-webkit-mask-image")).toBe("");
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).not.toBe("");
 
@@ -60,7 +60,7 @@ describe("a circle mask without css shape()", () => {
 
     viewport.append(mask);
     document.body.append(viewport);
-    const cropper = createCropper({ image: photo });
+    const cropper = createCropper({ image: PHOTO });
     const off = [bindViewport(cropper, viewport), bindMask(cropper, mask)];
 
     await frames();

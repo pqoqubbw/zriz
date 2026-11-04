@@ -12,17 +12,17 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type AspectItemState = {
+type AspectItemState = {
   checked: boolean;
   disabled: boolean;
 };
 
-export type AspectItemProps = {
+type AspectItemProps = Omit<PartProps<"button", AspectItemState>, "value"> & {
   /** The aspect this item selects: a ratio, "free" or "original". */
   value: Aspect;
-} & PartProps<"button", AspectItemState>;
+};
 
-export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
+const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   AspectItemProps
 >(function AspectItem({ value, disabled: off, ...props }, ref) {
@@ -65,3 +65,6 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
     { checked, disabled }
   );
 });
+
+export type { AspectItemProps, AspectItemState };
+export { AspectItem };

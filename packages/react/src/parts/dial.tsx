@@ -26,14 +26,14 @@ import type { Part, PartProps } from "../part";
 import { firstCommitted, useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type DialState = {
+type DialState = {
   dragging: boolean;
 };
 
-export type DialProps = {
+type DialProps = PartProps<"div", DialState> & {
   /** Formatting of the spoken value. @default degrees, long unit */
   format?: Intl.NumberFormatOptions | undefined;
-} & PartProps<"div", DialState>;
+};
 
 const STYLE = {
   WebkitTapHighlightColor: "transparent",
@@ -45,7 +45,7 @@ const STYLE = {
 
 const keep = keepStyle(STYLE);
 
-export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
+const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   DialProps
 >(function Dial({ format, ...props }, ref) {
@@ -108,3 +108,6 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     { dragging }
   );
 });
+
+export type { DialProps, DialState };
+export { Dial };

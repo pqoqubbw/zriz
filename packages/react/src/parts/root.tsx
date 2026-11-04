@@ -35,34 +35,34 @@ import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type RootState = {
+type RootState = {
   snapshot: CropperSnapshot;
   chrome: Chrome;
 };
 
-export type RootProps = {
-  /** The photo: a URL, a Blob or File, or null while empty. */
-  src?: string | Blob | null | undefined;
-  /** CORS mode for a cross-origin URL. */
-  crossOrigin?: "anonymous" | "use-credentials" | undefined;
-  /** Crop shape. A circle locks the aspect to 1, draws a round mask and exports a round PNG. */
-  shape?: "rect" | "circle" | undefined;
-  /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
-  motion?: "auto" | "always" | "reduce" | undefined;
-  /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
-  recentreDelay?: number | undefined;
-  /** Reading direction for keys and sliders. @default "ltr" */
-  dir?: "ltr" | "rtl" | undefined;
-  /** Locale for value text. */
-  locale?: string | undefined;
-  /** Receives the imperative API. */
-  actionsRef?: Ref<Cropper> | undefined;
-  /** Called once the photo is decoded and ready to crop. */
-  onLoad?: ((image: LoadedImage) => void) | undefined;
-  /** Called with a typed ZrizError when the photo cannot load. */
-  onError?: ((error: ZrizError) => void) | undefined;
-} & UseCropperOptions &
-  Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad">;
+type RootProps = UseCropperOptions &
+  Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad"> & {
+    /** The photo: a URL, a Blob or File, or null while empty. */
+    src?: string | Blob | null | undefined;
+    /** CORS mode for a cross-origin URL. */
+    crossOrigin?: "anonymous" | "use-credentials" | undefined;
+    /** Crop shape. A circle locks the aspect to 1, draws a round mask and exports a round PNG. */
+    shape?: "rect" | "circle" | undefined;
+    /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
+    motion?: "auto" | "always" | "reduce" | undefined;
+    /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
+    recentreDelay?: number | undefined;
+    /** Reading direction for keys and sliders. @default "ltr" */
+    dir?: "ltr" | "rtl" | undefined;
+    /** Locale for value text. */
+    locale?: string | undefined;
+    /** Receives the imperative API. */
+    actionsRef?: Ref<Cropper> | undefined;
+    /** Called once the photo is decoded and ready to crop. */
+    onLoad?: ((image: LoadedImage) => void) | undefined;
+    /** Called with a typed ZrizError when the photo cannot load. */
+    onError?: ((error: ZrizError) => void) | undefined;
+  };
 
 const actionHolders = new WeakMap<object, () => unknown>();
 
@@ -117,7 +117,7 @@ const useBoxRef = (
     [box, theirs]
   );
 
-export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
+const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   RootProps
 >(function Root(
@@ -283,3 +283,6 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     </CropperContext.Provider>
   );
 });
+
+export type { RootProps, RootState };
+export { Root };

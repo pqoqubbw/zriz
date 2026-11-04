@@ -8,13 +8,13 @@ import { RootContext, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type MaskState = {
+type MaskState = {
   shape: "rect" | "circle";
 };
 
-export type MaskProps = PartProps<"div", MaskState>;
+type MaskProps = PartProps<"div", MaskState>;
 
-export const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
+const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   MaskProps
 >(function Mask(props, ref) {
@@ -33,3 +33,6 @@ export const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
     { shape }
   );
 });
+
+export type { MaskProps, MaskState };
+export { Mask };

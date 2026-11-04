@@ -25,28 +25,28 @@ import type { PointerHandlers } from "./input";
 import { localOf, viewOf } from "./view";
 import type { Layout, View } from "./view";
 
-export type WheelMode = "pan" | "zoom" | "none";
+type WheelMode = "pan" | "zoom" | "none";
 
-export type ViewportOptions = {
+type ViewportOptions = {
   wheel?: WheelMode | undefined;
   rotateGesture?: boolean | undefined;
 };
 
-export type ViewportHandlers = PointerHandlers;
+type ViewportHandlers = PointerHandlers;
 
-export type ViewportController = {
+type ViewportController = {
   handlers: ViewportHandlers;
   setElement: (element: HTMLElement | null) => void;
   setOptions: (options: ViewportOptions) => void;
   destroy: () => void;
 };
 
-type SafariGestureEvent = {
+type SafariGestureEvent = UIEvent & {
   scale: number;
   rotation: number;
   clientX: number;
   clientY: number;
-} & UIEvent;
+};
 
 type Start = {
   state: CropState;
@@ -212,7 +212,7 @@ const isGesture = (event: Event): event is SafariGestureEvent =>
 const wrapDegrees = (degrees: number): number =>
   ((((degrees + 180) % 360) + 360) % 360) - 180;
 
-export const transformAround = (
+const transformAround = (
   start: CropState,
   scale: number,
   rect: Point,
@@ -245,7 +245,7 @@ export const transformAround = (
   };
 };
 
-export const viewportController = (
+const viewportController = (
   cropper: Cropper,
   initial: ViewportOptions = {}
 ): ViewportController => {
@@ -966,7 +966,7 @@ export const viewportController = (
   };
 };
 
-export const bindViewport = (
+const bindViewport = (
   cropper: Cropper,
   element: HTMLElement,
   options?: ViewportOptions
@@ -981,3 +981,11 @@ export const bindViewport = (
     controller.destroy();
   };
 };
+
+export type {
+  ViewportController,
+  ViewportHandlers,
+  ViewportOptions,
+  WheelMode,
+};
+export { bindViewport, transformAround, viewportController };

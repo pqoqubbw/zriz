@@ -41,7 +41,7 @@ import {
 } from "./value";
 import type { Aspect, CropValue, ValueField } from "./value";
 
-export type ChangeReason =
+type ChangeReason =
   | "pan"
   | "pinch"
   | "wheel"
@@ -59,9 +59,9 @@ export type ChangeReason =
   | "controlled"
   | "imperative";
 
-export type ChangePhase = "start" | "move" | "end" | "instant";
+type ChangePhase = "start" | "move" | "end" | "instant";
 
-export type ChangeDetails = {
+type ChangeDetails = {
   reason: ChangeReason;
   phase: ChangePhase;
   changed: readonly ValueField[];
@@ -71,14 +71,14 @@ export type ChangeDetails = {
   readonly isCanceled: boolean;
 };
 
-export type CommitDetails = {
+type CommitDetails = {
   reason: ChangeReason;
   event: Event | undefined;
   previous: CropValue;
   pixelCrop: ExportPlan | null;
 };
 
-export type CropperSnapshot = {
+type CropperSnapshot = {
   ready: boolean;
   interacting: ChangeReason | null;
   settling: boolean;
@@ -90,13 +90,13 @@ export type CropperSnapshot = {
   committed: CropValue;
 };
 
-export type CropperFrame = {
+type CropperFrame = {
   time: number;
   value: CropValue;
   state: CropState | null;
 };
 
-export type CropperEvents = {
+type CropperEvents = {
   change: (value: CropValue, details: ChangeDetails) => void;
   accept: (value: CropValue, details: ChangeDetails) => void;
   commit: (value: CropValue, details: CommitDetails) => void;
@@ -108,13 +108,13 @@ export type CropperEvents = {
   destroy: () => void;
 };
 
-export type CropperPlugin = {
+type CropperPlugin = {
   name: string;
   init: (cropper: Cropper) => void;
   destroy?: (() => void) | undefined;
 };
 
-export type CropperOptions = {
+type CropperOptions = {
   image?: Size | null | undefined;
   value?: CropValue | undefined;
   defaultValue?: Partial<CropValue> | undefined;
@@ -128,15 +128,15 @@ export type CropperOptions = {
   plugins?: readonly CropperPlugin[] | undefined;
 };
 
-export type ActionOptions = {
+type ActionOptions = {
   reason?: ChangeReason | undefined;
   event?: Event | undefined;
   emit?: boolean | undefined;
 };
 
-export type FrameTask = (time: number, delta: number) => boolean;
+type FrameTask = (time: number, delta: number) => boolean;
 
-export type Cropper = {
+type Cropper = {
   getValue: () => CropValue;
   getState: () => CropperSnapshot;
   getCropState: () => CropState | null;
@@ -179,7 +179,7 @@ export type Cropper = {
   destroy: () => void;
 };
 
-export const MAX_ZOOM = 15;
+const MAX_ZOOM = 15;
 const EPSILON = 1e-9;
 
 type Listeners = { [E in keyof CropperEvents]: Set<CropperEvents[E]> };
@@ -260,7 +260,7 @@ const lengthenLens = (state: CropState): CropState => {
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
   1 / largestFit(planes, size).scale;
 
-export const createCropper = (initial: CropperOptions = {}): Cropper => {
+const createCropper = (initial: CropperOptions = {}): Cropper => {
   let options: CropperOptions = initial;
   const clock = initial.clock ?? frameClock();
   const listeners: Listeners = {
@@ -1253,3 +1253,19 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   return cropper;
 };
+
+export type {
+  ActionOptions,
+  ChangeDetails,
+  ChangePhase,
+  ChangeReason,
+  CommitDetails,
+  Cropper,
+  CropperEvents,
+  CropperFrame,
+  CropperOptions,
+  CropperPlugin,
+  CropperSnapshot,
+  FrameTask,
+};
+export { MAX_ZOOM, createCropper };

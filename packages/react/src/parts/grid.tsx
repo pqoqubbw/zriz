@@ -10,11 +10,11 @@ import { keepStyle, useKeptStyle } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type GridState = {
+type GridState = {
   grid: GridMode;
 };
 
-export type GridProps = PartProps<"div", GridState>;
+type GridProps = PartProps<"div", GridState>;
 
 const STYLE = {
   inset: 0,
@@ -60,7 +60,7 @@ const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
   ]);
 };
 
-export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
+const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   GridProps
 >(function Grid(props, ref) {
@@ -94,3 +94,6 @@ export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
     { grid }
   );
 });
+
+export type { GridProps, GridState };
+export { Grid };

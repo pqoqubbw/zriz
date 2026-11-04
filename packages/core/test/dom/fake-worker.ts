@@ -6,7 +6,7 @@ type Handler = (event: { data: unknown }) => void;
 const isHandler = (value: unknown): value is Handler =>
   typeof value === "function";
 
-export class FakeWorker extends EventTarget {
+class FakeWorker extends EventTarget {
   static globals: Record<string, unknown> = {};
 
   static moved: ((transfer: readonly unknown[]) => void) | null = null;
@@ -71,3 +71,5 @@ export class FakeWorker extends EventTarget {
     this.terminated = true;
   }
 }
+
+export { FakeWorker };

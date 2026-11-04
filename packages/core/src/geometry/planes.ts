@@ -3,7 +3,7 @@ import { isFlatPerspective } from "./perspective";
 import { sourceToWorking, turnedSize, workingToSource } from "./state";
 import type { Crop, CropState, HalfPlane, Point } from "./types";
 
-export const imageQuad = (state: CropState): Point[] => {
+const imageQuad = (state: CropState): Point[] => {
   const { width, height } = state.image;
 
   return [
@@ -14,7 +14,7 @@ export const imageQuad = (state: CropState): Point[] => {
   ].map((corner) => sourceToWorking(state, corner));
 };
 
-export const polygonPlanes = (vertices: readonly Point[]): HalfPlane[] => {
+const polygonPlanes = (vertices: readonly Point[]): HalfPlane[] => {
   const cx =
     vertices.reduce((sum, vertex) => sum + vertex.x, 0) / vertices.length;
   const cy =
@@ -40,7 +40,7 @@ export const polygonPlanes = (vertices: readonly Point[]): HalfPlane[] => {
   });
 };
 
-export const imagePlanes = (state: CropState): HalfPlane[] => {
+const imagePlanes = (state: CropState): HalfPlane[] => {
   if (!isFlatPerspective(state.perspective)) {
     return polygonPlanes(imageQuad(state));
   }
@@ -58,13 +58,13 @@ export const imagePlanes = (state: CropState): HalfPlane[] => {
   ];
 };
 
-export const planeSupport = (
+const planeSupport = (
   plane: HalfPlane,
   width: number,
   height: number
 ): number => (width * Math.abs(plane.nx) + height * Math.abs(plane.ny)) / 2;
 
-export const panPlanes = (
+const panPlanes = (
   planes: readonly HalfPlane[],
   width: number,
   height: number
@@ -74,7 +74,7 @@ export const panPlanes = (
     d: plane.d - planeSupport(plane, width, height),
   }));
 
-export const insidePlanes = (
+const insidePlanes = (
   planes: readonly HalfPlane[],
   point: Point,
   epsilon = 0
@@ -83,7 +83,7 @@ export const insidePlanes = (
     (plane) => plane.nx * point.x + plane.ny * point.y <= plane.d + epsilon
   );
 
-export const projectOntoPlanes = (
+const projectOntoPlanes = (
   planes: readonly HalfPlane[],
   given: Point,
   epsilon = 1e-9
@@ -148,14 +148,14 @@ export const projectOntoPlanes = (
   return best;
 };
 
-export const cropCorners = (crop: Crop): Point[] => [
+const cropCorners = (crop: Crop): Point[] => [
   { x: crop.x - crop.width / 2, y: crop.y - crop.height / 2 },
   { x: crop.x + crop.width / 2, y: crop.y - crop.height / 2 },
   { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 },
   { x: crop.x - crop.width / 2, y: crop.y + crop.height / 2 },
 ];
 
-export const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
+const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
   const turned = turnedSize(state.image, state.turns);
   const tolerance = epsilon * Math.max(turned.width, turned.height);
 
@@ -169,4 +169,16 @@ export const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
       source.y <= state.image.height + tolerance
     );
   });
+};
+
+export {
+  cropCorners,
+  imagePlanes,
+  imageQuad,
+  insidePlanes,
+  isCropCovered,
+  panPlanes,
+  planeSupport,
+  polygonPlanes,
+  projectOntoPlanes,
 };

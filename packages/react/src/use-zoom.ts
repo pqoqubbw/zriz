@@ -11,7 +11,7 @@ import {
 
 import { useCropperState, useTarget } from "./use-cropper";
 
-export type UseZoom = {
+type UseZoom = {
   value: number;
   min: number;
   max: number;
@@ -29,7 +29,7 @@ const RELEASES = ["pointerup", "pointercancel", "keyup"] as const;
 const heldBy = (event: PointerEvent | KeyboardEvent): number | string =>
   "key" in event ? event.key : event.pointerId;
 
-export const useZoom = (
+const useZoom = (
   options: { max?: number | undefined; cropper?: Cropper | undefined } = {}
 ): UseZoom => {
   const cropper = useTarget(options.cropper);
@@ -126,3 +126,6 @@ export const useZoom = (
 
   return { dragging, max, min: 1, onValueChange, onValueCommitted, value };
 };
+
+export type { UseZoom };
+export { useZoom };

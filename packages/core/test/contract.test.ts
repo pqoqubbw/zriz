@@ -23,13 +23,13 @@ import {
 } from "../src/geometry";
 import { fakeClock } from "./fake-clock";
 
-const photo = { height: 3000, width: 4000 };
+const PHOTO = { height: 3000, width: 4000 };
 
 const setup = (options: CropperOptions = {}) => {
   const time = fakeClock();
   const cropper = createCropper({
     clock: time.clock,
-    image: photo,
+    image: PHOTO,
     ...options,
   });
 
@@ -74,8 +74,8 @@ describe("panBy", () => {
     cropper.panBy(0.1, 0.05);
     const after = stateOf(cropper).crop;
 
-    expect(after.x - before.x).toBeCloseTo(0.1 * photo.height, 6);
-    expect(after.y - before.y).toBeCloseTo(0.05 * photo.width, 6);
+    expect(after.x - before.x).toBeCloseTo(0.1 * PHOTO.height, 6);
+    expect(after.y - before.y).toBeCloseTo(0.05 * PHOTO.width, 6);
   });
 });
 
@@ -244,7 +244,7 @@ describe("rotate90 and flip", () => {
   });
 
   it("turns counter-clockwise by default and clockwise with cw", () => {
-    const right = { x: photo.width, y: photo.height / 2 };
+    const right = { x: PHOTO.width, y: PHOTO.height / 2 };
     const ccw = setup().cropper;
 
     ccw.rotate90();
@@ -256,8 +256,8 @@ describe("rotate90 and flip", () => {
   });
 
   it("mirrors left to right by default and top to bottom with y", () => {
-    const left = { x: 0, y: photo.height / 2 };
-    const top = { x: photo.width / 2, y: 0 };
+    const left = { x: 0, y: PHOTO.height / 2 };
+    const top = { x: PHOTO.width / 2, y: 0 };
     const x = setup().cropper;
 
     x.flip();
@@ -875,8 +875,8 @@ describe("value helpers", () => {
   });
 
   it("reads the original aspect off the turned photo", () => {
-    expect(aspectRatio("original", photo, 1)).toBeCloseTo(3 / 4, 12);
-    expect(aspectRatio("original", photo, 2)).toBeCloseTo(4 / 3, 12);
+    expect(aspectRatio("original", PHOTO, 1)).toBeCloseTo(3 / 4, 12);
+    expect(aspectRatio("original", PHOTO, 2)).toBeCloseTo(4 / 3, 12);
   });
 });
 
@@ -1113,7 +1113,7 @@ describe("a value that misses its aspect", () => {
 
     cropper.setValue({ size: { height: 0.1, width: 0.4 } });
     const { crop } = stateOf(cropper);
-    const side = Math.sqrt(0.4 * photo.width * 0.1 * photo.height);
+    const side = Math.sqrt(0.4 * PHOTO.width * 0.1 * PHOTO.height);
 
     expect(crop.width).toBeCloseTo(side, 6);
     expect(crop.height).toBeCloseTo(side, 6);
@@ -1149,7 +1149,7 @@ describe("the first photo", () => {
     const cropper = createCropper({ clock: time.clock, onValueChange: change });
 
     cropper.on("frame", frame);
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     time.frames(2);
     expect(frame).toHaveBeenCalledOnce();
     expect(change).not.toHaveBeenCalled();

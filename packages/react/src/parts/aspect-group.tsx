@@ -11,11 +11,11 @@ import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type AspectGroupState = {
+type AspectGroupState = {
   aspect: Aspect;
 };
 
-export type AspectGroupProps = PartProps<"div", AspectGroupState>;
+type AspectGroupProps = PartProps<"div", AspectGroupState>;
 
 const ITEM_SELECTOR = '[data-zriz-item="aspect-item"]';
 
@@ -44,7 +44,7 @@ const ARROW_STEPS: Partial<Record<string, number>> = {
   ArrowUp: -1,
 };
 
-export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
+const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AspectGroupProps
 >(function AspectGroup(props, ref) {
@@ -136,3 +136,6 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
     <AspectGroupContext.Provider value>{element}</AspectGroupContext.Provider>
   );
 });
+
+export type { AspectGroupProps, AspectGroupState };
+export { AspectGroup };

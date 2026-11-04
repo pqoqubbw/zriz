@@ -5,7 +5,7 @@ import type { JSX, ReactElement, Ref } from "react";
 
 import { legacy, mergeProps, mergeRefs } from "./merge-props";
 
-export type RenderProp<S> =
+type RenderProp<S> =
   | ReactElement
   | ((props: Record<string, unknown>, state: S) => ReactElement);
 
@@ -23,9 +23,9 @@ const refOf = (element: ReactElement): Ref<HTMLElement> | undefined => {
   return isRef(ref) ? ref : undefined;
 };
 
-export type ClassName<S> = string | ((state: S) => string | undefined);
+type ClassName<S> = string | ((state: S) => string | undefined);
 
-export type RenderOptions<S> = {
+type RenderOptions<S> = {
   tag: keyof JSX.IntrinsicElements;
   state: S;
   props: object;
@@ -34,7 +34,7 @@ export type RenderOptions<S> = {
   className?: ClassName<S> | undefined;
 };
 
-export const usePart = <S>(
+const usePart = <S>(
   tag: keyof JSX.IntrinsicElements,
   ours: Record<string, unknown>,
   {
@@ -72,7 +72,7 @@ export const usePart = <S>(
   return createElement(tag, own);
 };
 
-export const useRender = <S>({
+const useRender = <S>({
   tag,
   state,
   props,
@@ -109,3 +109,6 @@ export const useRender = <S>({
     state
   );
 };
+
+export type { ClassName, RenderOptions, RenderProp };
+export { usePart, useRender };

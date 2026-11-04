@@ -1,4 +1,4 @@
-export const sameFields = <T extends object>(a: T, b: T): boolean => {
+const sameFields = <T extends object>(a: T, b: T): boolean => {
   for (const key in a) {
     if (a[key] !== b[key]) {
       return false;
@@ -7,3 +7,5 @@ export const sameFields = <T extends object>(a: T, b: T): boolean => {
 
   return true;
 };
+
+export { sameFields };

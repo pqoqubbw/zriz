@@ -35,7 +35,7 @@ const visibleRect = (frame: ViewFrame, image: LoadedImage): Region => {
   };
 };
 
-export const refine = async (
+const refine = async (
   frame: ViewFrame,
   image: LoadedImage,
   live: () => boolean = () => true
@@ -105,3 +105,5 @@ export const refine = async (
     region: { height: image.height, width: image.width, x: 0, y: 0 },
   };
 };
+
+export { refine };

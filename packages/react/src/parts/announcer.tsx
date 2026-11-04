@@ -8,10 +8,10 @@ import { keepStyle, useKeptStyle, useLatest } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type AnnouncerProps = {
+type AnnouncerProps = Omit<PartProps<"div", object>, "children"> & {
   /** What to say after each commit. Return null to stay quiet. */
   announce: (value: CropValue, details: CommitDetails) => string | null;
-} & Omit<PartProps<"div", object>, "children">;
+};
 
 const STYLE = {
   clipPath: "inset(50%)",
@@ -24,7 +24,7 @@ const STYLE = {
 
 const keep = keepStyle(STYLE);
 
-export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
+const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AnnouncerProps
 >(function Announcer({ announce, ...props }, ref) {
@@ -63,3 +63,6 @@ export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
     {}
   );
 });
+
+export type { AnnouncerProps };
+export { Announcer };

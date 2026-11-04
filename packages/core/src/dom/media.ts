@@ -1,7 +1,7 @@
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 
-export const fitEdge = (size: Size, edge: number): Size => {
+const fitEdge = (size: Size, edge: number): Size => {
   const scale = Math.min(1, edge / Math.max(size.width, size.height));
 
   return {
@@ -10,7 +10,7 @@ export const fitEdge = (size: Size, edge: number): Size => {
   };
 };
 
-export const canvasFor = (size: Size): OffscreenCanvas | HTMLCanvasElement => {
+const canvasFor = (size: Size): OffscreenCanvas | HTMLCanvasElement => {
   if (typeof OffscreenCanvas === "function") {
     return new OffscreenCanvas(size.width, size.height);
   }
@@ -23,7 +23,7 @@ export const canvasFor = (size: Size): OffscreenCanvas | HTMLCanvasElement => {
   return canvas;
 };
 
-export const context2d = (
+const context2d = (
   canvas: {
     getContext: (
       id: "2d",
@@ -41,12 +41,12 @@ export const context2d = (
   return context;
 };
 
-export const free = (canvas: OffscreenCanvas | HTMLCanvasElement): void => {
+const free = (canvas: OffscreenCanvas | HTMLCanvasElement): void => {
   canvas.width = 0;
   canvas.height = 0;
 };
 
-export const drawn = async (
+const drawn = async (
   source: CanvasImageSource,
   size: Size
 ): Promise<ImageBitmap> => {
@@ -61,7 +61,7 @@ export const drawn = async (
   }
 };
 
-export const loadElement = async (url: string): Promise<HTMLImageElement> => {
+const loadElement = async (url: string): Promise<HTMLImageElement> => {
   const image = new Image();
 
   image.decoding = "async";
@@ -79,7 +79,7 @@ export const loadElement = async (url: string): Promise<HTMLImageElement> => {
   return image;
 };
 
-export const textOf = (bytes: Uint8Array): string => {
+const textOf = (bytes: Uint8Array): string => {
   const [first, second] = bytes;
   let encoding = "utf-8";
 
@@ -93,3 +93,5 @@ export const textOf = (bytes: Uint8Array): string => {
 
   return new TextDecoder(encoding).decode(bytes);
 };
+
+export { canvasFor, context2d, drawn, fitEdge, free, loadElement, textOf };

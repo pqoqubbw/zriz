@@ -10,20 +10,20 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type AreaState = {
+type AreaState = {
   shape: "rect" | "circle";
   interacting: boolean;
 };
 
-export type AreaProps = {
+type AreaProps = PartProps<"div", AreaState> & {
   /** Write --zriz-rotation, --zriz-zoom, their -progress and --zriz-overscroll on this element each frame. */
   liveVariables?: boolean | undefined;
-} & PartProps<"div", AreaState>;
+};
 
 const SQUARE = { position: "absolute" };
 const ROUND = { ...SQUARE, borderRadius: "50%" };
 
-export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
+const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AreaProps
 >(function Area({ liveVariables = false, ...props }, ref) {
@@ -64,3 +64,6 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
     { interacting, shape }
   );
 });
+
+export type { AreaProps, AreaState };
+export { Area };

@@ -5,7 +5,7 @@ import { imageOf } from "./image-store";
 import { cropShapeOf } from "./shape";
 import { TIMEOUT, aborted, withTimeout } from "./turn";
 
-export const exportImage = async (
+const exportImage = async (
   cropper: Cropper,
   image: LoadedImage,
   options: ExportOptions = {}
@@ -30,7 +30,7 @@ export const exportImage = async (
   return await render.exportImage(cropper, image, options);
 };
 
-export const exportCrop = async (
+const exportCrop = async (
   cropper: Cropper,
   options?: ExportOptions
 ): Promise<ExportResult> => {
@@ -45,3 +45,5 @@ export const exportCrop = async (
     shape: options?.shape ?? cropShapeOf(cropper),
   });
 };
+
+export { exportCrop, exportImage };

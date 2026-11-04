@@ -2,7 +2,7 @@ import { windowOf } from "./input";
 
 const isShadow = (node: Node): node is ShadowRoot => "host" in node;
 
-export const holdCursor = (element: Element | null): (() => void) | null => {
+const holdCursor = (element: Element | null): (() => void) | null => {
   const win = windowOf(element);
 
   if (
@@ -45,3 +45,5 @@ export const holdCursor = (element: Element | null): (() => void) | null => {
     }
   };
 };
+
+export { holdCursor };

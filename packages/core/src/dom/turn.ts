@@ -1,15 +1,14 @@
 import { ZrizError } from "./error";
 
-export const TIMEOUT = 15_000;
-export const MAX_DELAY = 2_147_483_647;
+const TIMEOUT = 15_000;
+const MAX_DELAY = 2_147_483_647;
 const SUSPENDED = 1000;
 
-export const noop = (): void => undefined;
+const noop = (): void => undefined;
 
-export const aborted = (): ZrizError =>
-  new ZrizError("aborted", "zriz: aborted");
+const aborted = (): ZrizError => new ZrizError("aborted", "zriz: aborted");
 
-export const deadline = (
+const deadline = (
   ms: number,
   signal: AbortSignal | undefined
 ): {
@@ -65,7 +64,7 @@ export const deadline = (
   return { clear, pause, promise };
 };
 
-export const withTimeout = async <T>(
+const withTimeout = async <T>(
   work: Promise<T>,
   ms: number,
   signal: AbortSignal | undefined
@@ -78,3 +77,5 @@ export const withTimeout = async <T>(
     limit.clear();
   }
 };
+
+export { MAX_DELAY, TIMEOUT, aborted, deadline, noop, withTimeout };

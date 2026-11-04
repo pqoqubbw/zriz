@@ -8,12 +8,12 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type RotateProps = {
+type RotateProps = PartProps<"button", object> & {
   /** Turn direction. @default "ccw" like Photos */
   direction?: "ccw" | "cw" | undefined;
-} & PartProps<"button", object>;
+};
 
-export const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<
+const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   RotateProps
 >(function Rotate({ direction = "ccw", ...props }, ref) {
@@ -36,3 +36,6 @@ export const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<
     {}
   );
 });
+
+export type { RotateProps };
+export { Rotate };

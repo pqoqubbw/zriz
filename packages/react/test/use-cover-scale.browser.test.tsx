@@ -3,12 +3,12 @@ import { renderHook } from "vitest-browser-react";
 
 import { useCoverScale } from "../src";
 
-const image = { height: 900, width: 1200 };
+const IMAGE = { height: 900, width: 1200 };
 
 describe(useCoverScale, () => {
   it("is 1 when the crop matches the image and nothing is rotated", async () => {
     const { result } = await renderHook(() =>
-      useCoverScale({ crop: image, image })
+      useCoverScale({ crop: IMAGE, image: IMAGE })
     );
 
     expect(result.current).toBe(1);
@@ -16,7 +16,7 @@ describe(useCoverScale, () => {
 
   it("zooms in when the photo is straightened", async () => {
     const { result } = await renderHook(() =>
-      useCoverScale({ crop: image, image, rotation: 7 })
+      useCoverScale({ crop: IMAGE, image: IMAGE, rotation: 7 })
     );
 
     expect(result.current).toBeGreaterThan(1.15);

@@ -35,7 +35,7 @@ import type { QuarterTurns } from "../src/geometry";
 import { isCropCovered, isPerspectiveValid } from "../src/geometry";
 import { fakeClock } from "./fake-clock";
 
-const photo = { height: 3000, width: 4000 };
+const PHOTO = { height: 3000, width: 4000 };
 
 const cropState = (state: CropState | null): CropState => {
   if (!state) {
@@ -51,7 +51,7 @@ const setup = (options: CropperOptions = {}) => {
   const commit = vi.fn<CropperEvents["commit"]>();
   const cropper = createCropper({
     clock: time.clock,
-    image: photo,
+    image: PHOTO,
     onValueChange: (value, details) => {
       change(value, details);
     },
@@ -616,7 +616,7 @@ describe("actions", () => {
     change.mockClear();
     const before = cropper.getValue();
 
-    cropper.setImage({ ...photo });
+    cropper.setImage({ ...PHOTO });
     time.frames(2);
     expect(cropper.getValue()).toBe(before);
     expect(change).not.toHaveBeenCalled();
@@ -627,7 +627,7 @@ describe("actions", () => {
     const cropper = createCropper({ clock: time.clock });
 
     cropper.setValue({ rotation: 10 });
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     expect(cropper.getValue().rotation).toBe(10);
     expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
   });
@@ -921,7 +921,7 @@ describe("value edges", () => {
       value: { ...held.cropper.getValue(), quarterTurns },
     });
 
-    late.cropper.setImage(photo);
+    late.cropper.setImage(PHOTO);
     expect(late.cropper.getValue().quarterTurns).toBe(turns);
   });
 
@@ -1923,7 +1923,7 @@ describe("input validation", () => {
     const { cropper } = setup({ image: null });
 
     loose(cropper, { [key]: undefined });
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     expect(cropper.getValue()).toStrictEqual(defaultValue);
     const { cropper: later } = setup({ defaultValue: { rotation: 10 } });
     const before = later.getValue();
@@ -1933,7 +1933,7 @@ describe("input validation", () => {
     const fresh = createCropper({
       clock: fakeClock().clock,
       defaultValue: { [key]: undefined },
-      image: photo,
+      image: PHOTO,
     });
 
     expect(fresh.getValue()).toStrictEqual(defaultValue);
@@ -1946,7 +1946,7 @@ describe("input validation", () => {
     expect(cropper.getValue().rotation).toBe(60);
     cropper.setValue({ rotation: bad });
     expect(cropper.getValue().rotation).toBe(60);
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     expect(cropper.getValue().rotation).toBe(45);
   });
 
@@ -2195,7 +2195,7 @@ describe("input validation", () => {
           run(cropper, a, b);
         }
 
-        cropper.setImage(photo);
+        cropper.setImage(PHOTO);
         expect(sound(cropper.getValue())).toBeTruthy();
       })
     );
@@ -2341,7 +2341,7 @@ describe("setCropState", () => {
 
     const after = cropState(cropper.getCropState());
 
-    expect(after.image).toStrictEqual(photo);
+    expect(after.image).toStrictEqual(PHOTO);
     expect(after.perspective.focal).toBe(state.perspective.focal);
   });
 
@@ -2390,7 +2390,7 @@ describe("round trips", () => {
     const { change, commit, cropper, time } = onTheEdge();
     const before = cropper.getValue();
 
-    cropper.setImage({ ...photo });
+    cropper.setImage({ ...PHOTO });
     time.frames(3);
     expect(change).not.toHaveBeenCalled();
     expect(commit).not.toHaveBeenCalled();
@@ -2403,7 +2403,7 @@ describe("round trips", () => {
         record({
           angle: double({ max: 45, min: -45, noNaN: true }),
           image: constantFrom(
-            photo,
+            PHOTO,
             { height: 30, width: 40 },
             { height: 100, width: 20_000 },
             { height: 3024, width: 4032 }
@@ -2652,7 +2652,7 @@ describe("minSize on a free crop", () => {
     });
 
     cropper.setValue({ rotation: 5e-13 });
-    cropper.setImage(photo);
+    cropper.setImage(PHOTO);
     expect(sound(cropper.getValue())).toBeTruthy();
     expect(cropper.getValue().size.height).toBeCloseTo(1 / 3000, 9);
   });
@@ -2740,7 +2740,7 @@ describe("frame timing", () => {
         now: () => 0,
         request: (step) => steps.push(step),
       },
-      image: photo,
+      image: PHOTO,
     });
     const deltas: number[] = [];
     let left = 3;
@@ -2764,7 +2764,7 @@ describe("controlled writes around a gesture", () => {
   it("drops a late echo between the end of a gesture and its commit", () => {
     const { clock, frame } = fakeClock();
     const commits: { reason: string; rotation: number }[] = [];
-    const cropper = createCropper({ clock, image: photo });
+    const cropper = createCropper({ clock, image: PHOTO });
 
     cropper.on("commit", (value, details) => {
       commits.push({ reason: details.reason, rotation: value.rotation });

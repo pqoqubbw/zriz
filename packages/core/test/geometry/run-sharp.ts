@@ -4,7 +4,7 @@ import type { Sharp } from "sharp";
 import type { ExportPlan, Size } from "../../src/geometry";
 import { toSharp } from "../../src/to-sharp";
 
-export const runSharp = async (
+const runSharp = async (
   input: Sharp,
   plan: ExportPlan,
   image: Size
@@ -36,3 +36,5 @@ export const runSharp = async (
 
   return sharp(affined.data, { raw: affined.info }).extract(recipe.extract);
 };
+
+export { runSharp };

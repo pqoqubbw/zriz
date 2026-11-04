@@ -28,9 +28,9 @@ import { followDisabled } from "./slider";
 import { LAYER_BOX, cssMatrix, stateAttributes, viewOf } from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
-export type MaskShape = "rect" | "circle";
+type MaskShape = "rect" | "circle";
 
-export type HandleEdge =
+type HandleEdge =
   | "top-left"
   | "top"
   | "top-right"
@@ -66,7 +66,7 @@ const supportsShape = (): boolean => {
 
 const px = (value: number): string => `${value}px`;
 
-export const maskClip = (rect: Box, shape: MaskShape): string => {
+const maskClip = (rect: Box, shape: MaskShape): string => {
   const x0 = px(rect.x);
   const y0 = px(rect.y);
 
@@ -83,7 +83,7 @@ export const maskClip = (rect: Box, shape: MaskShape): string => {
   return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x0} ${y0}, ${x1} ${y0}, ${x1} ${y1}, ${x0} ${y1}, ${x0} ${y0})`;
 };
 
-export const maskGradient = (rect: Box, dpr: number): string => {
+const maskGradient = (rect: Box, dpr: number): string => {
   const ramp = 0.5 / dpr;
 
   return `radial-gradient(${px(rect.width / 2)} ${px(rect.height / 2)} at ${px(rect.x + rect.width / 2)} ${px(rect.y + rect.height / 2)}, transparent calc(100% - ${ramp}px), #000 calc(100% + ${ramp}px))`;
@@ -103,10 +103,7 @@ const follow = (
   return view.onFrame(write);
 };
 
-export const bindImage = (
-  cropper: Cropper,
-  element: HTMLElement
-): (() => void) => {
+const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
   const { style } = element;
 
   Object.assign(style, LAYER_BOX);
@@ -158,7 +155,7 @@ export const bindImage = (
   };
 };
 
-export const bindMask = (
+const bindMask = (
   cropper: Cropper,
   element: HTMLElement,
   shape?: MaskShape
@@ -229,7 +226,7 @@ export const bindMask = (
   };
 };
 
-export type AreaOptions = {
+type AreaOptions = {
   liveVariables?: boolean | undefined;
   shape?: MaskShape | undefined;
 };
@@ -243,7 +240,7 @@ const countPlaced = (element: HTMLElement, by: number): void => {
   element.toggleAttribute("data-visible", count > 0);
 };
 
-export const bindArea = (
+const bindArea = (
   cropper: Cropper,
   element: HTMLElement,
   options: AreaOptions = {}
@@ -350,7 +347,7 @@ export const bindArea = (
   };
 };
 
-export type HandleHandlers = PointerHandlers & { release: () => void };
+type HandleHandlers = PointerHandlers & { release: () => void };
 
 type HandleDrag = {
   handle: CropHandle;
@@ -418,7 +415,7 @@ const handlePoint = (rect: Rect, handle: CropHandle): Point => {
   return { x, y };
 };
 
-export const handleHandlers = (
+const handleHandlers = (
   cropper: Cropper,
   edge: HandleEdge | (() => HandleEdge),
   element?: () => Element | null
@@ -611,7 +608,7 @@ export const handleHandlers = (
   };
 };
 
-export const bindHandle = (
+const bindHandle = (
   cropper: Cropper,
   element: HTMLElement,
   edge: HandleEdge
@@ -629,10 +626,7 @@ export const bindHandle = (
   };
 };
 
-export const bindState = (
-  cropper: Cropper,
-  element: HTMLElement
-): (() => void) => {
+const bindState = (cropper: Cropper, element: HTMLElement): (() => void) => {
   const view = viewOf(cropper);
 
   const sync = (): void => {
@@ -655,4 +649,16 @@ export const bindState = (
     offState();
     offChrome();
   };
+};
+
+export type { AreaOptions, HandleEdge, HandleHandlers, MaskShape };
+export {
+  bindArea,
+  bindHandle,
+  bindImage,
+  bindMask,
+  bindState,
+  handleHandlers,
+  maskClip,
+  maskGradient,
 };

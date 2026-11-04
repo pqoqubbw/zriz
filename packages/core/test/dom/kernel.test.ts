@@ -44,7 +44,7 @@ class FakeCanvas {
   }
 }
 
-const rect = { height: 4, width: 4, x: 0, y: 0 };
+const SMALL_RECT = { height: 4, width: 4, x: 0, y: 0 };
 
 describe("image kernel", () => {
   beforeEach(() => {
@@ -96,7 +96,7 @@ describe("image kernel", () => {
     const kernel = imageKernel();
     const source = bitmapOf();
 
-    await kernel.region(source, rect, 4, 4);
+    await kernel.region(source, SMALL_RECT, 4, 4);
     expect(source.closed).toBe(0);
     expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);
   });
@@ -104,7 +104,7 @@ describe("image kernel", () => {
   it("closes what it decoded from a blob after a region", async () => {
     const kernel = imageKernel();
 
-    await kernel.region(new Blob(["x"]), rect, 4, 4);
+    await kernel.region(new Blob(["x"]), SMALL_RECT, 4, 4);
     expect(decoded[0]?.closed).toBe(1);
   });
 
@@ -112,9 +112,9 @@ describe("image kernel", () => {
     blind = true;
     const kernel = imageKernel();
 
-    await expect(kernel.region(new Blob(["x"]), rect, 4, 4)).rejects.toThrow(
-      "zriz:decode:no 2D canvas"
-    );
+    await expect(
+      kernel.region(new Blob(["x"]), SMALL_RECT, 4, 4)
+    ).rejects.toThrow("zriz:decode:no 2D canvas");
 
     expect(decoded[0]?.closed).toBe(1);
     expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);

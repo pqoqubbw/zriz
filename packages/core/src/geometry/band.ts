@@ -1,8 +1,8 @@
 import type { Point } from "./types";
 
-export const RUBBER_BAND_COEFFICIENT = 0.55;
+const RUBBER_BAND_COEFFICIENT = 0.55;
 
-export const rubberBand = (
+const rubberBand = (
   overshoot: number,
   distance: number,
   coefficient: number = RUBBER_BAND_COEFFICIENT
@@ -11,7 +11,7 @@ export const rubberBand = (
     ? overshoot * coefficient
     : (1 - 1 / ((overshoot * coefficient) / distance + 1)) * distance;
 
-export const inverseRubberBand = (
+const inverseRubberBand = (
   shown: number,
   distance: number,
   coefficient: number = RUBBER_BAND_COEFFICIENT
@@ -25,7 +25,7 @@ export const inverseRubberBand = (
     : Number.POSITIVE_INFINITY;
 };
 
-export const rubberBandPoint = (
+const rubberBandPoint = (
   raw: Point,
   clamped: Point,
   distance: number,
@@ -42,4 +42,11 @@ export const rubberBandPoint = (
   const k = rubberBand(length, distance, coefficient) / length;
 
   return { x: clamped.x + ex * k, y: clamped.y + ey * k };
+};
+
+export {
+  RUBBER_BAND_COEFFICIENT,
+  inverseRubberBand,
+  rubberBand,
+  rubberBandPoint,
 };

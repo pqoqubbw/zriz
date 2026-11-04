@@ -2,9 +2,9 @@ import { positiveZero, toQuarterTurns } from "./geometry/angle";
 import { turnedSize } from "./geometry/state";
 import type { CropState, Point, QuarterTurns, Size } from "./geometry/types";
 
-export type Aspect = "free" | "original" | number;
+type Aspect = "free" | "original" | number;
 
-export type CropValue = {
+type CropValue = {
   readonly center: Readonly<Point>;
   readonly size: Readonly<Size>;
   readonly rotation: number;
@@ -17,14 +17,14 @@ export type CropValue = {
   readonly aspect: Aspect;
 };
 
-export type ValueField = keyof CropValue;
+type ValueField = keyof CropValue;
 
-export const ROTATION_LIMIT = 45;
-export const PERSPECTIVE_LIMIT = 30;
+const ROTATION_LIMIT = 45;
+const PERSPECTIVE_LIMIT = 30;
 const REACH = 1e6;
 const MIN_RATIO = 1e-6;
 
-export const seal = <T extends object>(target: T): T => {
+const seal = <T extends object>(target: T): T => {
   for (const item of Object.values(target) as unknown[]) {
     if (typeof item === "object" && item !== null) {
       seal(item);
@@ -34,7 +34,7 @@ export const seal = <T extends object>(target: T): T => {
   return Object.freeze(target);
 };
 
-export const defaultValue: CropValue = seal({
+const DEFAULT_VALUE: CropValue = seal({
   aspect: "free",
   center: { x: 0.5, y: 0.5 },
   mirrored: false,
@@ -54,7 +54,7 @@ const VALUE_FIELDS: readonly ValueField[] = [
   "aspect",
 ];
 
-export const aspectRatio = (
+const aspectRatio = (
   aspect: Aspect,
   image: Size,
   turns: number
@@ -72,15 +72,15 @@ export const aspectRatio = (
   return aspect;
 };
 
-export const clean = (value: number): number =>
+const clean = (value: number): number =>
   positiveZero(Math.round(value * 1e12) / 1e12);
 
 const cleanSide = (value: number): number => clean(value) || value;
 
-export const focalLength = (image: Size, millimetres = 26): number =>
+const focalLength = (image: Size, millimetres = 26): number =>
   (millimetres / 36) * Math.max(image.width, image.height);
 
-export const valueToState = (
+const valueToState = (
   value: CropValue,
   image: Size,
   focal: number = focalLength(image)
@@ -108,7 +108,7 @@ export const valueToState = (
   };
 };
 
-export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
+const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   const turned = turnedSize(state.image, state.turns);
 
   return seal({
@@ -131,7 +131,7 @@ export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   });
 };
 
-export const sameAspect = (a: Aspect, b: Aspect): boolean =>
+const sameAspect = (a: Aspect, b: Aspect): boolean =>
   a === b ||
   (typeof a === "number" &&
     typeof b === "number" &&
@@ -160,10 +160,10 @@ const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
   return a[field] === b[field];
 };
 
-export const changedFields = (a: CropValue, b: CropValue): ValueField[] =>
+const changedFields = (a: CropValue, b: CropValue): ValueField[] =>
   VALUE_FIELDS.filter((field) => !fieldEqual(a, b, field));
 
-export const valuesEqual = (a: CropValue, b: CropValue): boolean =>
+const valuesEqual = (a: CropValue, b: CropValue): boolean =>
   a === b || VALUE_FIELDS.every((field) => fieldEqual(a, b, field));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -175,15 +175,15 @@ const recordOf = (value: unknown): Record<string, unknown> =>
 const finite = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-export const clamp = (value: number, limit: number): number =>
+const clamp = (value: number, limit: number): number =>
   positiveZero(Math.min(Math.max(value, -limit), limit));
 
-export const positive = (value: unknown, fallback: number): number =>
+const positive = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;
 
-export const toAspect = (value: unknown): Aspect => {
+const toAspect = (value: unknown): Aspect => {
   if (value === "free" || value === "original") {
     return value;
   }
@@ -201,7 +201,7 @@ const bound = (value: unknown, fallback: number): number =>
 const side = (value: unknown, fallback: number): number =>
   Math.min(Math.max(positive(value, fallback), 1e-100), REACH);
 
-export const readValue = (
+const readValue = (
   raw: Partial<CropValue> | Record<string, unknown>,
   base: CropValue
 ): CropValue => {
@@ -231,12 +231,7 @@ export const readValue = (
   });
 };
 
-export const isSound = ({
-  center,
-  perspective,
-  rotation,
-  size,
-}: CropValue): boolean =>
+const isSound = ({ center, perspective, rotation, size }: CropValue): boolean =>
   [
     center.x,
     center.y,
@@ -252,11 +247,7 @@ export const isSound = ({
 const near = (a: number, b: number, reach: number): number =>
   Math.abs(a - b) <= reach ? b : a;
 
-export const holdCrop = (
-  next: CropValue,
-  held: CropValue,
-  image: Size
-): CropValue => {
+const holdCrop = (next: CropValue, held: CropValue, image: Size): CropValue => {
   const { width, height } = turnedSize(image, next.quarterTurns);
   const pixels = 2e-8 + 2e-11 * Math.max(width, height);
   const x = pixels / width;
@@ -290,10 +281,10 @@ export const holdCrop = (
   });
 };
 
-export const serialize = (value: CropValue): string =>
+const serialize = (value: CropValue): string =>
   JSON.stringify({ v: 1, ...value });
 
-export const parse = (input: unknown): CropValue | null => {
+const parse = (input: unknown): CropValue | null => {
   let raw: unknown = input;
 
   if (typeof input === "string") {
@@ -308,7 +299,7 @@ export const parse = (input: unknown): CropValue | null => {
     return null;
   }
 
-  const read = readValue(raw, defaultValue);
+  const read = readValue(raw, DEFAULT_VALUE);
 
   return seal({
     ...read,
@@ -318,4 +309,28 @@ export const parse = (input: unknown): CropValue | null => {
     },
     rotation: clamp(read.rotation, ROTATION_LIMIT),
   });
+};
+
+export type { Aspect, CropValue, ValueField };
+export {
+  PERSPECTIVE_LIMIT,
+  ROTATION_LIMIT,
+  aspectRatio,
+  changedFields,
+  clamp,
+  clean,
+  DEFAULT_VALUE as defaultValue,
+  focalLength,
+  holdCrop,
+  isSound,
+  parse,
+  positive,
+  readValue,
+  sameAspect,
+  seal,
+  serialize,
+  stateToValue,
+  toAspect,
+  valueToState,
+  valuesEqual,
 };

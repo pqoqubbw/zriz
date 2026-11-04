@@ -14,13 +14,13 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export type ResetState = {
+type ResetState = {
   pristine: boolean;
 };
 
-export type ResetProps = PartProps<"button", ResetState>;
+type ResetProps = PartProps<"button", ResetState>;
 
-export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
+const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   ResetProps
 >(function Reset(props, ref) {
@@ -70,3 +70,6 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
     { pristine }
   );
 });
+
+export type { ResetProps, ResetState };
+export { Reset };

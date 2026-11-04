@@ -1,10 +1,10 @@
 import { sinCosDegrees } from "./angle";
 import type { Matrix3, Perspective, Size } from "./types";
 
-export const isFlatPerspective = (perspective?: Perspective): boolean =>
+const isFlatPerspective = (perspective?: Perspective): boolean =>
   !perspective || (perspective.vertical === 0 && perspective.horizontal === 0);
 
-export const perspectiveHomography = (perspective: Perspective): Matrix3 => {
+const perspectiveHomography = (perspective: Perspective): Matrix3 => {
   const vertical = sinCosDegrees(perspective.vertical);
   const horizontal = sinCosDegrees(perspective.horizontal);
 
@@ -21,7 +21,7 @@ export const perspectiveHomography = (perspective: Perspective): Matrix3 => {
   ];
 };
 
-export const isPerspectiveValid = (
+const isPerspectiveValid = (
   image: Size,
   perspective: Perspective,
   margin = 0.1
@@ -41,3 +41,5 @@ export const isPerspectiveValid = (
       margin
   );
 };
+
+export { isFlatPerspective, isPerspectiveValid, perspectiveHomography };

@@ -19,7 +19,7 @@ import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
 import { isHtml, snap, visualScale } from "./view";
 
-export type DialOptions = {
+type DialOptions = {
   gain?: number | undefined;
   slop?: number | undefined;
   tau?: number | undefined;
@@ -28,7 +28,7 @@ export type DialOptions = {
   format?: Intl.NumberFormatOptions | undefined;
 };
 
-export type DialHandlers = KeyHandlers & PointerHandlers;
+type DialHandlers = KeyHandlers & PointerHandlers;
 
 type SharedDial = DialState & {
   set: (overshoot: number, dragging: boolean) => void;
@@ -36,7 +36,7 @@ type SharedDial = DialState & {
   binders: number;
 };
 
-export type DialState = {
+type DialState = {
   overshoot: () => number;
   dragging: () => boolean;
   options: () => DialOptions;
@@ -44,8 +44,8 @@ export type DialState = {
   onChange: (listener: () => void) => () => void;
 };
 
-export const DIAL_TICKS = 41;
-export const DIAL_STEP = 2.25;
+const DIAL_TICKS = 41;
+const DIAL_STEP = 2.25;
 const DEFAULT_GAIN = 4;
 const DEFAULT_SLOP = 10;
 const AXIS_LOCK = 6;
@@ -115,14 +115,14 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
   return state;
 };
 
-export const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
+const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
 
 const clamp = (value: number, limit: number): number =>
   Math.min(Math.max(value, -limit), limit);
 
 const tenths = (value: number): number => Math.round(value * 10) / 10 || 0;
 
-export const dialHandlers = (
+const dialHandlers = (
   cropper: Cropper,
   initial: DialOptions = {},
   element?: () => Element | null
@@ -461,7 +461,7 @@ export const dialHandlers = (
   };
 };
 
-export const dialAria = (
+const dialAria = (
   cropper: Cropper,
   element: HTMLElement,
   options: DialOptions = {}
@@ -488,7 +488,7 @@ export const dialAria = (
   });
 };
 
-export const bindDial = (
+const bindDial = (
   cropper: Cropper,
   element: HTMLElement,
   options: DialOptions = {}
@@ -546,7 +546,7 @@ export const bindDial = (
   };
 };
 
-export const tickData = (
+const tickData = (
   index: number,
   count: number = DIAL_TICKS
 ): { major: boolean; zero: boolean; fade: number | null } => {
@@ -560,7 +560,7 @@ export const tickData = (
   };
 };
 
-export const bindDialTicks = (
+const bindDialTicks = (
   cropper: Cropper,
   strip: HTMLElement,
   count: number = DIAL_TICKS
@@ -661,7 +661,7 @@ export const bindDialTicks = (
   };
 };
 
-export const bindDialValue = (
+const bindDialValue = (
   cropper: Cropper,
   element: HTMLElement,
   format?: (rotation: number) => string | undefined
@@ -684,4 +684,17 @@ export const bindDialValue = (
   write();
 
   return cropper.on("frame", write);
+};
+
+export type { DialHandlers, DialOptions, DialState };
+export {
+  DIAL_STEP,
+  DIAL_TICKS,
+  bindDial,
+  bindDialTicks,
+  bindDialValue,
+  dialAria,
+  dialHandlers,
+  dialState,
+  tickData,
 };

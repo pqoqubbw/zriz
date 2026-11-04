@@ -4,9 +4,9 @@ import { insidePlanes, panPlanes } from "../geometry/planes";
 import type { Crop, HalfPlane } from "../geometry/types";
 import { noop } from "./turn";
 
-export const MIN_HANDLE_SPAN = 88;
+const MIN_HANDLE_SPAN = 88;
 
-export const stopAtZoomCeiling = (
+const stopAtZoomCeiling = (
   planes: readonly HalfPlane[],
   from: Crop,
   to: Crop,
@@ -66,7 +66,7 @@ export const stopAtZoomCeiling = (
   return missed(xFirst) < missed(yFirst) ? xFirst : yFirst;
 };
 
-export type PointerHandlers = {
+type PointerHandlers = {
   onPointerDown: (event: PointerEvent) => void;
   onPointerMove: (event: PointerEvent) => void;
   onPointerUp: (event: PointerEvent) => void;
@@ -74,7 +74,7 @@ export type PointerHandlers = {
   onLostPointerCapture: (event: PointerEvent) => void;
 };
 
-export const capture = (element: Element, id: number): void => {
+const capture = (element: Element, id: number): void => {
   try {
     element.setPointerCapture(id);
   } catch {
@@ -82,10 +82,10 @@ export const capture = (element: Element, id: number): void => {
   }
 };
 
-export const isElement = (node: EventTarget | null): node is Element =>
+const isElement = (node: EventTarget | null): node is Element =>
   node !== null && "matches" in node;
 
-export const windowOf = (element?: Element | null): typeof globalThis =>
+const windowOf = (element?: Element | null): typeof globalThis =>
   element?.ownerDocument.defaultView ?? globalThis;
 
 const TOUCH_STYLES = [
@@ -95,10 +95,7 @@ const TOUCH_STYLES = [
   ["-webkit-tap-highlight-color", "transparent"],
 ] as const;
 
-export const claimTouch = (
-  { style }: HTMLElement,
-  touch: string
-): (() => void) => {
+const claimTouch = ({ style }: HTMLElement, touch: string): (() => void) => {
   style.touchAction = touch;
 
   for (const [name, value] of TOUCH_STYLES) {
@@ -114,7 +111,7 @@ export const claimTouch = (
   };
 };
 
-export const targetOf = (
+const targetOf = (
   event: Event,
   element?: () => Element | null
 ): Element | null =>
@@ -122,16 +119,16 @@ export const targetOf = (
 
 const claims = new WeakSet<Event>();
 
-export const claim = (event: Event): void => {
+const claim = (event: Event): void => {
   claims.add(event);
 };
 
-export const claimed = (event: Event): boolean => claims.has(event);
+const claimed = (event: Event): boolean => claims.has(event);
 
-export const presses = (event: PointerEvent): boolean =>
+const presses = (event: PointerEvent): boolean =>
   event.button === 0 && !(event.ctrlKey && /mac/iu.test(navigator.platform));
 
-export const pressLost = (
+const pressLost = (
   event: PointerEvent,
   element: Element | null | undefined
 ): boolean =>
@@ -147,11 +144,11 @@ const within = (node: Element, path: EventTarget[]): boolean => {
   return path.includes(node) || (closedRoot(root) && within(root.host, path));
 };
 
-export const outside = (element: Element | null, event: Event): boolean =>
+const outside = (element: Element | null, event: Event): boolean =>
   event.target !== null &&
   (element === null || !within(element, event.composedPath()));
 
-export const watchLoss = (
+const watchLoss = (
   cropper: Cropper,
   lost: (event?: Event) => void,
   held: (id: number) => boolean,
@@ -192,7 +189,7 @@ export const watchLoss = (
   };
 };
 
-export const bindPointers = (
+const bindPointers = (
   element: HTMLElement,
   handlers: PointerHandlers
 ): (() => void) => {
@@ -213,4 +210,22 @@ export const bindPointers = (
       element.removeEventListener(type, handler);
     }
   };
+};
+
+export type { PointerHandlers };
+export {
+  MIN_HANDLE_SPAN,
+  bindPointers,
+  capture,
+  claim,
+  claimTouch,
+  claimed,
+  isElement,
+  outside,
+  pressLost,
+  presses,
+  stopAtZoomCeiling,
+  targetOf,
+  watchLoss,
+  windowOf,
 };

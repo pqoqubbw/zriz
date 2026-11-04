@@ -6,9 +6,9 @@ import { RootContext } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export type InstructionsProps = PartProps<"div", object>;
+type InstructionsProps = PartProps<"div", object>;
 
-export const Instructions: Part<InstructionsProps, HTMLDivElement> = forwardRef<
+const Instructions: Part<InstructionsProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   InstructionsProps
 >(function Instructions(props, ref) {
@@ -23,3 +23,6 @@ export const Instructions: Part<InstructionsProps, HTMLDivElement> = forwardRef<
     {}
   );
 });
+
+export type { InstructionsProps };
+export { Instructions };
