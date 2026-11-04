@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   aspectRatio,
@@ -8,6 +8,7 @@ import {
   serialize,
   stateToValue,
   valueToState,
+  valuesEqual,
 } from "../src";
 
 describe(parse, () => {
@@ -138,6 +139,22 @@ describe(changedFields, () => {
       "size",
     ]);
     expect(changedFields(next, { ...next })).toStrictEqual([]);
+  });
+});
+
+describe(valuesEqual, () => {
+  it("compares every frame without listing the keys of a field", () => {
+    const keys = vi.spyOn(Object, "keys");
+    const same = valuesEqual(defaultValue, {
+      ...defaultValue,
+      center: { ...defaultValue.center },
+      perspective: { ...defaultValue.perspective },
+      size: { ...defaultValue.size },
+    });
+    const calls = keys.mock.calls.length;
+    keys.mockRestore();
+    expect(same).toBeTruthy();
+    expect(calls).toBe(0);
   });
 });
 
