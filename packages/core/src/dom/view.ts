@@ -9,8 +9,9 @@ import {
   perspectiveHomography,
 } from "../geometry/perspective";
 import { linearTransform } from "../geometry/state";
-import type { CropState, Matrix3, Point } from "../geometry/types";
+import type { CropState, Matrix3, Point, Size } from "../geometry/types";
 import { spring } from "../motion";
+import { claim, claimed } from "./input";
 
 export interface Inset {
   top: number;
@@ -227,27 +228,40 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
   };
 };
 
-const blendMatrix = (from: Pose, to: Pose, t: number): Matrix3 => {
+const blendPose = (from: Pose, to: Pose, t: number): Pose => {
   let turn = to.angle - from.angle;
   turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
-  const angle = from.angle + turn * t;
-  const sx = lerp(from.sx, to.sx, t);
-  const sy = lerp(from.sy, to.sy, t);
-  const mirror = lerp(from.mirror, to.mirror, t);
+  return {
+    anchor: {
+      x: lerp(from.anchor.x, to.anchor.x, t),
+      y: lerp(from.anchor.y, to.anchor.y, t),
+    },
+    angle: from.angle + turn * t,
+    centre: {
+      x: lerp(from.centre.x, to.centre.x, t),
+      y: lerp(from.centre.y, to.centre.y, t),
+    },
+    mirror: lerp(from.mirror, to.mirror, t),
+    rect: lerpBox(from.rect, to.rect, t),
+    sx: lerp(from.sx, to.sx, t),
+    sy: lerp(from.sy, to.sy, t),
+  };
+};
+
+const poseMatrix = ({
+  anchor,
+  angle,
+  centre,
+  mirror,
+  sx,
+  sy,
+}: Pose): Matrix3 => {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const a = mirror * sx * cos;
   const b = -mirror * sy * sin;
   const c = sx * sin;
   const d = sy * cos;
-  const anchor = {
-    x: lerp(from.anchor.x, to.anchor.x, t),
-    y: lerp(from.anchor.y, to.anchor.y, t),
-  };
-  const centre = {
-    x: lerp(from.centre.x, to.centre.x, t),
-    y: lerp(from.centre.y, to.centre.y, t),
-  };
   return [
     a,
     b,
@@ -286,6 +300,7 @@ export const viewOf = (cropper: Cropper): View => {
   let recentreTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
   let blend: { from: Pose; t: number } | null = null;
+  let shown: Pose | null = null;
   let chrome: Chrome = {
     active: false,
     grid: "none",
@@ -294,7 +309,7 @@ export const viewOf = (cropper: Cropper): View => {
   };
   let last: ViewFrame | null = null;
   let target: HTMLElement | null = null;
-  const claims = new WeakSet<Event>();
+  let photo: Size | undefined;
   const listeners = new Set<(frame: ViewFrame) => void>();
   const chromeListeners = new Set<() => void>();
   const reduceQuery =
@@ -331,7 +346,27 @@ export const viewOf = (cropper: Cropper): View => {
       : fitPlacement(current, state);
   };
 
+  const followPhoto = (): void => {
+    const size = cropper.getCropState()?.image;
+    if (
+      photo &&
+      size &&
+      (photo.width !== size.width || photo.height !== size.height)
+    ) {
+      held = null;
+      pinned = null;
+      last = null;
+      blend = null;
+      if (recentreTimer !== null) {
+        clearTimeout(recentreTimer);
+        recentreTimer = null;
+      }
+    }
+    photo = size ?? photo;
+  };
+
   const compute = (): ViewFrame | null => {
+    followPhoto();
     const state = cropper.getCropState();
     if (!layout || !state) {
       return null;
@@ -354,10 +389,11 @@ export const viewOf = (cropper: Cropper): View => {
     if (blend) {
       const to = pose(exact, matrix);
       if (to) {
+        shown = blendPose(blend.from, to, blend.t);
         return {
           layout,
-          matrix: blendMatrix(blend.from, to, blend.t),
-          rect: snapBox(lerpBox(blend.from.rect, exact, blend.t), layout.dpr),
+          matrix: poseMatrix(shown),
+          rect: snapBox(shown.rect, layout.dpr),
           scale: placement.scale,
           state,
         };
@@ -427,7 +463,7 @@ export const viewOf = (cropper: Cropper): View => {
   };
 
   const animate = (kind: Transition, from: ViewFrame): void => {
-    const start = pose(from.rect, from.matrix);
+    const start = (blend && shown) ?? pose(from.rect, from.matrix);
     if (!start) {
       return;
     }
@@ -552,6 +588,8 @@ export const viewOf = (cropper: Cropper): View => {
   });
   const offStop = cropper.on("stop", () => {
     endTransition();
+    held = null;
+    pinned = null;
     stopShift?.();
     stopShift = null;
     stopZoom?.();
@@ -575,10 +613,8 @@ export const viewOf = (cropper: Cropper): View => {
 
   const view: View = {
     chrome: () => chrome,
-    claim(event) {
-      claims.add(event);
-    },
-    claimed: (event) => claims.has(event),
+    claim,
+    claimed,
     destroy() {
       offFrame();
       offChange();
@@ -593,8 +629,12 @@ export const viewOf = (cropper: Cropper): View => {
       chromeListeners.clear();
       views.delete(cropper);
     },
-    frame: () => last ?? compute(),
+    frame() {
+      followPhoto();
+      return last ?? compute();
+    },
     hold() {
+      followPhoto();
       const state = cropper.getCropState();
       if (!layout || !state) {
         return null;
@@ -628,9 +668,19 @@ export const viewOf = (cropper: Cropper): View => {
     overzoom: () => zoom,
     reducedMotion: reduced,
     release() {
+      followPhoto();
       const state = cropper.getCropState();
-      if (held && state) {
-        pinned = exactBox(state, held);
+      if (held && state && layout && cropper.getState().interacting) {
+        const box = exactBox(state, held);
+        const fit = exactBox(state, fitPlacement(layout, state));
+        pinned =
+          Math.abs(box.x - fit.x) +
+            Math.abs(box.y - fit.y) +
+            Math.abs(box.width - fit.width) +
+            Math.abs(box.height - fit.height) <
+          1e-6
+            ? null
+            : box;
       }
       held = null;
       cropper.invalidate();
