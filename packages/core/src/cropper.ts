@@ -518,6 +518,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     handle = null;
     const delta = lastTime === null ? 0 : Math.max(0, time - lastTime);
     lastTime = time;
+    const wasSettling = snapshot.settling;
     if (tasks.size > 0) {
       frameDirty = true;
     }
@@ -531,7 +532,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       frameDirty = false;
       emit("frame", { state, time, value });
     }
-    const wasSettling = snapshot.settling;
     settleCommit();
     refresh();
     if (wasSettling && tasks.size === 0) {

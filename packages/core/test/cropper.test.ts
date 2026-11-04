@@ -1133,6 +1133,24 @@ describe("change and commit reporting", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
+  it.each(["change", "frame"] as const)(
+    "fires settle when a %s listener writes on the last task frame",
+    (type) => {
+      const { cropper, time } = setup();
+      const settle = vi.fn<() => void>();
+      cropper.on("settle", settle);
+      const off = cropper.on(type, () => {
+        off();
+        cropper.setRotation(5);
+      });
+      cropper.setRotation(3);
+      cropper.run(() => false);
+      time.frames(2);
+      expect(cropper.getState().settling).toBeFalsy();
+      expect(settle).toHaveBeenCalledOnce();
+    }
+  );
+
   it("reports a later photo's refit as a change with the old value as previous", () => {
     const { change, commit, cropper, time } = setup({
       image: { height: 750, width: 1000 },
