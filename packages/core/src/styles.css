@@ -61,10 +61,14 @@
   ) {
     cursor: nesw-resize;
   }
-  :where([data-zriz-item="handle"]:is([data-edge="top"], [data-edge="bottom"])) {
+  :where(
+    [data-zriz-item="handle"]:is([data-edge="top"], [data-edge="bottom"])
+  ) {
     cursor: ns-resize;
   }
-  :where([data-zriz-item="handle"]:is([data-edge="left"], [data-edge="right"])) {
+  :where(
+    [data-zriz-item="handle"]:is([data-edge="left"], [data-edge="right"])
+  ) {
     cursor: ew-resize;
   }
   :where([data-shape="circle"] > [data-zriz-item="handle"][data-edge*="\-"]) {

@@ -148,10 +148,18 @@ export const cssMatrix = (m: Matrix3): string => {
 const share = (seen: number, own: number): number =>
   own > 0 && seen > 0 && Math.abs(seen - own) >= 1 ? seen / own : 1;
 
+export const isHtml = (element: Element): element is HTMLElement =>
+  "offsetWidth" in element;
+
 export const visualScale = (element: Element): Point => {
+  if (!isHtml(element)) {
+    return { x: 1, y: 1 };
+  }
   const box = element.getBoundingClientRect();
-  const { offsetHeight, offsetWidth } = element as HTMLElement;
-  return { x: share(box.width, offsetWidth), y: share(box.height, offsetHeight) };
+  return {
+    x: share(box.width, element.offsetWidth),
+    y: share(box.height, element.offsetHeight),
+  };
 };
 
 export const localOf = (

@@ -1,5 +1,7 @@
 import { windowOf } from "./input";
 
+const isShadow = (node: Node): node is ShadowRoot => "host" in node;
+
 const swap: Record<string, string> = { grab: "grabbing" };
 
 export const holdCursor = (element: Element | null): (() => void) | null => {
@@ -19,9 +21,9 @@ export const holdCursor = (element: Element | null): (() => void) | null => {
   sheet.replaceSync(`*{cursor:${swap[computed] ?? computed}!important}`);
   const holders: DocumentOrShadowRoot[] = [win.document];
   let root = element.getRootNode();
-  while ("host" in root) {
-    holders.push(root as ShadowRoot);
-    root = (root as ShadowRoot).host.getRootNode();
+  while (isShadow(root)) {
+    holders.push(root);
+    root = root.host.getRootNode();
   }
   for (const holder of holders) {
     holder.adoptedStyleSheets = [...holder.adoptedStyleSheets, sheet];

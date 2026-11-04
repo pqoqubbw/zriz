@@ -18,7 +18,7 @@ import {
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
-import { snap, visualScale } from "./view";
+import { isHtml, snap, visualScale } from "./view";
 
 export interface DialOptions {
   gain?: number | undefined;
@@ -491,9 +491,7 @@ export const bindDialTicks = (
     strip.append(...created);
   }
   const spacing = (): number => positive(dial.options().gain, GAIN) * DIAL_STEP;
-  const ticks = [...strip.children].filter(
-    (child): child is HTMLElement => "offsetWidth" in child
-  );
+  const ticks = [...strip.children].filter(isHtml);
   for (const [i, tick] of ticks.entries()) {
     const data = tickData(i, ticks.length);
     tick.style.position = "absolute";

@@ -77,21 +77,28 @@ const halves = async (width: number, height: number): Promise<Blob> => {
   return await canvas.convertToBlob({ type: "image/png" });
 };
 
-describe("a source from another document", () => {
-  const otherRealm = async () => {
-    const frame = document.createElement("iframe");
-    frame.srcdoc = "<!doctype html><body></body>";
-    await new Promise((resolve) => {
-      frame.addEventListener("load", resolve, { once: true });
-      document.body.append(frame);
-    });
-    return { frame, win: frame.contentWindow as Window & typeof globalThis };
-  };
+declare global {
+  interface Window {
+    File: typeof File;
+  }
+}
 
+const otherRealm = async () => {
+  const frame = document.createElement("iframe");
+  frame.srcdoc = "<!doctype html><body></body>";
+  await new Promise((resolve) => {
+    frame.addEventListener("load", resolve, { once: true });
+    document.body.append(frame);
+  });
+  return frame;
+};
+
+describe("a source from another document", () => {
   it("loads a file from that realm and keeps a blob of this one", async () => {
-    const { frame, win } = await otherRealm();
-    const bytes = await (await fixture("orient-1.jpg")).arrayBuffer();
-    const file = new win.File([bytes], "a.jpg", { type: "image/jpeg" });
+    const frame = await otherRealm();
+    const blob = await fixture("orient-1.jpg");
+    const OtherFile = frame.contentWindow?.File ?? File;
+    const file = new OtherFile([blob], "a.jpg", { type: "image/jpeg" });
     expect(file instanceof Blob).toBeFalsy();
     const image = await loadImage(file);
     expect(image.width).toBeGreaterThan(0);
@@ -100,10 +107,10 @@ describe("a source from another document", () => {
   });
 
   it("waits for an image from that realm that is still loading", async () => {
-    const { frame, win } = await otherRealm();
+    const frame = await otherRealm();
     const blob = await fixture("orient-1.jpg");
     const url = URL.createObjectURL(blob);
-    const img = new win.Image();
+    const img = frame.contentDocument?.createElement("img") ?? new Image();
     img.src = url;
     const image = await loadImage(img);
     expect(image.width).toBeGreaterThan(0);

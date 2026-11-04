@@ -1056,15 +1056,16 @@ const stateRig = () => {
   };
   place(400, 300);
   const handle = handleHandlers(cropper, "bottom-right");
-  const pointer = (x: number, y: number): PointerEvent =>
-    pointerAt(x, y)[0] as unknown as PointerEvent;
   const dragIn = (): void => {
-    handle.onPointerDown(pointer(400, 300));
-    handle.onPointerMove(pointer(250, 200));
+    Reflect.apply(handle.onPointerDown, undefined, pointerAt(400, 300));
+    Reflect.apply(handle.onPointerMove, undefined, pointerAt(250, 200));
     time.frame();
   };
+  const letGo = (): void => {
+    Reflect.apply(handle.onPointerUp, undefined, pointerAt(250, 200));
+  };
   const scaleOf = (): number | undefined => view.frame()?.scale;
-  return { cropper, dragIn, handle, place, pointer, scaleOf, time, view };
+  return { cropper, dragIn, letGo, place, scaleOf, time, view };
 };
 
 const fitScale = (width: number): number => width / 4000;
@@ -1128,10 +1129,9 @@ describe("stop", () => {
 
   it("returns a pinned crop to the fit on the next layout", () => {
     vi.useFakeTimers();
-    const { cropper, dragIn, handle, place, pointer, scaleOf, time, view } =
-      stateRig();
+    const { cropper, dragIn, letGo, place, scaleOf, time, view } = stateRig();
     dragIn();
-    handle.onPointerUp(pointer(250, 200));
+    letGo();
     time.frames(2);
     cropper.stop();
     vi.advanceTimersByTime(5000);
@@ -1155,31 +1155,31 @@ describe("stop", () => {
   });
 });
 
+const escapeDrag = () => {
+  const escapes: ((event: KeyboardEvent) => void)[] = [];
+  const rig = stateRig();
+  vi.stubGlobal(
+    "addEventListener",
+    (type: string, listener: (event: KeyboardEvent) => void) => {
+      if (type === "keydown") {
+        escapes.push(listener);
+      }
+    }
+  );
+  rig.dragIn();
+  for (const onEscape of escapes) {
+    Reflect.apply(onEscape, undefined, [
+      { key: "Escape", preventDefault: () => {}, stopPropagation: () => {} },
+    ]);
+  }
+  return rig;
+};
+
 describe("escape on a handle drag", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
-
-  const escapeDrag = () => {
-    let onEscape: ((event: KeyboardEvent) => void) | undefined;
-    const rig = stateRig();
-    vi.stubGlobal(
-      "addEventListener",
-      (type: string, listener: (event: KeyboardEvent) => void) => {
-        if (type === "keydown") {
-          onEscape = listener;
-        }
-      }
-    );
-    rig.dragIn();
-    onEscape?.({
-      key: "Escape",
-      preventDefault: () => {},
-      stopPropagation: () => {},
-    } as unknown as KeyboardEvent);
-    return rig;
-  };
 
   it("keeps refitting a crop that was fitted", () => {
     vi.useFakeTimers();
@@ -1216,9 +1216,9 @@ describe("a recentre that loses its view", () => {
     ["a removed photo", "clear"],
   ] as const)("clears the transition on %s", (_, how) => {
     vi.useFakeTimers();
-    const { cropper, dragIn, handle, pointer, time, view } = stateRig();
+    const { cropper, dragIn, letGo, time, view } = stateRig();
     dragIn();
-    handle.onPointerUp(pointer(250, 200));
+    letGo();
     vi.advanceTimersByTime(500);
     time.frames(2);
     expect(view.chrome().transition).toBe("recentre");

@@ -69,8 +69,7 @@ const mount = (parent: HTMLElement = document.body, css = ""): DialFixture => {
   const dial = document.createElement("div");
   dial.id = id;
   dial.setAttribute("aria-label", "Straighten");
-  dial.style.cssText =
-    `position:relative;width:361px;height:40px;overflow:hidden;${css}`;
+  dial.style.cssText = `position:relative;width:361px;height:40px;overflow:hidden;${css}`;
   const strip = document.createElement("div");
   dial.append(strip);
   const label = document.createElement("span");
@@ -890,35 +889,35 @@ describe("zoom and area keys", () => {
   });
 });
 
+const offCentre = (fixture: DialFixture): number => {
+  const zero = fixture.strip.querySelector("[data-zero]");
+  const tick = zero?.getBoundingClientRect();
+  const box = fixture.dial.getBoundingClientRect();
+  return (tick?.x ?? 0) + (tick?.width ?? 0) / 2 - (box.x + box.width / 2);
+};
+
+const hostOf = (css: string): HTMLElement => {
+  const host = document.createElement("div");
+  host.style.cssText = `position:fixed;left:0;top:0;width:361px;${css}`;
+  document.body.append(host);
+  cleanups.push(() => {
+    host.remove();
+  });
+  return host;
+};
+
+const styled = (fixture: DialFixture): void => {
+  for (const tick of fixture.strip.querySelectorAll("span")) {
+    tick.style.width = "1px";
+  }
+};
+
 describe("the ruler under an ancestor or a border", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
   });
-
-  const offCentre = (fixture: DialFixture): number => {
-    const zero = fixture.strip.querySelector("[data-zero]");
-    const tick = zero?.getBoundingClientRect();
-    const box = fixture.dial.getBoundingClientRect();
-    return (tick?.x ?? 0) + (tick?.width ?? 0) / 2 - (box.x + box.width / 2);
-  };
-
-  const hostOf = (css: string): HTMLElement => {
-    const host = document.createElement("div");
-    host.style.cssText = `position:fixed;left:0;top:0;width:361px;${css}`;
-    document.body.append(host);
-    cleanups.push(() => {
-      host.remove();
-    });
-    return host;
-  };
-
-  const styled = (fixture: DialFixture): void => {
-    for (const tick of fixture.strip.children) {
-      (tick as HTMLElement).style.width = "1px";
-    }
-  };
 
   it("stays centred after a scale-in ends", async () => {
     const host = hostOf("transform:scale(0.95);");
@@ -985,7 +984,10 @@ describe("the ruler in another document", () => {
       frame.addEventListener("load", resolve, { once: true });
       document.body.append(frame);
     });
-    const doc = frame.contentDocument as Document;
+    const doc = frame.contentDocument;
+    if (!doc) {
+      throw new Error("no document");
+    }
     const host = doc.createElement("div");
     host.style.cssText = "position:relative;width:200px;height:40px;";
     const strip = doc.createElement("div");
@@ -1002,7 +1004,7 @@ describe("the ruler in another document", () => {
       frame.remove();
     });
     await frames();
-    const spans = [...strip.children] as HTMLElement[];
+    const spans = [...strip.querySelectorAll("span")];
     expect(spans.filter((span) => span.style.left !== "")).toHaveLength(41);
     expect(strip.querySelectorAll("[data-zero]")).toHaveLength(1);
   });

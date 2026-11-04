@@ -91,6 +91,11 @@ const spread = (
   };
 };
 
+const clientPoint = (event: { clientX: number; clientY: number }): Point => ({
+  x: event.clientX,
+  y: event.clientY,
+});
+
 const pixels = (value: string): number => Number(value.slice(0, -2)) || 0;
 
 const bandZoom = (excess: number): number => {
@@ -168,7 +173,8 @@ const wheelDelta = (
 };
 
 const padStep = (event: WheelEvent): boolean => {
-  const physical = event.deltaY * ((event.view ?? globalThis).devicePixelRatio || 1);
+  const physical =
+    event.deltaY * ((event.view ?? globalThis).devicePixelRatio || 1);
   return event.ctrlKey && Math.abs(physical - Math.round(physical)) > 1e-3;
 };
 
@@ -233,10 +239,7 @@ export const viewportController = (
   let element: HTMLElement | null = null;
   const view: View = viewOf(cropper);
   const pointers = new Map<number, Point>();
-  let local = (event: { clientX: number; clientY: number }): Point => ({
-    x: event.clientX,
-    y: event.clientY,
-  });
+  let local = clientPoint;
   let start: Start | null = null;
   let twist = 0;
   let safari: Start | null = null;
@@ -302,17 +305,14 @@ export const viewportController = (
   const onDpr = (): void => {
     dprQuery?.removeEventListener("change", onDpr);
     dprQuery =
-      win.matchMedia?.(`(resolution: ${win.devicePixelRatio || 1}dppx)`) ?? null;
+      win.matchMedia?.(`(resolution: ${win.devicePixelRatio || 1}dppx)`) ??
+      null;
     dprQuery?.addEventListener("change", onDpr);
     measure();
   };
 
   const onAncestorSettle = (event: Event): void => {
-    if (
-      element &&
-      isElement(event.target) &&
-      event.target.contains(element)
-    ) {
+    if (element && isElement(event.target) && event.target.contains(element)) {
       measure();
     }
   };

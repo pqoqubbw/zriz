@@ -58,7 +58,7 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
       return;
     }
     const enabled = itemsOf(element).filter((item) => !item.disabled);
-    const index = enabled.indexOf(event.target as HTMLButtonElement);
+    const index = (enabled as readonly EventTarget[]).indexOf(event.target);
     if (index === -1) {
       return;
     }

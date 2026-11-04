@@ -64,11 +64,12 @@ export interface PointerHandlers {
   onLostPointerCapture: (event: PointerEvent) => void;
 }
 
-export const capture = (element: Element, id: number): void => {
+export const capture = (element: Element, id: number): boolean => {
   try {
     element.setPointerCapture(id);
+    return true;
   } catch {
-    return;
+    return false;
   }
 };
 
@@ -105,8 +106,7 @@ export const targetOf = (
   event: Event,
   element?: () => Element | null
 ): Element | null =>
-  element?.() ??
-  (isElement(event.currentTarget) ? event.currentTarget : null);
+  element?.() ?? (isElement(event.currentTarget) ? event.currentTarget : null);
 
 const claims = new WeakSet<Event>();
 

@@ -724,7 +724,10 @@ describe("parts portaled into another document", () => {
       frame.addEventListener("load", resolve, { once: true });
       document.body.append(frame);
     });
-    const { body } = frame.contentDocument as Document;
+    const body = frame.contentDocument?.body;
+    if (!body) {
+      throw new Error("no body");
+    }
     await render(
       createPortal(
         <Cropper.Root image={{ height: 300, width: 400 }}>
@@ -743,16 +746,11 @@ describe("parts portaled into another document", () => {
     const items = [...body.querySelectorAll("button")];
     items[0]?.focus();
     items[0]?.dispatchEvent(
-      new (frame.contentWindow as Window & typeof globalThis).KeyboardEvent(
-        "keydown",
-        { bubbles: true, key: "ArrowRight" }
-      )
+      new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })
     );
     await frames();
     expect(items[1]?.getAttribute("aria-checked")).toBe("true");
-    expect(
-      body.querySelectorAll('[data-zero][style*="left"]')
-    ).toHaveLength(1);
+    expect(body.querySelectorAll('[data-zero][style*="left"]')).toHaveLength(1);
     await cleanup();
     frame.remove();
   });
