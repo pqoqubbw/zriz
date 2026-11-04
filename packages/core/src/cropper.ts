@@ -206,6 +206,8 @@ const attempt = <T>(call: () => T): T | undefined => {
 
 const noop = (): void => undefined;
 
+const isTrue = (flag: unknown): boolean => flag === true;
+
 const minSide = (given: number | undefined, limit: number): number =>
   Math.min(given !== undefined && given > 0 ? given : 1, limit);
 
@@ -849,6 +851,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       const given = {
         ...next,
         aspect: aspectRatio(value.aspect, state.image, turns),
+        flip: isTrue(next.flip),
         image: state.image,
         perspective: { ...next.perspective, focal: state.perspective.focal },
         turns,

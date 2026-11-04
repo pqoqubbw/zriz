@@ -84,13 +84,13 @@
       "name": "createCropper",
       "path": "dist/index.js",
       "import": "{ createCropper }",
-      "limit": "6382 B"
+      "limit": "6392 B"
     },
     {
       "name": "value",
       "path": "dist/index.js",
       "import": "{ parse, serialize }",
-      "limit": "592 B"
+      "limit": "595 B"
     },
     {
       "name": "motion",

@@ -1759,6 +1759,17 @@ describe("input validation", () => {
     expect(cropper.getValue().center).toStrictEqual({ x, y });
   });
 
+  it.each([
+    ["a string", "x"],
+    ["a number", 1],
+    ["nothing", undefined],
+  ])("keeps a mirror from %s out of the value", (_, flip) => {
+    const { cropper } = setup();
+    const state = cropState(cropper.getCropState());
+    Reflect.apply(cropper.setCropState, cropper, [{ ...state, flip }]);
+    expect(cropper.getValue().mirrored).toBeFalsy();
+  });
+
   it("lets maxZoom Infinity through", () => {
     const { cropper } = setup({ maxZoom: huge });
     expect(cropper.getMaxZoom()).toBe(huge);
@@ -2284,6 +2295,7 @@ describe("values handed out", () => {
   it("freezes every value and state the cropper holds", () => {
     const { change, commit, cropper, time } = setup();
     expect(deepFrozen(defaultValue)).toBeTruthy();
+    expect(deepFrozen(parse("{}") ?? {})).toBeTruthy();
     expect(deepFrozen(cropper.getValue())).toBeTruthy();
     cropper.setRotation(5);
     time.frame();

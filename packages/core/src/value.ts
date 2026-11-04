@@ -301,12 +301,12 @@ export const parse = (input: unknown): CropValue | null => {
     return null;
   }
   const read = readValue(raw, defaultValue);
-  return {
+  return seal({
     ...read,
     perspective: {
       horizontal: clamp(read.perspective.horizontal, PERSPECTIVE_LIMIT),
       vertical: clamp(read.perspective.vertical, PERSPECTIVE_LIMIT),
     },
     rotation: clamp(read.rotation, ROTATION_LIMIT),
-  };
+  });
 };
