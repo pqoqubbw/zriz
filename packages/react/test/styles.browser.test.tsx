@@ -1,6 +1,9 @@
 import "../../core/src/styles.css";
 import type { Cropper as CropperApi } from "@zriz/core";
 import { createRef } from "react";
+import { hydrateRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 
@@ -202,5 +205,104 @@ describe("default styles", () => {
     expect(getComputedStyle(pick('[data-zriz-item="zoom"]')).colorScheme).toBe(
       "dark"
     );
+  });
+});
+
+const serve = (tree: React.ReactElement): HTMLElement => {
+  const host = document.createElement("div");
+  host.innerHTML = renderToString(tree);
+  document.body.append(host);
+  return host;
+};
+
+const hydrate = async (
+  tree: (api: React.Ref<CropperApi>) => React.ReactElement
+): Promise<{ api: React.RefObject<CropperApi | null>; root: Root }> => {
+  const api = createRef<CropperApi>();
+  const root = hydrateRoot(serve(tree(api)), tree(api));
+  await expect.poll(() => api.current).not.toBeNull();
+  return { api, root };
+};
+
+const insideViewport = (selector: string): boolean => {
+  const bounds = pick('[data-zriz-item="viewport"]').getBoundingClientRect();
+  const box = pick(selector).getBoundingClientRect();
+  const x = box.left + box.width / 2;
+  const y = box.top + box.height / 2;
+  return (
+    x >= bounds.left &&
+    x <= bounds.right &&
+    y >= bounds.top &&
+    y <= bounds.bottom
+  );
+};
+
+const painted = (selector: string, pseudo: string): boolean =>
+  getComputedStyle(pick(selector), pseudo).content !== "none";
+
+const noPhoto = (api?: React.Ref<CropperApi>) => (
+  <Cropper.Root actionsRef={api}>
+    <Cropper.Viewport style={{ height: 100, padding: 10, width: 120 }}>
+      <Cropper.Mask />
+      <Cropper.Area aria-label="Crop">
+        <Cropper.Handle position="top-left" />
+        <Cropper.Handle position="bottom-right" />
+      </Cropper.Area>
+    </Cropper.Viewport>
+  </Cropper.Root>
+);
+
+const withPhoto = (ref: React.Ref<CropperApi>) => (
+  <Cropper.Root actionsRef={ref} image={{ height: 300, width: 400 }}>
+    <Cropper.Viewport style={{ height: 100, padding: 10, width: 120 }}>
+      <Cropper.Area aria-label="Crop">
+        <Cropper.Handle position="bottom-right" />
+      </Cropper.Area>
+    </Cropper.Viewport>
+  </Cropper.Root>
+);
+
+describe("before the photo is placed", () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("keeps the frame off the page and the handles in the viewport on server html", async () => {
+    serve(noPhoto());
+    await frames();
+    const { documentElement: page } = document;
+    expect(painted('[data-zriz-item="area"]', "::after")).toBeFalsy();
+    expect(painted('[data-edge="top-left"]', "::before")).toBeFalsy();
+    expect(
+      ['[data-edge="top-left"]', '[data-edge="bottom-right"]'].map(
+        insideViewport
+      )
+    ).toStrictEqual([true, true]);
+    expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
+    expect(page.scrollHeight).toBeLessThanOrEqual(page.clientHeight);
+  });
+
+  it("paints no corner marks after hydration while there is no photo", async () => {
+    const { root } = await hydrate(noPhoto);
+    await frames();
+    const marks = painted('[data-edge="top-left"]', "::before");
+    root.unmount();
+    expect(marks).toBeFalsy();
+  });
+
+  it("paints the frame and the corners once a photo is placed, and drops them with the photo", async () => {
+    const { api, root } = await hydrate(withPhoto);
+    const area = pick('[data-zriz-item="area"]');
+    await expect
+      .poll(() => area.getBoundingClientRect().width)
+      .toBeGreaterThan(10);
+    expect(painted('[data-zriz-item="area"]', "::after")).toBeTruthy();
+    expect(painted('[data-edge="bottom-right"]', "::before")).toBeTruthy();
+    api.current?.setImage(null);
+    await expect
+      .poll(() => painted('[data-zriz-item="area"]', "::after"))
+      .toBeFalsy();
+    expect(painted('[data-edge="bottom-right"]', "::before")).toBeFalsy();
+    root.unmount();
   });
 });

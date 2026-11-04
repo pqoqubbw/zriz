@@ -227,6 +227,9 @@ export const bindArea = (
   let last = unset;
   const stop = follow(cropper, (frame) => {
     const { rect } = frame;
+    if (last === unset) {
+      element.toggleAttribute("data-visible", true);
+    }
     if (rect.x !== last.x) {
       style.left = px(rect.x);
     }
@@ -260,6 +263,7 @@ export const bindArea = (
   });
   const offEmpty = viewOf(cropper).onEmpty(() => {
     last = unset;
+    element.toggleAttribute("data-visible", false);
     style.left = "";
     style.top = "";
     style.width = "";
@@ -270,6 +274,7 @@ export const bindArea = (
     stop();
     offEmpty();
     offDisabled();
+    element.toggleAttribute("data-visible", false);
     for (const name of live.keys()) {
       style.removeProperty(name);
     }

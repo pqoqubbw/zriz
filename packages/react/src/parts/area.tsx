@@ -25,6 +25,9 @@ export interface AreaProps extends PartProps<"div", AreaState> {
   liveVariables?: boolean | undefined;
 }
 
+const SQUARE = { position: "absolute" };
+const ROUND = { ...SQUARE, borderRadius: "50%" };
+
 export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AreaProps
@@ -51,7 +54,7 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
       "data-zriz-item": "area",
       ...nativeProps(keys),
       role: "group",
-      style: shape === "circle" ? { borderRadius: "50%" } : undefined,
+      style: shape === "circle" ? ROUND : SQUARE,
       tabIndex: 0,
     },
     props,

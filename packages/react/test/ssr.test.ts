@@ -237,6 +237,19 @@ describe("part props", () => {
     expect(props.className).toBe("mirrored-false");
   });
 
+  it("anchors the handles to Area in server html, with or without the stylesheet", () => {
+    const html = renderToString(
+      createElement(
+        Cropper.Root,
+        null,
+        createElement(Cropper.Area, { "aria-label": "Crop" })
+      )
+    );
+    expect(html).toMatch(
+      /data-zriz-item="area"[^>]*style="position:absolute"/u
+    );
+  });
+
   it("merges style and keeps the part's own attributes under user props", () => {
     const { props } = propsOf(Cropper.Dial, {
       "aria-label": "Straighten",

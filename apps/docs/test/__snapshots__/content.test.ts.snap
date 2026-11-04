@@ -2391,6 +2391,7 @@ export const Editor = ({ src }: { src: string }) => {
       role="group"
       tabindex="0"
       aria-label="Crop area"
+      style="position: absolute"
     ></div>
   </div>
   <div
@@ -2418,6 +2419,7 @@ export const Editor = ({ src }: { src: string }) => {
       <span class=a>role</span><span class=p>="</span><span class=s>group</span><span class=p>"</span>
       <span class=a>tabindex</span><span class=p>="</span><span class=s>0</span><span class=p>"</span>
       <span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>"</span>
+      <span class=a>style</span><span class=p>="</span><span class=s>position: absolute</span><span class=p>"</span>
     <span class=p>&gt;&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
   <span class=p>&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>div</span>
@@ -8607,6 +8609,7 @@ give each element its \`data-zriz-item\`, so the stylesheet finds it, and give t
       role="group"
       tabindex="0"
       aria-label="Crop area"
+      style="position: absolute"
     ></div>
   </div>
   <div

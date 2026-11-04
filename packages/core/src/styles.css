@@ -31,7 +31,7 @@
     opacity: 0.6;
     transition-duration: 0.2s;
   }
-  :where([data-zriz-item="area"])::after {
+  :where([data-zriz-item="area"][data-visible])::after {
     content: "";
     position: absolute;
     inset: 1px;
@@ -88,7 +88,9 @@
     min-height: 1px;
     background: var(--zriz-grid, #fff9);
   }
-  :where([data-zriz-item="handle"])::before {
+  :where(
+    [data-zriz-item="area"][data-visible] [data-zriz-item="handle"]
+  )::before {
     content: "";
     position: absolute;
     top: 50%;
