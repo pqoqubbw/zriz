@@ -266,4 +266,16 @@ describe("gesture and commit edges", () => {
     expect(calls).toBe(2);
     expect(cropper.getState().settling).toBeFalsy();
   });
+
+  it("stop forgets a settle owed to an animation a gesture dropped", () => {
+    const { cropper, time } = setup();
+    const settle = vi.fn<() => void>();
+    cropper.on("settle", settle);
+    cropper.run(() => true);
+    cropper.begin("pan");
+    cropper.stop();
+    cropper.invalidate();
+    time.frame();
+    expect(settle).not.toHaveBeenCalled();
+  });
 });

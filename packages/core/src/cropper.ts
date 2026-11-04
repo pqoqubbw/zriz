@@ -712,9 +712,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         flush();
         settleCommit();
       }
-      if (settlePending) {
-        schedule();
-      }
       outside = false;
       const restart = gesture !== null;
       gesture = {
@@ -1073,6 +1070,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         cropper.end(undefined, gesture.owner);
       }
       tasks.clear();
+      settlePending = false;
       if (handle !== null) {
         clock.cancel(handle);
         handle = null;
