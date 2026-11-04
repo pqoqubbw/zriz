@@ -314,17 +314,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const refresh = (): void => {
     const next = makeSnapshot();
-    if (
-      next.aspect === snapshot.aspect &&
-      next.committed === snapshot.committed &&
-      next.disabled === snapshot.disabled &&
-      next.interacting === snapshot.interacting &&
-      next.mirrored === snapshot.mirrored &&
-      next.pristine === snapshot.pristine &&
-      next.quarterTurns === snapshot.quarterTurns &&
-      next.ready === snapshot.ready &&
-      next.settling === snapshot.settling
-    ) {
+    const current = Object.values(snapshot);
+    if (Object.values(next).every((part, index) => part === current[index])) {
       return;
     }
     snapshot = next;

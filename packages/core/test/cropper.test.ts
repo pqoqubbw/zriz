@@ -225,6 +225,42 @@ describe("events", () => {
     cropper.destroy();
   });
 
+  it("notifies state subscribers on any snapshot change and never without one", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3024, width: 4032 },
+    });
+    time.frames(2);
+    const listener = vi.fn<() => void>();
+    const off = cropper.subscribe(listener);
+    cropper.setOptions({ disabled: false });
+    time.frames(2);
+    expect(listener).not.toHaveBeenCalled();
+    const steps: (() => void)[] = [
+      () => {
+        cropper.setOptions({ disabled: true });
+      },
+      () => {
+        cropper.setOptions({ disabled: false });
+      },
+      () => {
+        cropper.flip("x");
+      },
+      () => {
+        cropper.setAspect(1);
+      },
+    ];
+    for (const step of steps) {
+      listener.mockClear();
+      step();
+      time.frames(2);
+      expect(listener.mock.calls.length).toBeGreaterThan(0);
+    }
+    off();
+    cropper.destroy();
+  });
+
   it("keeps a locked square crop square in source pixels", () => {
     fcAssert(
       property(
