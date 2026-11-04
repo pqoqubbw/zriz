@@ -17,19 +17,6 @@ import {
 import type { DialHandlers, KeyHandlers } from "../../src/dom";
 import { fakeClock } from "../fake-clock";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    drag: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-    touch: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-  }
-}
-
 const cleanups: (() => void)[] = [];
 let count = 0;
 

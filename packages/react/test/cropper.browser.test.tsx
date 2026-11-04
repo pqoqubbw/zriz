@@ -30,15 +30,6 @@ import {
 } from "../src";
 import * as Cropper from "../src/cropper";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    drag: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-  }
-}
-
 const photoCropper = () =>
   createCropper({ image: { height: 3000, width: 4000 } });
 

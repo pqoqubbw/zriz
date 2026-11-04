@@ -16,15 +16,6 @@ import type { ViewFrame } from "../../src/dom";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    drag: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-  }
-}
-
 const TIMER_ROUNDING = 2;
 
 const cleanups: (() => void)[] = [];

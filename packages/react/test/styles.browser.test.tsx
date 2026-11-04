@@ -11,12 +11,6 @@ import { commands, server } from "vitest/browser";
 
 import * as Cropper from "../src/cropper";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    forcedColors: (mode: "active" | "none") => Promise<void>;
-  }
-}
-
 const frames = async (n = 2): Promise<void> => {
   for (let i = 0; i < n; i += 1) {
     await new Promise((resolve) => {

@@ -4,6 +4,22 @@ import type { BrowserCommand } from "vitest/node";
 
 type Path = readonly (readonly [number, number, number?])[];
 
+declare module "vitest/browser" {
+  interface BrowserCommands {
+    drag: (selector: string, path: Path) => Promise<void>;
+    forcedColors: (mode: "active" | "none") => Promise<void>;
+    hold: (selector: string, x: number, y: number) => Promise<void>;
+    pinch: (
+      selector: string,
+      a: Path,
+      b: Path,
+      release: boolean
+    ) => Promise<void>;
+    release: () => Promise<void>;
+    touch: (selector: string, path: Path) => Promise<void>;
+  }
+}
+
 interface Origin {
   x: number;
   y: number;

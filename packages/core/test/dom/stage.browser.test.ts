@@ -20,21 +20,6 @@ import { visualScale } from "../../src/dom/view";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    drag: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-    pinch: (
-      selector: string,
-      a: readonly (readonly [number, number])[],
-      b: readonly (readonly [number, number])[],
-      release: boolean
-    ) => Promise<void>;
-  }
-}
-
 const photo = { height: 3000, width: 4000 };
 const cleanups: (() => void)[] = [];
 let count = 0;

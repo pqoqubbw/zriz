@@ -13,15 +13,6 @@ import {
 import { fakeClock } from "../fake-clock";
 import type { FakeClock } from "../fake-clock";
 
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    drag: (
-      selector: string,
-      path: readonly (readonly [number, number, number?])[]
-    ) => Promise<void>;
-  }
-}
-
 const cleanups: (() => void)[] = [];
 let count = 0;
 
