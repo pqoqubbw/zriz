@@ -40,7 +40,9 @@ export const refine = async (
   const { dpr } = frame.layout;
   const [a, c, , b, d] = frame.matrix;
   const devicePerSource = Math.sqrt(Math.abs(a * d - b * c)) * dpr;
-  const previewPerSource = image.preview.width / image.width;
+  const previewPerSource =
+    Math.max(image.preview.width, image.preview.height) /
+    Math.max(image.width, image.height);
   const ratio = devicePerSource / previewPerSource;
   if (ratio <= 1 / DETAIL) {
     return {
