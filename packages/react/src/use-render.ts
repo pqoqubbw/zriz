@@ -35,14 +35,20 @@ export interface RenderOptions<S> {
   className?: ClassName<S> | undefined;
 }
 
-export const useRender = <S>({
-  tag,
-  state,
-  props,
-  ref,
-  render,
-  className,
-}: RenderOptions<S>): ReactElement => {
+export const usePart = <S>(
+  tag: keyof JSX.IntrinsicElements,
+  ours: Record<string, unknown>,
+  {
+    render,
+    className,
+    ...theirs
+  }: {
+    render?: RenderProp<S> | undefined;
+    className?: ClassName<S> | undefined;
+  },
+  ref: Ref<HTMLElement> | undefined,
+  state: S
+): ReactElement => {
   const resolved =
     typeof className === "function" ? className(state) : className;
   const elementRef = isValidElement(render) ? refOf(render) : undefined;
@@ -50,7 +56,7 @@ export const useRender = <S>({
     () => (elementRef ? mergeRefs(ref, elementRef) : ref),
     [ref, elementRef]
   );
-  const own = { ...props, className: resolved, ref: merged };
+  const own = { ...mergeProps(ours, theirs), className: resolved, ref: merged };
   if (typeof render === "function") {
     return render(own, state);
   }
@@ -63,3 +69,13 @@ export const useRender = <S>({
   }
   return createElement(tag, own);
 };
+
+export const useRender = <S>({
+  tag,
+  state,
+  props,
+  ref,
+  render,
+  className,
+}: RenderOptions<S>): ReactElement =>
+  usePart(tag, props, { className, render }, ref, state);

@@ -4,10 +4,9 @@ import type { CommitDetails, CropValue } from "@zriz/core";
 import { forwardRef, useEffect, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import { useLatest } from "../part";
 import type { Part, PartProps } from "../part";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface AnnouncerProps extends Omit<
   PartProps<"div", object>,
@@ -20,7 +19,7 @@ export interface AnnouncerProps extends Omit<
 export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AnnouncerProps
->(function Announcer({ announce, render, className, ...props }, ref) {
+>(function Announcer({ announce, ...props }, ref) {
   const cropper = useCropperContext();
   const latest = useLatest(announce);
   const [message, setMessage] = useState("");
@@ -36,28 +35,24 @@ export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
       }),
     [cropper, latest]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-live": "polite",
-        children: message,
-        "data-zriz-item": "announcer",
-        role: "status",
-        style: {
-          clipPath: "inset(50%)",
-          height: 1,
-          overflow: "hidden",
-          position: "absolute",
-          whiteSpace: "nowrap",
-          width: 1,
-        },
+  return usePart(
+    "div",
+    {
+      "aria-live": "polite",
+      children: message,
+      "data-zriz-item": "announcer",
+      role: "status",
+      style: {
+        clipPath: "inset(50%)",
+        height: 1,
+        overflow: "hidden",
+        position: "absolute",
+        whiteSpace: "nowrap",
+        width: 1,
       },
-      props
-    ),
+    },
+    props,
     ref,
-    render,
-    state: {},
-    tag: "div",
-  });
+    {}
+  );
 });

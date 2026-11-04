@@ -73,7 +73,7 @@ export const useLatest = <T>(value: T): { readonly current: T } => {
 
 export interface ElementBox {
   get: () => Element | null;
-  set: (node: Element | null) => void;
+  set: (node: Element) => () => void;
 }
 
 const createBox = (): ElementBox => {
@@ -82,6 +82,9 @@ const createBox = (): ElementBox => {
     get: () => node,
     set: (next) => {
       node = next;
+      return () => {
+        node = null;
+      };
     },
   };
 };
@@ -130,5 +133,17 @@ export const native =
   (event: { nativeEvent: E }): void => {
     handler(event.nativeEvent);
   };
+
+export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
+  handlers: H
+): Record<string, unknown> => {
+  const props: Record<string, unknown> = {};
+  for (const [key, handler] of Object.entries<(event: never) => void>(
+    handlers
+  )) {
+    props[key] = native(handler);
+  }
+  return props;
+};
 
 export type Bind = (cropper: Cropper, element: HTMLElement) => () => void;

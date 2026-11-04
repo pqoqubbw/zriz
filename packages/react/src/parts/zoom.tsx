@@ -5,11 +5,15 @@ import { warnUnlabelled } from "@zriz/react/warn";
 import { forwardRef, useContext, useCallback, useMemo } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
-import { RootContextValue, native, useElementBox, useMergedRef } from "../part";
+import {
+  RootContextValue,
+  nativeProps,
+  useElementBox,
+  useMergedRef,
+} from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface ZoomState {
   dragging: boolean;
@@ -25,7 +29,7 @@ export interface ZoomProps extends PartProps<"div", ZoomState> {
 export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ZoomProps
->(function Zoom({ max, format, render, className, ...props }, ref) {
+>(function Zoom({ max, format, ...props }, ref) {
   const cropper = useCropperContext();
   const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
@@ -36,44 +40,33 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
   const own = useCallback(
     (node: HTMLDivElement) => {
-      box.set(node);
+      const clear = box.set(node);
       warnUnlabelled("Zoom", node);
       const off = zoomAria(cropper, node, { format, locale, max });
       return () => {
-        box.set(null);
+        clear();
         off();
       };
     },
     [box, cropper, format, locale, max]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-orientation": "horizontal",
-        "data-dragging": dragging ? "" : undefined,
-        "data-zriz-item": "zoom",
-        onBlur: native(handlers.onBlur),
-        onKeyDown: native(handlers.onKeyDown),
-        onKeyUp: native(handlers.onKeyUp),
-        onLostPointerCapture: native(handlers.onLostPointerCapture),
-        onPointerCancel: native(handlers.onPointerCancel),
-        onPointerDown: native(handlers.onPointerDown),
-        onPointerMove: native(handlers.onPointerMove),
-        onPointerUp: native(handlers.onPointerUp),
-        role: "slider",
-        style: {
-          WebkitTapHighlightColor: "transparent",
-          position: "relative",
-          touchAction: "none",
-        },
-        tabIndex: 0,
+  return usePart(
+    "div",
+    {
+      "aria-orientation": "horizontal",
+      "data-dragging": dragging ? "" : undefined,
+      "data-zriz-item": "zoom",
+      ...nativeProps(handlers),
+      role: "slider",
+      style: {
+        WebkitTapHighlightColor: "transparent",
+        position: "relative",
+        touchAction: "none",
       },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { dragging },
-    tag: "div",
-  });
+      tabIndex: 0,
+    },
+    props,
+    useMergedRef(own, ref),
+    { dragging }
+  );
 });

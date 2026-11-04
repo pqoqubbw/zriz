@@ -4,10 +4,9 @@ import { DIAL_TICKS, bindDialTicks, tickData } from "@zriz/core/dom";
 import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import { useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface DialTicksState {
   count: number;
@@ -21,7 +20,7 @@ export interface DialTicksProps extends PartProps<"div", DialTicksState> {
 export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   DialTicksProps
->(function DialTicks({ count = DIAL_TICKS, render, className, ...props }, ref) {
+>(function DialTicks({ count = DIAL_TICKS, ...props }, ref) {
   const cropper = useCropperContext();
   const own = useCallback(
     (node: HTMLDivElement) => bindDialTicks(cropper, node, count),
@@ -38,15 +37,11 @@ export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
       />
     );
   });
-  return useRender({
-    className,
-    props: mergeProps(
-      { "aria-hidden": true, children: ticks, "data-zriz-item": "dial-ticks" },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { count },
-    tag: "div",
-  });
+  return usePart(
+    "div",
+    { "aria-hidden": true, children: ticks, "data-zriz-item": "dial-ticks" },
+    props,
+    useMergedRef(own, ref),
+    { count }
+  );
 });

@@ -5,11 +5,10 @@ import { warnUnlabelled } from "@zriz/react/warn";
 import { forwardRef, useContext, useCallback, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
-import { RootContextValue, native, useMergedRef } from "../part";
+import { RootContextValue, nativeProps, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface AreaState {
   shape: "rect" | "circle";
@@ -24,7 +23,7 @@ export interface AreaProps extends PartProps<"div", AreaState> {
 export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AreaProps
->(function Area({ liveVariables = false, render, className, ...props }, ref) {
+>(function Area({ liveVariables = false, ...props }, ref) {
   const cropper = useCropperContext();
   const { shape, instructions } = useContext(RootContextValue);
   const interacting = useCropperState((s) => s.interacting !== null);
@@ -36,26 +35,20 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
     },
     [cropper, liveVariables]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-describedby": instructions,
-        "data-interacting": interacting ? "" : undefined,
-        "data-shape": shape,
-        "data-zriz-item": "area",
-        onBlur: native(keys.onBlur),
-        onKeyDown: native(keys.onKeyDown),
-        onKeyUp: native(keys.onKeyUp),
-        role: "group",
-        style: shape === "circle" ? { borderRadius: "50%" } : undefined,
-        tabIndex: 0,
-      },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { interacting, shape },
-    tag: "div",
-  });
+  return usePart(
+    "div",
+    {
+      "aria-describedby": instructions,
+      "data-interacting": interacting ? "" : undefined,
+      "data-shape": shape,
+      "data-zriz-item": "area",
+      ...nativeProps(keys),
+      role: "group",
+      style: shape === "circle" ? { borderRadius: "50%" } : undefined,
+      tabIndex: 0,
+    },
+    props,
+    useMergedRef(own, ref),
+    { interacting, shape }
+  );
 });

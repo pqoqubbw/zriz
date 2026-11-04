@@ -4,11 +4,10 @@ import { bindPhoto } from "@zriz/core/dom";
 import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import { useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface ImageState {
   ready: boolean;
@@ -22,31 +21,27 @@ export interface ImageProps extends PartProps<"div", ImageState> {
 export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ImageProps
->(function Image({ alt = "", render, className, ...props }, ref) {
+>(function Image({ alt = "", ...props }, ref) {
   const cropper = useCropperContext();
   const ready = useCropperState((s) => s.ready);
   const own = useCallback(
     (element: HTMLDivElement) => bindPhoto(cropper, element),
     [cropper]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-label": alt === "" ? undefined : alt,
-        children: [
-          <img alt="" draggable={false} key="motion" />,
-          <canvas aria-hidden key="rest" />,
-        ],
-        "data-ready": ready ? "" : undefined,
-        "data-zriz-item": "image",
-        role: alt === "" ? undefined : "img",
-      },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { ready },
-    tag: "div",
-  });
+  return usePart(
+    "div",
+    {
+      "aria-label": alt === "" ? undefined : alt,
+      children: [
+        <img alt="" draggable={false} key="motion" />,
+        <canvas aria-hidden key="rest" />,
+      ],
+      "data-ready": ready ? "" : undefined,
+      "data-zriz-item": "image",
+      role: alt === "" ? undefined : "img",
+    },
+    props,
+    useMergedRef(own, ref),
+    { ready }
+  );
 });

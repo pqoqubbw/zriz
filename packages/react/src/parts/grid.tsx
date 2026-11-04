@@ -6,9 +6,8 @@ import { forwardRef, useState, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import type { Part, PartProps } from "../part";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface GridState {
   grid: GridMode;
@@ -45,7 +44,7 @@ const linesOf = (mode: "coarse" | "fine"): ReactElement[] =>
 export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   GridProps
->(function Grid({ render, className, ...props }, ref) {
+>(function Grid(props, ref) {
   const cropper = useCropperContext();
   const view = viewOf(cropper);
   const grid = useSyncExternalStore(
@@ -57,22 +56,18 @@ export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
   if (grid !== "none" && grid !== shown) {
     setShown(grid);
   }
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-hidden": true,
-        children: linesOf(shown),
-        "data-grid": grid,
-        "data-visible": grid === "none" ? undefined : "",
-        "data-zriz-item": "grid",
-        style: { inset: 0, pointerEvents: "none", position: "absolute" },
-      },
-      props
-    ),
+  return usePart(
+    "div",
+    {
+      "aria-hidden": true,
+      children: linesOf(shown),
+      "data-grid": grid,
+      "data-visible": grid === "none" ? undefined : "",
+      "data-zriz-item": "grid",
+      style: { inset: 0, pointerEvents: "none", position: "absolute" },
+    },
+    props,
     ref,
-    render,
-    state: { grid },
-    tag: "div",
-  });
+    { grid }
+  );
 });

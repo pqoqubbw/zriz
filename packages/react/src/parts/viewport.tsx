@@ -5,11 +5,10 @@ import type { WheelMode } from "@zriz/core/dom";
 import { forwardRef, useCallback, useEffect, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
-import { native, useMergedRef } from "../part";
+import { nativeProps, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface ViewportState {
   interacting: boolean;
@@ -25,10 +24,7 @@ export interface ViewportProps extends PartProps<"div", ViewportState> {
 export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   ViewportProps
->(function Viewport(
-  { wheel = "pan", rotateGesture = true, render, className, ...props },
-  ref
-) {
+>(function Viewport({ wheel = "pan", rotateGesture = true, ...props }, ref) {
   const cropper = useCropperContext();
   const [controller] = useState(() =>
     viewportController(cropper, { rotateGesture, wheel })
@@ -47,22 +43,14 @@ export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
   );
   const interacting = useCropperState((s) => s.interacting !== null);
   const { handlers } = controller;
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "data-zriz-item": "viewport",
-        onLostPointerCapture: native(handlers.onLostPointerCapture),
-        onPointerCancel: native(handlers.onPointerCancel),
-        onPointerDown: native(handlers.onPointerDown),
-        onPointerMove: native(handlers.onPointerMove),
-        onPointerUp: native(handlers.onPointerUp),
-      },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { interacting },
-    tag: "div",
-  });
+  return usePart(
+    "div",
+    {
+      "data-zriz-item": "viewport",
+      ...nativeProps(handlers),
+    },
+    props,
+    useMergedRef(own, ref),
+    { interacting }
+  );
 });

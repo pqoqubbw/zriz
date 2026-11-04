@@ -1,10 +1,9 @@
 "use client";
 
 import type { Aspect } from "@zriz/core";
-import { forwardRef, useCallback } from "react";
+import { forwardRef } from "react";
 
 import { AspectGroupContext } from "../buttons-context";
-import { mergeProps } from "../merge-props";
 import {
   useElementBox,
   useIsomorphicLayoutEffect,
@@ -12,7 +11,7 @@ import {
 } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface AspectGroupState {
   aspect: Aspect;
@@ -37,18 +36,9 @@ const STEPS: Partial<Record<string, number>> = {
 export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   AspectGroupProps
->(function AspectGroup({ render, className, ...props }, ref) {
+>(function AspectGroup(props, ref) {
   const aspect = useCropperState((s) => s.aspect);
   const box = useElementBox();
-  const own = useCallback(
-    (element: HTMLDivElement) => {
-      box.set(element);
-      return () => {
-        box.set(null);
-      };
-    },
-    [box]
-  );
   useIsomorphicLayoutEffect(() => {
     const element = box.get();
     if (!element) {
@@ -62,53 +52,45 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
       item.tabIndex = item === (checked ?? enabled[0]) ? 0 : -1;
     }
   });
-  const onKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      const element = box.get();
-      if (!element || event.altKey || event.ctrlKey || event.metaKey) {
+  const onKeyDown = (event: React.KeyboardEvent): void => {
+    const element = box.get();
+    if (!element || event.altKey || event.ctrlKey || event.metaKey) {
+      return;
+    }
+    const { target } = event;
+    const enabled = itemsOf(element).filter((item) => !item.disabled);
+    const index =
+      target instanceof HTMLButtonElement ? enabled.indexOf(target) : -1;
+    if (index === -1) {
+      return;
+    }
+    let next: number;
+    if (event.key === "Home") {
+      next = 0;
+    } else if (event.key === "End") {
+      next = enabled.length - 1;
+    } else {
+      const step = STEPS[event.key];
+      if (step === undefined) {
         return;
       }
-      const { target } = event;
-      const enabled = itemsOf(element).filter((item) => !item.disabled);
-      const index =
-        target instanceof HTMLButtonElement ? enabled.indexOf(target) : -1;
-      if (index === -1) {
-        return;
-      }
-      let next: number;
-      if (event.key === "Home") {
-        next = 0;
-      } else if (event.key === "End") {
-        next = enabled.length - 1;
-      } else {
-        const step = STEPS[event.key];
-        if (step === undefined) {
-          return;
-        }
-        const flip =
-          (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
-          getComputedStyle(element).direction === "rtl";
-        next =
-          (index + (flip ? -step : step) + enabled.length) % enabled.length;
-      }
-      event.preventDefault();
-      const item = enabled[next];
-      item?.focus();
-      item?.click();
-    },
-    [box]
+      const flip =
+        (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+        getComputedStyle(element).direction === "rtl";
+      next = (index + (flip ? -step : step) + enabled.length) % enabled.length;
+    }
+    event.preventDefault();
+    const item = enabled[next];
+    item?.focus();
+    item?.click();
+  };
+  const element = usePart(
+    "div",
+    { "data-zriz-item": "aspect-group", onKeyDown, role: "radiogroup" },
+    props,
+    useMergedRef<HTMLDivElement>(box.set, ref),
+    { aspect }
   );
-  const element = useRender({
-    className,
-    props: mergeProps(
-      { "data-zriz-item": "aspect-group", onKeyDown, role: "radiogroup" },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { aspect },
-    tag: "div",
-  });
   return (
     <AspectGroupContext.Provider value>{element}</AspectGroupContext.Provider>
   );

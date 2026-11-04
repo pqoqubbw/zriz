@@ -12,10 +12,14 @@ import {
 } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
-import { RootContextValue, native, useElementBox, useMergedRef } from "../part";
+import {
+  RootContextValue,
+  nativeProps,
+  useElementBox,
+  useMergedRef,
+} from "../part";
 import type { Part, PartProps } from "../part";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface DialState {
   dragging: boolean;
@@ -29,7 +33,7 @@ export interface DialProps extends PartProps<"div", DialState> {
 export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   DialProps
->(function Dial({ format, render, className, ...props }, ref) {
+>(function Dial({ format, ...props }, ref) {
   const cropper = useCropperContext();
   const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
@@ -45,45 +49,34 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   );
   const own = useCallback(
     (node: HTMLDivElement) => {
-      box.set(node);
+      const clear = box.set(node);
       warnUnlabelled("Dial", node);
       const off = dialAria(cropper, node, { format, locale });
       return () => {
-        box.set(null);
+        clear();
         off();
       };
     },
     [box, cropper, format, locale]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-orientation": "horizontal",
-        "data-dragging": dragging ? "" : undefined,
-        "data-zriz-item": "dial",
-        onBlur: native(handlers.onBlur),
-        onKeyDown: native(handlers.onKeyDown),
-        onKeyUp: native(handlers.onKeyUp),
-        onLostPointerCapture: native(handlers.onLostPointerCapture),
-        onPointerCancel: native(handlers.onPointerCancel),
-        onPointerDown: native(handlers.onPointerDown),
-        onPointerMove: native(handlers.onPointerMove),
-        onPointerUp: native(handlers.onPointerUp),
-        role: "slider",
-        style: {
-          WebkitTapHighlightColor: "transparent",
-          position: "relative",
-          touchAction: "pan-y",
-          userSelect: "none",
-        },
-        tabIndex: 0,
+  return usePart(
+    "div",
+    {
+      "aria-orientation": "horizontal",
+      "data-dragging": dragging ? "" : undefined,
+      "data-zriz-item": "dial",
+      ...nativeProps(handlers),
+      role: "slider",
+      style: {
+        WebkitTapHighlightColor: "transparent",
+        position: "relative",
+        touchAction: "pan-y",
+        userSelect: "none",
       },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { dragging },
-    tag: "div",
-  });
+      tabIndex: 0,
+    },
+    props,
+    useMergedRef(own, ref),
+    { dragging }
+  );
 });

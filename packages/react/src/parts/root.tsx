@@ -20,12 +20,11 @@ import {
 import type { Ref } from "react";
 
 import { CropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import { RootContextValue, useLatest } from "../part";
 import type { Part, PartProps, RootContext } from "../part";
 import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface RootState {
   snapshot: CropperSnapshot;
@@ -94,8 +93,6 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     actionsRef,
     onLoad,
     onError,
-    render,
-    className,
     ...html
   },
   ref
@@ -174,37 +171,33 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     [crossOrigin, dir, instructions, locale, shape]
   );
   const gesture = snapshot.interacting;
-  const element = useRender({
-    className,
-    props: mergeProps(
-      {
-        "data-changed": snapshot.pristine ? undefined : "",
-        "data-disabled": snapshot.disabled ? "" : undefined,
-        "data-grid": chrome.grid,
-        "data-interacting": chrome.active ? "" : undefined,
-        "data-mirrored": snapshot.mirrored ? "" : undefined,
-        "data-orientation": orientationOf(snapshot.aspect),
-        "data-overscroll": chrome.overscroll ? "" : undefined,
-        "data-panning": gesture === "pan" ? "" : undefined,
-        "data-pinching": gesture === "pinch" ? "" : undefined,
-        "data-reduced-motion": view.reducedMotion() ? "" : undefined,
-        "data-resizing": gesture === "resize" ? "" : undefined,
-        "data-rotating": gesture === "dial" ? "" : undefined,
-        "data-settling": snapshot.settling ? "" : undefined,
-        "data-shape": shape,
-        "data-transition": chrome.transition ?? undefined,
-        "data-zooming":
-          gesture === "wheel" || gesture === "zoom-control" ? "" : undefined,
-        "data-zriz-item": "root",
-        dir,
-      },
-      html
-    ),
+  const element = usePart(
+    "div",
+    {
+      "data-changed": snapshot.pristine ? undefined : "",
+      "data-disabled": snapshot.disabled ? "" : undefined,
+      "data-grid": chrome.grid,
+      "data-interacting": chrome.active ? "" : undefined,
+      "data-mirrored": snapshot.mirrored ? "" : undefined,
+      "data-orientation": orientationOf(snapshot.aspect),
+      "data-overscroll": chrome.overscroll ? "" : undefined,
+      "data-panning": gesture === "pan" ? "" : undefined,
+      "data-pinching": gesture === "pinch" ? "" : undefined,
+      "data-reduced-motion": view.reducedMotion() ? "" : undefined,
+      "data-resizing": gesture === "resize" ? "" : undefined,
+      "data-rotating": gesture === "dial" ? "" : undefined,
+      "data-settling": snapshot.settling ? "" : undefined,
+      "data-shape": shape,
+      "data-transition": chrome.transition ?? undefined,
+      "data-zooming":
+        gesture === "wheel" || gesture === "zoom-control" ? "" : undefined,
+      "data-zriz-item": "root",
+      dir,
+    },
+    html,
     ref,
-    render,
-    state: { chrome, snapshot },
-    tag: "div",
-  });
+    { chrome, snapshot }
+  );
   return (
     <CropperContext.Provider value={cropper}>
       <RootContextValue.Provider value={context}>

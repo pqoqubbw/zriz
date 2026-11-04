@@ -1,12 +1,11 @@
 "use client";
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface OrientationState {
   orientation: "portrait" | "landscape" | "square";
@@ -15,18 +14,15 @@ export interface OrientationState {
 export type OrientationProps = PartProps<"button", OrientationState>;
 
 export const Orientation: Part<OrientationProps, HTMLButtonElement> =
-  forwardRef<HTMLButtonElement, OrientationProps>(function Orientation(
-    { render, className, ...props },
-    ref
-  ) {
-    const cropper = useCropperContext();
-    const aspect = useCropperState((s) => s.aspect);
-    let orientation: OrientationState["orientation"] = "square";
-    if (typeof aspect === "number" && aspect !== 1) {
-      orientation = aspect > 1 ? "landscape" : "portrait";
-    }
-    const onClick = useCallback(
-      (event: React.MouseEvent) => {
+  forwardRef<HTMLButtonElement, OrientationProps>(
+    function Orientation(props, ref) {
+      const cropper = useCropperContext();
+      const aspect = useCropperState((s) => s.aspect);
+      let orientation: OrientationState["orientation"] = "square";
+      if (typeof aspect === "number" && aspect !== 1) {
+        orientation = aspect > 1 ? "landscape" : "portrait";
+      }
+      const onClick = (event: React.MouseEvent): void => {
         const current = cropper.getValue().aspect;
         if (typeof current === "number") {
           cropper.setAspect(1 / current, {
@@ -34,12 +30,9 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
             reason: "orientation",
           });
         }
-      },
-      [cropper]
-    );
-    return useRender({
-      className,
-      props: mergeProps(
+      };
+      return usePart(
+        "button",
         {
           "data-orientation": orientation,
           "data-zriz-item": "orientation",
@@ -47,11 +40,9 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
           onClick,
           type: "button",
         },
-        props
-      ),
-      ref,
-      render,
-      state: { orientation },
-      tag: "button",
-    });
-  });
+        props,
+        ref,
+        { orientation }
+      );
+    }
+  );

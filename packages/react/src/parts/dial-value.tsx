@@ -4,10 +4,9 @@ import { bindDialValue } from "@zriz/core/dom";
 import { forwardRef, useCallback } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
 import { useLatest, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface DialValueProps extends PartProps<"span", object> {
   /** Text for an angle in degrees. @default the rounded number */
@@ -17,7 +16,7 @@ export interface DialValueProps extends PartProps<"span", object> {
 export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
   HTMLSpanElement,
   DialValueProps
->(function DialValue({ format, render, className, ...props }, ref) {
+>(function DialValue({ format, ...props }, ref) {
   const cropper = useCropperContext();
   const latest = useLatest(format);
   const own = useCallback(
@@ -27,15 +26,11 @@ export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
       ),
     [cropper, latest]
   );
-  return useRender({
-    className,
-    props: mergeProps(
-      { "aria-hidden": true, "data-zriz-item": "dial-value" },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: {},
-    tag: "span",
-  });
+  return usePart(
+    "span",
+    { "aria-hidden": true, "data-zriz-item": "dial-value" },
+    props,
+    useMergedRef(own, ref),
+    {}
+  );
 });

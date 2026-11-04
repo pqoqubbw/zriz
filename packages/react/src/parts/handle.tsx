@@ -2,14 +2,13 @@
 
 import { handleHandlers } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
-import { forwardRef, useCallback, useMemo, useState } from "react";
+import { forwardRef, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { mergeProps } from "../merge-props";
-import { native, useElementBox, useMergedRef } from "../part";
+import { nativeProps, useElementBox, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
-import { useRender } from "../use-render";
+import { usePart } from "../use-render";
 
 export interface HandleState {
   position: HandleEdge;
@@ -55,7 +54,7 @@ const placement = (position: HandleEdge): React.CSSProperties => {
 export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   HandleProps
->(function Handle({ position, render, className, ...props }, ref) {
+>(function Handle({ position, ...props }, ref) {
   const cropper = useCropperContext();
   const box = useElementBox();
   const handlers = useMemo(
@@ -65,42 +64,23 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   const resizing = useCropperState((s) => s.interacting === "resize");
   const [mine, setMine] = useState(false);
   const active = resizing && mine;
-  const onPointerDown = useCallback(
-    (event: React.PointerEvent) => {
-      handlers.onPointerDown(event.nativeEvent);
-      setMine(cropper.getState().interacting === "resize");
+  const onPointerDown = (event: React.PointerEvent): void => {
+    handlers.onPointerDown(event.nativeEvent);
+    setMine(cropper.getState().interacting === "resize");
+  };
+  return usePart(
+    "div",
+    {
+      "aria-hidden": true,
+      "data-active": active ? "" : undefined,
+      "data-edge": position,
+      "data-zriz-item": "handle",
+      ...nativeProps(handlers),
+      onPointerDown,
+      style: placement(position),
     },
-    [cropper, handlers]
+    props,
+    useMergedRef<HTMLDivElement>(box.set, ref),
+    { active, position }
   );
-  const own = useCallback(
-    (node: HTMLDivElement) => {
-      box.set(node);
-      return () => {
-        box.set(null);
-      };
-    },
-    [box]
-  );
-  return useRender({
-    className,
-    props: mergeProps(
-      {
-        "aria-hidden": true,
-        "data-active": active ? "" : undefined,
-        "data-edge": position,
-        "data-zriz-item": "handle",
-        onLostPointerCapture: native(handlers.onLostPointerCapture),
-        onPointerCancel: native(handlers.onPointerCancel),
-        onPointerDown,
-        onPointerMove: native(handlers.onPointerMove),
-        onPointerUp: native(handlers.onPointerUp),
-        style: placement(position),
-      },
-      props
-    ),
-    ref: useMergedRef(own, ref),
-    render,
-    state: { active, position },
-    tag: "div",
-  });
 });
