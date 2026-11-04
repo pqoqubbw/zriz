@@ -751,11 +751,11 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     given?: CropValue
   ): void => {
     const fixed = constrain(next, keep);
-    const fixedValue = holdIf(
-      holdIf(stateToValue(fixed, aspect), given, fixed.image),
-      value,
-      fixed.image
-    );
+    const kept = holdIf(stateToValue(fixed, aspect), given, fixed.image);
+    const fixedValue =
+      fallback === "reset" && kept === given
+        ? kept
+        : holdIf(kept, value, fixed.image);
 
     if (isSound(fixedValue)) {
       accept(fixed, fixedValue, action, fallback);

@@ -2810,3 +2810,31 @@ describe("settle after a canceled task", () => {
     expect(settle).toHaveBeenCalledOnce();
   });
 });
+
+describe("reset within the hold tolerance", () => {
+  it.each([1e-12, 1e-11, 5e-11])("returns from rotation %d", (rotation) => {
+    const { cropper } = setup({
+      image: { height: 3024, width: 4032 },
+    });
+
+    cropper.setRotation(10);
+    cropper.setRotation(rotation);
+    cropper.reset();
+
+    expect(cropper.getValue().rotation).toBe(0);
+    expect(cropper.getState().pristine).toBe(true);
+  });
+
+  it("returns from a size next to the full photo", () => {
+    const { cropper } = setup({
+      image: { height: 3024, width: 4032 },
+    });
+
+    cropper.setZoom(2);
+    cropper.setZoom(1.000_000_000_01);
+    cropper.reset();
+
+    expect(cropper.getValue().size).toStrictEqual({ height: 1, width: 1 });
+    expect(cropper.getState().pristine).toBe(true);
+  });
+});
