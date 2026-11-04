@@ -13,7 +13,7 @@ import { StrictMode, createRef, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, userEvent } from "vitest/browser";
 
@@ -26,20 +26,8 @@ declare module "vitest/browser" {
       selector: string,
       path: readonly (readonly [number, number, number?])[]
     ) => Promise<void>;
-    emulate: (media: {
-      forcedColors?: "active" | "none";
-      reducedMotion?: "reduce" | "no-preference";
-    }) => Promise<void>;
     hold: (selector: string, x: number, y: number) => Promise<void>;
     release: () => Promise<void>;
-    wheelAt: (
-      selector: string,
-      x: number,
-      y: number,
-      dx: number,
-      dy: number,
-      ctrl: boolean
-    ) => Promise<void>;
   }
 }
 
@@ -306,7 +294,7 @@ describe("Root src flows", () => {
     expect(api.current?.getState().ready).toBeTruthy();
   });
 
-  it("a new object URL for the same photo keeps the crop (spec 30)", async () => {
+  it("a new object URL for the same photo keeps the crop", async () => {
     const onLoad = vi.fn<(...args: unknown[]) => void>();
     const api = createRef<CropperApi>();
     const blob = await photo();
@@ -871,6 +859,10 @@ const unmountDuring = async (
 };
 
 describe("unmount parity under StrictMode", () => {
+  beforeAll(async () => {
+    await loadImage(await photo(8, 8));
+  });
+
   afterEach(async () => {
     await cleanup();
   });
