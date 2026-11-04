@@ -1,6 +1,7 @@
 import { double, assert as fcAssert, property } from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createCropper } from "../src";
 import { decay, frameClock, spring, velocityTracker } from "../src/motion";
 
 const integrate = (
@@ -230,5 +231,58 @@ describe(frameClock, () => {
     frameClock().request(step);
     vi.advanceTimersByTime(17);
     expect(step).toHaveBeenCalledOnce();
+  });
+});
+
+describe("the timer clock used in node", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("runs a frame about 16 ms later in node, stamped with its own now", () => {
+    const clock = frameClock();
+    const start = clock.now();
+    const step = vi.fn<(time: number) => void>();
+    clock.request(step);
+    vi.advanceTimersByTime(15);
+    expect(step).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(clock.now()).toBe(start + 16);
+    expect(step).toHaveBeenCalledExactlyOnceWith(start + 16);
+  });
+
+  it("cancels one frame and leaves the others", () => {
+    const clock = frameClock();
+    const dropped = vi.fn<(time: number) => void>();
+    const kept = vi.fn<(time: number) => void>();
+    const handle = clock.request(dropped);
+    clock.request(kept);
+    clock.cancel(handle);
+    vi.advanceTimersByTime(17);
+    expect(dropped).not.toHaveBeenCalled();
+    expect(kept).toHaveBeenCalledOnce();
+  });
+
+  it("drives a cropper with no clock option and goes idle", () => {
+    const commits: number[] = [];
+    const cropper = createCropper({
+      image: { height: 3024, width: 4032 },
+      onValueCommit: (value) => {
+        commits.push(value.rotation);
+      },
+    });
+    cropper.setRotation(7);
+    expect(commits).toStrictEqual([]);
+    vi.advanceTimersByTime(17);
+    expect(commits).toStrictEqual([7]);
+    expect(vi.getTimerCount()).toBe(0);
+    cropper.setRotation(3);
+    expect(vi.getTimerCount()).toBe(1);
+    cropper.destroy();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
