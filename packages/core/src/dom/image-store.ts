@@ -1,9 +1,14 @@
 import type { Cropper } from "../cropper";
+import { ZrizError } from "./error";
+import { freeImage } from "./image";
 import type { LoadedImage } from "./image";
 import { afterPaint } from "./later";
-import { releaseOff } from "./worker";
 
 const attached = new WeakMap<Cropper, LoadedImage>();
+
+const holders = new WeakMap<LoadedImage, number>();
+
+const freed = new WeakSet<LoadedImage>();
 
 const imageListeners = new WeakMap<Cropper, Set<() => void>>();
 
@@ -25,15 +30,22 @@ export const attachImage = (
   cropper: Cropper,
   image: LoadedImage | null
 ): void => {
+  if (image && freed.has(image)) {
+    throw new ZrizError(
+      "no-image",
+      "zriz: this image was freed when it left its last cropper. Load it again."
+    );
+  }
   const previous = attached.get(cropper);
+  if (image && image !== previous) {
+    holders.set(image, (holders.get(image) ?? 0) + 1);
+  }
   if (previous && previous !== image) {
-    void releaseOff(previous.id);
-    previous.preview.close();
-    if (
-      previous.source instanceof ImageBitmap &&
-      previous.source !== previous.preview
-    ) {
-      previous.source.close();
+    const left = (holders.get(previous) ?? 1) - 1;
+    holders.set(previous, left);
+    if (left === 0) {
+      freed.add(previous);
+      freeImage(previous);
     }
   }
   if (image) {

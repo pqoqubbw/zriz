@@ -191,46 +191,51 @@ export const renderKernel = (): RenderKernel => {
     plan: KernelPlan
   ): { canvas: Canvas; empty: boolean } => {
     const canvas = canvasFor(plan.width, plan.height);
-    const context = contextOf(canvas, job.colorSpace);
-    const empty = dead(context);
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
-    if (job.circle) {
-      context.beginPath();
-      context.ellipse(
-        plan.width / 2,
-        plan.height / 2,
-        plan.width / 2,
-        plan.height / 2,
-        0,
-        0,
-        Math.PI * 2
-      );
-      context.clip();
-    }
-    const [a = 1, b = 0, c = 0, d = 1, e = 0, f = 0] = plan.forward;
-    const fx = full.width / job.image.width;
-    const fy = full.height / job.image.height;
-    if (plan.homography) {
-      const cx = job.image.width / 2;
-      const cy = job.image.height / 2;
-      mesh(
-        context,
-        full.drawable,
-        multiply(
-          [a, c, e + a * cx + c * cy, b, d, f + b * cx + d * cy, 0, 0, 1],
+    try {
+      const context = contextOf(canvas, job.colorSpace);
+      const empty = dead(context);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      if (job.circle) {
+        context.beginPath();
+        context.ellipse(
+          plan.width / 2,
+          plan.height / 2,
+          plan.width / 2,
+          plan.height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        context.clip();
+      }
+      const [a = 1, b = 0, c = 0, d = 1, e = 0, f = 0] = plan.forward;
+      const fx = full.width / job.image.width;
+      const fy = full.height / job.image.height;
+      if (plan.homography) {
+        const cx = job.image.width / 2;
+        const cy = job.image.height / 2;
+        mesh(
+          context,
+          full.drawable,
           multiply(
-            [...plan.homography],
-            [1 / fx, 0, -cx, 0, 1 / fy, -cy, 0, 0, 1]
+            [a, c, e + a * cx + c * cy, b, d, f + b * cx + d * cy, 0, 0, 1],
+            multiply(
+              [...plan.homography],
+              [1 / fx, 0, -cx, 0, 1 / fy, -cy, 0, 0, 1]
+            )
           )
-        )
-      );
-    } else {
-      context.setTransform(a / fx, b / fx, c / fy, d / fy, e, f);
-      context.drawImage(full.drawable, 0, 0);
-      context.setTransform(1, 0, 0, 1, 0, 0);
+        );
+      } else {
+        context.setTransform(a / fx, b / fx, c / fy, d / fy, e, f);
+        context.drawImage(full.drawable, 0, 0);
+        context.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      return { canvas, empty };
+    } catch (error) {
+      free(canvas);
+      throw error;
     }
-    return { canvas, empty };
   };
 
   const encode = async (
@@ -260,7 +265,7 @@ export const renderKernel = (): RenderKernel => {
     try {
       return await createImageBitmap(blob);
     } catch {
-      throw fail("decode", "this browser cannot decode the file");
+      throw fail("undecodable", "the browser could not decode the file");
     }
   };
 

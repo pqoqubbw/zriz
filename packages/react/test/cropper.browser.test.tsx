@@ -1,6 +1,7 @@
 import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
-import { imageOf } from "@zriz/core/dom";
+import { ZrizError, imageOf } from "@zriz/core/dom";
+import type { LoadedImage } from "@zriz/core/dom";
 import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -425,5 +426,64 @@ describe("react review regressions", () => {
     });
     await render(<Cropper.Root cropper={external} />);
     expect(external.getMaxZoom()).toBe(4);
+  });
+});
+
+describe("Root load results", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("reports an svg with html inside through onLoad", async () => {
+    const svg = new Blob(
+      [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><foreignObject width="200" height="100"><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject></svg>',
+      ],
+      { type: "image/svg+xml" }
+    );
+    const loads: LoadedImage[] = [];
+    const errors: unknown[] = [];
+    await render(
+      <Cropper.Root
+        src={svg}
+        onLoad={(image) => {
+          loads.push(image);
+        }}
+        onError={(error) => {
+          errors.push(error);
+        }}
+      />
+    );
+    await expect.poll(() => loads.length + errors.length).toBe(1);
+    expect(errors).toStrictEqual([]);
+    expect(loads[0]?.width).toBe(200);
+  });
+
+  it("does not report an app error from onLoad as a failed load", async () => {
+    const thrown = new ZrizError("no-image", "zriz: from the app");
+    const errors: unknown[] = [];
+    const surfaced: unknown[] = [];
+    const catcher = (event: PromiseRejectionEvent): void => {
+      surfaced.push(event.reason);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    window.addEventListener("unhandledrejection", catcher, { capture: true });
+    await render(
+      <Cropper.Root
+        src={await photo()}
+        onLoad={() => {
+          throw thrown;
+        }}
+        onError={(error) => {
+          errors.push(error);
+        }}
+      />
+    );
+    await expect.poll(() => surfaced).toStrictEqual([thrown]);
+    window.removeEventListener("unhandledrejection", catcher, {
+      capture: true,
+    });
+    expect(errors).toStrictEqual([]);
   });
 });

@@ -7,6 +7,7 @@ import {
   attachImage,
   exportCrop,
   exportImage,
+  imageOf,
   loadImage,
   setCropShape,
   sniff,
@@ -301,5 +302,300 @@ describe("load and export", () => {
       colorSpace: "display-p3",
     }).data;
     expect([...(pixel ?? [])].slice(0, 3)).toStrictEqual([255, 0, 0]);
+  });
+});
+
+const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
+
+const foreign = `<svg ${SVG_NS} width="200" height="100"><foreignObject width="200" height="100"><div xmlns="http://www.w3.org/1999/xhtml" style="width:200px;height:100px;background:#c33"></div></foreignObject></svg>`;
+
+const solid = (attributes: string): string =>
+  `<svg ${SVG_NS} ${attributes}><rect width="100%" height="100%" fill="#c33"/></svg>`;
+
+const paint = (bitmap: ImageBitmap, x = 0.5, y = 0.5): number[] => {
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  context.drawImage(bitmap, 0, 0);
+  return [
+    ...context.getImageData(
+      Math.floor(bitmap.width * x),
+      Math.floor(bitmap.height * y),
+      1,
+      1
+    ).data,
+  ];
+};
+
+const shown = async (blob: Blob): Promise<HTMLImageElement> => {
+  const img = new Image();
+  img.src = URL.createObjectURL(blob);
+  document.body.append(img);
+  await img.decode();
+  return img;
+};
+
+const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
+  await work.then(
+    () => "resolved",
+    (error: unknown) => (error instanceof ZrizError ? error.code : error)
+  );
+
+describe("svg sources", () => {
+  it.each([
+    ["no type", new Blob([solid('width="20" height="10"')])],
+    [
+      "text/plain",
+      new Blob([solid('width="20" height="10"')], { type: "text/plain" }),
+    ],
+    [
+      "a jpeg name",
+      new File([solid('width="20" height="10"')], "a.jpg", {
+        type: "image/jpeg",
+      }),
+    ],
+    [
+      "a charset",
+      new Blob([solid('width="20" height="10"')], {
+        type: "image/svg+xml;charset=utf-8",
+      }),
+    ],
+  ])("opens one with %s", async (_name, blob) => {
+    const { preview, mime } = await loadImage(blob);
+    expect(mime).toBe("image/svg+xml");
+    expect([preview.width, preview.height]).toStrictEqual([20, 10]);
+    expect(near(paint(preview), [204, 51, 51, 255])).toBeTruthy();
+    preview.close();
+  });
+
+  it("opens a typed one behind a prolog past the sniffed head", async () => {
+    const padded = `<!-- ${"x".repeat(5000)} -->${solid('width="20" height="10"')}`;
+    const { preview } = await loadImage(
+      new Blob([padded], { type: "image/svg+xml; charset=utf-8" })
+    );
+    expect(preview.width).toBe(20);
+    preview.close();
+  });
+
+  it("opens one in utf-16", async () => {
+    const bytes = new Uint8Array([
+      0xff,
+      0xfe,
+      ...[...encode(solid('width="20" height="10"'))].flatMap((code) => [
+        code,
+        0,
+      ]),
+    ]);
+    const { preview } = await loadImage(new Blob([bytes]));
+    expect(preview.width).toBe(20);
+    preview.close();
+  });
+
+  it("keeps a square in physical units square", async () => {
+    const { preview } = await loadImage(
+      new Blob([solid('width="10cm" height="10cm"')], {
+        type: "image/svg+xml",
+      })
+    );
+    expect(preview.width).toBe(378);
+    expect(preview.height).toBe(378);
+    preview.close();
+  });
+
+  it("loads and exports one with html inside", async () => {
+    const image = await loadImage(
+      new Blob([foreign], { type: "image/svg+xml" })
+    );
+    expect(near(paint(image.preview), [204, 51, 51, 255])).toBeTruthy();
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    const result = await exportCrop(cropper, { type: "image/jpeg" });
+    expect(result.width).toBe(200);
+    attachImage(cropper, null);
+  });
+
+  it("reports a broken one with a typed error", async () => {
+    const attempt = loadImage(
+      new Blob(["<svg><rect></svg>"], { type: "image/svg+xml" })
+    );
+    await expect(attempt).rejects.toBeInstanceOf(ZrizError);
+  });
+});
+
+describe("element sources", () => {
+  it.each([
+    ['viewBox="0 0 300 200"', 1.5],
+    ['width="100%" height="100%" viewBox="0 0 300 200"', 1.5],
+    ['width="300" height="200"', 1.5],
+  ])("opens an img showing an svg with %s", async (attributes, ratio) => {
+    const img = await shown(
+      new Blob([solid(attributes)], { type: "image/svg+xml" })
+    );
+    const { preview, width, height } = await loadImage(img);
+    expect(width / height).toBeCloseTo(ratio, 1);
+    expect(near(paint(preview), [204, 51, 51, 255])).toBeTruthy();
+    expect(near(paint(preview, 0.02, 0.02), [204, 51, 51, 255])).toBeTruthy();
+    preview.close();
+    img.remove();
+  });
+
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    "opens an img with EXIF orientation %i upright",
+    async (orientation) => {
+      const want = expected[String(orientation)];
+      const img = await shown(await fixture(`orient-${orientation}.jpg`));
+      const { preview, width, height } = await loadImage(img);
+      expect([width, height]).toStrictEqual([want?.width, want?.height]);
+      expect(near(paint(preview, 0.02, 0.02), want?.topLeft)).toBeTruthy();
+      preview.close();
+      img.remove();
+    }
+  );
+
+  it.each(["animated.gif", "animated.webp", "animated.png"])(
+    "opens a playing %s on its first frame",
+    async (name) => {
+      const img = await shown(await fixture(name));
+      const first = [220, 40, 40, 255];
+      for (let round = 0; round < 8; round += 1) {
+        const { preview } = await loadImage(img);
+        expect(near(paint(preview, 0.25, 0.25), first)).toBeTruthy();
+        preview.close();
+        await new Promise((resolve) => {
+          setTimeout(resolve, 37);
+        });
+      }
+      img.remove();
+    }
+  );
+
+  it("names a bitmap made from a tainted source as cross-origin", async () => {
+    const img = await shown(new Blob([foreign], { type: "image/svg+xml" }));
+    const context = new OffscreenCanvas(1, 1).getContext("2d");
+    context?.drawImage(img, 0, 0, 1, 1);
+    const clean = await Promise.resolve(context)
+      .then((reader) => reader?.getImageData(0, 0, 1, 1))
+      .then(
+        () => true,
+        () => false
+      );
+    const bitmap = await createImageBitmap(img);
+    img.remove();
+    const want = clean ? "resolved" : "cross-origin";
+    const hook = async (): Promise<ImageBitmap> =>
+      await createImageBitmap(bitmap);
+    await expect(
+      codeOf(loadImage(await fixture("fake.heic"), { decode: hook }))
+    ).resolves.toBe(want);
+    await expect(codeOf(loadImage(bitmap))).resolves.toBe(want);
+  });
+});
+
+const VIDEOS = [
+  { file: "frames.webm", init: 481, mime: 'video/webm; codecs="vp8"' },
+  { file: "frames.mp4", init: 771, mime: 'video/mp4; codecs="avc1.42C00A"' },
+];
+
+const once = async (target: EventTarget, type: string): Promise<void> => {
+  await new Promise((resolve) => {
+    target.addEventListener(type, resolve, { once: true });
+  });
+};
+
+const appended = async (
+  buffer: SourceBuffer,
+  bytes: Uint8Array<ArrayBuffer>
+): Promise<void> => {
+  const done = once(buffer, "updateend");
+  buffer.appendBuffer(bytes);
+  await done;
+};
+
+const streaming = async () => {
+  const fixtureOf = VIDEOS.find(({ mime }) =>
+    MediaSource.isTypeSupported(mime)
+  );
+  if (!fixtureOf) {
+    throw new Error("no video codec");
+  }
+  const file = await fixture(fixtureOf.file);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const media = new MediaSource();
+  const video = document.createElement("video");
+  video.muted = true;
+  video.src = URL.createObjectURL(media);
+  document.body.append(video);
+  await once(media, "sourceopen");
+  const buffer = media.addSourceBuffer(fixtureOf.mime);
+  const metadata = once(video, "loadedmetadata");
+  await appended(buffer, bytes.subarray(0, fixtureOf.init));
+  await metadata;
+  return { buffer, bytes, init: fixtureOf.init, media, video };
+};
+
+describe("video sources", () => {
+  it("opens a video once it has a frame", async () => {
+    const { buffer, bytes, init, video } = await streaming();
+    const frame = once(video, "loadeddata");
+    await appended(buffer, bytes.subarray(init));
+    await frame;
+    const { preview } = await loadImage(video);
+    expect(near(paint(preview), [255, 0, 0, 255], 72)).toBeTruthy();
+    preview.close();
+    video.remove();
+  });
+
+  it("refuses a video with no frame yet", async () => {
+    const { video } = await streaming();
+    await expect(codeOf(loadImage(video))).resolves.toBe("decode");
+    video.remove();
+  });
+
+  it("refuses a video seeking into an unbuffered range", async () => {
+    const { buffer, bytes, init, media, video } = await streaming();
+    const frame = once(video, "loadeddata");
+    await appended(buffer, bytes.subarray(init));
+    await frame;
+    const removed = once(buffer, "updateend");
+    buffer.remove(0.5, media.duration);
+    await removed;
+    const seeking = once(video, "seeking");
+    video.currentTime = 0.75;
+    await seeking;
+    await expect(codeOf(loadImage(video))).resolves.toBe("decode");
+    video.remove();
+  });
+});
+
+describe("sharing and freeing a photo", () => {
+  it("refuses a freed photo and leaves the current one in place", async () => {
+    const first = await loadImage(await fixture("orient-1.jpg"));
+    const second = await loadImage(await fixture("orient-2.jpg"));
+    const cropper = createCropper();
+    attachImage(cropper, first);
+    attachImage(cropper, second);
+    expect(first.preview.width).toBe(0);
+    expect(() => {
+      attachImage(cropper, first);
+    }).toThrow(ZrizError);
+    expect(imageOf(cropper)).toBe(second);
+    expect(second.preview.width).toBeGreaterThan(0);
+    attachImage(cropper, null);
+  });
+
+  it("keeps a photo open while another cropper still shows it", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const one = createCropper();
+    const two = createCropper();
+    attachImage(one, image);
+    attachImage(two, image);
+    attachImage(one, image);
+    attachImage(one, null);
+    expect(image.preview.width).toBeGreaterThan(0);
+    await exportCrop(two, { type: "image/png" });
+    attachImage(two, null);
+    expect(image.preview.width).toBe(0);
   });
 });

@@ -83,6 +83,7 @@ export default defineConfig({
         "**/*.browser.test.ts",
         "**/*.browser.test.tsx",
         "test/commands.ts",
+        "packages/core/test/dom/image.test.ts",
         "packages/core/test/fixtures/make.ts",
       ],
       rules: { "eslint/no-await-in-loop": "off", "promise/avoid-new": "off" },

@@ -120,7 +120,7 @@ describe("worker fallback", () => {
 
   it("passes decode errors from the worker through", async () => {
     await expect(decodeWith({}, "image/broken")).rejects.toThrow(
-      "zriz:decode:this browser cannot decode the file"
+      "zriz:undecodable:the browser could not decode the file"
     );
   });
 });

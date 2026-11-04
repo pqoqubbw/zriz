@@ -1,5 +1,6 @@
 "use client";
 
+import { createCropper } from "@zriz/core";
 import type { Cropper, CropperSnapshot } from "@zriz/core";
 import {
   ZrizError,
@@ -136,22 +137,26 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
         attachImage(cropper, null);
         return;
       }
+      let loaded: LoadedImage;
       try {
-        const loaded = await loadImage(src, {
+        loaded = await loadImage(src, {
           crossOrigin,
           signal: controller.signal,
         });
-        if (controller.signal.aborted) {
-          loaded.preview.close();
-          return;
-        }
-        attachImage(cropper, loaded);
-        latestLoad.current?.(loaded);
       } catch (error) {
         if (!controller.signal.aborted && error instanceof ZrizError) {
           latestError.current?.(error);
         }
+        return;
       }
+      if (controller.signal.aborted) {
+        const scratch = createCropper();
+        attachImage(scratch, loaded);
+        attachImage(scratch, null);
+        return;
+      }
+      attachImage(cropper, loaded);
+      latestLoad.current?.(loaded);
     };
     void run();
     return () => {

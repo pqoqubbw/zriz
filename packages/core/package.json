@@ -117,7 +117,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "14.7 kB",
+      "limit": "15.2 kB",
       "entry": [
         "index"
       ]
@@ -132,13 +132,13 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "17.9 kB"
+      "limit": "18.8 kB"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "3.4 kB",
+      "limit": "3.85 kB",
       "entry": [
         "index"
       ]
@@ -162,7 +162,7 @@
       "name": "loadImage",
       "path": "dist/dom/index.js",
       "import": "{ loadImage }",
-      "limit": "3.03 kB",
+      "limit": "3.42 kB",
       "entry": [
         "index"
       ]
@@ -183,7 +183,7 @@
       "name": "lazy chunk dom/source",
       "path": "dist/dom/source.js",
       "import": "*",
-      "limit": "600 B"
+      "limit": "680 B"
     },
     {
       "name": "lazy chunk dom/sharpen",

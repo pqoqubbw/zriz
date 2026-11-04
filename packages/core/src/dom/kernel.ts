@@ -90,7 +90,7 @@ export const imageKernel = (): Kernel => {
     try {
       return await createImageBitmap(blob);
     } catch {
-      throw fail("decode", "this browser cannot decode the file");
+      throw fail("undecodable", "the browser could not decode the file");
     }
   };
 
@@ -123,7 +123,12 @@ export const imageKernel = (): Kernel => {
       }
       if (keep !== undefined) {
         kept.get(keep)?.close();
-        kept.set(keep, await createImageBitmap(preview));
+        try {
+          kept.set(keep, await createImageBitmap(preview));
+        } catch (error) {
+          preview.close();
+          throw error;
+        }
       }
       return { height, preview, width };
     },
