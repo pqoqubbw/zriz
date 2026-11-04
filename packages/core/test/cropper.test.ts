@@ -1489,6 +1489,7 @@ describe("large photos", () => {
     ["a tiny angle", { height: 1_000_000, width: 300_000 }, { rotation: 1e-12 }],
     ["a tilt", { height: 1e8, width: 1e8 }, { perspective: { horizontal: 0, vertical: -30 } }],
     ["a thin photo near the limit", { height: 1e8, width: 2 }, { quarterTurns: 1, rotation: 44.999 }],
+    ["a tilt on a thin photo", { height: 75_274_033, width: 14 }, { perspective: { horizontal: -17.6, vertical: 30 } }],
   ])("keeps the crop covered at a corner with %s", (_, image, first) => {
     const { cropper } = setup({ image });
     cropper.setValue(first);

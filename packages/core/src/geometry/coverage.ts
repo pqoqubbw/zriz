@@ -150,6 +150,7 @@ export const largestFit = (
       planeSupport(plane, view.width, view.height),
     ] as const,
   }));
+  const tolerance = 1e-9 + 1e-12 * Math.max(...planes.map(({ d }) => d));
   let best = { center: { x: 0, y: 0 }, t: Number.NEGATIVE_INFINITY };
   for (const [i, a] of rows.entries()) {
     for (const [j, b] of rows.slice(i + 1).entries()) {
@@ -163,7 +164,7 @@ export const largestFit = (
               row[0] * solution[0] +
                 row[1] * solution[1] +
                 row[2] * solution[2] <=
-              d * (1 + 1e-12) + 1e-9
+              d + tolerance
           )
         ) {
           best = { center: { x: solution[0], y: solution[1] }, t: solution[2] };

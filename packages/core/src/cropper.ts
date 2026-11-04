@@ -374,10 +374,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         height /= fit;
       }
     }
-    const centre = projectOntoPlanes(panPlanes(planes, width, height), {
-      x,
-      y,
-    });
+    const centre = projectOntoPlanes(
+      panPlanes(planes, width, height),
+      { x, y },
+      1e-9 + 1e-12 * Math.max(...planes.map(({ d }) => d))
+    );
     return seal({
       ...shaped,
       crop: { height, width, x: centre.x, y: centre.y },
