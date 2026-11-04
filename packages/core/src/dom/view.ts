@@ -361,6 +361,12 @@ export const viewOf = (cropper: Cropper): View => {
     options.motion === "reduce" ||
     (options.motion !== "always" && (reduceQuery?.matches ?? false));
 
+  const notifyChrome = (): void => {
+    for (const listener of chromeListeners) {
+      listener();
+    }
+  };
+
   const setChrome = (next: Partial<Chrome>): void => {
     const merged = { ...chrome, ...next };
     if (
@@ -372,9 +378,7 @@ export const viewOf = (cropper: Cropper): View => {
       return;
     }
     chrome = merged;
-    for (const listener of chromeListeners) {
-      listener();
-    }
+    notifyChrome();
   };
 
   const placementOf = (state: CropState, current: Layout): Placement => {
@@ -699,7 +703,18 @@ export const viewOf = (cropper: Cropper): View => {
         ? localOf(target)(event)
         : { x: event.clientX, y: event.clientY };
     },
-    onChrome: subscribe(chromeListeners),
+    onChrome(listener) {
+      if (chromeListeners.size === 0) {
+        reduceQuery?.addEventListener("change", notifyChrome);
+      }
+      chromeListeners.add(listener);
+      return () => {
+        chromeListeners.delete(listener);
+        if (chromeListeners.size === 0) {
+          reduceQuery?.removeEventListener("change", notifyChrome);
+        }
+      };
+    },
     onEmpty: subscribe(emptyListeners),
     onFrame: subscribe(listeners),
     overscroll: () => shift,
@@ -736,7 +751,11 @@ export const viewOf = (cropper: Cropper): View => {
       cropper.invalidate();
     },
     setOptions(next) {
+      const before = reduced();
       options = next;
+      if (reduced() !== before) {
+        notifyChrome();
+      }
     },
     setOverscroll(offset, scale, around) {
       if (offset) {

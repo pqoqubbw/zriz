@@ -2473,3 +2473,27 @@ describe("frame timing", () => {
     expect(deltas).toStrictEqual([0, 0, 30]);
   });
 });
+
+describe("controlled writes around a gesture", () => {
+  it("drops a late echo between the end of a gesture and its commit", () => {
+    const { clock, frame } = fakeClock();
+    const commits: { reason: string; rotation: number }[] = [];
+    const cropper = createCropper({ clock, image: photo });
+    cropper.on("commit", (value, details) => {
+      commits.push({ reason: details.reason, rotation: value.rotation });
+    });
+    cropper.begin("dial");
+    cropper.setRotation(10, { reason: "dial" });
+    frame();
+    cropper.setRotation(11, { reason: "dial" });
+    cropper.end();
+    cropper.setValue(
+      { ...cropper.getValue(), rotation: 10 },
+      { emit: false, reason: "controlled" }
+    );
+    cropper.setRotation(10, { reason: "controlled" });
+    frame();
+    expect(cropper.getValue().rotation).toBe(11);
+    expect(commits).toStrictEqual([{ reason: "dial", rotation: 11 }]);
+  });
+});

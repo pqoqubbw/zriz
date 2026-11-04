@@ -163,6 +163,7 @@ export interface Cropper {
   rebase: (owner: unknown) => boolean;
   getMaxZoom: () => number;
   getMinSize: () => Size;
+  retarget: (value: Record<string, unknown>) => () => void;
   setCropState: (
     next: CropState,
     options?: ActionOptions & { keep?: "size" | "centre" }
@@ -260,7 +261,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const blocking = (): boolean =>
     [...tasks.values()].some((entry) => entry.holds);
 
-  const resetValue = readValue(initial.defaultValue ?? {}, defaultValue);
+  let resetValue = readValue(initial.defaultValue ?? {}, defaultValue);
   let image: Size | null = initial.image ?? null;
   let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
   let state: CropState | null = null;
@@ -439,9 +440,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   snapshot = makeSnapshot();
 
-  const refresh = (): void => {
+  const refresh = (always = false): void => {
     const next = makeSnapshot();
-    if (sameFields(next, snapshot)) {
+    if (!always && sameFields(next, snapshot)) {
       return;
     }
     snapshot = next;
@@ -599,7 +600,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     action: ActionOptions,
     fallback: ChangeReason
   ): void => {
-    if (destroyed || (action.reason === "controlled" && gesture !== null)) {
+    if (
+      destroyed ||
+      (action.reason === "controlled" && (gesture !== null || afterGesture))
+    ) {
       return;
     }
     if (valuesEqual(value, nextValue)) {
@@ -840,6 +844,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       }
       applyValue(resetValue, action, "reset");
     },
+    retarget(next) {
+      const previous = resetValue;
+      const aim = (target: CropValue): void => {
+        resetValue = target;
+        fitReset();
+        refresh();
+      };
+      aim(readValue(next, resetValue));
+      return () => {
+        aim(previous);
+      };
+    },
     rotate90(direction = "ccw", action = {}) {
       if (!state || disabled()) {
         return;
@@ -983,8 +999,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         gesture.start = state;
         gesture.startValue = value;
         outside = true;
-        refresh();
       }
+      refresh(true);
     },
     setOptions(next) {
       if (destroyed) {
