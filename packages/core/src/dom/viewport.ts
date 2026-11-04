@@ -768,6 +768,7 @@ export const viewportController = (
     releaseCursor?.();
     releaseCursor = null;
     view.setOverscroll({ x: 0, y: 0 }, 1);
+    cropper.rebase(owner);
     cropper.cancel(event, owner);
   };
 

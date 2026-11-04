@@ -909,4 +909,16 @@ describe("writes during a held gesture", () => {
       expect(r.cropper.getValue().rotation).toBe(at);
     }
   });
+
+  it("escape right after a flip mid-pan or mid-resize keeps the flip", () => {
+    for (const part of [(r: Rig) => r.viewport, (r: Rig) => r.handle]) {
+      const r = rig();
+      fire(part(r), "pointerdown", 100);
+      fire(part(r), "pointermove", 110);
+      r.cropper.flip("x");
+      pressEscape();
+      expect(r.cropper.getValue().mirrored).toBeTruthy();
+      expect(r.cropper.getState().interacting).toBeNull();
+    }
+  });
 });

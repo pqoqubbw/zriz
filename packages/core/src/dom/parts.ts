@@ -336,6 +336,7 @@ export const handleHandlers = (
     event.preventDefault();
     event.stopPropagation();
     drop();
+    cropper.rebase(owner);
     cropper.cancel(event, owner);
     view.release();
   };
