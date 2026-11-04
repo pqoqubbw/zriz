@@ -4,7 +4,13 @@ import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
 import type { Crop, HalfPlane, Point, Rect } from "../geometry/types";
 import { holdCursor } from "./cursor";
-import { bindPointers, capture, stopAtZoomCeiling, targetOf } from "./input";
+import {
+  MIN_HANDLE_SPAN,
+  bindPointers,
+  capture,
+  stopAtZoomCeiling,
+  targetOf,
+} from "./input";
 import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
 import { cssMatrix, viewOf } from "./view";
@@ -32,8 +38,6 @@ const EDGES: Record<HandleEdge, CropHandle> = {
   "top-left": "nw",
   "top-right": "ne",
 };
-
-const MIN_HANDLE_SPAN = 88;
 
 let shapeSupport: boolean | null = null;
 

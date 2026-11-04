@@ -1,6 +1,8 @@
 import { largestFit } from "../geometry/coverage";
 import type { Crop, HalfPlane } from "../geometry/types";
 
+export const MIN_HANDLE_SPAN = 88;
+
 export const stopAtZoomCeiling = (
   planes: readonly HalfPlane[],
   from: Crop,

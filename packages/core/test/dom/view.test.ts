@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper, defaultValue } from "../../src";
 import type { Aspect, CropperEvents, CropperOptions } from "../../src";
-import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
+import {
+  areaKeyHandlers,
+  dialAria,
+  dialHandlers,
+  handleHandlers,
+} from "../../src/dom";
 import type { HandleEdge } from "../../src/dom";
 import { bindZoomThumb } from "../../src/dom/controls";
 import {
@@ -752,6 +757,116 @@ describe("a handle at the zoom ceiling", () => {
     const crop = held(context, "bottom", 0, -5);
     expect(crop.height).toBeLessThan(before?.height ?? 0);
     expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+  });
+});
+
+const keyboard = (context: ReturnType<typeof minCropper>) => {
+  const keys = areaKeyHandlers(context.cropper);
+  return (key: string, times = 1, shiftKey = false): CropState["crop"] => {
+    for (let index = 0; index < times; index += 1) {
+      const event = {
+        altKey: true,
+        key,
+        preventDefault: () => {},
+        shiftKey,
+      };
+      Reflect.apply(keys.onKeyDown, undefined, [event]);
+      context.time.frame();
+      Reflect.apply(keys.onKeyUp, undefined, [event]);
+      context.time.frames(2);
+    }
+    return (
+      context.cropper.getCropState()?.crop ?? {
+        height: 0,
+        width: 0,
+        x: 0,
+        y: 0,
+      }
+    );
+  };
+};
+
+describe("alt arrows on a free crop", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const photo = { height: 3000, width: 4000 };
+
+  it("changes only the pressed side with room to grow", () => {
+    const context = thinCropper(photo, 1000);
+    context.cropper.setZoom(2);
+    context.time.frames(2);
+    const crop = keyboard(context)("ArrowRight");
+    expect(crop.width).toBeCloseTo(2020, 6);
+    expect(crop.height).toBeCloseTo(1500, 6);
+    expect(crop.x).toBe(0);
+  });
+
+  it.each([
+    ["ArrowRight", { height: 3000, width: 4000 }],
+    ["ArrowDown", { height: 3000, width: 4000 }],
+  ])("leaves a full crop alone on %s", (key, size) => {
+    const crop = keyboard(thinCropper(photo, 1000))(key, 10);
+    expect(crop.width).toBeCloseTo(size.width, 6);
+    expect(crop.height).toBeCloseTo(size.height, 6);
+  });
+
+  it("stops the pressed side at the photo edge and holds the other", () => {
+    const context = thinCropper(photo, 1000);
+    context.cropper.setZoom(2);
+    context.time.frames(2);
+    const crop = keyboard(context)("ArrowRight", 80);
+    expect(crop.width).toBeCloseTo(4000, 6);
+    expect(crop.height).toBeCloseTo(1500, 6);
+  });
+
+  it("keeps the other side and the centre on a straightened crop", () => {
+    const context = thinCropper(photo, 1000);
+    context.cropper.setRotation(10);
+    context.time.frames(2);
+    const before = context.cropper.getCropState()?.crop;
+    const crop = keyboard(context)("ArrowRight", 10);
+    expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
+    expect(crop.x).toBeCloseTo(before?.x ?? 0, 6);
+    expect(crop.y).toBeCloseTo(before?.y ?? 0, 6);
+  });
+
+  it("stops at the minimum size on both axes", () => {
+    const context = thinCropper(photo, 1000, {
+      minSize: { height: 512, width: 512 },
+    });
+    expect(keyboard(context)("ArrowLeft", 60, true).width).toBeCloseTo(512, 6);
+    expect(keyboard(context)("ArrowUp", 60, true).height).toBeCloseTo(512, 6);
+  });
+
+  it("stops at the 88 px floor", () => {
+    const context = thinCropper(photo, 800);
+    const crop = keyboard(context)("ArrowLeft", 60, true);
+    const scale = viewOf(context.cropper).frame()?.scale ?? 1;
+    expect(crop.width * scale).toBeGreaterThanOrEqual(88 - 1e-6);
+    expect(crop.height).toBeCloseTo(3000, 6);
+  });
+
+  it("holds the other side at the zoom ceiling", () => {
+    const context = thinCropper(photo, 400, { maxZoom: 15 });
+    context.cropper.setValue({ size: { height: 1 / 30, width: 1 / 15 } });
+    context.cropper.setZoom(15);
+    context.time.frames(2);
+    const before = context.cropper.getCropState()?.crop;
+    const crop = keyboard(context)("ArrowLeft", 5);
+    expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
+    expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+  });
+
+  it("keeps a locked crop in shape and stops it at the minimum", () => {
+    const context = thinCropper(photo, 1000, {
+      aspect: 1,
+      minSize: { height: 512, width: 512 },
+    });
+    const crop = keyboard(context)("ArrowLeft", 60, true);
+    expect(crop.width).toBeCloseTo(512, 6);
+    expect(crop.height).toBeCloseTo(512, 6);
   });
 });
 

@@ -1,9 +1,12 @@
 import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
-import { capture, targetOf } from "./input";
+import { minScaleAt } from "../geometry/coverage";
+import { imagePlanes, panPlanes } from "../geometry/planes";
+import { MIN_HANDLE_SPAN, capture, stopAtZoomCeiling, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
+import { viewOf } from "./view";
 
 export type ZoomHandlers = KeyHandlers & PointerHandlers;
 
@@ -40,21 +43,46 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
     };
     const arrow = arrows[event.key];
     if (arrow && event.altKey) {
-      const grow = 1 + step;
-      const width = arrow[0] === 0 ? 1 : grow ** arrow[0];
-      const height = arrow[1] === 0 ? 1 : grow ** arrow[1];
-      const lock = width * height;
+      const grow = (1 + step) ** (arrow[0] + arrow[1]);
       return () => {
-        cropper.setCropState(
-          {
-            ...state,
-            crop: {
-              ...state.crop,
-              height:
-                state.crop.height * (state.aspect === null ? height : lock),
-              width: state.crop.width * (state.aspect === null ? width : lock),
+        const { crop } = state;
+        let next = {
+          ...crop,
+          height: crop.height * grow,
+          width: crop.width * grow,
+        };
+        if (state.aspect === null) {
+          const side = arrow[0] === 0 ? "height" : "width";
+          const length = crop[side];
+          const planes = imagePlanes(state);
+          const held = { ...crop, [side]: 0 };
+          const room =
+            1 /
+            minScaleAt(
+              panPlanes(planes, held.width, held.height),
+              { height: held.height ? 0 : 1, width: held.width ? 0 : 1 },
+              crop
+            );
+          const floor = Math.max(
+            cropper.getMinSize()[side],
+            MIN_HANDLE_SPAN /
+              (viewOf(cropper).frame()?.scale ?? Number.POSITIVE_INFINITY)
+          );
+          next = stopAtZoomCeiling(
+            planes,
+            crop,
+            {
+              ...crop,
+              [side]: Math.min(
+                Math.max(length * grow, Math.min(length, floor)),
+                Math.max(length, room)
+              ),
             },
-          },
+            cropper.getMaxZoom()
+          );
+        }
+        cropper.setCropState(
+          { ...state, crop: next },
           { ...action, keep: "centre" }
         );
       };
