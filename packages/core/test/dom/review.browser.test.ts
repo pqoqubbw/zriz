@@ -832,4 +832,34 @@ describe("writes during a held gesture", () => {
     expect(r.cropper.getValue().rotation).toBeGreaterThan(at);
     expect(settle).toHaveBeenCalledOnce();
   });
+
+  it("a meta release ends a held key, and another modifier leaves it held", () => {
+    const r = rig();
+    const handlers = [
+      areaKeyHandlers(r.cropper),
+      dialHandlers(r.cropper),
+      zoomHandlers(r.cropper),
+    ];
+    for (const keys of handlers) {
+      keys.onKeyDown(
+        new KeyboardEvent("keydown", { code: "ArrowUp", key: "ArrowUp" })
+      );
+      keys.onKeyDown(
+        new KeyboardEvent("keydown", {
+          code: "MetaLeft",
+          key: "Meta",
+          metaKey: true,
+        })
+      );
+      keys.onKeyUp(
+        new KeyboardEvent("keyup", { code: "ShiftLeft", key: "Shift" })
+      );
+      expect(r.cropper.getState().interacting).toBe("keyboard");
+      keys.onKeyUp(
+        new KeyboardEvent("keyup", { code: "MetaLeft", key: "Meta" })
+      );
+      expect(r.cropper.getState().interacting).toBeNull();
+      r.time.frames(1);
+    }
+  });
 });

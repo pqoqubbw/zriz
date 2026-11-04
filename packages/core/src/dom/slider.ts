@@ -56,7 +56,9 @@ export const keyed = (
     },
     onKeyUp(event) {
       const key = event.code || event.key;
-      if (held.size > 1) {
+      if (event.key === "Meta") {
+        release(event);
+      } else if (held.size > 1) {
         held.delete(key);
       } else if (held.has(key)) {
         release(event);
