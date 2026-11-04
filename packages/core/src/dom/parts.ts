@@ -2,14 +2,24 @@ import type { Cropper } from "../cropper";
 import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
-import type { Crop, HalfPlane, Point, Rect } from "../geometry/types";
+import type {
+  Crop,
+  CropState,
+  HalfPlane,
+  Point,
+  Rect,
+} from "../geometry/types";
 import { holdCursor } from "./cursor";
 import {
   MIN_HANDLE_SPAN,
   bindPointers,
   capture,
+  outside,
+  pressLost,
+  presses,
   stopAtZoomCeiling,
   targetOf,
+  watchLoss,
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
@@ -229,9 +239,10 @@ export const bindArea = (
   });
 };
 
-export type HandleHandlers = PointerHandlers;
+export type HandleHandlers = PointerHandlers & { release: () => void };
 
 interface HandleDrag {
+  handle: CropHandle;
   id: number;
   placement: Placement;
   start: Rect;
@@ -293,12 +304,12 @@ const handlePoint = (rect: Rect, handle: CropHandle): Point => {
 
 export const handleHandlers = (
   cropper: Cropper,
-  edge: HandleEdge,
+  edge: HandleEdge | (() => HandleEdge),
   element?: () => Element | null
 ): HandleHandlers => {
   const owner = {};
   let releaseCursor: (() => void) | null = null;
-  const handle = EDGES[edge];
+  let unwatch: (() => void) | null = null;
   const view = viewOf(cropper);
   let drag: HandleDrag | null = null;
 
@@ -310,30 +321,59 @@ export const handleHandlers = (
     };
   };
 
+  const drop = (): void => {
+    drag = null;
+    releaseCursor?.();
+    releaseCursor = null;
+    unwatch?.();
+    unwatch = null;
+  };
+
   const onEscape = (event: KeyboardEvent): void => {
     if (event.key !== "Escape" || !drag) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    drag = null;
-    releaseCursor?.();
-    releaseCursor = null;
-    globalThis.removeEventListener("keydown", onEscape, true);
+    drop();
     cropper.cancel(event, owner);
     view.release();
   };
 
-  const finish = (event: PointerEvent): void => {
-    if (drag?.id !== event.pointerId) {
-      return;
+  const lost = (event?: Event): void => {
+    if (drag) {
+      drop();
+      view.release();
+      cropper.end(event, owner);
     }
-    drag = null;
-    releaseCursor?.();
-    releaseCursor = null;
-    globalThis.removeEventListener("keydown", onEscape, true);
-    view.release();
-    cropper.end(event, owner);
+  };
+
+  const finish = (event: PointerEvent): void => {
+    if (drag?.id === event.pointerId) {
+      lost(event);
+    }
+  };
+
+  const grab = (
+    event: PointerEvent,
+    state: CropState,
+    handle: CropHandle
+  ): HandleDrag | null => {
+    const placement = view.hold();
+    if (!placement) {
+      return null;
+    }
+    const start = toRect(state.crop);
+    const pointer = toWorking(event, placement);
+    const anchor = handlePoint(start, handle);
+    return {
+      bounds: boxPlanes(view.frame()?.layout, placement, start),
+      grab: { x: pointer.x - anchor.x, y: pointer.y - anchor.y },
+      handle,
+      id: event.pointerId,
+      placement,
+      start,
+    };
   };
 
   return {
@@ -345,36 +385,53 @@ export const handleHandlers = (
       if (
         drag ||
         !state ||
-        event.button !== 0 ||
+        !presses(event) ||
         !cropper.begin("resize", event, owner)
       ) {
         return;
       }
-      const placement = view.hold();
-      if (!placement) {
+      drag = grab(
+        event,
+        state,
+        EDGES[typeof edge === "function" ? edge() : edge]
+      );
+      if (!drag) {
         cropper.end(event, owner);
         return;
       }
-      const start = toRect(state.crop);
-      const pointer = toWorking(event, placement);
-      const anchor = handlePoint(start, handle);
-      drag = {
-        bounds: boxPlanes(view.frame()?.layout, placement, start),
-        grab: { x: pointer.x - anchor.x, y: pointer.y - anchor.y },
-        id: event.pointerId,
-        placement,
-        start,
-      };
       globalThis.addEventListener("keydown", onEscape, true);
       const target = targetOf(event, element);
+      const offLoss = watchLoss(
+        cropper,
+        lost,
+        (next) => next.pointerId === drag?.id && outside(target, next)
+      );
+      unwatch = () => {
+        offLoss();
+        globalThis.removeEventListener("keydown", onEscape, true);
+      };
       if (target) {
         capture(target, event.pointerId);
-        releaseCursor = holdCursor(target);
+        if (event.pointerType !== "touch") {
+          releaseCursor = holdCursor(target);
+        }
       }
     },
     onPointerMove(event) {
+      if (drag?.id !== event.pointerId) {
+        return;
+      }
+      if (pressLost(event, targetOf(event, element))) {
+        lost(event);
+        return;
+      }
+      if (cropper.rebase(owner)) {
+        view.release();
+        const fresh = cropper.getCropState();
+        drag = fresh && grab(event, fresh, drag.handle);
+      }
       const state = cropper.getCropState();
-      if (drag?.id !== event.pointerId || !state) {
+      if (!drag || !state) {
         return;
       }
       const pointer = toWorking(event, drag.placement);
@@ -383,7 +440,7 @@ export const handleHandlers = (
       const planes = imagePlanes(state);
       const rect = dragHandle(
         drag.start,
-        handle,
+        drag.handle,
         { x: pointer.x - drag.grab.x, y: pointer.y - drag.grab.y },
         {
           aspect: state.aspect,
@@ -407,6 +464,7 @@ export const handleHandlers = (
       );
     },
     onPointerUp: finish,
+    release: lost,
   };
 };
 
@@ -419,7 +477,11 @@ export const bindHandle = (
   element.style.touchAction = "none";
   element.style.setProperty("-webkit-tap-highlight-color", "transparent");
   element.dataset.edge = edge;
-  return bindPointers(element, handlers);
+  const off = bindPointers(element, handlers);
+  return () => {
+    off();
+    handlers.release();
+  };
 };
 
 const reasonAttribute: Partial<Record<string, string>> = {

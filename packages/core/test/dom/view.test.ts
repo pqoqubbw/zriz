@@ -450,6 +450,10 @@ const minCropper = (
   vi.stubGlobal("addEventListener", () => {});
   vi.stubGlobal("removeEventListener", () => {});
   vi.stubGlobal("Element", Object);
+  vi.stubGlobal("document", {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  });
   const time = fakeClock();
   const cropper = createCropper({
     clock: time.clock,

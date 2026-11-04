@@ -2,7 +2,17 @@ import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
 import { minScaleAt } from "../geometry/coverage";
 import { imagePlanes, panPlanes } from "../geometry/planes";
-import { MIN_HANDLE_SPAN, capture, stopAtZoomCeiling, targetOf } from "./input";
+import {
+  MIN_HANDLE_SPAN,
+  capture,
+  claim,
+  outside,
+  pressLost,
+  presses,
+  stopAtZoomCeiling,
+  targetOf,
+  watchLoss,
+} from "./input";
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
@@ -85,6 +95,9 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
         );
       };
     }
+    if (event.altKey) {
+      return null;
+    }
     if (arrow) {
       return () => {
         cropper.panBy(
@@ -114,13 +127,16 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
 
 export const zoomHandlers = (
   cropper: Cropper,
-  options: ZoomOptions = {},
+  options: ZoomOptions | (() => ZoomOptions) = {},
   element?: () => Element | null
 ): ZoomHandlers => {
   const owner = {};
   let pointer: number | null = null;
-  const max = (): number => options.max ?? cropper.getMaxZoom();
-  const sign = (): number => (options.dir === "rtl" ? -1 : 1);
+  let unwatch: (() => void) | null = null;
+  const read = (): ZoomOptions =>
+    typeof options === "function" ? options() : options;
+  const max = (): number => read().max ?? cropper.getMaxZoom();
+  const sign = (): number => (read().dir === "rtl" ? -1 : 1);
   const fromPointer = (event: PointerEvent): void => {
     const box = targetOf(event, element)?.getBoundingClientRect();
     if (!box || box.width === 0) {
@@ -135,13 +151,23 @@ export const zoomHandlers = (
       reason: "zoom-control",
     });
   };
-  const finish = (event: PointerEvent): void => {
-    if (pointer === event.pointerId) {
+  const lost = (event?: Event): void => {
+    if (pointer !== null) {
       pointer = null;
+      unwatch?.();
+      unwatch = null;
       cropper.end(event, owner);
     }
   };
+  const finish = (event: PointerEvent): void => {
+    if (pointer === event.pointerId) {
+      lost(event);
+    }
+  };
   const keys = keyed(cropper, (event) => {
+    if (event.altKey) {
+      return null;
+    }
     const next = sliderKey(
       event,
       zoomProgress(cropper.getZoom(), max()),
@@ -162,26 +188,42 @@ export const zoomHandlers = (
     onLostPointerCapture: finish,
     onPointerCancel: finish,
     onPointerDown(event) {
+      claim(event);
       if (
         pointer !== null ||
-        event.button !== 0 ||
+        !presses(event) ||
+        !cropper.getCropState() ||
         !cropper.begin("zoom-control", event, owner)
       ) {
         return;
       }
       pointer = event.pointerId;
       const own = targetOf(event, element);
+      unwatch = watchLoss(
+        cropper,
+        lost,
+        (next) => next.pointerId === pointer && outside(own, next)
+      );
       if (own) {
         capture(own, event.pointerId);
       }
       fromPointer(event);
     },
     onPointerMove(event) {
-      if (pointer === event.pointerId) {
+      if (pointer !== event.pointerId) {
+        return;
+      }
+      if (pressLost(event, targetOf(event, element))) {
+        lost(event);
+      } else {
         fromPointer(event);
       }
     },
     onPointerUp: finish,
+    release() {
+      lost();
+      keys.release();
+    },
   };
 };
 
