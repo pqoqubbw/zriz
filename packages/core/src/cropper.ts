@@ -184,6 +184,19 @@ const sameFields = <T extends object>(a: T, b: T): boolean => {
   return true;
 };
 
+const attempt = <T>(call: () => T): T | undefined => {
+  try {
+    return call();
+  } catch (error) {
+    queueMicrotask(() => {
+      throw error;
+    });
+    return undefined;
+  }
+};
+
+const noop = (): void => undefined;
+
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
   1 / largestFit(planes, size).scale;
 
@@ -228,8 +241,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     type: E,
     ...args: Parameters<CropperEvents[E]>
   ): void => {
-    for (const listener of listeners[type]) {
-      Reflect.apply(listener, undefined, args);
+    const set = listeners[type];
+    for (const listener of [...set]) {
+      if (set.has(listener)) {
+        attempt(() => Reflect.apply(listener, undefined, args));
+      }
     }
   };
 
@@ -327,8 +343,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       return;
     }
     snapshot = next;
-    for (const subscriber of subscribers) {
-      subscriber();
+    for (const subscriber of [...subscribers]) {
+      if (subscribers.has(subscriber)) {
+        attempt(subscriber);
+      }
     }
   };
 
@@ -402,7 +420,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       frameDirty = true;
     }
     for (const task of tasks.keys()) {
-      if (!task(time, delta)) {
+      if (!attempt(() => task(time, delta))) {
         tasks.delete(task);
       }
     }
@@ -540,20 +558,24 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return;
       }
+      destroyed = true;
       if (handle !== null) {
         clock.cancel(handle);
         handle = null;
       }
       for (const plugin of initial.plugins ?? []) {
-        plugin.destroy?.();
+        attempt(() => plugin.destroy?.());
       }
       emit("destroy");
-      destroyed = true;
+      gesture = null;
+      commitPending = null;
+      dirty = false;
       tasks.clear();
       subscribers.clear();
       for (const set of Object.values(listeners)) {
         set.clear();
       }
+      refresh();
     },
     end(event, owner) {
       if (!gesture || gesture.owner !== owner) {
@@ -591,6 +613,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       schedule();
     },
     on(type, listener) {
+      if (destroyed) {
+        return noop;
+      }
       const set = listeners[type] as Set<typeof listener>;
       set.add(listener);
       return () => {
@@ -627,6 +652,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       commitState(next, "size", action, "rotate-90", aspect);
     },
     run(task, holds = true) {
+      if (destroyed) {
+        return noop;
+      }
       tasks.set(task, holds);
       schedule();
       refresh();
@@ -710,6 +738,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       schedule();
     },
     setOptions(next) {
+      if (destroyed) {
+        return;
+      }
       options = { ...options, ...next };
       fitReset();
       if (state && image) {
@@ -770,6 +801,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       commitState(next, "size", action, "imperative");
     },
     stop() {
+      if (destroyed) {
+        return;
+      }
       if (gesture) {
         cropper.end(undefined, gesture.owner);
       }
@@ -785,6 +819,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       refresh();
     },
     subscribe(listener) {
+      if (destroyed) {
+        return noop;
+      }
       subscribers.add(listener);
       return () => {
         subscribers.delete(listener);

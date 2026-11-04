@@ -11,7 +11,7 @@ import {
   record,
   tuple,
 } from "fast-check";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper, parse, serialize, valuesEqual } from "../src";
 import type {
@@ -739,5 +739,212 @@ describe("value edges", () => {
     const moved = cropper.getValue().center.x;
     cropper.setRotation(0.001);
     expect(cropper.getValue().center.x).toBeCloseTo(moved, 3);
+  });
+});
+
+describe("listener isolation", () => {
+  const boom = (): never => {
+    throw new Error("app bug");
+  };
+
+  const reported = () => {
+    const errors: unknown[] = [];
+    vi.stubGlobal("queueMicrotask", (step: () => void) => {
+      try {
+        step();
+      } catch (error) {
+        errors.push(error);
+      }
+    });
+    return errors;
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps frames and commits going past a throwing change listener", () => {
+    const errors = reported();
+    const { commit, cropper, time } = setup();
+    const later = vi.fn();
+    const frame = vi.fn();
+    cropper.on("change", boom);
+    cropper.on("change", later);
+    cropper.on("frame", frame);
+    cropper.setRotation(5);
+    time.frame();
+    expect(later).toHaveBeenCalledOnce();
+    expect(frame).toHaveBeenCalledOnce();
+    expect(commit).toHaveBeenCalledOnce();
+    expect(errors).toHaveLength(1);
+  });
+
+  it("clears settling and fires settle past a throwing commit listener", () => {
+    const errors = reported();
+    const { cropper, time } = setup();
+    const settle = vi.fn();
+    cropper.on("commit", boom);
+    cropper.on("settle", settle);
+    cropper.setRotation(5);
+    cropper.run(() => false);
+    time.frame();
+    expect(settle).toHaveBeenCalledOnce();
+    expect(cropper.getState().settling).toBe(false);
+    expect(errors).toHaveLength(1);
+  });
+
+  it("drops a throwing task and keeps the frame loop", () => {
+    const errors = reported();
+    const { commit, cropper, time } = setup();
+    const task = vi.fn(boom);
+    cropper.run(task);
+    time.frame();
+    cropper.setRotation(5);
+    time.frame();
+    expect(task).toHaveBeenCalledOnce();
+    expect(commit).toHaveBeenCalledOnce();
+    expect(errors).toHaveLength(1);
+  });
+
+  it("finishes ending a gesture past a throwing gestureend listener", () => {
+    const errors = reported();
+    const { commit, cropper, time } = setup();
+    cropper.on("gestureend", boom);
+    cropper.begin("pan");
+    cropper.setRotation(5);
+    cropper.end();
+    time.frames(2);
+    expect(cropper.getState().interacting).toBeNull();
+    expect(commit).toHaveBeenCalledOnce();
+    expect(errors).toHaveLength(1);
+  });
+
+  it("returns from a listener that removes and adds itself during an emit", () => {
+    const { cropper } = setup();
+    const spy = vi.fn();
+    const rearm = (): void => {
+      spy();
+      off();
+      off = cropper.on("stop", rearm);
+    };
+    let off = cropper.on("stop", rearm);
+    cropper.stop();
+    cropper.stop();
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns from a subscriber that resubscribes during a refresh", () => {
+    const { cropper } = setup();
+    const spy = vi.fn();
+    const rearm = (): void => {
+      spy();
+      off();
+      off = cropper.subscribe(rearm);
+    };
+    let off = cropper.subscribe(rearm);
+    cropper.flip();
+    expect(spy).toHaveBeenCalledOnce();
+  });
+
+  it("skips a listener another listener removed, and holds a new one for next time", () => {
+    const { cropper } = setup();
+    const removed = vi.fn();
+    const added = vi.fn();
+    cropper.on("stop", () => {
+      off();
+      cropper.on("stop", added);
+    });
+    const off = cropper.on("stop", removed);
+    cropper.stop();
+    expect(removed).not.toHaveBeenCalled();
+    expect(added).not.toHaveBeenCalled();
+  });
+});
+
+describe("destroy", () => {
+  it("fires once when a listener or plugin destroys again", () => {
+    const spy = vi.fn();
+    const { cropper } = setup({
+      plugins: [
+        {
+          destroy() {
+            spy();
+            cropper.destroy();
+          },
+          init: () => undefined,
+          name: "again",
+        },
+      ],
+    });
+    const fired = vi.fn(() => {
+      cropper.destroy();
+    });
+    cropper.on("destroy", fired);
+    cropper.destroy();
+    expect(spy).toHaveBeenCalledOnce();
+    expect(fired).toHaveBeenCalledOnce();
+  });
+
+  it("finishes past a throwing plugin, and keeps a plugin's this", () => {
+    const errors: unknown[] = [];
+    vi.stubGlobal("queueMicrotask", (step: () => void) => {
+      try {
+        step();
+      } catch (error) {
+        errors.push(error);
+      }
+    });
+    const next = {
+      destroy(this: { seen?: boolean }) {
+        this.seen = true;
+      },
+      init: () => undefined,
+      name: "next",
+      seen: false,
+    };
+    const { change, cropper, time } = setup({
+      plugins: [
+        {
+          destroy() {
+            throw new Error("plugin failed");
+          },
+          init: () => undefined,
+          name: "bad",
+        },
+        next,
+      ],
+    });
+    const fired = vi.fn();
+    cropper.on("destroy", fired);
+    cropper.destroy();
+    vi.unstubAllGlobals();
+    cropper.setRotation(10);
+    time.frames(2);
+    expect(next.seen).toBe(true);
+    expect(fired).toHaveBeenCalledOnce();
+    expect(errors).toHaveLength(1);
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it("leaves nothing to change afterwards", () => {
+    const { commit, cropper, time } = setup();
+    cropper.begin("pan");
+    cropper.setRotation(5);
+    const before = cropper.getState();
+    cropper.destroy();
+    expect(cropper.getState().interacting).toBeNull();
+    expect(before.interacting).toBe("pan");
+    const task = vi.fn(() => true);
+    cropper.run(task)();
+    cropper.setOptions({ disabled: true, maxZoom: 2 });
+    cropper.stop();
+    cropper.on("commit", vi.fn())();
+    cropper.subscribe(vi.fn())();
+    time.frames(3);
+    expect(task).not.toHaveBeenCalled();
+    expect(cropper.getState().settling).toBe(false);
+    expect(cropper.getState().disabled).toBe(false);
+    expect(cropper.getMaxZoom()).toBe(15);
+    expect(commit).not.toHaveBeenCalled();
   });
 });
