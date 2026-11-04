@@ -1645,6 +1645,7 @@ describe("a viewport in another document", () => {
     const removed = vi.spyOn(window, "removeEventListener");
 
     document.body.append(element);
+
     zoomHandlers(cropper, {}, () => element).onPointerDown(
       new PointerEvent("pointerdown", {
         button: 0,
@@ -1654,6 +1655,7 @@ describe("a viewport in another document", () => {
         pointerId: 1,
       })
     );
+
     cropper.destroy();
     element.remove();
 

@@ -774,7 +774,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   const placed = (next: CropValue, size: Size): CropState =>
     constrain(fromValue(next, size), "centre");
 
-  const fitted = (wanted: CropValue, size: Size): [CropState, CropValue] => {
+  const soundFit = (wanted: CropValue, size: Size): [CropState, CropValue] => {
     const fixed = placed(wanted, size);
     const kept = heldValue(fixed, wanted);
 
@@ -789,7 +789,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const fitReset = (): void => {
-    resetFit = image ? fitted(resetValue, image)[1] : resetValue;
+    resetFit = image ? soundFit(resetValue, image)[1] : resetValue;
   };
 
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
@@ -1111,14 +1111,14 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
 
-      const [fixed, fixedValue] = fitted(value, next);
+      const [fixed, fixedValue] = soundFit(value, next);
 
       if (first) {
         state = fixed;
         value = fixedValue;
         markSent();
       } else {
-        [emittedState] = fitted(emitted, next);
+        [emittedState] = soundFit(emitted, next);
         state = fixed;
         accept(fixed, fixedValue, { reason: "coverage" }, "coverage");
       }

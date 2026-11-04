@@ -503,25 +503,28 @@ describe(toSharp, () => {
   });
 });
 
-describe("export plan at a huge scale", () => {
-  const planOf = (scale: number) => {
-    const cropper = createCropper({
-      defaultValue: {
-        perspective: { horizontal: 30, vertical: 30 },
-        rotation: 5,
-      },
-      image: { height: 3024, width: 4032 },
-    });
-
-    return [cropper.getPixelCrop(scale), cropper.getPixelCrop(1)];
-  };
-
-  it.each([1e15, 1e200, 1e300, 1e308])("falls back to scale 1 at %d", (scale) => {
-    const [plan, level] = planOf(scale);
-
-    expect(plan).toStrictEqual(level);
-    expect(plan?.forward.every(Number.isFinite)).toBe(true);
+const planOf = (scale: number) => {
+  const cropper = createCropper({
+    defaultValue: {
+      perspective: { horizontal: 30, vertical: 30 },
+      rotation: 5,
+    },
+    image: { height: 3024, width: 4032 },
   });
+
+  return [cropper.getPixelCrop(scale), cropper.getPixelCrop(1)];
+};
+
+describe("export plan at a huge scale", () => {
+  it.each([1e15, 1e200, 1e300, 1e308])(
+    "falls back to scale 1 at %d",
+    (scale) => {
+      const [plan, level] = planOf(scale);
+
+      expect(plan).toStrictEqual(level);
+      expect(plan?.forward.every(Number.isFinite)).toBeTruthy();
+    }
+  );
 
   it("gives sharp a finite recipe on a thin photo", () => {
     const image = { height: 1, width: 2 };
@@ -540,7 +543,7 @@ describe("export plan at a huge scale", () => {
       throw new Error("not affine");
     }
 
-    expect(Number.isFinite(recipe.extract.left)).toBe(true);
-    expect(Number.isFinite(recipe.options.odx)).toBe(true);
+    expect(Number.isFinite(recipe.extract.left)).toBeTruthy();
+    expect(Number.isFinite(recipe.options.odx)).toBeTruthy();
   });
 });

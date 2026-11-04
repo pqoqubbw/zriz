@@ -1416,6 +1416,7 @@ const mountBare = (tree: ReactNode): (() => void) => {
   const root = createRoot(container);
 
   document.body.append(container);
+
   flushSync(() => {
     root.render(tree);
   });
@@ -1424,6 +1425,7 @@ const mountBare = (tree: ReactNode): (() => void) => {
     flushSync(() => {
       root.unmount();
     });
+
     container.remove();
   };
 };
@@ -1444,9 +1446,13 @@ const mountedAvatar = async (
   );
 
   await ready(api);
-  const viewport = new WeakRef(
-    document.querySelector("#viewport") as Element
-  );
+  const node = document.querySelector("#viewport");
+
+  if (!node) {
+    throw new Error("no viewport");
+  }
+
+  const viewport = new WeakRef(node);
 
   unmount();
 
@@ -1474,7 +1480,7 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
   ])("lets a %s unmount collect the viewport", async (_name, strict) => {
     const ref = await mountedAvatar(await photo(), strict);
 
-    expect(await collected(ref)).toBe(true);
+    await expect(collected(ref)).resolves.toBeTruthy();
   });
 
   it("frees its own cropper's photo when an external cropper takes over", async () => {

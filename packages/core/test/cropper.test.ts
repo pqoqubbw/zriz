@@ -64,6 +64,8 @@ const setup = (options: CropperOptions = {}) => {
   return { change, commit, cropper, time };
 };
 
+const noop = (): void => {};
+
 const boom = (): never => {
   throw new Error("app bug");
 };
@@ -2790,9 +2792,19 @@ describe("controlled writes around a gesture", () => {
 
 describe("settle after a canceled task", () => {
   it.each<[string, (cropper: Cropper) => void]>([
-    ["nothing", () => null],
-    ["a rotation", (cropper) => cropper.setRotation(5)],
-    ["a zoom", (cropper) => cropper.setZoom(2)],
+    ["nothing", noop],
+    [
+      "a rotation",
+      (cropper) => {
+        cropper.setRotation(5);
+      },
+    ],
+    [
+      "a zoom",
+      (cropper) => {
+        cropper.setZoom(2);
+      },
+    ],
   ])("fires once when %s is written after the cancel", (_name, write) => {
     const { clock, frames } = fakeClock();
     const cropper = createCropper({ clock, image: PHOTO });
@@ -2806,7 +2818,7 @@ describe("settle after a canceled task", () => {
     write(cropper);
     frames(5);
 
-    expect(cropper.getState().settling).toBe(false);
+    expect(cropper.getState().settling).toBeFalsy();
     expect(settle).toHaveBeenCalledOnce();
   });
 });
@@ -2822,7 +2834,7 @@ describe("reset within the hold tolerance", () => {
     cropper.reset();
 
     expect(cropper.getValue().rotation).toBe(0);
-    expect(cropper.getState().pristine).toBe(true);
+    expect(cropper.getState().pristine).toBeTruthy();
   });
 
   it("returns from a size next to the full photo", () => {
@@ -2831,11 +2843,11 @@ describe("reset within the hold tolerance", () => {
     });
 
     cropper.setZoom(2);
-    cropper.setZoom(1.000_000_000_01);
+    cropper.setZoom(1.00000000001);
     cropper.reset();
 
     expect(cropper.getValue().size).toStrictEqual({ height: 1, width: 1 });
-    expect(cropper.getState().pristine).toBe(true);
+    expect(cropper.getState().pristine).toBeTruthy();
   });
 });
 
@@ -2846,9 +2858,10 @@ describe("destroy inside a listener", () => {
     cropper.on("change", () => {
       cropper.destroy();
     });
+
     cropper.rotate90();
 
-    expect(cropper.begin("pan")).toBe(false);
+    expect(cropper.begin("pan")).toBeFalsy();
     expect(cropper.getState().interacting).toBeNull();
   });
 });
@@ -2895,52 +2908,60 @@ describe("extreme sizes under perspective", () => {
       size: { height: 1e-200, width: 1e-200 },
     });
 
-    expect(isCropCovered(cropState(cropper.getCropState()))).toBe(true);
+    expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
   });
 });
 
 describe("a huge photo under perspective", () => {
   const TILT = { perspective: { horizontal: 30, vertical: 30 } };
 
-  it.each([1e18, 1e20, 1e50, 1e150])("stays sound on a photo side of %d", (side) => {
-    const image = { height: side, width: 1 };
-    const created = createCropper({ defaultValue: TILT, image });
-    const swapped = createCropper({
-      defaultValue: TILT,
-      image: { height: 1000, width: 1000 },
-    });
+  it.each([1e18, 1e20, 1e50, 1e150])(
+    "stays sound on a photo side of %d",
+    (side) => {
+      const image = { height: side, width: 1 };
+      const created = createCropper({ defaultValue: TILT, image });
+      const swapped = createCropper({
+        defaultValue: TILT,
+        image: { height: 1000, width: 1000 },
+      });
 
-    swapped.setImage({ height: side, width: 1000 });
+      swapped.setImage({ height: side, width: 1000 });
 
-    expect(created.getState().pristine).toBe(true);
+      expect(created.getState().pristine).toBeTruthy();
 
-    for (const cropper of [created, swapped]) {
-      expect(sound(cropper.getValue())).toBe(true);
-      cropper.setZoom(2);
-      cropper.reset();
-      expect(sound(cropper.getValue())).toBe(true);
-      expect(cropper.getState().pristine).toBe(true);
+      for (const cropper of [created, swapped]) {
+        expect(sound(cropper.getValue())).toBeTruthy();
+        cropper.setZoom(2);
+        cropper.reset();
+        expect(sound(cropper.getValue())).toBeTruthy();
+        expect(cropper.getState().pristine).toBeTruthy();
+      }
     }
-  });
+  );
 });
 
 describe("huge finite options", () => {
-  it.each([1e155, 1e300, 1e308])("keeps the state finite at focal length %d", (focalLength) => {
-    const cropper = createCropper({ image: PHOTO });
+  it.each([1e155, 1e300, 1e308])(
+    "keeps the state finite at focal length %d",
+    (focalLength) => {
+      const cropper = createCropper({ image: PHOTO });
 
-    cropper.setOptions({ focalLength });
-    cropper.setValue({
-      ...cropper.getValue(),
-      perspective: { horizontal: 10, vertical: 10 },
-    });
+      cropper.setOptions({ focalLength });
 
-    const { crop, perspective } = cropState(cropper.getCropState());
+      cropper.setValue({
+        ...cropper.getValue(),
+        perspective: { horizontal: 10, vertical: 10 },
+      });
 
-    expect(sound(cropper.getValue())).toBe(true);
-    expect(
-      [crop.width, crop.height, crop.x, crop.y, perspective.focal].every(
-        Number.isFinite
-      )
-    ).toBe(true);
-  });
+      const { crop, perspective } = cropState(cropper.getCropState());
+
+      expect(sound(cropper.getValue())).toBeTruthy();
+
+      expect(
+        [crop.width, crop.height, crop.x, crop.y, perspective.focal].every(
+          Number.isFinite
+        )
+      ).toBeTruthy();
+    }
+  );
 });
