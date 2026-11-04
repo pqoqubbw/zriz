@@ -1,7 +1,18 @@
-import { readdir, readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import config from "../../../oxlint.config";
 import style from "../lint/style.mjs";
@@ -14,6 +25,11 @@ type Rule = {
     report: (report: { message: string }) => void;
     sourceCode: { ast: { body: Node[] } };
   }) => Visitor;
+};
+
+type LintReport = {
+  diagnostics: { code: string; filename: string }[];
+  number_of_files: number;
 };
 
 const ROOT = path.resolve("../..");
@@ -29,6 +45,25 @@ const STYLE_RULES = [
 ];
 const CONSTANT_VISITOR =
   "Program > VariableDeclaration[kind=const] > VariableDeclarator";
+const STYLED_FILES = [
+  "apps/docs/lib/fixture.ts",
+  "packages/core/src/fixture.ts",
+  "packages/core/test/fixture.ts",
+  "packages/react/src/fixture.ts",
+  "packages/react/test/fixture.ts",
+];
+const COMMANDS_FILE = "test/commands.ts";
+const FIXTURES = [...STYLED_FILES, COMMANDS_FILE];
+const UNSTYLED_SOURCE = `interface Fixture {
+  name: string;
+}
+export const first = 1;
+const edges = ["top"];
+const classes = "flex gap-2 text-sm";
+const Part = (props: { name: string }) => props.name;
+export { classes, edges, Part };
+export type { Fixture };
+`;
 
 const overridesWith = (rule: string) =>
   (config.overrides ?? []).filter((override) =>
@@ -76,6 +111,42 @@ const reports = (ruleName: string, visitor: string, node: Node): string[] => {
   return messages;
 };
 
+const lintedConfig = (): string => {
+  const { resolve } = createRequire(path.join(ROOT, "package.json"));
+  const overrides = (config.overrides ?? []).map((override) =>
+    override.jsPlugins
+      ? {
+          ...override,
+          jsPlugins: override.jsPlugins.map((plugin) => resolve(plugin)),
+        }
+      : override
+  );
+
+  return `export default ${JSON.stringify({ ...config, options: {}, overrides })};`;
+};
+
+const isLintReport = (value: unknown): value is LintReport =>
+  typeof value === "object" &&
+  value !== null &&
+  "diagnostics" in value &&
+  "number_of_files" in value;
+
+const lintFixtures = (folder: string): LintReport => {
+  const { stdout } = spawnSync(
+    path.join(ROOT, "node_modules/.bin/oxlint"),
+    ["-c", "oxlint.config.mjs", "--format=json", ...FIXTURES],
+    { cwd: folder, encoding: "utf-8" }
+  );
+
+  const parsed: unknown = JSON.parse(stdout);
+
+  if (!isLintReport(parsed)) {
+    throw new Error(`oxlint printed no report: ${stdout}`);
+  }
+
+  return parsed;
+};
+
 const sourcesIn = async (folder: string): Promise<string[]> => {
   const entries = await readdir(path.join(ROOT, folder), {
     recursive: true,
@@ -95,16 +166,51 @@ const sourcesIn = async (folder: string): Promise<string[]> => {
 };
 
 describe("lint scope", () => {
-  it.each(STYLE_RULES)("%s covers the docs and both packages", (rule) => {
-    const files = overridesWith(rule).flatMap((override) => override.files);
+  let folder = "";
+  let report: LintReport = { diagnostics: [], number_of_files: 0 };
 
-    expect(files).toStrictEqual(
-      expect.arrayContaining([
-        "apps/docs/**",
-        "packages/*/src/**",
-        "packages/*/test/**",
-      ])
+  const firing = (file: string): string[] => {
+    const codes = new Set(
+      report.diagnostics
+        .filter((diagnostic) => diagnostic.filename === file)
+        .map((diagnostic) =>
+          diagnostic.code.replace(
+            /^(?<plugin>.+)\((?<rule>.+)\)$/u,
+            "$<plugin>/$<rule>"
+          )
+        )
     );
+
+    return STYLE_RULES.filter((rule) => codes.has(rule));
+  };
+
+  beforeAll(async () => {
+    folder = await realpath(await mkdtemp(path.join(tmpdir(), "zriz-lint-")));
+
+    await writeFile(path.join(folder, "oxlint.config.mjs"), lintedConfig());
+
+    await Promise.all(
+      FIXTURES.map(async (file) => {
+        const target = path.join(folder, file);
+
+        await mkdir(path.dirname(target), { recursive: true });
+        await writeFile(target, UNSTYLED_SOURCE);
+      })
+    );
+
+    report = lintFixtures(folder);
+  });
+
+  afterAll(async () => {
+    await rm(folder, { force: true, recursive: true });
+  });
+
+  it("lints every fixture", () => {
+    expect(report.number_of_files).toBe(FIXTURES.length);
+  });
+
+  it.each(STYLED_FILES)("%s gets every style rule", (file) => {
+    expect(firing(file)).toStrictEqual(STYLE_RULES);
   });
 
   it("keeps the next rules to the docs", () => {
@@ -116,12 +222,9 @@ describe("lint scope", () => {
   });
 
   it("leaves test/commands.ts out of the type rule so its module augmentation can merge", () => {
-    const files = overridesWith(
+    expect(firing(COMMANDS_FILE)).not.toContain(
       "typescript/consistent-type-definitions"
-    ).flatMap((override) => override.files);
-
-    expect(files).not.toContain("test/**");
-    expect(files).not.toContain("**");
+    );
   });
 
   it("declares the browser commands once, in test/commands.ts", async () => {
