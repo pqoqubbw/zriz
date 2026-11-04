@@ -4,6 +4,7 @@ export interface KeyHandlers {
   onKeyDown: (event: KeyboardEvent) => void;
   onKeyUp: (event: KeyboardEvent) => void;
   onBlur: (event: FocusEvent) => void;
+  release: () => void;
 }
 
 export const numberFormat = (
@@ -20,27 +21,48 @@ export const numberFormat = (
 export const keyed = (
   cropper: Cropper,
   plan: (event: KeyboardEvent) => (() => void) | null,
-  owner: object = {}
+  owner: object = {},
+  busy: () => boolean = () => false
 ): KeyHandlers => {
-  let active = false;
-  const release = (event: Event): void => {
-    if (active) {
-      active = false;
-      cropper.end(event, owner);
+  const held = new Set<string>();
+  const release = (event?: Event): void => {
+    if (held.size > 0) {
+      held.clear();
+      if (!busy()) {
+        cropper.end(event, owner);
+      }
     }
   };
   return {
     onBlur: release,
     onKeyDown(event) {
-      const run = plan(event);
-      if (!run || !cropper.begin("keyboard", event, owner)) {
+      const run =
+        event.ctrlKey || event.metaKey || !cropper.getCropState()
+          ? null
+          : plan(event);
+      if (!run) {
+        return;
+      }
+      if (busy()) {
+        event.preventDefault();
+        return;
+      }
+      if (!cropper.begin("keyboard", event, owner)) {
         return;
       }
       event.preventDefault();
-      active = true;
+      held.add(event.code || event.key);
       run();
     },
-    onKeyUp: release,
+    onKeyUp(event) {
+      const key = event.code || event.key;
+      if (held.size > 1) {
+        held.delete(key);
+      } else if (held.has(key)) {
+        release(event);
+      }
+    },
+    release,
   };
 };
 

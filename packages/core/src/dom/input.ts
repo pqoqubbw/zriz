@@ -1,3 +1,4 @@
+import type { Cropper } from "../cropper";
 import { largestFit } from "../geometry/coverage";
 import { insidePlanes, panPlanes } from "../geometry/planes";
 import type { Crop, HalfPlane } from "../geometry/types";
@@ -79,6 +80,61 @@ export const targetOf = (
 ): Element | null =>
   element?.() ??
   (event.currentTarget instanceof Element ? event.currentTarget : null);
+
+const claims = new WeakSet<Event>();
+
+export const claim = (event: Event): void => {
+  claims.add(event);
+};
+
+export const claimed = (event: Event): boolean => claims.has(event);
+
+export const presses = (event: PointerEvent): boolean =>
+  event.button === 0 && !(event.ctrlKey && /mac/iu.test(navigator.platform));
+
+export const pressLost = (
+  event: PointerEvent,
+  element: Element | null | undefined
+): boolean =>
+  (event.pointerType === "mouse" && event.buttons === 0) ||
+  element?.getClientRects().length === 0;
+
+export const outside = (element: Element | null, event: Event): boolean =>
+  event.target !== null &&
+  (element === null || !event.composedPath().includes(element));
+
+export const watchLoss = (
+  cropper: Cropper,
+  lost: (event?: Event) => void,
+  stolen: (event: PointerEvent) => boolean
+): (() => void) => {
+  const onHidden = (event: Event): void => {
+    if (document.visibilityState === "hidden") {
+      lost(event);
+      cropper.stop();
+    }
+  };
+  const onPointer = (event: PointerEvent): void => {
+    if (stolen(event)) {
+      lost(event);
+    }
+  };
+  const onStop = (): void => {
+    lost();
+  };
+  const off = cropper.on("stop", onStop);
+  document.addEventListener("visibilitychange", onHidden);
+  globalThis.addEventListener("blur", lost);
+  globalThis.addEventListener("pointerup", onPointer, true);
+  globalThis.addEventListener("pointercancel", onPointer, true);
+  return () => {
+    off();
+    document.removeEventListener("visibilitychange", onHidden);
+    globalThis.removeEventListener("blur", lost);
+    globalThis.removeEventListener("pointerup", onPointer, true);
+    globalThis.removeEventListener("pointercancel", onPointer, true);
+  };
+};
 
 export const bindPointers = (
   element: HTMLElement,
