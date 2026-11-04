@@ -66,6 +66,20 @@ describe("review regressions", () => {
     expect(cropper.getCropState()?.image.width).toBe(400);
   });
 
+  it("keeps the new image when a pending change is cancelled", () => {
+    const { cropper, time } = setup();
+    const listener = vi.fn<CropperEvents["change"]>((_, details) => {
+      details.cancel();
+    });
+    cropper.setZoom(4);
+    cropper.on("change", listener);
+    cropper.setImage({ height: 400, width: 400 });
+    time.frame();
+    expect(listener).toHaveBeenCalledOnce();
+    expect(cropper.getCropState()?.image.width).toBe(400);
+    expect(cropper.getZoom()).toBeCloseTo(1, 9);
+  });
+
   it("scopes gestures to their owner", () => {
     const { cropper } = setup();
     const a = {};
@@ -82,6 +96,8 @@ describe("review regressions", () => {
     const { commit, cropper, time } = setup();
     cropper.setZoom(2, { emit: false });
     const before = cropper.getValue();
+    const change = vi.fn<CropperEvents["change"]>();
+    cropper.on("change", change);
     cropper.begin("pan");
     cropper.panBy(0.1, 0);
     time.frame();
@@ -89,6 +105,11 @@ describe("review regressions", () => {
     time.frames(2);
     expect(cropper.getValue()).toStrictEqual(before);
     expect(commit).not.toHaveBeenCalled();
+    expect(change.mock.calls.at(-1)?.[0]).toStrictEqual(before);
+    expect(change.mock.calls.at(-1)?.[1]).toMatchObject({
+      phase: "end",
+      reason: "pan",
+    });
   });
 
   it("puts the pixel crop on commit details", () => {

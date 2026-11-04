@@ -276,6 +276,10 @@ describe("dom binders", () => {
       expect(image.x + image.width).toBeGreaterThanOrEqual(
         area.x + area.width - 0.01
       );
+      expect(image.y).toBeLessThanOrEqual(area.y + 0.01);
+      expect(image.y + image.height).toBeGreaterThanOrEqual(
+        area.y + area.height - 0.01
+      );
     });
 
     it.each([

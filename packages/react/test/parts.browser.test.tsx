@@ -123,18 +123,24 @@ describe("buttons and state attributes", () => {
       <Cropper.Reset>reset</Cropper.Reset>
     );
     const button = pick("reset");
-    expect(button.hidden).toBeTruthy();
-    expect(on(button, "data-pristine")).toBeTruthy();
+    const read = () => ({
+      changed: on(root, "data-changed"),
+      hidden: button.hidden,
+      pristine: on(button, "data-pristine"),
+    });
+    const clean = { changed: false, hidden: true, pristine: true };
+    expect(read()).toStrictEqual(clean);
     api().setRotation(9);
     await frames();
-    expect(button.hidden).toBeFalsy();
-    expect(on(button, "data-pristine")).toBeFalsy();
-    expect(on(root, "data-changed")).toBeTruthy();
+    expect(read()).toStrictEqual({
+      changed: true,
+      hidden: false,
+      pristine: false,
+    });
     button.click();
     await frames();
     expect(api().getValue().rotation).toBe(0);
-    expect(button.hidden).toBeTruthy();
-    expect(on(button, "data-pristine")).toBeTruthy();
+    expect(read()).toStrictEqual(clean);
   });
 
   it("ZoomStep multiplies the zoom with its own reason", async () => {

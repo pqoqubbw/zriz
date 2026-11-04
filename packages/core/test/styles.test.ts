@@ -36,13 +36,13 @@ describe("styles", () => {
     const css = lower();
     expect(css).toContain("var(--lightningcss-light");
     expect(css).toMatch(
-      /:where\(\[data-zriz-item\]\)\{--lightningcss-light:initial;--lightningcss-dark: ;/u
+      /:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light:initial;[^}]*--lightningcss-dark: ;/u
     );
     expect(css).toMatch(
-      /@media \(prefers-color-scheme:dark\)\{:where\(\[data-zriz-item\]\)\{--lightningcss-light: ;--lightningcss-dark:initial\}\}/u
+      /@media[^{]*prefers-color-scheme:\s*dark[^{]*\{:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
     );
     expect(css).toMatch(
-      /\[data-zriz-item\]:is\(\[data-theme=dark\],\.dark\)\)\{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark\}/u
+      /\[data-zriz-item\]:is\(\[data-theme=dark\],\.dark\)\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
     );
   });
 

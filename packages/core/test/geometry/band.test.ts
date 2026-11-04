@@ -1,7 +1,11 @@
 import { assert, double, pre, property } from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { inverseRubberBand, rubberBand } from "../../src/geometry";
+import {
+  inverseRubberBand,
+  rubberBand,
+  rubberBandPoint,
+} from "../../src/geometry";
 
 const num = (min: number, max: number) => double({ max, min, noNaN: true });
 
@@ -21,6 +25,26 @@ describe("rubber band", () => {
       })
     );
     expect(rubberBand(1e-6, 100) / 1e-6).toBeCloseTo(0.55, 5);
+  });
+
+  it("stretches a point past its limit along the same line, without a jump", () => {
+    assert(
+      property(num(-1000, 1000), num(-1000, 1000), num(1, 500), (x, y, d) => {
+        const length = Math.hypot(x, y);
+        pre(length > 1e-6);
+        const shown = rubberBandPoint({ x, y }, { x: 0, y: 0 }, d);
+        expect(Math.hypot(shown.x, shown.y)).toBeCloseTo(
+          rubberBand(length, d),
+          6
+        );
+        expect(Math.abs(shown.x * y - shown.y * x)).toBeLessThan(
+          1e-6 * length * length
+        );
+      })
+    );
+    expect(
+      rubberBandPoint({ x: 1e-9, y: 0 }, { x: 0, y: 0 }, 50).x
+    ).toBeCloseTo(0, 8);
   });
 
   it("has no inverse at or past the distance", () => {

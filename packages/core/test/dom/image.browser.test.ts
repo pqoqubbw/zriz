@@ -308,9 +308,7 @@ describe("load and export", () => {
       (error_: unknown) => error_
     );
     expect(error).toBeInstanceOf(ZrizError);
-    expect(["unsupported-format", "decode"]).toContain(
-      error instanceof ZrizError ? error.code : ""
-    );
+    expect(error).toHaveProperty("code", "unsupported-format");
   });
 
   it("throws a typed decode error for an element it cannot read", async () => {

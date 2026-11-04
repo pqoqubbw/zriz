@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  aspectRatio,
+  changedFields,
   defaultValue,
   parse,
   serialize,
@@ -111,5 +113,40 @@ describe("value and state", () => {
       "free"
     );
     expect(value.size.width).toBeGreaterThan(0);
+  });
+});
+
+describe(changedFields, () => {
+  it("names every field that differs", () => {
+    const next = {
+      ...defaultValue,
+      aspect: 1,
+      center: { x: 0.4, y: 0.5 },
+      mirrored: true,
+      perspective: { horizontal: 2, vertical: 0 },
+      quarterTurns: 1 as const,
+      rotation: 3,
+      size: { height: 0.5, width: 1 },
+    };
+    expect(changedFields(defaultValue, next).toSorted()).toStrictEqual([
+      "aspect",
+      "center",
+      "mirrored",
+      "perspective",
+      "quarterTurns",
+      "rotation",
+      "size",
+    ]);
+    expect(changedFields(next, { ...next })).toStrictEqual([]);
+  });
+});
+
+describe(aspectRatio, () => {
+  it("reads original from the turned photo", () => {
+    const image = { height: 1000, width: 2000 };
+    expect(aspectRatio("free", image, 1)).toBeNull();
+    expect(aspectRatio(1.5, image, 1)).toBe(1.5);
+    expect(aspectRatio("original", image, 0)).toBe(2);
+    expect(aspectRatio("original", image, 1)).toBe(0.5);
   });
 });

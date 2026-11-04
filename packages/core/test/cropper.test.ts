@@ -271,12 +271,19 @@ describe("events", () => {
   it("lets a listener cancel a frame", () => {
     const { commit, cropper, time } = setup();
     const before = cropper.getValue();
+    const state = cropper.getCropState();
+    const crop = cropper.getPixelCrop();
+    let canceled = false;
     cropper.on("change", (_, details) => {
       details.cancel();
+      canceled = details.isCanceled;
     });
     cropper.setRotation(10);
     time.frames(2);
+    expect(canceled).toBeTruthy();
     expect(cropper.getValue()).toBe(before);
+    expect(cropper.getCropState()).toBe(state);
+    expect(cropper.getPixelCrop()).toStrictEqual(crop);
     expect(commit).not.toHaveBeenCalled();
   });
 

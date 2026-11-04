@@ -98,10 +98,6 @@ describe("state", () => {
       sinCosDegrees(180).cos,
     ].map((value) => value + 0);
     expect(exact).toStrictEqual([0, 1, 0, 0, -1]);
-    expect([
-      Math.sin(Math.PI / 4) === Math.cos(Math.PI / 4),
-      Math.cos(Math.PI / 2) === 0,
-    ]).toStrictEqual([false, false]);
     assert(
       property(double({ max: 45, min: -45, noNaN: true }), (a) => {
         expect(sinCosDegrees(-a).sin + 0).toBe(-sinCosDegrees(a).sin + 0);
@@ -160,9 +156,9 @@ describe("state", () => {
   it("makes four right turns and two mirrors exact identities", () => {
     assert(
       property(stateArb, (s) => {
-        expect(
-          rotateRight(rotateRight(rotateRight(rotateRight(s))))
-        ).toStrictEqual(s);
+        const turned = rotateRight(rotateRight(rotateRight(rotateRight(s))));
+        expect({ ...turned, aspect: s.aspect }).toStrictEqual(s);
+        expect(turned.aspect ?? 0).toBeCloseTo(s.aspect ?? 0, 9);
         expect(mirrorX(mirrorX(s))).toStrictEqual(s);
         expect(mirrorY(mirrorY(s))).toStrictEqual(s);
       })

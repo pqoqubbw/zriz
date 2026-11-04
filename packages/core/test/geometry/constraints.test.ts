@@ -183,21 +183,17 @@ describe("handle drag constraints", () => {
           expect(height).toBeGreaterThanOrEqual(minHeight - tolerance);
           const cx = (start.x0 + start.x1) / 2;
           const cy = (start.y0 + start.y1) / 2;
-          const anchors: Record<CropHandle, readonly unknown[]> = {
-            e: [
-              r.x0 === start.x0,
-              Math.abs((r.y0 + r.y1) / 2 - cy) <= tolerance,
-            ],
-            n: [
-              r.y1 === start.y1,
-              Math.abs((r.x0 + r.x1) / 2 - cx) <= tolerance,
-            ],
-            ne: [],
+          const onCentre = (low: number, high: number, c: number): boolean =>
+            Math.abs((low + high) / 2 - c) <= tolerance;
+          const anchors: Record<CropHandle, readonly boolean[]> = {
+            e: [r.x0 === start.x0, onCentre(r.y0, r.y1, cy)],
+            n: [r.y1 === start.y1, onCentre(r.x0, r.x1, cx)],
+            ne: [r.x0 === start.x0, r.y1 === start.y1],
             nw: [r.x1 === start.x1, r.y1 === start.y1],
-            s: [],
+            s: [r.y0 === start.y0, onCentre(r.x0, r.x1, cx)],
             se: [r.x0 === start.x0, r.y0 === start.y0],
-            sw: [],
-            w: [],
+            sw: [r.x1 === start.x1, r.y0 === start.y0],
+            w: [r.x1 === start.x1, onCentre(r.y0, r.y1, cy)],
           };
           expect(anchors[h].every(Boolean)).toBeTruthy();
         }

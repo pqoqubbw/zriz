@@ -39,6 +39,8 @@ describe("server rendering", () => {
           { "aria-label": "Zoom" },
           createElement(Cropper.ZoomThumb)
         ),
+        createElement(Cropper.ZoomStep, { factor: 2 }, "in"),
+        createElement(Cropper.Orientation, null, "turn"),
         createElement(Cropper.Rotate, null, "rotate"),
         createElement(Cropper.Flip, null, "flip"),
         createElement(Cropper.Reset, null, "reset"),

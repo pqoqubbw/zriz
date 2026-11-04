@@ -24,6 +24,7 @@ import {
   cropCorners,
   workingToSource,
 } from "../../src/geometry";
+import { spring } from "../../src/motion";
 import { fakeClock } from "../fake-clock";
 import { stateArb } from "../geometry/arbitraries";
 
@@ -160,7 +161,12 @@ describe("view", () => {
     time.frame();
     expect(frames.at(-1)).toBeCloseTo(rest + 40, 9);
     view.settleOverscroll();
-    time.frames(60);
+    time.frames(7);
+    expect(view.overscroll().x).toBeCloseTo(
+      spring(40, 0, 42, 1.4, 6000 / 60).value,
+      6
+    );
+    time.frames(53);
     expect(frames.at(-1)).toBeCloseTo(rest, 9);
     expect(time.pending()).toBe(0);
     view.destroy();
@@ -280,6 +286,12 @@ describe("view", () => {
     expect(Math.abs(at(65 / 1.35) - 0.3)).toBeLessThan(0.17);
     expect(Math.abs(at(148 / 1.35) + 0.51)).toBeLessThan(0.12);
     expect(Math.abs(at(250 / 1.35) + 0.87)).toBeLessThan(0.06);
+    for (const [i, width] of [...widths.values()].entries()) {
+      expect(width).toBeCloseTo(
+        2 * spring(1, 0, 17.6 * 1.35, 1, (i * 1000) / 240).value - 1,
+        6
+      );
+    }
     view.destroy();
   });
 
