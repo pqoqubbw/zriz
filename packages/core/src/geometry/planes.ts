@@ -1,3 +1,4 @@
+import { clamp } from "../value";
 import { sinCosDegrees } from "./angle";
 import { isFlatPerspective } from "./perspective";
 import { sourceToWorking, turnedSize, workingToSource } from "./state";
@@ -97,9 +98,7 @@ const projectOntoPlanes = (
   }
 
   const reach = 1e6 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
-  const inReach = (side: number): number =>
-    Math.min(Math.max(side, -reach), reach);
-  const point = { x: inReach(given.x), y: inReach(given.y) };
+  const point = { x: clamp(given.x, reach), y: clamp(given.y, reach) };
   const candidates: Point[] = planes.map((plane) => {
     const k =
       (plane.nx * point.x + plane.ny * point.y - plane.d) /

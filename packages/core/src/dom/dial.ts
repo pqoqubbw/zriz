@@ -1,7 +1,7 @@
 import type { Cropper } from "../cropper";
 import { inverseRubberBand, rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
-import { positive } from "../value";
+import { clamp, positive } from "../value";
 import { holdCursor } from "./cursor";
 import {
   bindPointers,
@@ -116,9 +116,6 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
 };
 
 const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
-
-const clamp = (value: number, limit: number): number =>
-  Math.min(Math.max(value, -limit), limit);
 
 const tenths = (value: number): number => Math.round(value * 10) / 10 || 0;
 
