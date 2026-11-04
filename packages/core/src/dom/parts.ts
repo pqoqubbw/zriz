@@ -107,7 +107,7 @@ export const bindImage = (
   style.transformOrigin = "0 0";
   style.pointerEvents = "none";
   style.setProperty("-webkit-user-drag", "none");
-  if (element instanceof HTMLImageElement) {
+  if ("naturalWidth" in element) {
     element.draggable = false;
   }
   let transform = "";

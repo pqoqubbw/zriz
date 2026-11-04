@@ -1072,6 +1072,14 @@ describe("a viewport in another document", () => {
     }
   });
 
+  it("an img from that document is not draggable", async () => {
+    const { cropper, doc } = await inFrame();
+    const img = doc.createElement("img");
+    doc.body.append(img);
+    cleanups.push(bindImage(cropper, img));
+    expect(img.draggable).toBeFalsy();
+  });
+
   it("escape in that window cancels the pan", async () => {
     const { cropper, element, win } = await inFrame();
     await frames();
