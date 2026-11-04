@@ -303,6 +303,18 @@ describe("load and export", () => {
     expect(near(pixel, [255, 0, 0, 255])).toBeTruthy();
   });
 
+  it("converts a P3-tagged file to sRGB for an sRGB export", async () => {
+    const image = await loadImage(await fixture("p3.jpg"));
+    const cropper = createCropper({ image });
+    const result = await exportImage(cropper, image, { type: "image/png" });
+    const [red, green] = await pixels(result.blob, [
+      [3, 3],
+      [26, 3],
+    ]);
+    expect(near(red, [255, 0, 0], 8)).toBeTruthy();
+    expect(near(green, [0, 255, 0], 8)).toBeTruthy();
+  });
+
   it("throws a typed error for a format the browser cannot decode", async () => {
     const error: unknown = await loadImage(await fixture("fake.heic")).catch(
       (error_: unknown) => error_

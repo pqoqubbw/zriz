@@ -60,3 +60,12 @@ writeFileSync(
     Buffer.alloc(64),
   ])
 );
+
+writeFileSync(
+  path.join(dir, "p3.jpg"),
+  await base
+    .clone()
+    .withIccProfile("p3")
+    .jpeg({ chromaSubsampling: "4:4:4", quality: 100 })
+    .toBuffer()
+);

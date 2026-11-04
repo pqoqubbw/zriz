@@ -59,7 +59,15 @@ const browser = () => ({
   headless: true,
   instances: [
     { browser: "chromium" as const, maxWorkers: 1 },
-    { browser: "firefox" as const, maxWorkers: 1 },
+    {
+      browser: "firefox" as const,
+      maxWorkers: 1,
+      provider: playwright({
+        launchOptions: {
+          firefoxUserPrefs: { "gfx.color_management.mode": 2 },
+        },
+      }),
+    },
     { browser: "webkit" as const, maxWorkers: 1 },
   ],
   provider: playwright(),
