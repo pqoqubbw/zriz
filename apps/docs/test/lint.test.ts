@@ -154,12 +154,7 @@ const sourcesIn = async (folder: string): Promise<string[]> => {
   });
 
   return entries
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        /\.tsx?$/u.test(entry.name) &&
-        !entry.parentPath.includes("node_modules")
-    )
+    .filter((entry) => entry.isFile() && /\.tsx?$/u.test(entry.name))
     .map((entry) =>
       path.relative(ROOT, path.join(entry.parentPath, entry.name))
     );
