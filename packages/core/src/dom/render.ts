@@ -17,11 +17,8 @@ const rendering = (): Lane<RenderKernel> => {
   return renderer;
 };
 
-const isRender = (value: unknown): value is RenderReply =>
-  typeof value === "object" && value !== null && "blob" in value;
-
 const renderOff = async (job: RenderJob): Promise<RenderReply> =>
-  await via(rendering(), "render", [job], isRender);
+  await via(rendering(), "render", [job]);
 
 const renderHere = async (job: RenderJob): Promise<RenderReply> =>
   await rendering().here().render(job);
@@ -63,8 +60,9 @@ export const exportImage = async (
     wide && image.source instanceof Blob
       ? URL.createObjectURL(image.source)
       : null;
+  let element: HTMLImageElement | null = null;
   try {
-    const element = url === null ? null : await loadElement(url);
+    element = url === null ? null : await loadElement(url);
     const source = element
       ? {
           drawable: element,
@@ -101,7 +99,6 @@ export const exportImage = async (
     if (url !== null) {
       URL.revokeObjectURL(url);
     }
+    element?.removeAttribute("src");
   }
 };
-
-export const renderActive = (): boolean => renderer?.active() ?? false;

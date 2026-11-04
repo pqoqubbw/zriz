@@ -2,8 +2,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import { attachImage, exportCrop, loadImage } from "../../src/dom";
-import { renderActive } from "../../src/dom/render";
-import { workerActive } from "../../src/dom/worker";
 
 const fixture = async (name: string): Promise<Blob> => {
   const response = await fetch(new URL(`../fixtures/${name}`, import.meta.url));
@@ -32,8 +30,6 @@ describe("export without workers", () => {
       result.height,
     ]);
     bitmap.close();
-    expect(workerActive()).toBeFalsy();
-    expect(renderActive()).toBeFalsy();
     attachImage(cropper, null);
   });
 });

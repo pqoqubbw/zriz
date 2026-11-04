@@ -1,4 +1,4 @@
-import { resolveObjectURL } from "node:buffer";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
@@ -7,6 +7,7 @@ import type { BuildOptions } from "esbuild";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DecodeReply, Kernel } from "../../src/dom/kernel";
+import { FakeWorker } from "./fake-worker";
 
 type Origin = "main" | "worker";
 
@@ -21,13 +22,8 @@ interface KernelModule {
   imageKernel: () => Kernel;
 }
 
-type Handler = (event: { data: unknown }) => void;
-
 const isKernelModule = (value: unknown): value is KernelModule =>
   typeof value === "object" && value !== null && "imageKernel" in value;
-
-const isHandler = (value: unknown): value is Handler =>
-  typeof value === "function";
 
 const kernelPath = fileURLToPath(
   new URL("../../src/dom/kernel.ts", import.meta.url)
@@ -73,44 +69,6 @@ const bitmaps =
     return bitmap;
   };
 
-class FakeWorker extends EventTarget {
-  private readonly ready: Promise<((data: unknown) => void) | null>;
-
-  constructor(url: string) {
-    super();
-    const blob = resolveObjectURL(url);
-    const context = vm.createContext({
-      Blob,
-      ImageBitmap: Map,
-      createImageBitmap: bitmaps("worker"),
-      postMessage: (data: unknown) => {
-        this.dispatchEvent(new MessageEvent("message", { data }));
-      },
-    });
-    this.ready = (async () => {
-      const source = (await blob?.text()) ?? "";
-      try {
-        vm.runInContext(source, context);
-      } catch {
-        this.dispatchEvent(new Event("error"));
-        return null;
-      }
-      const handler: unknown = context.onmessage;
-      return isHandler(handler) ? handler : null;
-    })().then(
-      (handler) =>
-        handler &&
-        ((data: unknown) => {
-          handler({ data });
-        })
-    );
-  }
-
-  postMessage(data: unknown): void {
-    void this.ready.then((send) => send?.(data));
-  }
-}
-
 const decodeWith = async (
   options: BuildOptions,
   type = "image/png"
@@ -118,6 +76,10 @@ const decodeWith = async (
   const kernel = await lowered(options);
   vi.resetModules();
   vi.doMock(import("../../src/dom/kernel"), () => kernel);
+  FakeWorker.globals = {
+    ImageBitmap: Map,
+    createImageBitmap: bitmaps("worker"),
+  };
   vi.stubGlobal("Worker", FakeWorker);
   vi.stubGlobal("OffscreenCanvas", Map);
   vi.stubGlobal("createImageBitmap", bitmaps("main"));
@@ -160,5 +122,69 @@ describe("worker fallback", () => {
     await expect(decodeWith({}, "image/broken")).rejects.toThrow(
       "zriz:decode:this browser cannot decode the file"
     );
+  });
+});
+
+const lanes = async () => {
+  FakeWorker.made = [];
+  FakeWorker.silent = true;
+  vi.stubGlobal("Worker", FakeWorker);
+  vi.stubGlobal("OffscreenCanvas", Map);
+  const { lane, via } = await import("../../src/dom/worker");
+  const target = lane(() => ({
+    ping: async (_value: unknown) => await Promise.resolve("here"),
+  }));
+  return { target, via };
+};
+
+const dispatch = (type: string): void => {
+  FakeWorker.made[0]?.dispatchEvent(new Event(type));
+};
+
+describe("lane failures", () => {
+  afterEach(() => {
+    FakeWorker.silent = false;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("leaves no call waiting when a message cannot be cloned", async () => {
+    const { target } = await lanes();
+    const unhandled: unknown[] = [];
+    const listener = (reason: unknown): void => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", listener);
+    await expect(target.call("ping", [() => null])).rejects.toThrow(
+      "could not be cloned"
+    );
+    dispatch("error");
+    await delay(10);
+    process.off("unhandledRejection", listener);
+    expect(unhandled).toStrictEqual([]);
+  });
+
+  it.each(["error", "messageerror"])(
+    "falls back to the main thread on %s",
+    async (type) => {
+      const { target, via } = await lanes();
+      const reply = via(target, "ping", [1]);
+      await vi.waitFor(() => {
+        expect(FakeWorker.made).toHaveLength(1);
+      });
+      dispatch(type);
+      await expect(reply).resolves.toBe("here");
+    }
+  );
+
+  it("stops a failed worker and frees its url", async () => {
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
+    const { target } = await lanes();
+    const reply = target.call("ping", [1]);
+    dispatch("error");
+    await expect(reply).rejects.toThrow("zriz:worker:failed");
+    expect(FakeWorker.made[0]?.terminated).toBeTruthy();
+    expect(revoke).toHaveBeenCalledOnce();
   });
 });

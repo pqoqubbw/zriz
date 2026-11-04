@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { server } from "vitest/browser";
 
 import { createCropper } from "../../src";
@@ -12,7 +12,6 @@ import {
   sniff,
 } from "../../src/dom";
 import { fromSvg } from "../../src/dom/svg";
-import { workerActive } from "../../src/dom/worker";
 import { workingToSource } from "../../src/geometry";
 import orientations from "../fixtures/orient.json";
 
@@ -204,9 +203,11 @@ describe("load and export", () => {
   });
 
   it("decodes and exports off the main thread", async () => {
+    const posted = vi.spyOn(Worker.prototype, "postMessage");
     const image = await loadImage(await fixture("orient-1.jpg"));
     await exportImage(createCropper({ image }), image);
-    expect(workerActive()).toBeTruthy();
+    expect(posted.mock.calls.length).toBeGreaterThan(1);
+    posted.mockRestore();
   });
 
   it("keeps the preview under its edge", async () => {

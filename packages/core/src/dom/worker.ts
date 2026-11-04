@@ -2,20 +2,19 @@ import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
 
 interface Waiting {
-  resolve: (value: unknown) => void;
+  resolve: (value: never) => void;
   reject: (error: Error) => void;
 }
 
 interface Reply {
   id: number;
-  result?: unknown;
+  result: never;
   error?: string;
 }
 
 export interface Lane<K> {
-  call: (op: string, args: readonly unknown[]) => Promise<unknown>;
+  call: <T>(op: string, args: readonly unknown[]) => Promise<T>;
   here: () => K;
-  active: () => boolean;
 }
 
 const program = (kernel: string): string =>
@@ -48,6 +47,7 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
       );
       const created = new Worker(url);
       created.addEventListener("message", (event: MessageEvent<unknown>) => {
+        URL.revokeObjectURL(url);
         const reply = event.data;
         if (!isReply(reply)) {
           return;
@@ -60,13 +60,17 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
           entry?.reject(new Error(reply.error));
         }
       });
-      created.addEventListener("error", () => {
+      const failed = (): void => {
+        URL.revokeObjectURL(url);
+        created.terminate();
         worker = null;
         for (const entry of waiting.values()) {
           entry.reject(new Error("zriz:worker:failed"));
         }
         waiting.clear();
-      });
+      };
+      created.addEventListener("error", failed);
+      created.addEventListener("messageerror", failed);
       worker = created;
     } catch {
       worker = null;
@@ -75,19 +79,17 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
   };
 
   return {
-    active: () => worker !== null && worker !== undefined,
-    call: async (op, args) => {
+    call: async <T>(op: string, args: readonly unknown[]): Promise<T> => {
       const target = spawn();
       if (!target) {
         throw new Error("zriz:worker:none");
       }
       next += 1;
       const id = next;
-      const result = new Promise<unknown>((resolve, reject) => {
+      return await new Promise<T>((resolve, reject) => {
+        target.postMessage({ args, id, op }, []);
         waiting.set(id, { reject, resolve });
       });
-      target.postMessage({ args, id, op }, []);
-      return await result;
     },
     here: () => {
       local ??= kernel();
@@ -107,14 +109,10 @@ export const via = async <
 >(
   target: Lane<K>,
   op: O,
-  args: A,
-  check: (value: unknown) => value is T
+  args: A
 ): Promise<T> => {
   try {
-    const reply = await target.call(op, args);
-    if (check(reply)) {
-      return reply;
-    }
+    return await target.call<T>(op, args);
   } catch (error) {
     if (!fallback(error)) {
       throw error;
@@ -130,38 +128,26 @@ const decoding = (): Lane<Kernel> => {
   return decoder;
 };
 
-const isDecode = (value: unknown): value is DecodeReply =>
-  typeof value === "object" && value !== null && "preview" in value;
-
-const isBitmap = (value: unknown): value is ImageBitmap =>
-  typeof ImageBitmap === "function" && value instanceof ImageBitmap;
-
-const isBlob = (value: unknown): value is Blob => value instanceof Blob;
-
-const isNothing = (value: unknown): value is undefined => value === undefined;
-
 export const decodeOff = async (
   blob: Blob,
   edge: number,
   keep?: number
-): Promise<DecodeReply> =>
-  await via(decoding(), "decode", [blob, edge, keep], isDecode);
+): Promise<DecodeReply> => await via(decoding(), "decode", [blob, edge, keep]);
 
 export const keepOff = async (
   id: number,
   bitmap: ImageBitmap
 ): Promise<void> => {
-  await via(decoding(), "keep", [id, bitmap], isNothing);
+  await via(decoding(), "keep", [id, bitmap]);
 };
 
 export const motionOff = async (id: number, type: string): Promise<Blob> =>
-  await via(decoding(), "motion", [id, type], isBlob);
+  await via(decoding(), "motion", [id, type]);
 
 export const resampleOff = async (
   id: number,
   scale: number
-): Promise<ImageBitmap> =>
-  await via(decoding(), "resample", [id, scale], isBitmap);
+): Promise<ImageBitmap> => await via(decoding(), "resample", [id, scale]);
 
 export const regionOff = async (
   source: Blob | ImageBitmap,
@@ -169,10 +155,8 @@ export const regionOff = async (
   width: number,
   height: number
 ): Promise<ImageBitmap> =>
-  await via(decoding(), "region", [source, rect, width, height], isBitmap);
+  await via(decoding(), "region", [source, rect, width, height]);
 
 export const releaseOff = async (id: number): Promise<void> => {
-  await via(decoding(), "release", [id], isNothing);
+  await via(decoding(), "release", [id]);
 };
-
-export const workerActive = (): boolean => decoder?.active() ?? false;

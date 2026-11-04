@@ -1,21 +1,37 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import { attachImage, exportCrop, loadImage } from "../../src/dom";
-import { renderActive } from "../../src/dom/render";
-import { workerActive } from "../../src/dom/worker";
 
 const fixture = async (name: string): Promise<Blob> => {
   const response = await fetch(new URL(`../fixtures/${name}`, import.meta.url));
   return await response.blob();
 };
 
+const workers: { failed: boolean }[] = [];
+
+class WatchedWorker extends Worker {
+  constructor(url: string | URL) {
+    super(url);
+    const entry = { failed: false };
+    workers.push(entry);
+    this.addEventListener("error", () => {
+      entry.failed = true;
+    });
+  }
+}
+
 describe("export under a CSP that blocks blob workers", () => {
   beforeAll(() => {
+    vi.stubGlobal("Worker", WatchedWorker);
     const policy = document.createElement("meta");
     policy.httpEquiv = "Content-Security-Policy";
     policy.content = "worker-src 'none'";
     document.head.append(policy);
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
   });
 
   it("falls back to the main thread and still exports", async () => {
@@ -30,8 +46,7 @@ describe("export under a CSP that blocks blob workers", () => {
       result.height,
     ]);
     bitmap.close();
-    expect(workerActive()).toBeFalsy();
-    expect(renderActive()).toBeFalsy();
+    expect(workers.every(({ failed }) => failed)).toBeTruthy();
     attachImage(cropper, null);
   });
 });
