@@ -367,9 +367,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       shaped.aspect !== null &&
       Math.abs(width / height - shaped.aspect) > EPSILON
     ) {
-      const area = width * height;
-
-      height = Math.sqrt(area / shaped.aspect);
+      height = Math.sqrt(width / shaped.aspect) * Math.sqrt(height);
       width = height * shaped.aspect;
     }
 
@@ -384,7 +382,9 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
 
     const maxZoom = zoomCap();
-    const base = largestFit(planes, { height, width }).scale;
+    const base =
+      largestFit(planes, { height, width }).scale ||
+      largestFit(planes, { height: height / width, width: 1 }).scale * width;
     const grow = Math.max(
       1,
       min.width / width,

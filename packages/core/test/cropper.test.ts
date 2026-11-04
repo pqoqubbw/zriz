@@ -2852,3 +2852,49 @@ describe("destroy inside a listener", () => {
     expect(cropper.getState().interacting).toBeNull();
   });
 });
+
+describe("extreme sizes under perspective", () => {
+  const TILT = { perspective: { horizontal: 30, vertical: 30 } };
+
+  it.each([1e-160, 1e-200, 5e-324])("caps a zoom from size %d", (side) => {
+    const cropper = createCropper({
+      defaultValue: { aspect: 0.05, ...TILT },
+      image: { height: 3024, width: 4032 },
+    });
+
+    cropper.setValue({
+      ...cropper.getValue(),
+      size: { height: side, width: side },
+    });
+
+    expect(cropper.getZoom()).toBeLessThanOrEqual(cropper.getMaxZoom() + 1e-9);
+  });
+
+  it("caps a zoom when one side alone would underflow the area", () => {
+    const cropper = createCropper({
+      defaultValue: { aspect: 0.05, ...TILT },
+      image: { height: 3024, width: 4032 },
+    });
+
+    cropper.setValue({
+      ...cropper.getValue(),
+      size: { height: 1e-5, width: 5e-324 },
+    });
+
+    expect(cropper.getZoom()).toBeLessThanOrEqual(cropper.getMaxZoom() + 1e-9);
+  });
+
+  it("keeps the crop covered on a one pixel photo", () => {
+    const cropper = createCropper({
+      defaultValue: { aspect: 0.05, ...TILT },
+      image: { height: 1, width: 1 },
+    });
+
+    cropper.setValue({
+      ...cropper.getValue(),
+      size: { height: 1e-200, width: 1e-200 },
+    });
+
+    expect(isCropCovered(cropState(cropper.getCropState()))).toBe(true);
+  });
+});
