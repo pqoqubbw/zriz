@@ -78,8 +78,18 @@ const ACCESSIBILITY_PAGE = defineDoc({
       ),
       p("escape also cancels a photo drag or a handle drag."),
       p(
+        "a key pressed in a focusable child of `Area`, `Dial` or `Zoom` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on `Area`, which resizes the crop."
+      ),
+      p(
         "zriz adds no focus style and removes none, so the browser's default ring shows on `Area`, `Dial` and `Zoom`. [crop area](crop-area) shows a ring of your own."
       )
+    ),
+    section(
+      "work without a drag",
+      p(
+        "the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. `Zoom` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so `Announcer` speaks these writes too:"
+      ),
+      code("accessibility/no-drag.tsx")
     ),
     section(
       "respect reduced motion",

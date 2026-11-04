@@ -7,3 +7,7 @@ const keys = areaKeyHandlers(cropper);
 area.onkeydown = keys.onKeyDown;
 area.onkeyup = keys.onKeyUp;
 area.onblur = keys.onBlur;
+
+export const unbind = () => {
+  keys.release();
+};

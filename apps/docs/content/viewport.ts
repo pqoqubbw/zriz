@@ -84,6 +84,9 @@ const VIEWPORT_PAGE = defineDoc({
         ],
       }),
       p(
+        "a press on a button, link, input or other control inside `Viewport` starts no pan, so its click still lands. the same goes for content you portal out of it."
+      ),
+      p(
         "a twist counts as a pinch, so `Root` gets `data-pinching` and the thirds grid shows. a trackpad twist works only in safari. the crop's keys are on [crop area](crop-area)."
       )
     ),

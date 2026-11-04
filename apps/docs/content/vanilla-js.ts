@@ -41,7 +41,9 @@ const VANILLA_JS_PAGE = defineDoc({
         "`bindArea` moves the crop but listens to no keys. pass the area's events to `areaKeyHandlers`:"
       ),
       code("vanilla-js/keys.ts"),
-      p("the keys are the ones on [crop area](crop-area).")
+      p(
+        "the keys are the ones on [crop area](crop-area). call `keys.release()` when you unbind, so a key held at that moment does not lock the cropper. `zoomHandlers` and `handleHandlers` have the same `release`."
+      )
     ),
     section(
       "add the dial",

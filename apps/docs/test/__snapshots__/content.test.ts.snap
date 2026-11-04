@@ -2265,6 +2265,108 @@ export const CropWithPreview = ({ file }: { file: File }) => {
 <span class=p>/&gt;</span>",
   ],
   [
+    "accessibility",
+    "accessibility/no-drag.tsx",
+    ""use client";
+
+import { useCropper } from "@zriz/react";
+import * as Cropper from "@zriz/react/cropper";
+
+export const Editor = ({ src }: { src: string }) => {
+  const cropper = useCropper();
+  const turn = (by: number) => {
+    cropper.setRotation(cropper.getValue().rotation + by, {
+      reason: "keyboard",
+    });
+  };
+  const move = (x: number, y: number) => {
+    cropper.panBy(x, y, { reason: "keyboard" });
+  };
+  const resize = (by: number) => {
+    const state = cropper.getCropState();
+    if (state) {
+      const crop = {
+        ...state.crop,
+        height: state.crop.height * by,
+        width: state.crop.width * by,
+      };
+      cropper.setCropState(
+        { ...state, crop },
+        { keep: "centre", reason: "keyboard" }
+      );
+    }
+  };
+  return (
+    <>
+      <Cropper.Root cropper={cropper} src={src}>
+        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+          <Cropper.Image />
+          <Cropper.Mask />
+          <Cropper.Area aria-label="Crop area" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+      <button onClick={() => turn(-1)}>straighten left</button>
+      <button onClick={() => turn(1)}>straighten right</button>
+      <button onClick={() => move(-0.01, 0)}>move left</button>
+      <button onClick={() => move(0.01, 0)}>move right</button>
+      <button onClick={() => move(0, -0.01)}>move up</button>
+      <button onClick={() => move(0, 0.01)}>move down</button>
+      <button onClick={() => resize(0.9)}>smaller crop</button>
+      <button onClick={() => resize(1.1)}>larger crop</button>
+    </>
+  );
+};",
+    "<span class=s>"use client"</span><span class=p>;</span>
+
+<span class=k>import </span><span class=p>{</span> useCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
+
+<span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
+  <span class=k>const</span> cropper <span class=p>= </span><span class=t>useCropper</span><span class=p>();</span>
+  <span class=k>const </span><span class=t>turn </span><span class=p>= (</span>by<span class=p>:</span> number<span class=p>) =&gt; {</span>
+    cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span>cropper<span class=p>.</span><span class=t>getValue</span><span class=p>().</span>rotation <span class=p>+</span> by<span class=p>, {</span>
+      reason<span class=p>: </span><span class=s>"keyboard"</span><span class=p>,</span>
+    <span class=p>});</span>
+  <span class=p>};</span>
+  <span class=k>const </span><span class=t>move </span><span class=p>= (</span>x<span class=p>:</span> number<span class=p>,</span> y<span class=p>:</span> number<span class=p>) =&gt; {</span>
+    cropper<span class=p>.</span><span class=t>panBy</span><span class=p>(</span>x<span class=p>,</span> y<span class=p>, {</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>});</span>
+  <span class=p>};</span>
+  <span class=k>const </span><span class=t>resize </span><span class=p>= (</span>by<span class=p>:</span> number<span class=p>) =&gt; {</span>
+    <span class=k>const</span> state <span class=p>=</span> cropper<span class=p>.</span><span class=t>getCropState</span><span class=p>();</span>
+    <span class=k>if </span><span class=p>(</span>state<span class=p>) {</span>
+      <span class=k>const</span> crop <span class=p>= {</span>
+        <span class=p>...</span>state<span class=p>.</span>crop<span class=p>,</span>
+        height<span class=p>:</span> state<span class=p>.</span>crop<span class=p>.</span>height <span class=p>*</span> by<span class=p>,</span>
+        width<span class=p>:</span> state<span class=p>.</span>crop<span class=p>.</span>width <span class=p>*</span> by<span class=p>,</span>
+      <span class=p>};</span>
+      cropper<span class=p>.</span><span class=t>setCropState</span><span class=p>(</span>
+        <span class=p>{ ...</span>state<span class=p>,</span> crop <span class=p>},</span>
+        <span class=p>{</span> keep<span class=p>: </span><span class=s>"centre"</span><span class=p>,</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>}</span>
+      <span class=p>);</span>
+    <span class=p>}</span>
+  <span class=p>};</span>
+  <span class=k>return </span><span class=p>(</span>
+    <span class=p>&lt;&gt;</span>
+      <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>cropper</span><span class=p>={</span>cropper<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+          <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
+          <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
+          <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
+        <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
+      <span class=p>&lt;/</span><span class=t>Cropper.Root</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>turn</span><span class=p>(-</span><span class=n>1</span><span class=p>)}&gt;</span>straighten left<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>turn</span><span class=p>(</span><span class=n>1</span><span class=p>)}&gt;</span>straighten right<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>move</span><span class=p>(-</span><span class=n>0.01</span><span class=p>, </span><span class=n>0</span><span class=p>)}&gt;</span>move left<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>move</span><span class=p>(</span><span class=n>0.01</span><span class=p>, </span><span class=n>0</span><span class=p>)}&gt;</span>move right<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>move</span><span class=p>(</span><span class=n>0</span><span class=p>, -</span><span class=n>0.01</span><span class=p>)}&gt;</span>move up<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>move</span><span class=p>(</span><span class=n>0</span><span class=p>, </span><span class=n>0.01</span><span class=p>)}&gt;</span>move down<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>resize</span><span class=p>(</span><span class=n>0.9</span><span class=p>)}&gt;</span>smaller crop<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+      <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt; </span><span class=t>resize</span><span class=p>(</span><span class=n>1.1</span><span class=p>)}&gt;</span>larger crop<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
+    <span class=p>&lt;/&gt;</span>
+  <span class=p>);</span>
+<span class=p>};</span>",
+  ],
+  [
     "vanilla-js",
     "vanilla-js/markup.html",
     "<div id="cropper" data-zriz-item="root">
@@ -2489,7 +2591,11 @@ const keys = areaKeyHandlers(cropper);
 
 area.onkeydown = keys.onKeyDown;
 area.onkeyup = keys.onKeyUp;
-area.onblur = keys.onBlur;",
+area.onblur = keys.onBlur;
+
+export const unbind = () => {
+  keys.release();
+};",
     "<span class=k>import </span><span class=p>{</span> areaKeyHandlers <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core/dom"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> cropper <span class=p>} </span><span class=k>from </span><span class=s>"./cropper"</span><span class=p>;</span>
 
@@ -2498,7 +2604,11 @@ area.onblur = keys.onBlur;",
 
 area<span class=p>.</span>onkeydown <span class=p>=</span> keys<span class=p>.</span>onKeyDown<span class=p>;</span>
 area<span class=p>.</span>onkeyup <span class=p>=</span> keys<span class=p>.</span>onKeyUp<span class=p>;</span>
-area<span class=p>.</span>onblur <span class=p>=</span> keys<span class=p>.</span>onBlur<span class=p>;</span>",
+area<span class=p>.</span>onblur <span class=p>=</span> keys<span class=p>.</span>onBlur<span class=p>;</span>
+
+<span class=k>export const </span><span class=t>unbind </span><span class=p>= () =&gt; {</span>
+  keys<span class=p>.</span><span class=t>release</span><span class=p>();</span>
+<span class=p>};</span>",
   ],
   [
     "vanilla-js",
@@ -4580,7 +4690,65 @@ every control works without a mouse. the keys live with each part: [crop area](h
 
 escape also cancels a photo drag or a handle drag.
 
+a key pressed in a focusable child of \`Area\`, \`Dial\` or \`Zoom\` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on \`Area\`, which resizes the crop.
+
 zriz adds no focus style and removes none, so the browser's default ring shows on \`Area\`, \`Dial\` and \`Zoom\`. [crop area](https://zriz.dev/docs/crop-area.md) shows a ring of your own.
+
+## work without a drag
+
+the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. \`Zoom\` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so \`Announcer\` speaks these writes too:
+
+\`\`\`tsx
+"use client";
+
+import { useCropper } from "@zriz/react";
+import * as Cropper from "@zriz/react/cropper";
+
+export const Editor = ({ src }: { src: string }) => {
+  const cropper = useCropper();
+  const turn = (by: number) => {
+    cropper.setRotation(cropper.getValue().rotation + by, {
+      reason: "keyboard",
+    });
+  };
+  const move = (x: number, y: number) => {
+    cropper.panBy(x, y, { reason: "keyboard" });
+  };
+  const resize = (by: number) => {
+    const state = cropper.getCropState();
+    if (state) {
+      const crop = {
+        ...state.crop,
+        height: state.crop.height * by,
+        width: state.crop.width * by,
+      };
+      cropper.setCropState(
+        { ...state, crop },
+        { keep: "centre", reason: "keyboard" }
+      );
+    }
+  };
+  return (
+    <>
+      <Cropper.Root cropper={cropper} src={src}>
+        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+          <Cropper.Image />
+          <Cropper.Mask />
+          <Cropper.Area aria-label="Crop area" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+      <button onClick={() => turn(-1)}>straighten left</button>
+      <button onClick={() => turn(1)}>straighten right</button>
+      <button onClick={() => move(-0.01, 0)}>move left</button>
+      <button onClick={() => move(0.01, 0)}>move right</button>
+      <button onClick={() => move(0, -0.01)}>move up</button>
+      <button onClick={() => move(0, 0.01)}>move down</button>
+      <button onClick={() => resize(0.9)}>smaller crop</button>
+      <button onClick={() => resize(1.1)}>larger crop</button>
+    </>
+  );
+};
+\`\`\`
 
 ## respect reduced motion
 
@@ -8516,9 +8684,13 @@ const keys = areaKeyHandlers(cropper);
 area.onkeydown = keys.onKeyDown;
 area.onkeyup = keys.onKeyUp;
 area.onblur = keys.onBlur;
+
+export const unbind = () => {
+  keys.release();
+};
 \`\`\`
 
-the keys are the ones on [crop area](https://zriz.dev/docs/crop-area.md).
+the keys are the ones on [crop area](https://zriz.dev/docs/crop-area.md). call \`keys.release()\` when you unbind, so a key held at that moment does not lock the cropper. \`zoomHandlers\` and \`handleHandlers\` have the same \`release\`.
 
 ## add the dial
 
@@ -8737,6 +8909,8 @@ the stylesheet paints the mask with \`--zriz-scrim\`. set it to any colour:
 | wheel, trackpad scroll | pans by default. at the edge the page scrolls on. \`wheel\` changes it |
 | ctrl + wheel | zooms, whatever \`wheel\` is set to |
 | escape during a drag | cancels the drag and puts the photo back |
+
+a press on a button, link, input or other control inside \`Viewport\` starts no pan, so its click still lands. the same goes for content you portal out of it.
 
 a twist counts as a pinch, so \`Root\` gets \`data-pinching\` and the thirds grid shows. a trackpad twist works only in safari. the crop's keys are on [crop area](https://zriz.dev/docs/crop-area.md).
 
