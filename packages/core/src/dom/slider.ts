@@ -22,7 +22,7 @@ export const keyed = (
     onBlur: release,
     onKeyDown(event) {
       const run = plan(event);
-      if (!run || (!active && !cropper.begin("keyboard", event, owner))) {
+      if (!run || !cropper.begin("keyboard", event, owner)) {
         return;
       }
       event.preventDefault();

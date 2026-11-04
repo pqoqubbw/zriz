@@ -4,6 +4,7 @@ import { commands, server, userEvent } from "vitest/browser";
 import { createCropper } from "../../src";
 import type { Cropper } from "../../src";
 import {
+  areaKeyHandlers,
   bindDial,
   bindDialTicks,
   bindDialValue,
@@ -11,8 +12,9 @@ import {
   dialHandlers,
   dialState,
   viewOf,
+  zoomHandlers,
 } from "../../src/dom";
-import type { DialHandlers } from "../../src/dom";
+import type { DialHandlers, KeyHandlers } from "../../src/dom";
 import { fakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
@@ -221,6 +223,83 @@ describe("dial while another gesture or disabled blocks it", () => {
     cropper.setOptions({ disabled: false });
     expect(cropper.getState().interacting).toBeNull();
     expect(cropper.begin("pan", undefined, {})).toBeTruthy();
+    cropper.destroy();
+  });
+});
+
+describe.each<[string, (cropper: Cropper) => KeyHandlers]>([
+  ["dial", (cropper) => dialHandlers(cropper)],
+  ["zoom", (cropper) => zoomHandlers(cropper)],
+  ["area", (cropper) => areaKeyHandlers(cropper)],
+])("%s with a key held down", (_, handlersOf) => {
+  const held = (): {
+    cropper: Cropper;
+    handlers: KeyHandlers;
+    starts: () => number;
+  } => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    cropper.setValue({ size: { height: 0.5, width: 0.5 } });
+    let started = 0;
+    cropper.on("gesturestart", () => {
+      started += 1;
+    });
+    const handlers = handlersOf(cropper);
+    const first = arrowRight();
+    handlers.onKeyDown(first);
+    expect(first.defaultPrevented).toBeTruthy();
+    return { cropper, handlers, starts: () => started };
+  };
+
+  it("keeps one gesture over every repeat", () => {
+    const { cropper, handlers, starts } = held();
+    const before = cropper.getValue();
+    const repeat = arrowRight();
+    handlers.onKeyDown(repeat);
+    expect(repeat.defaultPrevented).toBeTruthy();
+    expect(cropper.getValue()).not.toStrictEqual(before);
+    expect(starts()).toBe(1);
+    handlers.onKeyUp(new KeyboardEvent("keyup", { key: "ArrowRight" }));
+    expect(cropper.getState().interacting).toBeNull();
+    cropper.destroy();
+  });
+
+  it("leaves a repeat to the page once disabled and still ends on release", () => {
+    const { cropper, handlers } = held();
+    cropper.setOptions({ disabled: true });
+    const before = cropper.getValue();
+    const repeat = arrowRight();
+    handlers.onKeyDown(repeat);
+    expect(repeat.defaultPrevented).toBeFalsy();
+    expect(cropper.getValue()).toBe(before);
+    handlers.onKeyUp(new KeyboardEvent("keyup", { key: "ArrowRight" }));
+    expect(cropper.getState().interacting).toBeNull();
+    cropper.destroy();
+  });
+
+  it("leaves a repeat alone under another owner after stop", () => {
+    const { cropper, handlers } = held();
+    cropper.stop();
+    expect(cropper.begin("pan", undefined, {})).toBeTruthy();
+    const before = cropper.getValue();
+    const repeat = arrowRight();
+    handlers.onKeyDown(repeat);
+    expect(repeat.defaultPrevented).toBeFalsy();
+    expect(cropper.getValue()).toBe(before);
+    handlers.onKeyUp(new KeyboardEvent("keyup", { key: "ArrowRight" }));
+    expect(cropper.getState().interacting).toBe("pan");
+    cropper.destroy();
+  });
+
+  it("opens a new gesture when a repeat follows stop", () => {
+    const { cropper, handlers, starts } = held();
+    cropper.stop();
+    const repeat = arrowRight();
+    handlers.onKeyDown(repeat);
+    expect(repeat.defaultPrevented).toBeTruthy();
+    expect(cropper.getState().interacting).toBe("keyboard");
+    expect(starts()).toBe(2);
+    handlers.onKeyUp(new KeyboardEvent("keyup", { key: "ArrowRight" }));
+    expect(cropper.getState().interacting).toBeNull();
     cropper.destroy();
   });
 });
