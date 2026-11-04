@@ -10,7 +10,14 @@ import { imagePlanes, insidePlanes, panPlanes } from "../geometry/planes";
 import { sourceToWorking, workingToSource } from "../geometry/state";
 import type { CropState, Point } from "../geometry/types";
 import { holdCursor } from "./cursor";
-import { bindPointers, capture } from "./input";
+import {
+  bindPointers,
+  capture,
+  outside,
+  pressLost,
+  presses,
+  watchLoss,
+} from "./input";
 import type { PointerHandlers } from "./input";
 import { viewOf } from "./view";
 import type { Layout, View } from "./view";
@@ -55,6 +62,8 @@ const PAN_NOISE = 0.01;
 const ROTATE_DEAD_ZONE = 5;
 const WHEEL_IDLE = 150;
 const LINE_HEIGHT = 16;
+const CONTROLS =
+  "a[href],button,input,label,select,summary,textarea,[contenteditable],[role=button],[role=link],[role=menuitem],[role=option],[role=slider],[role=switch],[role=tab]";
 
 const centroidOf = (points: readonly Point[]): Point => {
   let x = 0;
@@ -155,6 +164,26 @@ const wheelDelta = (
   return sideways && dx === 0 ? { x: -dy, y: 0 } : { x: -dx, y: -dy };
 };
 
+const padStep = (event: WheelEvent): boolean => {
+  const physical = event.deltaY * (globalThis.devicePixelRatio || 1);
+  return event.ctrlKey && Math.abs(physical - Math.round(physical)) > 1e-3;
+};
+
+const isElement = (node: EventTarget): node is Element => "matches" in node;
+
+const notPhoto = (event: Event, element: Element): boolean => {
+  const path = event.composedPath();
+  const at = path.indexOf(element);
+  return (
+    outside(element, event) ||
+    path
+      .slice(0, Math.max(at, 0))
+      .some((node) => isElement(node) && node.matches(CONTROLS))
+  );
+};
+
+const isPointer = (event: Event): event is PointerEvent => "pointerId" in event;
+
 const isGesture = (event: Event): event is SafariGestureEvent =>
   "scale" in event && "rotation" in event;
 
@@ -205,7 +234,7 @@ export const viewportController = (
   const pointers = new Map<number, Point>();
   let origin: Point = { x: 0, y: 0 };
   let start: Start | null = null;
-  let rotating = false;
+  let twist = 0;
   let safari: Start | null = null;
   let wheelTimer: ReturnType<typeof setTimeout> | null = null;
   let wheelOwned = false;
@@ -213,6 +242,7 @@ export const viewportController = (
   let wheelPad = false;
   let observer: ResizeObserver | null = null;
   let dprQuery: MediaQueryList | null = null;
+  let unwatch: (() => void) | null = null;
 
   const rebase = (): void => {
     const state = cropper.getCropState();
@@ -230,7 +260,7 @@ export const viewportController = (
       scale: frame.scale,
       state,
     };
-    rotating = false;
+    twist = 0;
   };
 
   const measure = (): void => {
@@ -313,7 +343,7 @@ export const viewportController = (
   const pan = (
     begin: Start,
     delta: Point,
-    event: Event
+    event?: Event
   ): { moved: boolean; excess: Point } => {
     const before = cropper.getCropState();
     const desired = {
@@ -325,7 +355,7 @@ export const viewportController = (
       { event, keep: "size", reason: cropper.getState().interacting ?? "pan" }
     );
     const after = cropper.getCropState();
-    if (!after) {
+    if (!after || cropper.getState().disabled) {
       return { excess: { x: 0, y: 0 }, moved: false };
     }
     return {
@@ -345,49 +375,76 @@ export const viewportController = (
     event: Event
   ): number => {
     const centre = rectCentre();
-    if (!centre) {
+    if (!centre || cropper.getState().disabled) {
       return 0;
     }
-    let turn = 0;
-    if (options.rotateGesture !== false) {
-      if (!rotating && Math.abs(turnRaw) > ROTATE_DEAD_ZONE) {
-        rotating = true;
-      }
-      if (rotating) {
-        turn = turnRaw - Math.sign(turnRaw) * ROTATE_DEAD_ZONE;
-      }
-    }
+    const turn =
+      options.rotateGesture === false
+        ? 0
+        : Math.sign(turnRaw) *
+          Math.max(Math.abs(turnRaw) - ROTATE_DEAD_ZONE, 0);
+    const { crop } = begin.state;
+    const from = 1 / largestFit(imagePlanes(begin.state), crop).scale;
+    const min = cropper.getMinSize();
+    const max = cropper.getMaxZoom();
+    const wanted = from * ratio;
+    const ceiling = Math.max(
+      Math.min(
+        max,
+        from * Math.min(crop.width / min.width, crop.height / min.height)
+      ),
+      from
+    );
     const next = transformAround(
       begin.state,
       begin.scale,
       centre,
       begin.centroid,
       centroid,
-      ratio,
+      Math.min(Math.max(wanted, 1), ceiling) / from,
       turn,
       offsetOf(begin)
     );
     cropper.setCropState(next, {
       event,
       keep: turn === 0 ? "size" : "centre",
-      reason: "pinch",
+      reason: cropper.getState().interacting ?? "pinch",
     });
-    const wanted = 1 / largestFit(imagePlanes(begin.state), next.crop).scale;
-    const max = cropper.getMaxZoom();
     if (wanted < 1) {
       return settle(Math.log(wanted), ZOOM_NOISE);
     }
     return wanted > max ? settle(Math.log(wanted / max), ZOOM_NOISE) : 0;
   };
 
-  const finish = (id: number, event: Event): void => {
+  const backStart = (by: Point, raw: number): void => {
+    if (start) {
+      start = {
+        ...start,
+        centroid: {
+          x: start.centroid.x - by.x * raw,
+          y: start.centroid.y - by.y * raw,
+        },
+      };
+    }
+  };
+
+  const finish = (id: number, event?: Event): void => {
     if (!pointers.delete(id)) {
       return;
     }
     if (pointers.size > 0) {
       rebase();
+      const held = view.overscroll();
       view.settleOverscroll();
-      view.setOverscroll(view.overscroll());
+      if (start) {
+        const { excess } = pan(start, held, event);
+        const length = Math.hypot(excess.x, excess.y);
+        view.setOverscroll(excess);
+        rebase();
+        if (length > 0) {
+          backStart(excess, inverseRubberBand(length, PAN_BAND, 1) / length);
+        }
+      }
       return;
     }
     start = null;
@@ -395,76 +452,6 @@ export const viewportController = (
     releaseCursor = null;
     view.settleOverscroll();
     cropper.end(event, owner);
-  };
-
-  const handlers: ViewportHandlers = {
-    onLostPointerCapture(event) {
-      finish(event.pointerId, event);
-    },
-    onPointerCancel(event) {
-      finish(event.pointerId, event);
-    },
-    onPointerDown(event) {
-      if (
-        view.claimed(event) ||
-        event.button !== 0 ||
-        pointers.size >= 2 ||
-        !element ||
-        !cropper.getCropState()
-      ) {
-        return;
-      }
-      if (pointers.size === 0) {
-        anchorTo(element);
-        if (!cropper.begin("pan", event, owner)) {
-          return;
-        }
-      } else {
-        cropper.begin("pinch", event, owner);
-      }
-      capture(element, event.pointerId);
-      if (pointers.size === 0) {
-        releaseCursor = holdCursor(element);
-      }
-      pointers.set(event.pointerId, local(event));
-      rebase();
-    },
-    onPointerMove(event) {
-      if (!pointers.has(event.pointerId) || !start) {
-        return;
-      }
-      const samples = event.getCoalescedEvents?.() ?? [];
-      const last = samples.at(-1) ?? event;
-      pointers.set(event.pointerId, local(last));
-      const points = [...pointers.values()];
-      const centroid = centroidOf(points);
-      if (points.length === 1) {
-        const { excess } = pan(
-          start,
-          {
-            x: centroid.x - start.centroid.x,
-            y: centroid.y - start.centroid.y,
-          },
-          event
-        );
-        view.setOverscroll(
-          rubberBandPoint(excess, { x: 0, y: 0 }, PAN_BAND, 1)
-        );
-        return;
-      }
-      const { distance, angle } = spread(points);
-      const excess = pinch(
-        start,
-        centroid,
-        distance / start.distance,
-        wrapDegrees(angle - start.angle),
-        event
-      );
-      view.setOverscroll(null, bandZoom(excess), zoomAnchor());
-    },
-    onPointerUp(event) {
-      finish(event.pointerId, event);
-    },
   };
 
   const endWheel = (): void => {
@@ -479,6 +466,96 @@ export const viewportController = (
       cropper.end(undefined, owner);
     }
     wheelPad = false;
+  };
+
+  const handlers: ViewportHandlers = {
+    onLostPointerCapture(event) {
+      finish(event.pointerId, event);
+    },
+    onPointerCancel(event) {
+      finish(event.pointerId, event);
+    },
+    onPointerDown(event) {
+      const taken = view.claimed(event);
+      view.claim(event);
+      if (
+        taken ||
+        !presses(event) ||
+        pointers.size >= 2 ||
+        !element ||
+        !cropper.getCropState() ||
+        notPhoto(event, element)
+      ) {
+        return;
+      }
+      if (pointers.size === 0) {
+        if (wheelOwned) {
+          endWheel();
+        }
+        anchorTo(element);
+        if (!cropper.begin("pan", event, owner)) {
+          return;
+        }
+      } else {
+        cropper.begin("pinch", event, owner);
+      }
+      safari = null;
+      capture(element, event.pointerId);
+      if (pointers.size === 0 && event.pointerType !== "touch") {
+        releaseCursor = holdCursor(element);
+      }
+      pointers.set(event.pointerId, local(event));
+      rebase();
+    },
+    onPointerMove(event) {
+      if (!pointers.has(event.pointerId)) {
+        return;
+      }
+      if (pressLost(event, element)) {
+        finish(event.pointerId, event);
+        return;
+      }
+      if (cropper.rebase(owner)) {
+        rebase();
+      }
+      if (!start) {
+        return;
+      }
+      const samples = event.getCoalescedEvents?.() ?? [];
+      const last = samples.at(-1) ?? event;
+      pointers.set(event.pointerId, local(last));
+      const points = [...pointers.values()];
+      const centroid = centroidOf(points);
+      if (points.length === 1) {
+        cropper.begin("pan", event, owner);
+        const { excess } = pan(
+          start,
+          {
+            x: centroid.x - start.centroid.x,
+            y: centroid.y - start.centroid.y,
+          },
+          event
+        );
+        view.setOverscroll(
+          rubberBandPoint(excess, { x: 0, y: 0 }, PAN_BAND, 1)
+        );
+        return;
+      }
+      const { distance, angle } = spread(points);
+      twist += wrapDegrees(angle - start.angle);
+      start.angle = angle;
+      const excess = pinch(
+        start,
+        centroid,
+        distance / start.distance,
+        twist,
+        event
+      );
+      view.setOverscroll(null, bandZoom(excess), zoomAnchor());
+    },
+    onPointerUp(event) {
+      finish(event.pointerId, event);
+    },
   };
 
   const idleWheel = (): void => {
@@ -498,7 +575,7 @@ export const viewportController = (
       return false;
     }
     wheelOwned = true;
-    wheelPad = event.ctrlKey && !Number.isInteger(event.deltaY);
+    wheelPad = padStep(event);
     wheelZoom = wheelPad
       ? unpadZoom(view.overzoom())
       : unbandZoom(view.overzoom());
@@ -507,7 +584,7 @@ export const viewportController = (
 
   const wheelZoomBy = (begin: Start, event: WheelEvent, page: number): void => {
     const raw = -wheelDelta(event, page, false).y;
-    const pinchStep = event.ctrlKey && !Number.isInteger(event.deltaY);
+    const pinchStep = padStep(event);
     const step = pinchStep ? raw : Math.min(Math.max(raw, -50), 50);
     if (pinchStep && !wheelPad) {
       wheelPad = true;
@@ -527,17 +604,26 @@ export const viewportController = (
     );
   };
 
+  const wheelZooms = (event: WheelEvent): boolean =>
+    event.ctrlKey || (options.wheel === "zoom" && !cropper.getState().disabled);
+
+  const leavesWheel = (event: WheelEvent, zoom: boolean): boolean =>
+    zoom && !event.ctrlKey && !wheelOwned && event.deltaY === 0;
+
   const onWheel = (event: WheelEvent): void => {
     const state = cropper.getCropState();
     const frame = view.frame();
-    if (!element || pointers.size > 0 || !state || !frame) {
+    if (!element || !state || !frame) {
       return;
     }
-    const zoom = event.ctrlKey || options.wheel === "zoom";
+    const zoom = wheelZooms(event);
+    if (leavesWheel(event, zoom)) {
+      return;
+    }
     if (zoom) {
       event.preventDefault();
     }
-    if (wheelIgnored(event.ctrlKey, zoom)) {
+    if (pointers.size > 0 || wheelIgnored(event.ctrlKey, zoom)) {
       return;
     }
     const delta = wheelDelta(event, element.clientHeight);
@@ -548,8 +634,10 @@ export const viewportController = (
       return;
     }
     if (!wheelOwned) {
-      const pageOwns = wheelTimer !== null && !zoom;
-      if (pageOwns || (!zoom && !canPan(state, delta, frame.scale))) {
+      if (
+        !zoom &&
+        (wheelTimer !== null || !canPan(state, delta, frame.scale))
+      ) {
         idleWheel();
         return;
       }
@@ -574,47 +662,72 @@ export const viewportController = (
     }
   };
 
-  const onGestureStart = (event: Event): void => {
-    event.preventDefault();
+  const inert = (): boolean =>
+    safari === null && (!cropper.getCropState() || cropper.getState().disabled);
+
+  const safariStart = (
+    event: SafariGestureEvent,
+    scale: number
+  ): Start | null => {
     const state = cropper.getCropState();
-    const frame = view.frame();
-    if (pointers.size > 0 || !element || !state || !frame) {
+    return state
+      ? {
+          angle: event.rotation || 0,
+          centroid: local(event),
+          distance: event.scale || 1,
+          scale,
+          state,
+        }
+      : null;
+  };
+
+  const onGestureStart = (event: Event): void => {
+    if (inert()) {
       return;
     }
-    if (!isGesture(event)) {
+    event.preventDefault();
+    const frame = view.frame();
+    if (pointers.size > 0 || !element || !frame || !isGesture(event)) {
       return;
+    }
+    if (wheelOwned) {
+      endWheel();
     }
     anchorTo(element);
-    if (!cropper.begin("pinch", event, owner)) {
-      return;
+    if (cropper.begin("pinch", event, owner)) {
+      safari = safariStart(event, frame.scale);
     }
-    rotating = false;
-    safari = {
-      angle: 0,
-      centroid: local(event),
-      distance: 1,
-      scale: frame.scale,
-      state,
-    };
   };
 
   const onGestureChange = (event: Event): void => {
+    if (inert()) {
+      return;
+    }
     event.preventDefault();
     if (!safari || !isGesture(event)) {
       return;
     }
-    const centroid = local(event);
+    const frame = view.frame();
+    if (cropper.rebase(owner) && frame) {
+      safari = safariStart(event, frame.scale);
+    }
+    if (!safari) {
+      return;
+    }
     const excess = pinch(
       safari,
-      centroid,
-      event.scale || 1,
-      event.rotation || 0,
+      local(event),
+      (event.scale || 1) / safari.distance,
+      (event.rotation || 0) - safari.angle,
       event
     );
     view.setOverscroll(null, padZoom(excess), zoomAnchor());
   };
 
   const onGestureEnd = (event: Event): void => {
+    if (inert()) {
+      return;
+    }
     event.preventDefault();
     if (!safari) {
       return;
@@ -624,7 +737,7 @@ export const viewportController = (
     cropper.end(event, owner);
   };
 
-  const releaseAll = (event: Event): void => {
+  const releaseAll = (event?: Event): void => {
     for (const id of pointers.keys()) {
       finish(id, event);
     }
@@ -636,9 +749,11 @@ export const viewportController = (
     endWheel();
   };
 
-  const onHidden = (): void => {
-    if (document.visibilityState === "hidden") {
-      releaseAll(new Event("visibilitychange"));
+  const onLoss = (event?: Event): void => {
+    if (event && isPointer(event)) {
+      finish(event.pointerId, event);
+    } else {
+      releaseAll(event);
     }
   };
 
@@ -656,10 +771,6 @@ export const viewportController = (
     cropper.cancel(event, owner);
   };
 
-  const onBlur = (event: Event): void => {
-    releaseAll(event);
-  };
-
   const detach = (): void => {
     if (!element) {
       return;
@@ -674,8 +785,8 @@ export const viewportController = (
     element.removeEventListener("gestureend", onGestureEnd);
     document.removeEventListener("transitionend", onAncestorSettle, true);
     document.removeEventListener("animationend", onAncestorSettle, true);
-    document.removeEventListener("visibilitychange", onHidden);
-    globalThis.removeEventListener("blur", onBlur);
+    unwatch?.();
+    unwatch = null;
     globalThis.removeEventListener("keydown", onEscape, true);
     releaseAll(new Event("lostpointercapture"));
     element = null;
@@ -713,8 +824,11 @@ export const viewportController = (
       next.addEventListener("gestureend", onGestureEnd);
       document.addEventListener("transitionend", onAncestorSettle, true);
       document.addEventListener("animationend", onAncestorSettle, true);
-      document.addEventListener("visibilitychange", onHidden);
-      globalThis.addEventListener("blur", onBlur);
+      unwatch = watchLoss(
+        cropper,
+        onLoss,
+        (event) => pointers.has(event.pointerId) && outside(element, event)
+      );
       globalThis.addEventListener("keydown", onEscape, true);
       observer = new ResizeObserver(measure);
       observer.observe(next);
