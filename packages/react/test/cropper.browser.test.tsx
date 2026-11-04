@@ -954,6 +954,31 @@ describe("controlled props", () => {
     expect(api.current?.getValue().rotation).toBe(5);
   });
 
+  it("applies a prop that was released and comes back at its old value", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ locked }: { locked: boolean }) => (
+      <Cropper.Root
+        actionsRef={api}
+        aspect={locked ? 1 : undefined}
+        image={PHOTO}
+        rotation={locked ? 10 : undefined}
+        zoom={locked ? 2 : undefined}
+      />
+    );
+    const screen = await render(<Host locked />);
+    await frames(2);
+    await screen.rerender(<Host locked={false} />);
+    api.current?.setAspect("free");
+    api.current?.setRotation(20);
+    api.current?.setZoom(3);
+    await frames(3);
+    await screen.rerender(<Host locked />);
+    await frames(3);
+    expect(api.current?.getValue().aspect).toBe(1);
+    expect(api.current?.getValue().rotation).toBe(10);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+  });
+
   it("holds a controlled zoom across a photo of another size only", async () => {
     const api = createRef<CropperApi>();
     const { commits, onValueCommit } = events();

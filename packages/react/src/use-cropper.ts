@@ -34,7 +34,7 @@ export interface UseCropperOptions extends Omit<CropperOptions, "clock"> {
 }
 
 interface Slot {
-  prop?: number;
+  prop?: number | undefined;
   at?: number;
 }
 
@@ -42,7 +42,7 @@ interface Applied {
   had: boolean;
   busy: boolean;
   options: Set<string>;
-  aspect?: Aspect;
+  aspect?: Aspect | undefined;
   rotation: Slot;
   zoom: Slot;
   width?: number | undefined;
@@ -76,6 +76,8 @@ const applyNumber = (
       write(prop);
     }
     slot.at = read();
+  } else if (prop === undefined) {
+    slot.prop = undefined;
   }
 };
 
@@ -96,16 +98,14 @@ const applyProps = (
   mine.busy = true;
   const emit = mine.had;
   let reason: ChangeReason = "controlled";
-  if (
+  const aspectMoved =
     aspect !== undefined &&
-    (mine.aspect === undefined || !sameAspect(aspect, mine.aspect))
-  ) {
-    mine.aspect = aspect;
-    if (!sameAspect(cropper.getValue().aspect, aspect)) {
-      cropper.setAspect(aspect, { emit, reason: "aspect" });
-      if (cropper.getState().interacting === null) {
-        reason = "aspect";
-      }
+    (mine.aspect === undefined || !sameAspect(aspect, mine.aspect));
+  mine.aspect = aspect;
+  if (aspectMoved && !sameAspect(cropper.getValue().aspect, aspect)) {
+    cropper.setAspect(aspect, { emit, reason: "aspect" });
+    if (cropper.getState().interacting === null) {
+      reason = "aspect";
     }
   }
   if (rotation !== mine.rotation.prop || relaxed) {
