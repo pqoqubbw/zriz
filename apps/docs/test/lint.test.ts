@@ -41,6 +41,25 @@ const declarator = (name: string, init: Node): Node => ({
   type: "VariableDeclarator",
 });
 
+const styleObject = (name: string): Node => ({
+  ...declarator(name, {
+    properties: [
+      {
+        type: "Property",
+        value: { type: "Literal", value: "absolute" },
+      },
+    ],
+    type: "ObjectExpression",
+  }),
+  id: {
+    name,
+    type: "Identifier",
+    typeAnnotation: {
+      typeAnnotation: { typeName: { name: "CSSProperties" } },
+    },
+  },
+});
+
 const reports = (ruleName: string, visitor: string, node: Node): string[] => {
   const messages: string[] = [];
   const rule = (style.rules as Record<string, Rule>)[ruleName];
@@ -136,27 +155,8 @@ describe("style rules", () => {
   });
 
   it("reads a value typed CSSProperties as a style, not as classes", () => {
-    const node = {
-      ...declarator("frame", {
-        properties: [
-          {
-            type: "Property",
-            value: { type: "Literal", value: "absolute" },
-          },
-        ],
-        type: "ObjectExpression",
-      }),
-      id: {
-        name: "frame",
-        type: "Identifier",
-        typeAnnotation: {
-          typeAnnotation: { typeName: { name: "CSSProperties" } },
-        },
-      },
-    };
-
     expect(
-      reports("no-class-variable", "VariableDeclarator", node)
+      reports("no-class-variable", "VariableDeclarator", styleObject("frame"))
     ).toStrictEqual([]);
   });
 
@@ -186,6 +186,16 @@ describe("style rules", () => {
     const node = declarator("expected", init);
 
     expect(reports("constant-case", CONSTANT_VISITOR, node)).toStrictEqual([]);
+  });
+
+  it("asks a module constant typed CSSProperties for an upper case name", () => {
+    expect(
+      reports("constant-case", CONSTANT_VISITOR, styleObject("square"))
+    ).toHaveLength(1);
+
+    expect(
+      reports("constant-case", CONSTANT_VISITOR, styleObject("SQUARE"))
+    ).toStrictEqual([]);
   });
 
   it("still asks a literal table for an upper case name", () => {

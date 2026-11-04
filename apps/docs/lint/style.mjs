@@ -221,6 +221,10 @@ const defaultExportOf = (program) =>
       statement.declaration.type === "Identifier"
   )?.declaration.name;
 
+const isStyleObject = (declarator) =>
+  declarator.id.typeAnnotation?.typeAnnotation?.typeName?.name ===
+  "CSSProperties";
+
 const constantCase = {
   create: (context) => ({
     "Program > VariableDeclaration[kind=const] > VariableDeclarator": (
@@ -232,7 +236,7 @@ const constantCase = {
         !NEXT_EXPORTS.has(node.id.name) &&
         node.id.name !== defaultExportOf(context.sourceCode.ast) &&
         isConstant(node.init) &&
-        !holdsClasses(node.init)
+        (isStyleObject(node) || !holdsClasses(node.init))
       ) {
         context.report({
           message: `Name the module constant \`${node.id.name}\` in UPPER_SNAKE_CASE.`,
@@ -242,10 +246,6 @@ const constantCase = {
     },
   }),
 };
-
-const isStyleObject = (declarator) =>
-  declarator.id.typeAnnotation?.typeAnnotation?.typeName?.name ===
-  "CSSProperties";
 
 const noClassVariable = {
   create: (context) => ({
