@@ -1895,7 +1895,7 @@ export const Heic = ({ onSave }: Props) => {
     <Cropper.Mask className="bg-black/60" />
     <Cropper.Area
       aria-label="Crop area"
-      className="ring-1 ring-white data-interacting:ring-2"
+      className="ring-1 ring-white data-interacting:ring-2 forced-colors:border"
     />
   </Cropper.Viewport>
 </Cropper.Root>",
@@ -1905,7 +1905,7 @@ export const Heic = ({ onSave }: Props) => {
     <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=a>className</span><span class=p>="</span><span class=s>bg-black/60</span><span class=p>" /&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Area</span>
       <span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>"</span>
-      <span class=a>className</span><span class=p>="</span><span class=s>ring-1 ring-white data-interacting:ring-2</span><span class=p>"</span>
+      <span class=a>className</span><span class=p>="</span><span class=s>ring-1 ring-white data-interacting:ring-2 forced-colors:border</span><span class=p>"</span>
     <span class=p>/&gt;</span>
   <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
 <span class=p>&lt;/</span><span class=t>Cropper.Root</span><span class=p>&gt;</span>",
@@ -8886,13 +8886,13 @@ without the stylesheet, utilities paint everything, the viewport's clip included
     <Cropper.Mask className="bg-black/60" />
     <Cropper.Area
       aria-label="Crop area"
-      className="ring-1 ring-white data-interacting:ring-2"
+      className="ring-1 ring-white data-interacting:ring-2 forced-colors:border"
     />
   </Cropper.Viewport>
 </Cropper.Root>
 \`\`\`
 
-the mask turns 60% black, and the crop gets a white ring that thickens during a gesture.
+the mask turns 60% black, and the crop gets a white ring that thickens during a gesture. forced colours mode removes the ring, because it is a box shadow, so \`forced-colors:border\` draws the frame there.
 "
 `;
 

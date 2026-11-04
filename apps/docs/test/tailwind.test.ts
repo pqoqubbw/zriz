@@ -303,6 +303,22 @@ const lists = await Promise.all(
 const tokens = lists.flat();
 
 describe("tailwind classes", () => {
+  it("draws the styling recipe's frame in forced colours", async () => {
+    const recipe = await readFile(
+      path.join(process.cwd(), "snippets/styling/tailwind.jsx.tsx"),
+      "utf-8"
+    );
+    const classes = /<Cropper\.Area[^>]*?className="(?<list>[^"]*)"/su.exec(
+      recipe
+    )?.groups?.list;
+    const rules = design.candidatesToCss(classes?.split(" ") ?? []);
+    const forced = rules.find(
+      (rule) => rule?.includes("forced-colors: active") === true
+    );
+
+    expect(forced).toContain("border");
+  });
+
   it("finds the class lists", () => {
     expect(tokens.length).toBeGreaterThan(300);
   });

@@ -10,7 +10,7 @@ export const example = (
       <Cropper.Mask className="bg-black/60" />
       <Cropper.Area
         aria-label="Crop area"
-        className="ring-1 ring-white data-interacting:ring-2"
+        className="ring-1 ring-white data-interacting:ring-2 forced-colors:border"
       />
     </Cropper.Viewport>
   </Cropper.Root>

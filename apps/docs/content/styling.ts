@@ -120,7 +120,7 @@ const STYLING_PAGE = defineDoc({
       ),
       code("styling/tailwind.jsx.tsx"),
       p(
-        "the mask turns 60% black, and the crop gets a white ring that thickens during a gesture."
+        "the mask turns 60% black, and the crop gets a white ring that thickens during a gesture. forced colours mode removes the ring, because it is a box shadow, so `forced-colors:border` draws the frame there."
       )
     ),
   ],
