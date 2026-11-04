@@ -8,6 +8,7 @@ import type {
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useRef, useState } from "react";
+import "./undo.css";
 
 const skipped = new Set(["history", "coverage"]);
 
@@ -50,6 +51,7 @@ const Editor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
+        className="undo"
         aria-disabled={history.length === 0}
         onClick={undo}
       >

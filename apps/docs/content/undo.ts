@@ -30,7 +30,9 @@ const UNDO_PAGE = defineDoc({
         "undo/undo-editor.tsx",
         ["const undo", "};"],
         ["<button", "</button>"]
-      )
+      ),
+      p("the browser dims only `disabled`, so paint the off state yourself:"),
+      code("undo/undo.css")
     ),
     section(
       "wire it to the cropper",

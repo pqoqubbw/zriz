@@ -342,6 +342,17 @@ describe("docs recipes", () => {
       expect(isOff(button("undo"))).toBeTruthy();
     });
 
+    it("dims the button only while the stack is empty", async () => {
+      await render(<UndoEditor src={await objectUrl(1600, 1200)} />);
+      await whenPhoto();
+
+      expect(getComputedStyle(button("undo")).opacity).toBe("0.4");
+
+      await commit("+");
+
+      expect(getComputedStyle(button("undo")).opacity).toBe("1");
+    });
+
     it("keeps focus on the button when the stack empties", async () => {
       await render(<UndoEditor src={await objectUrl(1600, 1200)} />);
       await whenPhoto();

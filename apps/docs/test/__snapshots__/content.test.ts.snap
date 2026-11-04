@@ -4816,6 +4816,7 @@ const remember = (_: CropValue, details: CommitDetails) => {
 
 <button
   type="button"
+  className="undo"
   aria-disabled={history.length === 0}
   onClick={undo}
 >
@@ -4832,11 +4833,22 @@ const remember = (_: CropValue, details: CommitDetails) => {
 
 <span class=p>&lt;</span><span class=t>button</span>
   <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
+  <span class=a>className</span><span class=p>="</span><span class=s>undo</span><span class=p>"</span>
   <span class=a>aria-disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
   <span class=a>onClick</span><span class=p>={</span>undo<span class=p>}</span>
 <span class=p>&gt;</span>
   undo
 <span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>",
+  ],
+  [
+    "undo",
+    "undo/undo.css",
+    ".undo[aria-disabled="true"] {
+  opacity: 0.4;
+}",
+    "<span class=t>.undo[aria-disabled</span><span class=p>=</span><span class=s>"</span><span class=t>true</span><span class=s>"</span><span class=t>] </span><span class=p>{</span>
+  <span class=a>opacity</span><span class=p>:</span> 0.4<span class=p>;</span>
+<span class=p>}</span>",
   ],
   [
     "undo",
@@ -4873,6 +4885,7 @@ import type {
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useRef, useState } from "react";
+import "./undo.css";
 
 const skipped = new Set(["history", "coverage"]);
 
@@ -4915,6 +4928,7 @@ const Editor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
+        className="undo"
         aria-disabled={history.length === 0}
         onClick={undo}
       >
@@ -4937,6 +4951,7 @@ export const UndoEditor = ({ src }: { src: string }) => (
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
 <span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=s>"./undo.css"</span><span class=p>;</span>
 
 <span class=k>const</span> skipped <span class=p>= </span><span class=k>new </span><span class=t>Set</span><span class=p>([</span><span class=s>"history"</span><span class=p>, </span><span class=s>"coverage"</span><span class=p>]);</span>
 
@@ -4979,6 +4994,7 @@ export const UndoEditor = ({ src }: { src: string }) => (
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>button</span>
         <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
+        <span class=a>className</span><span class=p>="</span><span class=s>undo</span><span class=p>"</span>
         <span class=a>aria-disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
         <span class=a>onClick</span><span class=p>={</span>undo<span class=p>}</span>
       <span class=p>&gt;</span>
@@ -8951,11 +8967,20 @@ const undo = () => {
 
 <button
   type="button"
+  className="undo"
   aria-disabled={history.length === 0}
   onClick={undo}
 >
   undo
 </button>
+\`\`\`
+
+the browser dims only \`disabled\`, so paint the off state yourself:
+
+\`\`\`css
+.undo[aria-disabled="true"] {
+  opacity: 0.4;
+}
 \`\`\`
 
 ## wire it to the cropper
@@ -8989,6 +9014,7 @@ import type {
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useRef, useState } from "react";
+import "./undo.css";
 
 const skipped = new Set(["history", "coverage"]);
 
@@ -9031,6 +9057,7 @@ const Editor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
+        className="undo"
         aria-disabled={history.length === 0}
         onClick={undo}
       >
