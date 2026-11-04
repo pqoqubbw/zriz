@@ -1637,6 +1637,34 @@ describe("a viewport in another document", () => {
     expect(cropper.getZoom()).toBeGreaterThan(1);
     handlers.release();
   });
+
+  it("a destroy drops the loss watch of a press whose handlers were never released", () => {
+    const cropper = createCropper({ image: PHOTO });
+    const element = document.createElement("div");
+    const added = vi.spyOn(window, "addEventListener");
+    const removed = vi.spyOn(window, "removeEventListener");
+
+    document.body.append(element);
+    zoomHandlers(cropper, {}, () => element).onPointerDown(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        buttons: 1,
+        clientX: 1,
+        clientY: 1,
+        pointerId: 1,
+      })
+    );
+    cropper.destroy();
+    element.remove();
+
+    const types = (spy: typeof added | typeof removed) =>
+      spy.mock.calls.map(([type]) => type).toSorted();
+
+    expect(types(added).length).toBeGreaterThan(0);
+    expect(types(removed)).toStrictEqual(types(added));
+    added.mockRestore();
+    removed.mockRestore();
+  });
 });
 
 const bare = (css: string) => {

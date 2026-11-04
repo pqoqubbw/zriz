@@ -173,7 +173,8 @@ const watchLoss = (
     lost();
   };
 
-  const off = cropper.on("stop", onStop);
+  const offStop = cropper.on("stop", onStop);
+  const offDestroy = cropper.on("destroy", onStop);
 
   doc.addEventListener("visibilitychange", onHidden);
   win.addEventListener("blur", lost);
@@ -181,7 +182,8 @@ const watchLoss = (
   win.addEventListener("pointercancel", onPointer, true);
 
   return () => {
-    off();
+    offStop();
+    offDestroy();
     doc.removeEventListener("visibilitychange", onHidden);
     win.removeEventListener("blur", lost);
     win.removeEventListener("pointerup", onPointer, true);
