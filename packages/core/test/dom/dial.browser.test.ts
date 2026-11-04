@@ -61,7 +61,7 @@ interface DialFixture {
   commits: number;
 }
 
-const mount = (): DialFixture => {
+const mount = (parent: HTMLElement = document.body, css = ""): DialFixture => {
   count += 1;
   const id = `dial-${count}`;
   const viewport = document.createElement("div");
@@ -70,11 +70,11 @@ const mount = (): DialFixture => {
   dial.id = id;
   dial.setAttribute("aria-label", "Straighten");
   dial.style.cssText =
-    "position:relative;width:361px;height:40px;overflow:hidden;";
+    `position:relative;width:361px;height:40px;overflow:hidden;${css}`;
   const strip = document.createElement("div");
   dial.append(strip);
   const label = document.createElement("span");
-  document.body.append(viewport, dial, label);
+  parent.append(viewport, dial, label);
   const fixture: DialFixture = {
     commits: 0,
     cropper: createCropper({
@@ -887,5 +887,86 @@ describe("zoom and area keys", () => {
     keys.onKeyDown(down("ArrowRight"));
     keys.onPointerDown(new PointerEvent("pointerdown", { pointerId: 1 }));
     expect(cropper.getState().interacting).toBeNull();
+  });
+});
+
+describe("the ruler under an ancestor or a border", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const offCentre = (fixture: DialFixture): number => {
+    const zero = fixture.strip.querySelector("[data-zero]");
+    const tick = zero?.getBoundingClientRect();
+    const box = fixture.dial.getBoundingClientRect();
+    return (tick?.x ?? 0) + (tick?.width ?? 0) / 2 - (box.x + box.width / 2);
+  };
+
+  const hostOf = (css: string): HTMLElement => {
+    const host = document.createElement("div");
+    host.style.cssText = `position:fixed;left:0;top:0;width:361px;${css}`;
+    document.body.append(host);
+    cleanups.push(() => {
+      host.remove();
+    });
+    return host;
+  };
+
+  const styled = (fixture: DialFixture): void => {
+    for (const tick of fixture.strip.children) {
+      (tick as HTMLElement).style.width = "1px";
+    }
+  };
+
+  it("stays centred after a scale-in ends", async () => {
+    const host = hostOf("transform:scale(0.95);");
+    const fixture = mount(host);
+    styled(fixture);
+    await frames();
+    host.style.transform = "none";
+    await frames();
+    expect(Math.abs(offCentre(fixture))).toBeLessThanOrEqual(1);
+  });
+
+  it.each([
+    ["transform: scale(0.5)", "transform:scale(0.5);transform-origin:0 0;"],
+    ["zoom: 0.5", "zoom:0.5;"],
+  ])("stays centred under %s", async (_, css) => {
+    const fixture = mount(hostOf(css));
+    styled(fixture);
+    await frames();
+    expect(Math.abs(offCentre(fixture))).toBeLessThanOrEqual(1);
+  });
+
+  it("stays centred with a border on the dial", async () => {
+    const fixture = mount(
+      document.body,
+      "border:6px solid red;box-sizing:border-box;"
+    );
+    styled(fixture);
+    await frames();
+    expect(Math.abs(offCentre(fixture))).toBeLessThanOrEqual(1);
+  });
+
+  it.each([
+    ["transform: scale(0.5)", "transform:scale(0.5);transform-origin:0 0;"],
+    ["zoom: 0.5", "zoom:0.5;"],
+  ])("moves the ruler with the pointer under %s", async (_, css) => {
+    const fixture = mount(hostOf(css));
+    styled(fixture);
+    await frames();
+    const zero = fixture.strip.querySelector("[data-zero]");
+    const before = zero?.getBoundingClientRect().x ?? 0;
+    await commands.drag(`#${fixture.id}`, [
+      [40, 10],
+      [60, 10],
+      [90, 10],
+      [90, 10, 150],
+    ]);
+    await frames();
+    const moved = (zero?.getBoundingClientRect().x ?? 0) - before;
+    expect(Math.abs(moved - 40)).toBeLessThanOrEqual(1.5);
   });
 });

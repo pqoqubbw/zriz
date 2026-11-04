@@ -19,7 +19,7 @@ import {
   watchLoss,
 } from "./input";
 import type { PointerHandlers } from "./input";
-import { viewOf } from "./view";
+import { localOf, viewOf } from "./view";
 import type { Layout, View } from "./view";
 
 export type WheelMode = "pan" | "zoom" | "none";
@@ -232,7 +232,10 @@ export const viewportController = (
   let element: HTMLElement | null = null;
   const view: View = viewOf(cropper);
   const pointers = new Map<number, Point>();
-  let origin: Point = { x: 0, y: 0 };
+  let local = (event: { clientX: number; clientY: number }): Point => ({
+    x: event.clientX,
+    y: event.clientY,
+  });
   let start: Start | null = null;
   let twist = 0;
   let safari: Start | null = null;
@@ -309,17 +312,8 @@ export const viewportController = (
   };
 
   const anchorTo = (target: HTMLElement): void => {
-    const box = target.getBoundingClientRect();
-    origin = {
-      x: box.left + target.clientLeft,
-      y: box.top + target.clientTop,
-    };
+    local = localOf(target);
   };
-
-  const local = (event: { clientX: number; clientY: number }): Point => ({
-    x: event.clientX - origin.x,
-    y: event.clientY - origin.y,
-  });
 
   const offsetOf = (begin: Start): Point => {
     const frame = view.frame();

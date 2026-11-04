@@ -16,7 +16,7 @@ import {
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
-import { snap } from "./view";
+import { snap, visualScale } from "./view";
 
 export interface DialOptions {
   gain?: number | undefined;
@@ -125,6 +125,7 @@ export const dialHandlers = (
   let engaged = false;
   let locked = false;
   let width = 1;
+  let scale = 1;
   let unwatch: (() => void) | null = null;
   let stopGlide: ((event?: Event) => void) | null = null;
 
@@ -311,7 +312,8 @@ export const dialHandlers = (
       locked = false;
       tracker.reset();
       const target = targetOf(event, element);
-      width = Math.max(target?.getBoundingClientRect().width ?? 0, 1);
+      scale = target ? visualScale(target).x : 1;
+      width = Math.max((target?.getBoundingClientRect().width ?? 0) / scale, 1);
       unwatch = watchLoss(
         cropper,
         lost,
@@ -371,10 +373,13 @@ export const dialHandlers = (
       }
       const samples = event.getCoalescedEvents?.() ?? [];
       for (const sample of samples.length > 0 ? samples : [event]) {
-        tracker.push(sample.timeStamp, (sample.clientX - startX) * sign());
+        tracker.push(
+          sample.timeStamp,
+          ((sample.clientX - startX) * sign()) / scale
+        );
       }
       show(
-        startRotation + ((event.clientX - startX) * sign()) / gain(),
+        startRotation + ((event.clientX - startX) * sign()) / scale / gain(),
         true,
         event
       );
@@ -501,8 +506,7 @@ export const bindDialTicks = (
   const host = strip.parentElement;
   let centre = 0;
   const measure = (): void => {
-    const tick = ticks[0]?.getBoundingClientRect().width ?? 0;
-    centre = ((host?.getBoundingClientRect().width ?? 0) - tick) / 2;
+    centre = ((host?.clientWidth ?? 0) - (ticks[0]?.offsetWidth ?? 0)) / 2;
     cropper.invalidate();
   };
   const observer = host ? new ResizeObserver(measure) : null;

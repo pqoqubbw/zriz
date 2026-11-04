@@ -15,6 +15,7 @@ import {
   viewportController,
   zoomHandlers,
 } from "../../src/dom";
+import { visualScale } from "../../src/dom/view";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
 
@@ -877,5 +878,94 @@ describe("zoom at the cursor", () => {
     await frames();
     const after = under();
     expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(2);
+  });
+});
+
+const HOSTS = [
+  ["transform: scale(2)", "transform:scale(2);transform-origin:0 0;"],
+  ["transform: scale(0.5)", "transform:scale(0.5);transform-origin:0 0;"],
+  ["zoom: 2", "zoom:2;"],
+  ["zoom: 0.5", "zoom:0.5;"],
+  ["no scale", ""],
+] as const;
+
+describe.each(HOSTS)("under an ancestor with %s", (_, css) => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const hosted = async (): Promise<Fixture> => {
+    const host = document.createElement("div");
+    host.style.cssText = `position:fixed;left:0;top:0;${css}`;
+    document.body.append(host);
+    const fixture = mount(200, 160);
+    host.append(fixture.viewport);
+    cleanups.push(() => {
+      host.remove();
+    });
+    await frames();
+    return fixture;
+  };
+
+  it("a pan moves the photo with the pointer", async () => {
+    const fixture = await hosted();
+    fixture.cropper.setZoom(3);
+    await frames();
+    const before = fixture.image.getBoundingClientRect();
+    await commands.drag(`#${fixture.id}`, [
+      [40, 40],
+      [30, 35],
+      [20, 30],
+    ]);
+    await frames();
+    const after = fixture.image.getBoundingClientRect();
+    expect(after.x - before.x).toBeCloseTo(-20, 0);
+    expect(after.y - before.y).toBeCloseTo(-10, 0);
+  });
+
+  it("a handle keeps its corner under the pointer", async () => {
+    const fixture = await hosted();
+    const start = fixture.area.getBoundingClientRect();
+    const outer = fixture.viewport.getBoundingClientRect();
+    const x = start.right - outer.x;
+    const y = start.bottom - outer.y;
+    await commands.drag(`#${fixture.id}`, [
+      [x, y],
+      [x - 5, y - 4],
+      [x - 10, y - 8],
+    ]);
+    await frames();
+    const end = fixture.area.getBoundingClientRect();
+    expect(Math.abs(end.right - (start.right - 10))).toBeLessThan(1.5);
+    expect(Math.abs(end.bottom - (start.bottom - 8))).toBeLessThan(1.5);
+  });
+
+  it("a wheel keeps the pixel under the cursor", async () => {
+    const fixture = await hosted();
+    const outer = fixture.viewport.getBoundingClientRect();
+    const clientX = outer.x + outer.width * 0.75;
+    const clientY = outer.y + outer.height * 0.75;
+    const screen = (): { x: number; y: number } => {
+      const box = fixture.image.getBoundingClientRect();
+      return { x: (clientX - box.x) / box.width, y: (clientY - box.y) / box.height };
+    };
+    const before = screen();
+    wheel(fixture, { clientX, clientY, ctrlKey: true, deltaY: -30 });
+    await frames();
+    const after = screen();
+    expect(after.x).toBeCloseTo(before.x, 2);
+    expect(after.y).toBeCloseTo(before.y, 2);
+  });
+});
+
+describe("a fractional width with no scale", () => {
+  it("counts as no scale", () => {
+    const element = document.createElement("div");
+    element.style.cssText = "width:100.5px;height:50.5px;";
+    document.body.append(element);
+    expect(visualScale(element)).toEqual({ x: 1, y: 1 });
+    element.remove();
   });
 });

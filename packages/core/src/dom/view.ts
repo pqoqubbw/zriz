@@ -145,6 +145,26 @@ export const cssMatrix = (m: Matrix3): string => {
   return `matrix3d(${m[0]},${m[3]},0,${m[6]},${m[1]},${m[4]},0,${m[7]},0,0,1,0,${m[2]},${m[5]},0,${m[8]})`;
 };
 
+const share = (seen: number, own: number): number =>
+  own > 0 && seen > 0 && Math.abs(seen - own) >= 1 ? seen / own : 1;
+
+export const visualScale = (element: Element): Point => {
+  const box = element.getBoundingClientRect();
+  const { offsetHeight, offsetWidth } = element as HTMLElement;
+  return { x: share(box.width, offsetWidth), y: share(box.height, offsetHeight) };
+};
+
+export const localOf = (
+  element: Element
+): ((event: { clientX: number; clientY: number }) => Point) => {
+  const box = element.getBoundingClientRect();
+  const scale = visualScale(element);
+  return (event) => ({
+    x: (event.clientX - box.left) / scale.x - element.clientLeft,
+    y: (event.clientY - box.top) / scale.y - element.clientTop,
+  });
+};
+
 const views = new WeakMap<Cropper, View>();
 
 const OVERSCROLL_OMEGA = 42;
@@ -667,14 +687,9 @@ export const viewOf = (cropper: Cropper): View => {
       return held;
     },
     local(event) {
-      if (!target) {
-        return { x: event.clientX, y: event.clientY };
-      }
-      const box = target.getBoundingClientRect();
-      return {
-        x: event.clientX - box.left - target.clientLeft,
-        y: event.clientY - box.top - target.clientTop,
-      };
+      return target
+        ? localOf(target)(event)
+        : { x: event.clientX, y: event.clientY };
     },
     onChrome: subscribe(chromeListeners),
     onEmpty: subscribe(emptyListeners),
