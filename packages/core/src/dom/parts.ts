@@ -205,6 +205,14 @@ export interface AreaOptions {
   shape?: MaskShape | undefined;
 }
 
+const placedBinds = new WeakMap<HTMLElement, number>();
+
+const countPlaced = (element: HTMLElement, by: number): void => {
+  const count = (placedBinds.get(element) ?? 0) + by;
+  placedBinds.set(element, count);
+  element.toggleAttribute("data-visible", count > 0);
+};
+
 export const bindArea = (
   cropper: Cropper,
   element: HTMLElement,
@@ -228,7 +236,7 @@ export const bindArea = (
   const stop = follow(cropper, (frame) => {
     const { rect } = frame;
     if (last === unset) {
-      element.toggleAttribute("data-visible", true);
+      countPlaced(element, 1);
     }
     if (rect.x !== last.x) {
       style.left = px(rect.x);
@@ -261,9 +269,14 @@ export const bindArea = (
       variable("--zriz-overscroll", Math.hypot(shift.x, shift.y));
     }
   });
+  const unplace = (): void => {
+    if (last !== unset) {
+      last = unset;
+      countPlaced(element, -1);
+    }
+  };
   const offEmpty = viewOf(cropper).onEmpty(() => {
-    last = unset;
-    element.toggleAttribute("data-visible", false);
+    unplace();
     style.left = "";
     style.top = "";
     style.width = "";
@@ -274,7 +287,7 @@ export const bindArea = (
     stop();
     offEmpty();
     offDisabled();
-    element.toggleAttribute("data-visible", false);
+    unplace();
     for (const name of live.keys()) {
       style.removeProperty(name);
     }

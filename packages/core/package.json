@@ -105,7 +105,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "21310 B",
+      "limit": "21314 B",
       "entry": [
         "index"
       ]
@@ -120,7 +120,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "19076 B",
+      "limit": "19118 B",
       "entry": [
         "index"
       ]
@@ -135,7 +135,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "23328 B"
+      "limit": "23370 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",

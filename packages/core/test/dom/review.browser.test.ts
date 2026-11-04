@@ -1095,6 +1095,22 @@ describe("writes during a held gesture", () => {
 const keyDown = (name: string): KeyboardEvent =>
   new KeyboardEvent("keydown", { bubbles: true, code: name, key: name });
 
+const twoBindArea = () => {
+  const viewport = document.createElement("div");
+  viewport.style.cssText = "position:relative;width:400px;height:300px;";
+  const area = document.createElement("div");
+  viewport.append(area);
+  document.body.append(viewport);
+  const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+  const stopView = bindViewport(cropper, viewport);
+  const done = (): void => {
+    stopView();
+    cropper.destroy();
+    viewport.remove();
+  };
+  return { area, cropper, done };
+};
+
 describe("binding twice", () => {
   it("a mask with no shape keeps the shape set before it", () => {
     const cropper = createCropper();
@@ -1151,6 +1167,35 @@ describe("binding twice", () => {
     stopView();
     cropper.destroy();
     viewport.remove();
+  });
+
+  describe("two binds on one area", () => {
+    it("keeps the frame while the newer bind lives", async () => {
+      const { area, cropper, done } = twoBindArea();
+      const stopOld = bindArea(cropper, area);
+      await frames();
+      const stopNew = bindArea(cropper, area);
+      await frames();
+      stopOld();
+      expect(Object.hasOwn(area.dataset, "visible")).toBeTruthy();
+      stopNew();
+      expect(Object.hasOwn(area.dataset, "visible")).toBeFalsy();
+      done();
+    });
+
+    it("hides the frame when the newer bind's cropper has no photo", async () => {
+      const { area, cropper, done } = twoBindArea();
+      const stopOld = bindArea(cropper, area);
+      await frames();
+      const empty = createCropper();
+      const stopNew = bindArea(empty, area);
+      await frames();
+      stopOld();
+      expect(Object.hasOwn(area.dataset, "visible")).toBeFalsy();
+      stopNew();
+      empty.destroy();
+      done();
+    });
   });
 
   it("a second dispose of a dial leaves another dial's options alone", () => {
