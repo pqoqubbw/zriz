@@ -9,7 +9,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
       ),
       code("loading-images/picker.jsx.tsx"),
       p(
-        "zriz reads the format from the first 512 bytes of the file, so a wrong name or mime type does not stop a photo from opening. when `src` changes, zriz cancels a load that is still running and keeps `onError` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails."
+        "zriz reads the format from the first 4096 bytes of the file, so a wrong name or mime type does not stop a photo from opening. when `src` changes, zriz cancels a load that is still running and keeps `onError` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails."
       )
     ),
     section(
@@ -36,14 +36,18 @@ const LOADING_IMAGES_PAGE = defineDoc({
       table({
         columns: [column("format", "prose"), column("what happens", "prose")],
         rows: [
-          ["jpeg, png, webp, avif, gif, bmp", "open in every current browser"],
+          ["jpeg, png, webp, avif, gif", "open in every current browser"],
+          [
+            "bmp",
+            "opens in every current browser, but safari cannot open some bmp files with a v4 or v5 header. those fail with `decode`. pass a `decode` function to open them, or convert the file to jpeg first",
+          ],
           [
             "heic, jpeg xl, tiff",
-            "open where the browser decodes them, and fail with `unsupported-format` elsewhere",
+            "open where the browser decodes them. they fail with `unsupported-format` elsewhere, and when the file is damaged",
           ],
           [
             "svg",
-            "takes its size from `width` and `height`, or from `viewBox`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing",
+            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing",
           ],
           [
             "animated gif, png, webp, avif",
@@ -74,11 +78,33 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
-        "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
+        "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
       ),
-      p(
-        "when a content security policy blocks workers from `blob:` urls, zriz decodes on the main thread instead. add `worker-src blob:` to keep the page smooth while a large photo opens."
-      )
+      p("a content security policy needs these sources:"),
+      table({
+        columns: [
+          column("directive", "prose"),
+          column("what it enables", "prose"),
+        ],
+        rows: [
+          [
+            "`worker-src blob:`",
+            "decoding and exporting off the main thread. without it zriz does both on the main thread, and the page can stutter while a large photo opens",
+          ],
+          [
+            "`img-src blob:`",
+            "the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, and a display-p3 export fails with `decode`",
+          ],
+          [
+            "`img-src data:`",
+            "svg files. without it an svg fails with `decode`",
+          ],
+          [
+            "`connect-src`",
+            "each host you load photos from, plus `blob:` and `data:` if you pass those urls as `src`. without it the load fails with `cross-origin`",
+          ],
+        ],
+      })
     ),
     section(
       "open heic on every browser",
@@ -94,7 +120,10 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "`ready` turns the save button on once the photo is attached. `onSave` gets the cropper for `exportCrop`, as in [exporting](exporting). a new pick aborts the load still running, so a slow file never replaces a newer one."
       ),
       p(
-        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source."
+        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`."
+      ),
+      p(
+        "`attachImage` frees a photo when it leaves its last cropper. a freed photo cannot be attached again, so load it again."
       )
     ),
     section(

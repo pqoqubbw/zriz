@@ -31,18 +31,18 @@ const ERRORS_PAGE = defineDoc({
         rows: [
           [
             "cross-origin",
-            "the server sent the photo without `Access-Control-Allow-Origin`, the network dropped, or an `img`, `video` or `canvas` you pass is tainted",
-            'send the header. if the request needs cookies, pass `crossOrigin="use-credentials"` to `Root`',
+            "the server sent the photo without `Access-Control-Allow-Origin`, the network dropped, `connect-src` in a content security policy blocked the url, or an `img`, `video`, `canvas` or `ImageBitmap` you pass is tainted",
+            'send the header. if the request needs cookies, pass `crossOrigin="use-credentials"` to `Root`. add the host to `connect-src`, as in [loading images](loading-images)',
           ],
           [
             "unsupported-format",
-            "the file is heic, jpeg xl or tiff and this browser cannot decode it, either on load or when an export decodes the original again",
-            "call `loadImage` yourself with your own `decode` function, as in [loading images](loading-images), or convert the file to jpeg first",
+            "the browser could not decode a heic, jpeg xl or tiff file, because it does not support the format or the file is damaged, either on load or when an export decodes the original again",
+            "try another copy of the file. call `loadImage` yourself with your own `decode` function, as in [loading images](loading-images), or convert the file to jpeg first",
           ],
           [
             "decode",
-            "the url answered with an error status, the bytes are not an image, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, the browser gave no 2d canvas, or an export could not decode the original again",
-            "open the url and check the response. if you are offline, try again once the network is back",
+            "the url answered with an error status, the file cannot be read, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, a `video` has no current frame, `img-src` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again",
+            "open the url and check the response. if you are offline, try again once the network is back. wait for `loadeddata` before you pass a `video`. [loading images](loading-images) lists the `img-src` sources",
           ],
           [
             "timeout",
@@ -61,8 +61,8 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "no-image",
-            "an export ran before a photo loaded, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo",
-            "disable the export button until `onLoad` fires. keep `@zriz/core` at the same version as `@zriz/react`",
+            "an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo",
+            "disable the export button until `onLoad` fires. load a freed photo again. keep `@zriz/core` at the same version as `@zriz/react`",
           ],
         ],
       })

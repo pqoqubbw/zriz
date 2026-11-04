@@ -5812,13 +5812,13 @@ every \`ZrizError\` has a \`code\` from the table below, and its message starts 
 
 | code | when it fires, and the fix |
 | - | - |
-| \`cross-origin\` | the server sent the photo without \`Access-Control-Allow-Origin\`, the network dropped, or an \`img\`, \`video\` or \`canvas\` you pass is tainted. send the header. if the request needs cookies, pass \`crossOrigin="use-credentials"\` to \`Root\` |
-| \`unsupported-format\` | the file is heic, jpeg xl or tiff and this browser cannot decode it, either on load or when an export decodes the original again. call \`loadImage\` yourself with your own \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), or convert the file to jpeg first |
-| \`decode\` | the url answered with an error status, the bytes are not an image, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back |
+| \`cross-origin\` | the server sent the photo without \`Access-Control-Allow-Origin\`, the network dropped, \`connect-src\` in a content security policy blocked the url, or an \`img\`, \`video\`, \`canvas\` or \`ImageBitmap\` you pass is tainted. send the header. if the request needs cookies, pass \`crossOrigin="use-credentials"\` to \`Root\`. add the host to \`connect-src\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
+| \`unsupported-format\` | the browser could not decode a heic, jpeg xl or tiff file, because it does not support the format or the file is damaged, either on load or when an export decodes the original again. try another copy of the file. call \`loadImage\` yourself with your own \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), or convert the file to jpeg first |
+| \`decode\` | the url answered with an error status, the file cannot be read, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back. wait for \`loadeddata\` before you pass a \`video\`. [loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
 | \`timeout\` | a photo took over 15 s to load, or an export took over 30 s. send a smaller file or export a smaller \`maxSize\`. for a slow network, load the photo yourself with a longer \`timeout\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`aborted\` | the \`signal\` you passed fired. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
 | \`blank\` | the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones. set \`maxSize\` to 2048 by 2048 or less |
-| \`no-image\` | an export ran before a photo loaded, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. disable the export button until \`onLoad\` fires. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
+| \`no-image\` | an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. disable the export button until \`onLoad\` fires. load a freed photo again. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
 
 ## thrown errors
 
@@ -6984,7 +6984,7 @@ open a photo from a file input, a url or a blob, and check which formats and siz
 </Cropper.Root>
 \`\`\`
 
-zriz reads the format from the first 512 bytes of the file, so a wrong name or mime type does not stop a photo from opening. when \`src\` changes, zriz cancels a load that is still running and keeps \`onError\` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails.
+zriz reads the format from the first 4096 bytes of the file, so a wrong name or mime type does not stop a photo from opening. when \`src\` changes, zriz cancels a load that is still running and keeps \`onError\` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails.
 
 ## start each photo from the full frame
 
@@ -7008,9 +7008,10 @@ if that server wants a token in a header, fetch the photo yourself with that hea
 
 | format | what happens |
 | - | - |
-| jpeg, png, webp, avif, gif, bmp | open in every current browser |
-| heic, jpeg xl, tiff | open where the browser decodes them, and fail with \`unsupported-format\` elsewhere |
-| svg | takes its size from \`width\` and \`height\`, or from \`viewBox\`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
+| jpeg, png, webp, avif, gif | open in every current browser |
+| bmp | opens in every current browser, but safari cannot open some bmp files with a v4 or v5 header. those fail with \`decode\`. pass a \`decode\` function to open them, or convert the file to jpeg first |
+| heic, jpeg xl, tiff | open where the browser decodes them. they fail with \`unsupported-format\` elsewhere, and when the file is damaged |
+| svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
 | animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif |
 
 every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo.
@@ -7024,9 +7025,16 @@ a worker decodes a preview sized for the screen. the original stays a blob until
 | preview size | twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere |
 | export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere. a bigger crop comes out scaled down |
 
-the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
+the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
 
-when a content security policy blocks workers from \`blob:\` urls, zriz decodes on the main thread instead. add \`worker-src blob:\` to keep the page smooth while a large photo opens.
+a content security policy needs these sources:
+
+| directive | what it enables |
+| - | - |
+| \`worker-src blob:\` | decoding and exporting off the main thread. without it zriz does both on the main thread, and the page can stutter while a large photo opens |
+| \`img-src blob:\` | the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, and a display-p3 export fails with \`decode\` |
+| \`img-src data:\` | svg files. without it an svg fails with \`decode\` |
+| \`connect-src\` | each host you load photos from, plus \`blob:\` and \`data:\` if you pass those urls as \`src\`. without it the load fails with \`cross-origin\` |
 
 ## open heic on every browser
 
@@ -7123,7 +7131,9 @@ export const Heic = ({ onSave }: Props) => {
 
 \`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick aborts the load still running, so a slow file never replaces a newer one.
 
-\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source.
+\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`.
+
+\`attachImage\` frees a photo when it leaves its last cropper. a freed photo cannot be attached again, so load it again.
 
 ## handle a failed load
 
