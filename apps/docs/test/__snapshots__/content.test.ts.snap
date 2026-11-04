@@ -4672,7 +4672,7 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
 | \`AspectGroup\` | a \`radiogroup\` with one tab stop. each \`AspectItem\` is a radio. outside a group, an item is a button with \`aria-pressed\` |
 | \`Rotate, Orientation\` | buttons. \`Orientation\` is disabled for a free, original or square crop |
 | \`Flip\` | a toggle button. \`aria-pressed\` follows \`mirrored\` |
-| \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the next control in \`Root\` without an \`Area\` |
+| \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the next control in \`Root\` when there is no \`Area\` or it cannot take focus |
 | \`every control above\` | \`aria-disabled\` while \`Root\` is disabled. a press does nothing, and the control stays in the tab order |
 | \`Image\` | an image named by its \`alt\`. without \`alt\`, nothing |
 | \`Handle, Grid, Mask\` | hidden |

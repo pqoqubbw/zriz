@@ -50,7 +50,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
           ["Flip", "a toggle button. `aria-pressed` follows `mirrored`"],
           [
             "Reset",
-            "a button that is `hidden` while nothing has changed. if it has focus when it hides, focus moves to `Area`, or to the next control in `Root` without an `Area`",
+            "a button that is `hidden` while nothing has changed. if it has focus when it hides, focus moves to `Area`, or to the next control in `Root` when there is no `Area` or it cannot take focus",
           ],
           [
             "every control above",

@@ -487,7 +487,74 @@ describe("focus when Reset hides", () => {
     expect(document.activeElement).toBe(item(screen.container, "rotate"));
   });
 
-  it("leaves focus alone when the button stays visible or another part has it", async () => {
+  it("moves past an Area that cannot take focus", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Viewport style={{ display: "none" }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        <Cropper.Reset>Reset</Cropper.Reset>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+    reset.focus();
+    reset.click();
+    await vi.waitFor(() => {
+      expect(reset.hidden).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(item(screen.container, "rotate"));
+  });
+
+  it("skips itself when it has its own tabIndex", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Reset tabIndex={0}>Reset</Cropper.Reset>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+    reset.focus();
+    reset.click();
+    await vi.waitFor(() => {
+      expect(reset.hidden).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(item(screen.container, "rotate"));
+  });
+
+  it("leaves focus on another part when a reset hides the button", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        <Cropper.Reset>Reset</Cropper.Reset>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const rotate = item(screen.container, "rotate");
+    rotate.focus();
+    api.current?.reset();
+    await vi.waitFor(() => {
+      expect(item(screen.container, "reset").hidden).toBeTruthy();
+    });
+    await frames();
+    expect(document.activeElement).toBe(rotate);
+  });
+
+  it("leaves focus alone when the button stays visible", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(
       <Cropper.Root actionsRef={api} image={PHOTO}>

@@ -32,12 +32,18 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
   useIsomorphicLayoutEffect(() => {
     if (pristine && focused && box.get()?.matches("[hidden]") === true) {
       const scope = root?.get();
-      (
-        scope?.querySelector<HTMLElement>('[data-zriz-item="area"]') ??
-        scope?.querySelector<HTMLElement>(
-          '[tabindex="0"],button:enabled:not([hidden])'
-        )
-      )?.focus({ preventScroll: true });
+      for (const selector of [
+        '[data-zriz-item="area"]',
+        '[tabindex="0"]:not([hidden]),button:enabled:not([hidden])',
+      ]) {
+        for (const next of scope?.querySelectorAll<HTMLElement>(selector) ??
+          []) {
+          next.focus({ preventScroll: true });
+          if (next.matches(":focus")) {
+            return;
+          }
+        }
+      }
     }
   }, [box, focused, pristine, root]);
   const onClick = (event: React.MouseEvent): void => {
