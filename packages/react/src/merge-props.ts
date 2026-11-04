@@ -95,7 +95,9 @@ const mergeRefs = <T>(
     if (previous) {
       run(previous);
     } else if (node === null) {
-      refs.map((ref) => attach(ref, null));
+      for (const ref of refs) {
+        attach(ref, null);
+      }
     }
 
     const mine = node === null ? null : refs.map((ref) => attach(ref, node));

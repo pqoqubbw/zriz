@@ -4,11 +4,11 @@ import { createCropper, sameAspect } from "@zriz/core";
 import type {
   Aspect,
   ChangeReason,
+  CropValue,
   Cropper,
   CropperFrame,
   CropperOptions,
   CropperSnapshot,
-  CropValue,
 } from "@zriz/core";
 import {
   useCallback,
@@ -178,14 +178,14 @@ const appliedOf = (
 
 const syncProps = (
   cropper: Cropper,
-  memory: { readonly current: WeakMap<Cropper, Applied> },
+  memory: WeakMap<Cropper, Applied>,
   given: boolean,
   latest: { readonly current: Controlled },
   relaxed: boolean
 ): void => {
   applyProps(
     cropper,
-    appliedOf(memory.current, cropper, given),
+    appliedOf(memory, cropper, given),
     latest.current,
     relaxed
   );
@@ -291,13 +291,13 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
     rotation,
     zoom,
   });
-  const memory = useRef(new WeakMap<Cropper, Applied>());
+  const [memory] = useState(() => new WeakMap<Cropper, Applied>());
   const given = external !== undefined;
   const sync = useCallback(
     (relaxed = false) => {
       syncProps(cropper, memory, given, latest, relaxed);
     },
-    [cropper, given, latest]
+    [cropper, given, latest, memory]
   );
 
   useEffect(
@@ -315,7 +315,7 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
 
   useIsomorphicLayoutEffect(() => {
     const patch: Record<string, unknown> = {};
-    const { options: set } = appliedOf(memory.current, cropper, given);
+    const { options: set } = appliedOf(memory, cropper, given);
 
     for (const [key, option] of [
       ["disabled", rest.disabled],
@@ -427,7 +427,7 @@ const useCropperValue = (cropper?: Cropper): CropValue => {
   return useSyncExternalStore(
     subscribe,
     () => target.getState().committed,
-    () => firstSnapshot(target).committed
+    () => firstCommitted(target)
   );
 };
 

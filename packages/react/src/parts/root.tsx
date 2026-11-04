@@ -102,8 +102,6 @@ const holdActions = (
   return release;
 };
 
-const serverChrome = (): Chrome => IDLE;
-
 const useBoxRef = (
   box: ElementBox,
   theirs: Ref<HTMLDivElement>
@@ -191,7 +189,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     () => motion === "reduce"
   );
   const snapshot = useCropperState((s) => s, cropper);
-  const chrome = useSyncExternalStore(view.onChrome, view.chrome, serverChrome);
+  const chrome = useSyncExternalStore(view.onChrome, view.chrome, () => IDLE);
   const instructions = useId();
   const latestLoad = useLatest(onLoad);
   const latestError = useLatest(onError);
