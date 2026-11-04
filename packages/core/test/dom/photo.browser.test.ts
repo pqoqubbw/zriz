@@ -245,6 +245,29 @@ const failing = (op: string) => {
   };
 };
 
+const opsSent = (): string[] => {
+  const ops: string[] = [];
+  const post: unknown = Reflect.get(Worker.prototype, "postMessage");
+  if (typeof post !== "function") {
+    throw new TypeError("no postMessage");
+  }
+  const spy = vi.spyOn(Worker.prototype, "postMessage");
+  spy.mockImplementation(function record(
+    this: Worker,
+    ...args: Parameters<Worker["postMessage"]>
+  ): void {
+    const message: unknown = args[0];
+    if (isJob(message)) {
+      ops.push(message.op);
+    }
+    Reflect.apply(post, this, args);
+  });
+  cleanups.push(() => {
+    spy.mockRestore();
+  });
+  return ops;
+};
+
 const watchErrors = (): string[] => {
   const errors: string[] = [];
   const onError = (event: ErrorEvent): void => {
@@ -860,7 +883,10 @@ describe("photo layer", () => {
     await sharp(photo);
     const canvas = photo.querySelector("canvas");
     const { dpr } = viewOf(cropper).frame()?.layout ?? { dpr: 1 };
-    expect(canvas?.offsetWidth).toBe(Math.round((canvas?.width ?? 0) / dpr));
+    expect(canvas?.getBoundingClientRect().width).toBeCloseTo(
+      (canvas?.width ?? 0) / dpr,
+      2
+    );
   });
 
   it("moves with the pointer under a global transition on the page", async () => {
@@ -930,19 +956,51 @@ describe("photo layer", () => {
     const { photo } = await mount(1024);
     await sharp(photo);
     const canvas = photo.querySelector("canvas");
-    if (!canvas) {
+    const context = canvas?.getContext("2d");
+    if (!(canvas && context)) {
       throw new Error("no canvas");
     }
-    await new Promise((resolve) => {
-      setTimeout(resolve, 100);
-    });
     canvas.dispatchEvent(new Event("contextlost"));
     await visibleImage(photo);
     expect(canvas.style.visibility).toBe("hidden");
     expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+    context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.dispatchEvent(new Event("contextrestored"));
     await sharp(photo);
     expect(canvas.style.visibility).toBe("visible");
+    const { data } = context.getImageData(
+      canvas.width / 2,
+      canvas.height / 2,
+      1,
+      1
+    );
+    expect(data[3]).toBe(255);
+  });
+
+  it("shows the moving image when the context reports itself lost", async () => {
+    const lost = vi.fn<() => boolean>(() => true);
+    const proto = CanvasRenderingContext2D.prototype;
+    const native = Object.getOwnPropertyDescriptor(proto, "isContextLost");
+    Object.defineProperty(proto, "isContextLost", {
+      configurable: true,
+      value: lost,
+    });
+    cleanups.push(() => {
+      if (native) {
+        Object.defineProperty(proto, "isContextLost", native);
+      } else {
+        Reflect.deleteProperty(proto, "isContextLost");
+      }
+    });
+    const { photo } = await mount(1024);
+    const image = await visibleImage(photo);
+    await expect
+      .poll(() => lost.mock.calls.length, { timeout: 3000 })
+      .toBeGreaterThan(1);
+    await nextFrame();
+    expect(image.style.visibility).toBe("visible");
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("hidden");
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
   });
 
   it("clears will-change after a settle on a perspective frame", async () => {
@@ -1123,6 +1181,29 @@ describe("photo layer", () => {
     expect(errors).toStrictEqual([]);
   });
 
+  it("takes no moving image and runs no sharpen in a lone hidden copy until it shows", async () => {
+    const jobs = opsSent();
+    const { cropper, photo } = await mount(1024, undefined, undefined, "none");
+    const image = photo.querySelector("img");
+    cropper.begin("pan");
+    cropper.setZoom(1.2);
+    await nextFrame();
+    cropper.end();
+    await expect.poll(() => cropper.getState().settling).toBeFalsy();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 200);
+    });
+    expect(jobs).not.toContain("motion");
+    expect(jobs).not.toContain("resample");
+    expect(image?.hasAttribute("src")).toBeFalsy();
+    photo.style.display = "block";
+    await sharp(photo);
+    cropper.begin("pan");
+    await visibleImage(photo);
+    cropper.end();
+    expect(jobs).toContain("motion");
+  });
+
   it("shares one moving image file between copies of a photo", async () => {
     const jobs = flights("motion");
     const made = vi.spyOn(URL, "createObjectURL");
@@ -1145,6 +1226,7 @@ describe("photo layer", () => {
     expect(jobs.total()).toBe(1);
     const src = first?.src ?? "";
     stop();
+    await nextFrame();
     expect(revoked).not.toHaveBeenCalledWith(src);
     cropper.begin("pan");
     await visibleImage(photo);
