@@ -10,7 +10,10 @@ export interface CropValue {
   readonly rotation: number;
   readonly quarterTurns: QuarterTurns;
   readonly mirrored: boolean;
-  readonly perspective: { readonly vertical: number; readonly horizontal: number };
+  readonly perspective: {
+    readonly vertical: number;
+    readonly horizontal: number;
+  };
   readonly aspect: Aspect;
 }
 
@@ -22,8 +25,8 @@ const REACH = 1e6;
 const MIN_RATIO = 1e-6;
 
 export const seal = <T extends object>(target: T): T => {
-  for (const item of Object.values(target)) {
-    if (typeof item === "object" && item) {
+  for (const item of Object.values<unknown>(target)) {
+    if (typeof item === "object" && item !== null) {
       seal(item);
     }
   }
@@ -180,7 +183,9 @@ export const toAspect = (value: unknown): Aspect => {
   if (value === "free" || value === "original") {
     return value;
   }
-  return typeof value === "number" && value >= MIN_RATIO && value <= 1 / MIN_RATIO
+  return typeof value === "number" &&
+    value >= MIN_RATIO &&
+    value <= 1 / MIN_RATIO
     ? value
     : "free";
 };
@@ -242,8 +247,8 @@ export const isSound = (value: CropValue): boolean =>
 
 export const sameCrop = (a: CropValue, b: CropValue, image: Size): boolean => {
   const reach = Math.min(
-    1e-9,
-    (1e-9 + 4e-12 * Math.max(image.width, image.height)) /
+    1e-8,
+    (2e-8 + 4e-12 * Math.max(image.width, image.height)) /
       Math.min(image.width, image.height)
   );
   const other = numbersOf(b);

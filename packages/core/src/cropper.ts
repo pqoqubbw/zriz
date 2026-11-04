@@ -206,6 +206,15 @@ const attempt = <T>(call: () => T): T | undefined => {
 
 const noop = (): void => undefined;
 
+const minSide = (given: number | undefined, limit: number): number =>
+  Math.min(given !== undefined && given > 0 ? given : 1, limit);
+
+const holdIf = (
+  computed: CropValue,
+  held: CropValue | undefined,
+  size: Size
+): CropValue => (held && sameCrop(computed, held, size) ? held : computed);
+
 const lengthenLens = (state: CropState): CropState => {
   const { focal, horizontal, vertical } = state.perspective;
   const h = sinCosDegrees(horizontal);
@@ -264,9 +273,12 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     ...args: Parameters<CropperEvents[E]>
   ): void => {
     const set = listeners[type];
-    for (const listener of [...set]) {
+    const current = [...set];
+    for (const listener of current) {
       if (set.has(listener)) {
-        attempt(() => Reflect.apply(listener, undefined, args));
+        attempt(() => {
+          Reflect.apply(listener, undefined, args);
+        });
       }
     }
   };
@@ -276,9 +288,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const zoomCap = (): number =>
     Math.max(options.maxZoom ?? MAX_ZOOM, 1) || MAX_ZOOM;
-
-  const minSide = (given: number | undefined, limit: number): number =>
-    Math.min(given && given > 0 ? given : 1, limit);
 
   const minSize = (size: Size): Size => ({
     height: minSide(options.minSize?.height, size.height),
@@ -356,19 +365,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         narrow !== height / fit < min.height &&
         largestFit(planes, min).scale <= 1 + EPSILON
       ) {
-        if (narrow) {
-          width = min.width;
-          height =
-            1 /
-            largestFit(panPlanes(planes, width, 0), { height: 1, width: 0 })
-              .scale;
-        } else {
-          height = min.height;
-          width =
-            1 /
-            largestFit(panPlanes(planes, 0, height), { height: 0, width: 1 })
-              .scale;
-        }
+        const open =
+          1 /
+          largestFit(
+            panPlanes(
+              planes,
+              narrow ? min.width : 0,
+              narrow ? 0 : min.height
+            ),
+            { height: narrow ? 1 : 0, width: narrow ? 0 : 1 }
+          ).scale;
+        width = narrow ? min.width : open;
+        height = narrow ? open : min.height;
       } else {
         width /= fit;
         height /= fit;
@@ -377,7 +385,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     const centre = projectOntoPlanes(
       panPlanes(planes, width, height),
       { x, y },
-      1e-9 + 1e-12 * Math.max(...planes.map(({ d }) => d))
+      1e-9 + 1e-18 * reach
     );
     return seal({
       ...shaped,
@@ -409,7 +417,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       return;
     }
     snapshot = next;
-    for (const subscriber of [...subscribers]) {
+    const current = [...subscribers];
+    for (const subscriber of current) {
       if (subscribers.has(subscriber)) {
         attempt(subscriber);
       }
@@ -505,7 +514,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       frameDirty = true;
     }
     for (const task of tasks.keys()) {
-      if (!attempt(() => task(time, delta))) {
+      if (!(attempt(() => task(time, delta)) ?? false)) {
         tasks.delete(task);
       }
     }
@@ -578,12 +587,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     refresh();
   };
 
-  const holdIf = (
-    computed: CropValue,
-    held: CropValue | undefined,
-    size: Size
-  ): CropValue => (held && sameCrop(computed, held, size) ? held : computed);
-
   const commitState = (
     next: CropState,
     keep: "size" | "centre",
@@ -604,7 +607,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const fromValue = (next: CropValue, size: Size): CropState =>
-    valueToState({ ...next, rotation: limitAngle(next.rotation) }, size, focal(size));
+    valueToState(
+      { ...next, rotation: limitAngle(next.rotation) },
+      size,
+      focal(size)
+    );
 
   const fitReset = (): void => {
     resetFit = image

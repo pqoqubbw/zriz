@@ -162,6 +162,20 @@ describe(velocityTracker, () => {
   });
 });
 
+const frames = () => {
+  const queue = new Map<number, FrameRequestCallback>();
+  let id = 0;
+  vi.stubGlobal("requestAnimationFrame", (step: FrameRequestCallback) => {
+    id += 1;
+    queue.set(id, step);
+    return id;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (handle: number) => {
+    queue.delete(handle);
+  });
+  return queue;
+};
+
 describe(frameClock, () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
@@ -172,23 +186,9 @@ describe(frameClock, () => {
     vi.unstubAllGlobals();
   });
 
-  const frames = () => {
-    const queue = new Map<number, FrameRequestCallback>();
-    let id = 0;
-    vi.stubGlobal("requestAnimationFrame", (step: FrameRequestCallback) => {
-      id += 1;
-      queue.set(id, step);
-      return id;
-    });
-    vi.stubGlobal("cancelAnimationFrame", (handle: number) => {
-      queue.delete(handle);
-    });
-    return queue;
-  };
-
   it("steps on a timer when no frame comes", () => {
     frames();
-    const step = vi.fn();
+    const step = vi.fn<(time: number) => void>();
     frameClock().request(step);
     vi.advanceTimersByTime(249);
     expect(step).not.toHaveBeenCalled();
@@ -198,35 +198,35 @@ describe(frameClock, () => {
 
   it("steps once when a frame comes, with the frame's time", () => {
     const queue = frames();
-    const step = vi.fn();
+    const step = vi.fn<(time: number) => void>();
     frameClock().request(step);
     for (const run of queue.values()) {
       run(16);
     }
     vi.advanceTimersByTime(1000);
-    expect(step).toHaveBeenCalledOnce();
-    expect(step).toHaveBeenCalledWith(16);
+    expect(step).toHaveBeenCalledExactlyOnceWith(16);
   });
 
   it("drops the frame when the timer wins", () => {
     const queue = frames();
-    frameClock().request(vi.fn());
+    frameClock().request(vi.fn<(time: number) => void>());
     vi.advanceTimersByTime(250);
     expect(queue.size).toBe(0);
   });
 
   it("cancels the frame and the timer", () => {
     const queue = frames();
-    const step = vi.fn();
+    const step = vi.fn<(time: number) => void>();
     const clock = frameClock();
-    clock.cancel(clock.request(step));
+    const handle = clock.request(step);
+    clock.cancel(handle);
     vi.advanceTimersByTime(1000);
     expect(step).not.toHaveBeenCalled();
     expect(queue.size).toBe(0);
   });
 
   it("uses a short timer where there are no frames at all", () => {
-    const step = vi.fn();
+    const step = vi.fn<(time: number) => void>();
     frameClock().request(step);
     vi.advanceTimersByTime(17);
     expect(step).toHaveBeenCalledOnce();

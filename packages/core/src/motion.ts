@@ -31,16 +31,8 @@ export const frameClock = (): Clock => {
     request: (step) => {
       id += 1;
       const key = id;
-      let frame = 0;
-      const clear = (): void => {
-        pending.delete(key);
-        clearTimeout(timer);
-        if (hasFrames) {
-          globalThis.cancelAnimationFrame(frame);
-        }
-      };
       const run = (time: number): void => {
-        clear();
+        pending.get(key)?.();
         step(time);
       };
       const timer = setTimeout(
@@ -49,10 +41,14 @@ export const frameClock = (): Clock => {
         },
         hasFrames ? BACKUP_FRAME : fallbackFrame
       );
-      if (hasFrames) {
-        frame = globalThis.requestAnimationFrame(run);
-      }
-      pending.set(key, clear);
+      const frame = hasFrames ? globalThis.requestAnimationFrame(run) : 0;
+      pending.set(key, () => {
+        pending.delete(key);
+        clearTimeout(timer);
+        if (hasFrames) {
+          globalThis.cancelAnimationFrame(frame);
+        }
+      });
       return key;
     },
   };

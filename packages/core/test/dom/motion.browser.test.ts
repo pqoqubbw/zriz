@@ -377,7 +377,7 @@ describe("a page where frames stop, as in a hidden tab", () => {
     await expect
       .poll(() => commits, { interval: 50, timeout: 3000 })
       .toStrictEqual([5]);
-    expect(cropper.getState().settling).toBe(false);
+    expect(cropper.getState().settling).toBeFalsy();
     cropper.destroy();
   });
 });

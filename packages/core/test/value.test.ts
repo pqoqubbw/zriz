@@ -10,7 +10,20 @@ import {
 
 describe(parse, () => {
   it("returns null for garbage", () => {
-    for (const input of ["", "{", "null", "3", 3, null, undefined, "[]x", "[]", "[1,2,3]", [], [1]]) {
+    for (const input of [
+      "",
+      "{",
+      "null",
+      "3",
+      3,
+      null,
+      undefined,
+      "[]x",
+      "[]",
+      "[1,2,3]",
+      [],
+      [1],
+    ]) {
       expect(parse(input)).toBeNull();
     }
   });
@@ -73,7 +86,9 @@ describe("value and state", () => {
   });
 
   it("clamps a saved number past the range a crop can use", () => {
-    const value = parse('{"center":{"x":1e308,"y":-1e308},"size":{"width":1e308,"height":1e-320}}');
+    const value = parse(
+      '{"center":{"x":1e308,"y":-1e308},"size":{"width":1e308,"height":1e-320}}'
+    );
     expect(value?.center).toStrictEqual({ x: 1e6, y: -1e6 });
     expect(value?.size).toStrictEqual({ height: 1e-100, width: 1e6 });
   });

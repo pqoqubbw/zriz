@@ -81,10 +81,7 @@ export const projectOntoPlanes = (
   given: Point,
   epsilon = 1e-9
 ): Point => {
-  if (
-    insidePlanes(planes, given, epsilon) ||
-    Number.isNaN(given.x + given.y)
-  ) {
+  if (insidePlanes(planes, given, epsilon) || Number.isNaN(given.x + given.y)) {
     return given;
   }
   const reach = 1024 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
