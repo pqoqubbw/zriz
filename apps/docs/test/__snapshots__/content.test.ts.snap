@@ -6200,13 +6200,13 @@ call \`getPixelCrop()\` when you upload, because a photo the user never touches 
   the mirror as \`flop\`, the quarter turns times 90 plus the straighten angle as \`degrees\`, and the crop's centre from the photo's centre after that whole turn as \`dx\` and \`dy\`, in source pixels
 - \`forward\` \`AffineMatrix\`
 
-  the map from source pixels to output pixels, as \`[a, b, c, d, e, f]\` in canvas \`setTransform()\` order
+  the map from source pixels to output pixels, as \`[a, b, c, d, e, f]\` in canvas \`setTransform()\` order. alone it holds only when \`homography\` is \`null\`. with perspective, \`output = forward(c + H(s - c))\`, with \`c\` the centre of the image in source pixels
 - \`inverse\` \`AffineMatrix\`
 
-  the map from output pixels back to source pixels
+  the map from output pixels back to source pixels. alone it holds only when \`homography\` is \`null\`. with perspective, \`s = c + H⁻¹(inverse(output) - c)\`
 - \`homography\` \`Matrix3 | null\`
 
-  the 3 by 3 perspective matrix, or \`null\` with no perspective
+  the 3 by 3 perspective matrix \`H\`, row by row, or \`null\` with no perspective. divide by the third coordinate after you apply it
 
 with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn.
 

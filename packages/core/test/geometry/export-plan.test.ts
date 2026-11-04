@@ -14,11 +14,14 @@ import { describe, expect, it } from "vitest";
 import { createCropper } from "../../src";
 import {
   applyAffine,
+  applyHomography,
   applyMatrix2,
   exifOrientations,
   exportPlan,
+  invertMatrix3,
   orientationMatrix,
   snapEdge,
+  sourceToOutputMatrix,
 } from "../../src/geometry";
 import type {
   AffineMatrix,
@@ -152,6 +155,45 @@ describe("export plan", () => {
         }
       )
     );
+  });
+});
+
+describe("export plan with perspective", () => {
+  it("composes forward and homography around the image centre", () => {
+    const state: CropState = {
+      angle: 3,
+      aspect: null,
+      crop: { height: 500, width: 700, x: 20, y: -10 },
+      flip: false,
+      image: { height: 1201, width: 1601 },
+      perspective: { focal: 1156, horizontal: -9, vertical: 12 },
+      turns: 1,
+    };
+    const plan = exportPlan(state);
+    if (!plan.homography) {
+      throw new Error("no homography");
+    }
+    const centre = { x: 800.5, y: 600.5 };
+    const whole = sourceToOutputMatrix(state, { ...plan, crop: state.crop, scale: 1 });
+    const point = { x: 300, y: 900 };
+    const warped = applyHomography(plan.homography, {
+      x: point.x - centre.x,
+      y: point.y - centre.y,
+    });
+    const output = applyAffine(plan.forward, {
+      x: centre.x + warped.x,
+      y: centre.y + warped.y,
+    });
+    const expected = applyHomography(whole, point);
+    expect(output.x).toBeCloseTo(expected.x, 6);
+    expect(output.y).toBeCloseTo(expected.y, 6);
+    const back = applyAffine(plan.inverse, output);
+    const unwarped = applyHomography(invertMatrix3(plan.homography), {
+      x: back.x - centre.x,
+      y: back.y - centre.y,
+    });
+    expect(centre.x + unwarped.x).toBeCloseTo(point.x, 6);
+    expect(centre.y + unwarped.y).toBeCloseTo(point.y, 6);
   });
 });
 

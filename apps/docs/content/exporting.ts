@@ -125,17 +125,17 @@ const EXPORTING_PAGE = defineDoc({
           },
           {
             name: "forward",
-            text: "the map from source pixels to output pixels, as `[a, b, c, d, e, f]` in canvas `setTransform()` order",
+            text: "the map from source pixels to output pixels, as `[a, b, c, d, e, f]` in canvas `setTransform()` order. alone it holds only when `homography` is `null`. with perspective, `output = forward(c + H(s - c))`, with `c` the centre of the image in source pixels",
             type: "AffineMatrix",
           },
           {
             name: "inverse",
-            text: "the map from output pixels back to source pixels",
+            text: "the map from output pixels back to source pixels. alone it holds only when `homography` is `null`. with perspective, `s = c + H⁻¹(inverse(output) - c)`",
             type: "AffineMatrix",
           },
           {
             name: "homography",
-            text: "the 3 by 3 perspective matrix, or `null` with no perspective",
+            text: "the 3 by 3 perspective matrix `H`, row by row, or `null` with no perspective. divide by the third coordinate after you apply it",
             type: "Matrix3 | null",
           },
         ],
