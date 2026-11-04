@@ -502,3 +502,45 @@ describe(toSharp, () => {
     }
   });
 });
+
+describe("export plan at a huge scale", () => {
+  const planOf = (scale: number) => {
+    const cropper = createCropper({
+      defaultValue: {
+        perspective: { horizontal: 30, vertical: 30 },
+        rotation: 5,
+      },
+      image: { height: 3024, width: 4032 },
+    });
+
+    return [cropper.getPixelCrop(scale), cropper.getPixelCrop(1)];
+  };
+
+  it.each([1e15, 1e200, 1e300, 1e308])("falls back to scale 1 at %d", (scale) => {
+    const [plan, level] = planOf(scale);
+
+    expect(plan).toStrictEqual(level);
+    expect(plan?.forward.every(Number.isFinite)).toBe(true);
+  });
+
+  it("gives sharp a finite recipe on a thin photo", () => {
+    const image = { height: 1, width: 2 };
+    const plan = createCropper({
+      defaultValue: { perspective: { horizontal: 5, vertical: 0 } },
+      image,
+    }).getPixelCrop(1e308);
+
+    if (!plan) {
+      throw new Error("no plan");
+    }
+
+    const recipe = toSharp(plan, image);
+
+    if (recipe.kind !== "affine") {
+      throw new Error("not affine");
+    }
+
+    expect(Number.isFinite(recipe.extract.left)).toBe(true);
+    expect(Number.isFinite(recipe.options.odx)).toBe(true);
+  });
+});

@@ -2923,3 +2923,24 @@ describe("a huge photo under perspective", () => {
     }
   });
 });
+
+describe("huge finite options", () => {
+  it.each([1e155, 1e300, 1e308])("keeps the state finite at focal length %d", (focalLength) => {
+    const cropper = createCropper({ image: PHOTO });
+
+    cropper.setOptions({ focalLength });
+    cropper.setValue({
+      ...cropper.getValue(),
+      perspective: { horizontal: 10, vertical: 10 },
+    });
+
+    const { crop, perspective } = cropState(cropper.getCropState());
+
+    expect(sound(cropper.getValue())).toBe(true);
+    expect(
+      [crop.width, crop.height, crop.x, crop.y, perspective.focal].every(
+        Number.isFinite
+      )
+    ).toBe(true);
+  });
+});

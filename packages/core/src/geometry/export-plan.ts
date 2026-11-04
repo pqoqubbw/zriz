@@ -129,8 +129,11 @@ const exportPlan = (state: CropState, requestedScale = 1): ExportPlan => {
     ({ pixelRect, crop } = snappedCrop(state));
   }
 
+  const wanted = positive(requestedScale, 1);
   const scale = Math.max(
-    positive(requestedScale, 1),
+    Math.max(crop.width, crop.height) * wanted > Number.MAX_SAFE_INTEGER
+      ? 1
+      : wanted,
     1 / crop.width,
     1 / crop.height
   );

@@ -316,7 +316,10 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const focal = (size: Size): number =>
-    focalLength(size, positive(options.focalLength, 26));
+    positive(
+      focalLength(size, positive(options.focalLength, 26)),
+      focalLength(size)
+    );
 
   const zoomCap = (): number =>
     Math.max(options.maxZoom ?? MAX_ZOOM, 1) || MAX_ZOOM;
