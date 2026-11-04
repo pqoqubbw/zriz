@@ -6,6 +6,17 @@ export interface KeyHandlers {
   onBlur: (event: FocusEvent) => void;
 }
 
+export const numberFormat = (
+  locale: string | undefined,
+  format: Intl.NumberFormatOptions
+): Intl.NumberFormat => {
+  try {
+    return new Intl.NumberFormat(locale, format);
+  } catch {
+    return new Intl.NumberFormat(undefined, format);
+  }
+};
+
 export const keyed = (
   cropper: Cropper,
   plan: (event: KeyboardEvent) => (() => void) | null,

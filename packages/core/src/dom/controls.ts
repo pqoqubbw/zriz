@@ -2,7 +2,7 @@ import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
 import { capture, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
-import { keyed, sliderAria, sliderKey } from "./slider";
+import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
 
 export type ZoomHandlers = KeyHandlers & PointerHandlers;
@@ -164,7 +164,7 @@ export const zoomAria = (
   element: HTMLElement,
   options: ZoomOptions = {}
 ): (() => void) => {
-  const formatter = new Intl.NumberFormat(options.locale, {
+  const formatter = numberFormat(options.locale, {
     maximumFractionDigits: 0,
     style: "percent",
     ...options.format,

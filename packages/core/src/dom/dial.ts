@@ -4,7 +4,7 @@ import { decay, spring, velocityTracker } from "../motion";
 import { holdCursor } from "./cursor";
 import { bindPointers, capture, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
-import { keyed, sliderAria, sliderKey } from "./slider";
+import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
 import { snap } from "./view";
 
@@ -297,7 +297,7 @@ export const dialAria = (
   element: HTMLElement,
   options: DialOptions = {}
 ): (() => void) => {
-  const formatter = new Intl.NumberFormat(options.locale, {
+  const formatter = numberFormat(options.locale, {
     maximumFractionDigits: 1,
     style: "unit",
     unit: "degree",
@@ -317,6 +317,7 @@ export const bindDial = (
   element: HTMLElement,
   options: DialOptions = {}
 ): (() => void) => {
+  const offAria = dialAria(cropper, element, options);
   const handlers = dialHandlers(cropper, options);
   element.style.touchAction = "pan-y";
   element.style.userSelect = "none";
@@ -332,7 +333,6 @@ export const bindDial = (
     element.toggleAttribute("data-dragging", dial.dragging());
   };
   const offChange = dial.onChange(sync);
-  const offAria = dialAria(cropper, element, options);
   return () => {
     offPointers();
     element.removeEventListener("keydown", handlers.onKeyDown);

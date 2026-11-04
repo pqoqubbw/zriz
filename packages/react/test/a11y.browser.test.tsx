@@ -189,4 +189,16 @@ describe("accessibility", () => {
     expect(warn).toHaveBeenCalledOnce();
     warn.mockRestore();
   });
+
+  it("keeps the app mounted with a malformed locale", async () => {
+    const screen = await render(
+      <Cropper.Root locale="pt_BR">
+        <Cropper.Dial aria-label="straighten" />
+        <Cropper.Zoom aria-label="zoom" />
+      </Cropper.Root>
+    );
+    expect(
+      screen.container.querySelector('[data-zriz-item="dial"]')
+    ).not.toBeNull();
+  });
 });
