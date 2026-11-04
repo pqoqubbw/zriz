@@ -268,6 +268,13 @@ const toRect = (crop: Crop): Rect => ({
   y1: crop.y + crop.height / 2,
 });
 
+const toCrop = (rect: Rect): Crop => ({
+  height: rect.y1 - rect.y0,
+  width: rect.x1 - rect.x0,
+  x: (rect.x0 + rect.x1) / 2,
+  y: (rect.y0 + rect.y1) / 2,
+});
+
 const handlePoint = (rect: Rect, handle: CropHandle): Point => {
   let x = (rect.x0 + rect.x1) / 2;
   let y = (rect.y0 + rect.y1) / 2;
@@ -390,14 +397,10 @@ export const handleHandlers = (
           ...state,
           crop: stopAtZoomCeiling(
             planes,
-            state.crop,
-            {
-              height: rect.y1 - rect.y0,
-              width: rect.x1 - rect.x0,
-              x: (rect.x0 + rect.x1) / 2,
-              y: (rect.y0 + rect.y1) / 2,
-            },
-            cropper.getMaxZoom()
+            toCrop(drag.start),
+            toCrop(rect),
+            cropper.getMaxZoom(),
+            state.aspect !== null
           ),
         },
         { event, keep: "size", reason: "resize" }

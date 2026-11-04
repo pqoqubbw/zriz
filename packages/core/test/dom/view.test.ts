@@ -751,6 +751,130 @@ describe("a handle at the zoom ceiling", () => {
     );
   });
 
+  it.each([
+    ["out", 40, 126.667],
+    ["in", -20, 86.667],
+  ])(
+    "lets the free side of a corner follow the pointer %s",
+    (_, dy, height) => {
+      const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
+      const before = context.cropper.getCropState()?.crop;
+      const crop = held(context, "bottom-right", -50, dy);
+      expect(crop.height).toBeCloseTo(height, 2);
+      expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+      expect(crop.y - crop.height / 2).toBeCloseTo(
+        (before?.y ?? 0) - (before?.height ?? 0) / 2,
+        6
+      );
+      expect(context.cropper.getZoom()).toBeCloseTo(15, 6);
+    }
+  );
+
+  it.each<[string, [number, number][]]>([
+    ["one jump", [[-120, -60]]],
+    [
+      "the y side first",
+      [
+        [0, -60],
+        [-120, -60],
+      ],
+    ],
+    [
+      "the x side first",
+      [
+        [-120, 0],
+        [-120, -60],
+      ],
+    ],
+    [
+      "four steps",
+      [
+        [-30, -15],
+        [-60, -30],
+        [-90, -45],
+        [-120, -60],
+      ],
+    ],
+    [
+      "a trip past the ceiling and back",
+      [
+        [-300, 0],
+        [-120, -60],
+      ],
+    ],
+  ])("ends a corner drag on the same crop after %s", (_, moves) => {
+    const context = atCeiling(4, { height: 0.5, width: 1 });
+    context.cropper.setZoom(3.5);
+    context.time.frames(2);
+    const rect = viewOf(context.cropper).frame()?.rect;
+    const x = (rect?.x ?? 0) + (rect?.width ?? 0);
+    const y = (rect?.y ?? 0) + (rect?.height ?? 0);
+    const handlers = handleHandlers(context.cropper, "bottom-right");
+    Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
+    for (const [dx, dy] of moves) {
+      Reflect.apply(
+        handlers.onPointerMove,
+        undefined,
+        pointerAt(x + dx, y + dy)
+      );
+    }
+    const crop = context.cropper.getCropState()?.crop;
+    expect(crop?.width).toBeCloseTo(1000, 4);
+    expect(crop?.height).toBeCloseTo(257.143, 2);
+  });
+
+  it.each([
+    ["the width", -120, -100, 1000, 666.667],
+    ["the height", -160, -100, 800, 750],
+  ])(
+    "gives back the smaller share of %s when both sides could set the zoom",
+    (_, dx, dy, width, height) => {
+      const context = atCeiling(4, { height: 1, width: 1 });
+      context.cropper.setZoom(3);
+      context.time.frames(2);
+      const crop = held(context, "bottom-right", dx, dy);
+      expect(crop.width).toBeCloseTo(width, 2);
+      expect(crop.height).toBeCloseTo(height, 2);
+    }
+  );
+
+  it.each([
+    ["top right", 20, 4000, -4000],
+    ["bottom right", -20, 4000, 4000],
+  ])(
+    "keeps the far corner on a straightened crop against the %s of the photo",
+    (_, angle, panX, panY) => {
+      const context = atCeiling(4, { height: 0.5, width: 1 });
+      context.cropper.setRotation(angle);
+      context.cropper.setZoom(4);
+      context.time.frames(2);
+      context.cropper.panBy(panX, panY);
+      context.time.frames(2);
+      const before = context.cropper.getCropState()?.crop;
+      const crop = held(context, "bottom-right", -60, 80);
+      expect(crop.x - crop.width / 2).toBeCloseTo(
+        (before?.x ?? 0) - (before?.width ?? 0) / 2,
+        6
+      );
+      expect(crop.y - crop.height / 2).toBeCloseTo(
+        (before?.y ?? 0) - (before?.height ?? 0) / 2,
+        6
+      );
+    }
+  );
+
+  it("keeps a locked corner in shape at the ceiling", () => {
+    const context = thinCropper({ height: 3000, width: 4000 }, 400, {
+      aspect: 2,
+      maxZoom: 4,
+    });
+    context.cropper.setZoom(3.5);
+    context.time.frames(2);
+    const crop = held(context, "bottom-right", -100, -100);
+    expect(crop.width / crop.height).toBeCloseTo(2, 6);
+    expect(crop.width).toBeCloseTo(1000, 4);
+  });
+
   it("still shrinks the side that does not set the zoom", () => {
     const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
     const before = context.cropper.getCropState()?.crop;
