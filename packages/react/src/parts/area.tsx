@@ -12,7 +12,7 @@ import {
   useRelease,
 } from "../part";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface AreaState {
@@ -45,6 +45,7 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
     "div",
     {
       "aria-describedby": instructions,
+      "aria-disabled": useAriaDisabled(),
       "data-interacting": interacting ? "" : undefined,
       "data-shape": shape,
       "data-zriz-item": "area",

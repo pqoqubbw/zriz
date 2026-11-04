@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface OrientationState {
@@ -35,6 +35,7 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
       return usePart(
         "button",
         {
+          "aria-disabled": useAriaDisabled(),
           "data-disabled": disabled ? "" : undefined,
           "data-orientation": orientation,
           "data-zriz-item": "orientation",

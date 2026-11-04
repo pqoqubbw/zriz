@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface FlipState {
@@ -28,6 +28,7 @@ export const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
   return usePart(
     "button",
     {
+      "aria-disabled": useAriaDisabled(),
       "aria-pressed": mirrored,
       "data-mirrored": mirrored ? "" : undefined,
       "data-zriz-item": "flip",

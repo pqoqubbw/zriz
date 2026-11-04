@@ -629,6 +629,39 @@ describe("a disabled AspectItem", () => {
   });
 });
 
+describe("a disabled Root", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("tells assistive tech on every control, and takes it back", async () => {
+    const screen = await render(<Parts disabled />);
+    expect(
+      NAMES.map((name) =>
+        item(screen.container, name).getAttribute("aria-disabled")
+      )
+    ).toStrictEqual(NAMES.map(() => "true"));
+    await screen.rerender(<Parts disabled={false} />);
+    await frames();
+    expect(
+      NAMES.map((name) =>
+        item(screen.container, name).hasAttribute("aria-disabled")
+      )
+    ).toStrictEqual(NAMES.map(() => false));
+  });
+
+  it("lets a part override the attribute", async () => {
+    const screen = await render(
+      <Cropper.Root disabled image={PHOTO}>
+        <Cropper.Rotate aria-disabled={false}>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    expect(item(screen.container, "rotate").getAttribute("aria-disabled")).toBe(
+      "false"
+    );
+  });
+});
+
 describe("slider values follow every move", () => {
   afterEach(async () => {
     await cleanup();

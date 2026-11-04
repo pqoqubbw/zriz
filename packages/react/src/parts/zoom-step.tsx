@@ -4,6 +4,7 @@ import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
+import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface ZoomStepProps extends PartProps<"button", object> {
@@ -24,7 +25,12 @@ export const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
   };
   return usePart(
     "button",
-    { "data-zriz-item": "zoom-step", onClick, type: "button" },
+    {
+      "aria-disabled": useAriaDisabled(),
+      "data-zriz-item": "zoom-step",
+      onClick,
+      type: "button",
+    },
     props,
     ref,
     {}

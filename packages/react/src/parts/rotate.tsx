@@ -4,6 +4,7 @@ import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
+import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface RotateProps extends PartProps<"button", object> {
@@ -21,7 +22,12 @@ export const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<
   };
   return usePart(
     "button",
-    { "data-zriz-item": "rotate", onClick, type: "button" },
+    {
+      "aria-disabled": useAriaDisabled(),
+      "data-zriz-item": "rotate",
+      onClick,
+      type: "button",
+    },
     props,
     ref,
     {}
