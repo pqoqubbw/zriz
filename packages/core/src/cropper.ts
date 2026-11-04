@@ -772,10 +772,22 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   const placed = (next: CropValue, size: Size): CropState =>
     constrain(fromValue(next, size), "centre");
 
+  const fitted = (wanted: CropValue, size: Size): [CropState, CropValue] => {
+    const fixed = placed(wanted, size);
+    const kept = heldValue(fixed, wanted);
+
+    if (isSound(kept)) {
+      return [fixed, kept];
+    }
+
+    const flat = { ...defaultValue, aspect: wanted.aspect };
+    const level = placed(flat, size);
+
+    return [level, heldValue(level, flat)];
+  };
+
   const fitReset = (): void => {
-    resetFit = image
-      ? heldValue(placed(resetValue, image), resetValue)
-      : resetValue;
+    resetFit = image ? fitted(resetValue, image)[1] : resetValue;
   };
 
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
@@ -953,7 +965,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
 
-      applyValue(resetValue, action, "reset");
+      applyValue(resetFit, action, "reset");
     },
     retarget(next) {
       const aim = (): void => {
@@ -1097,15 +1109,14 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
 
-      const fixed = placed(value, next);
-      const fixedValue = heldValue(fixed, value);
+      const [fixed, fixedValue] = fitted(value, next);
 
       if (first) {
         state = fixed;
         value = fixedValue;
         markSent();
       } else {
-        emittedState = placed(emitted, next);
+        [emittedState] = fitted(emitted, next);
         state = fixed;
         accept(fixed, fixedValue, { reason: "coverage" }, "coverage");
       }

@@ -2898,3 +2898,28 @@ describe("extreme sizes under perspective", () => {
     expect(isCropCovered(cropState(cropper.getCropState()))).toBe(true);
   });
 });
+
+describe("a huge photo under perspective", () => {
+  const TILT = { perspective: { horizontal: 30, vertical: 30 } };
+
+  it.each([1e18, 1e20, 1e50, 1e150])("stays sound on a photo side of %d", (side) => {
+    const image = { height: side, width: 1 };
+    const created = createCropper({ defaultValue: TILT, image });
+    const swapped = createCropper({
+      defaultValue: TILT,
+      image: { height: 1000, width: 1000 },
+    });
+
+    swapped.setImage({ height: side, width: 1000 });
+
+    expect(created.getState().pristine).toBe(true);
+
+    for (const cropper of [created, swapped]) {
+      expect(sound(cropper.getValue())).toBe(true);
+      cropper.setZoom(2);
+      cropper.reset();
+      expect(sound(cropper.getValue())).toBe(true);
+      expect(cropper.getState().pristine).toBe(true);
+    }
+  });
+});
