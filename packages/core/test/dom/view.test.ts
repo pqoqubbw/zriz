@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import type { CropperOptions } from "../../src";
-import { dialAria, dialHandlers } from "../../src/dom";
+import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
+import type { HandleEdge } from "../../src/dom";
 import {
   cssMatrix,
   fitPlacement,
@@ -420,5 +421,77 @@ describe("a rejected change", () => {
     expect(settle).not.toHaveBeenCalled();
     expect(settling).not.toContain(true);
     view.destroy();
+  });
+});
+
+describe("a handle at minSize", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const setup = (min: number, viewport = 1000) => {
+    vi.stubGlobal("addEventListener", () => undefined);
+    vi.stubGlobal("removeEventListener", () => undefined);
+    vi.stubGlobal("Element", class {});
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 1000, width: 1000 },
+      minSize: { height: min, width: min },
+    });
+    viewOf(cropper).setLayout({
+      dpr: 1,
+      height: viewport,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: viewport,
+    });
+    return { cropper, time };
+  };
+
+  const pointer = (clientX: number, clientY: number) =>
+    ({
+      button: 0,
+      clientX,
+      clientY,
+      currentTarget: null,
+      pointerId: 1,
+      pointerType: "mouse",
+    }) as unknown as PointerEvent;
+
+  const drag = (
+    { cropper, time }: ReturnType<typeof setup>,
+    edge: HandleEdge,
+    dx: number
+  ): void => {
+    const rect = viewOf(cropper).frame()?.rect;
+    const x = (rect?.x ?? 0) + (rect?.width ?? 0);
+    const y = (rect?.y ?? 0) + (rect?.height ?? 0) / 2;
+    const handlers = handleHandlers(cropper, edge);
+    handlers.onPointerDown(pointer(x, y));
+    handlers.onPointerMove(pointer(x + dx, y));
+    time.frame();
+    handlers.onPointerUp(pointer(x + dx, y));
+    time.frame();
+  };
+
+  it.each([
+    [800, 1000],
+    [512, 500],
+  ])("stops at a minimum of %s in a %s px viewport", (min, viewport) => {
+    const context = setup(min, viewport);
+    drag(context, "right", -viewport);
+    expect(context.cropper.getPixelCrop()?.pixelRect?.width).toBe(min);
+  });
+
+  it("keeps the other side and the opposite edge where they were", () => {
+    const context = setup(200);
+    context.cropper.setValue({ size: { height: 0.3, width: 0.6 } });
+    drag(context, "right", -2000);
+    expect(context.cropper.getPixelCrop()?.pixelRect).toStrictEqual({
+      height: 300,
+      left: 200,
+      top: 350,
+      width: 200,
+    });
   });
 });

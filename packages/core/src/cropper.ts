@@ -159,6 +159,7 @@ export interface Cropper {
   end: (event?: Event, owner?: unknown) => void;
   cancel: (event?: Event, owner?: unknown) => void;
   getMaxZoom: () => number;
+  getMinSize: () => Size;
   setCropState: (
     next: CropState,
     options?: ActionOptions & { keep?: "size" | "centre" }
@@ -318,31 +319,59 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       width = height * shaped.aspect;
     }
     const min = minSize(shaped.image);
+    const free = shaped.aspect === null;
+    if (free) {
+      width = Math.max(width, min.width);
+      height = Math.max(height, min.height);
+    }
     const maxZoom = zoomCap();
+    const base = largestFit(planes, { height, width }).scale;
     const grow = Math.max(
       1,
       min.width / width,
       min.height / height,
-      zoomOf(planes, { height, width }) / maxZoom
+      1 / (base * maxZoom)
     );
     width *= grow;
     height *= grow;
+    let fit = base * grow;
     if (keep === "centre" && insidePlanes(planes, { x, y }, -EPSILON)) {
       const over = Math.min(
         minScaleAt(planes, { height, width }, { x, y }),
-        maxZoom / zoomOf(planes, { height, width }),
+        maxZoom * fit,
         width / min.width,
         height / min.height
       );
       if (over > 1) {
         width /= over;
         height /= over;
+        fit /= over;
       }
     }
-    const over = largestFit(planes, { height, width }).scale;
-    if (over > 1) {
-      width /= over;
-      height /= over;
+    if (fit > 1) {
+      const narrow = width / fit < min.width;
+      if (
+        free &&
+        narrow !== height / fit < min.height &&
+        largestFit(planes, min).scale <= 1 + EPSILON
+      ) {
+        if (narrow) {
+          width = min.width;
+          height =
+            1 /
+            largestFit(panPlanes(planes, width, 0), { height: 1, width: 0 })
+              .scale;
+        } else {
+          height = min.height;
+          width =
+            1 /
+            largestFit(panPlanes(planes, 0, height), { height: 0, width: 1 })
+              .scale;
+        }
+      } else {
+        width /= fit;
+        height /= fit;
+      }
     }
     const centre = projectOntoPlanes(panPlanes(planes, width, height), {
       x,
@@ -691,6 +720,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     },
     getCropState: () => state,
     getMaxZoom: zoomCap,
+    getMinSize: () => minSize(image ?? { height: 1, width: 1 }),
     getPixelCrop: (scale) => (state ? exportPlan(state, scale) : null),
     getRotationLimit: rotationLimit,
     getState: () => snapshot,

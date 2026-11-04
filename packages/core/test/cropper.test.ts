@@ -1734,3 +1734,79 @@ describe("anchored zoom", () => {
     expect(center.y).toBeCloseTo(0.625, 9);
   });
 });
+
+describe("minSize on a free crop", () => {
+  const square = (min: number) => ({
+    image: { height: 1000, width: 1000 },
+    minSize: { height: min, width: min },
+  });
+
+  const pixels = (cropper: Cropper) => {
+    const rect = cropper.getPixelCrop()?.pixelRect;
+    return { height: rect?.height, width: rect?.width };
+  };
+
+  it("holds the short side of a long crop", () => {
+    const { cropper } = setup(square(100));
+    cropper.setValue({ size: { height: 1, width: 0.01 } });
+    expect(pixels(cropper)).toStrictEqual({ height: 1000, width: 100 });
+  });
+
+  it("raises only the side under the minimum", () => {
+    const { cropper } = setup(square(100));
+    cropper.setValue({ size: { height: 0.2, width: 0.05 } });
+    expect(pixels(cropper)).toStrictEqual({ height: 200, width: 100 });
+  });
+
+  it("holds it from setCropState and defaultValue too", () => {
+    const { cropper } = setup(square(100));
+    const state = cropState(cropper.getCropState());
+    cropper.setCropState({ ...state, crop: { ...state.crop, width: 10 } });
+    expect(pixels(cropper).width).toBe(100);
+    const { cropper: fresh } = setup({
+      ...square(200),
+      defaultValue: { size: { height: 1, width: 0.05 } },
+    });
+    expect(pixels(fresh)).toStrictEqual({ height: 1000, width: 200 });
+  });
+
+  it("holds the minimum and the coverage on any crop", () => {
+    fcAssert(
+      property(
+        record({
+          angle: double({ max: 45, min: -45, noNaN: true }),
+          height: double({ max: 1, min: 0.001, noNaN: true }),
+          image: record({
+            height: integer({ max: 5000, min: 10 }),
+            width: integer({ max: 5000, min: 10 }),
+          }),
+          minHeight: double({ max: 0.5, min: 0.01, noNaN: true }),
+          minWidth: double({ max: 0.5, min: 0.01, noNaN: true }),
+          width: double({ max: 1, min: 0.001, noNaN: true }),
+        }),
+        ({ angle, height, image, minHeight, minWidth, width }) => {
+          const minSize = {
+            height: minHeight * image.height,
+            width: minWidth * image.width,
+          };
+          const { cropper } = setup({ image, minSize });
+          cropper.setValue({ rotation: angle, size: { height, width } });
+          const state = cropState(cropper.getCropState());
+          expect(isCropCovered(state)).toBe(true);
+          if (cropper.getRotationLimit() >= Math.abs(angle)) {
+            expect(state.crop.width).toBeGreaterThanOrEqual(minSize.width - 0.01);
+            expect(state.crop.height).toBeGreaterThanOrEqual(
+              minSize.height - 0.01
+            );
+          }
+        }
+      )
+    );
+  });
+
+  it("reports the minimum it holds", () => {
+    const { cropper } = setup({ minSize: { height: 100, width: 5000 } });
+    expect(cropper.getMinSize()).toStrictEqual({ height: 100, width: 4000 });
+    expect(setup().cropper.getMinSize()).toStrictEqual({ height: 1, width: 1 });
+  });
+});

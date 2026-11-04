@@ -120,16 +120,17 @@ const flatFit = (
   ) {
     return null;
   }
+  const room = (one: HalfPlane, other: HalfPlane): number => {
+    const support = planeSupport(one, view.width, view.height);
+    return support > 0
+      ? (one.d + other.d) / (2 * support)
+      : Number.POSITIVE_INFINITY;
+  };
   const u = (a.d - b.d) / 2;
   const v = (c.d - d.d) / 2;
   return {
     center: { x: u * a.nx + v * c.nx, y: u * a.ny + v * c.ny },
-    scale:
-      1 /
-      Math.min(
-        (a.d + b.d) / (2 * planeSupport(a, view.width, view.height)),
-        (c.d + d.d) / (2 * planeSupport(c, view.width, view.height))
-      ),
+    scale: 1 / Math.min(room(a, b), room(c, d)),
   };
 };
 
