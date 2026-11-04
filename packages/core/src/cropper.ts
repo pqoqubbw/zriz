@@ -175,6 +175,15 @@ interface Gesture {
   owner: unknown;
 }
 
+const sameFields = <T extends object>(a: T, b: T): boolean => {
+  for (const key in a) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
   1 / largestFit(planes, size).scale;
 
@@ -314,8 +323,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const refresh = (): void => {
     const next = makeSnapshot();
-    const current = Object.values(snapshot);
-    if (Object.values(next).every((part, index) => part === current[index])) {
+    if (sameFields(next, snapshot)) {
       return;
     }
     snapshot = next;
