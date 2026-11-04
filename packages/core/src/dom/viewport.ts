@@ -13,7 +13,9 @@ import { holdCursor } from "./cursor";
 import {
   bindPointers,
   capture,
+  claim,
   claimTouch,
+  claimed,
   isElement,
   outside,
   pressLost,
@@ -529,9 +531,9 @@ const viewportController = (
       finish(event.pointerId, event);
     },
     onPointerDown(event) {
-      const taken = view.claimed(event);
+      const taken = claimed(event);
 
-      view.claim(event);
+      claim(event);
 
       if (
         taken ||

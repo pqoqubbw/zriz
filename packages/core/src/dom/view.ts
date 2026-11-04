@@ -13,7 +13,7 @@ import type { CropState, Matrix3, Point, Size } from "../geometry/types";
 import { spring } from "../motion";
 import { sameFields } from "../same-fields";
 import type { Aspect } from "../value";
-import { claim, claimed } from "./input";
+import { claim } from "./input";
 
 type Inset = {
   top: number;
@@ -73,7 +73,6 @@ type View = {
   reducedMotion: () => boolean;
   local: (event: { clientX: number; clientY: number }) => Point;
   claim: (event: Event) => void;
-  claimed: (event: Event) => boolean;
   setLayout: (layout: Layout | null, surface?: HTMLElement) => void;
   hold: () => Placement | null;
   release: () => void;
@@ -773,7 +772,6 @@ const viewOf = (cropper: Cropper): View => {
   const view: View = {
     chrome: () => chrome,
     claim,
-    claimed,
     destroy() {
       offFrame();
       offChange();

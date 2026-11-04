@@ -14,6 +14,7 @@ import {
   MIN_HANDLE_SPAN,
   bindPointers,
   capture,
+  claim,
   claimTouch,
   pressLost,
   presses,
@@ -499,7 +500,7 @@ const handleHandlers = (
     onLostPointerCapture: finish,
     onPointerCancel: finish,
     onPointerDown(event) {
-      view.claim(event);
+      claim(event);
       const state = cropper.getCropState();
 
       if (
