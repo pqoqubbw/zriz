@@ -538,3 +538,30 @@ describe("useCropperValue", () => {
     expect(renders).toBe(0);
   });
 });
+
+describe("AspectItem", () => {
+  afterEach(cleanup);
+
+  it("stays checked after turns on a ratio whose inverse drifts", async () => {
+    const cropper = createCropper({
+      defaultValue: { aspect: 1.85 },
+      image: { height: 3000, width: 4000 },
+    });
+    await render(
+      <Cropper.Root cropper={cropper}>
+        <Cropper.AspectItem id="item" value={1.85} />
+      </Cropper.Root>
+    );
+    const item = document.querySelector("#item");
+    expect(item?.hasAttribute("data-checked")).toBe(true);
+    cropper.rotate90();
+    cropper.rotate90();
+    await frames();
+    expect(cropper.getValue().aspect).not.toBe(1.85);
+    expect(item?.hasAttribute("data-checked")).toBe(true);
+    cropper.rotate90();
+    cropper.rotate90();
+    await frames();
+    expect(cropper.getState().pristine).toBe(true);
+  });
+});

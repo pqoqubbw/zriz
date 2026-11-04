@@ -30,6 +30,7 @@ export {
   changedFields,
   defaultValue,
   parse,
+  sameAspect,
   serialize,
   stateToValue,
   valueToState,

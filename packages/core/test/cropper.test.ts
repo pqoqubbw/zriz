@@ -19,6 +19,7 @@ import {
   createCropper,
   defaultValue,
   parse,
+  sameAspect,
   serialize,
   valuesEqual,
 } from "../src";
@@ -1591,5 +1592,145 @@ describe("setCropState", () => {
     cropper.setCropState({ ...state, turns: 5 as CropState["turns"] });
     expect(cropper.getCropState()?.turns).toBe(1);
     expect(cropper.getValue().quarterTurns).toBe(1);
+  });
+});
+
+describe("round trips", () => {
+  const onTheEdge = () => {
+    const fixture = setup();
+    fixture.cropper.setZoom(1.5);
+    fixture.cropper.panBy(2, 0);
+    fixture.time.frames(3);
+    fixture.change.mockClear();
+    fixture.commit.mockClear();
+    return fixture;
+  };
+
+  it("sends nothing when a crop on a limit is written back", () => {
+    const { change, commit, cropper, time } = onTheEdge();
+    const before = cropper.getValue();
+    cropper.setValue(before);
+    time.frames(3);
+    expect(cropper.getValue()).toBe(before);
+    expect(change).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("brings a saved crop on a limit back exactly", () => {
+    const { cropper } = onTheEdge();
+    const saved = parse(serialize(cropper.getValue())) as CropValue;
+    expect(setup({ value: saved }).cropper.getValue()).toStrictEqual(saved);
+  });
+
+  it("returns exactly to a stored crop", () => {
+    const { cropper, time } = onTheEdge();
+    const stored = cropper.getValue();
+    cropper.setRotation(3);
+    time.frames(3);
+    cropper.setValue(stored, { reason: "history" });
+    time.frames(3);
+    expect(cropper.getValue()).toStrictEqual(stored);
+  });
+
+  it("sends nothing for a new photo of the same size", () => {
+    const { change, commit, cropper, time } = onTheEdge();
+    const before = cropper.getValue();
+    cropper.setImage({ ...photo });
+    time.frames(3);
+    expect(change).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(cropper.getValue()).toBe(before);
+  });
+
+  it("stays quiet on any crop written back, on any photo shape", () => {
+    fcAssert(
+      property(
+        record({
+          angle: double({ max: 45, min: -45, noNaN: true }),
+          image: constantFrom(
+            photo,
+            { height: 30, width: 40 },
+            { height: 100, width: 20_000 },
+            { height: 3024, width: 4032 }
+          ),
+          pan: double({ max: 3, min: -3, noNaN: true }),
+          zoom: double({ max: 15, min: 1, noNaN: true }),
+        }),
+        ({ angle, image, pan, zoom }) => {
+          const { change, commit, cropper, time } = setup({ image });
+          cropper.setRotation(angle);
+          cropper.setZoom(zoom);
+          cropper.panBy(pan, pan / 2);
+          time.frames(2);
+          change.mockClear();
+          commit.mockClear();
+          cropper.setValue(cropper.getValue());
+          time.frames(2);
+          expect(change).not.toHaveBeenCalled();
+          expect(commit).not.toHaveBeenCalled();
+        }
+      )
+    );
+  });
+
+  it("stays pristine when the default crop is written back", () => {
+    const { cropper, time } = setup({
+      defaultValue: { center: { x: 0.9, y: 0.9 }, rotation: 12 },
+      image: { height: 4032, width: 3024 },
+    });
+    expect(cropper.getState().pristine).toBe(true);
+    cropper.setValue(cropper.getValue());
+    time.frames(2);
+    expect(cropper.getState().pristine).toBe(true);
+  });
+
+  it("is pristine again after four turns on a ratio whose inverse drifts", () => {
+    fcAssert(
+      property(double({ max: 8, min: 0.125, noNaN: true }), (ratio) => {
+        const { cropper } = setup({ defaultValue: { aspect: ratio } });
+        for (let turn = 0; turn < 4; turn += 1) {
+          cropper.rotate90();
+        }
+        expect(sameAspect(cropper.getValue().aspect, ratio)).toBe(true);
+        expect(cropper.getState().pristine).toBe(true);
+      })
+    );
+  });
+
+  it("tells close ratios from far ones and names apart", () => {
+    expect(sameAspect(1.85, 1.8500000000000003)).toBe(true);
+    expect(sameAspect(1.85, 1.86)).toBe(false);
+    expect(sameAspect("free", "free")).toBe(true);
+    expect(sameAspect("free", 1)).toBe(false);
+  });
+});
+
+describe("anchored zoom", () => {
+  const minSize = { height: 1500, width: 2000 };
+
+  it("does not pan when the minSize ceiling stops the zoom", () => {
+    const { cropper } = setup({ minSize });
+    cropper.setZoom(2);
+    const before = cropState(cropper.getCropState()).crop;
+    cropper.setZoom(4, { anchor: { x: 0, y: 0 } });
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+    expect(cropState(cropper.getCropState()).crop).toStrictEqual(before);
+  });
+
+  it("holds the anchor when the zoom stops short of the request", () => {
+    const { cropper } = setup({ minSize });
+    cropper.setZoom(4, { anchor: { x: 0.25, y: 0.25 } });
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+    const { center } = cropper.getValue();
+    expect(center.x).toBeCloseTo(0.375, 9);
+    expect(center.y).toBeCloseTo(0.375, 9);
+  });
+
+  it("holds the anchor when the zoom is reached", () => {
+    const { cropper } = setup();
+    cropper.setZoom(2, { anchor: { x: 0.25, y: 0.75 } });
+    const { center } = cropper.getValue();
+    expect(center.x).toBeCloseTo(0.375, 9);
+    expect(center.y).toBeCloseTo(0.625, 9);
   });
 });

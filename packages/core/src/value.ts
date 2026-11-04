@@ -113,6 +113,12 @@ export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   };
 };
 
+export const sameAspect = (a: Aspect, b: Aspect): boolean =>
+  a === b ||
+  (typeof a === "number" &&
+    typeof b === "number" &&
+    Math.abs(a - b) <= 1e-12 * Math.max(a, b));
+
 const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
   switch (field) {
     case "center": {
@@ -127,7 +133,9 @@ const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
         a.perspective.horizontal === b.perspective.horizontal
       );
     }
-    case "aspect":
+    case "aspect": {
+      return sameAspect(a.aspect, b.aspect);
+    }
     case "mirrored":
     case "quarterTurns":
     case "rotation": {
@@ -203,23 +211,40 @@ export const readValue = (
   };
 };
 
-export const isSound = ({
+const numbersOf = ({
   center,
   perspective,
   rotation,
   size,
-}: CropValue): boolean =>
-  [
-    center.x,
-    center.y,
-    perspective.horizontal,
-    perspective.vertical,
-    rotation,
-    size.height,
-    size.width,
-  ].every(Number.isFinite) &&
-  size.width > 0 &&
-  size.height > 0;
+}: CropValue): number[] => [
+  center.x,
+  center.y,
+  perspective.horizontal,
+  perspective.vertical,
+  rotation,
+  size.height,
+  size.width,
+];
+
+export const isSound = (value: CropValue): boolean =>
+  numbersOf(value).every(Number.isFinite) &&
+  value.size.width > 0 &&
+  value.size.height > 0;
+
+export const sameCrop = (a: CropValue, b: CropValue, image: Size): boolean => {
+  const reach = Math.min(
+    1e-9,
+    (1e-9 + 4e-12 * Math.max(image.width, image.height)) /
+      Math.min(image.width, image.height)
+  );
+  const other = numbersOf(b);
+  return (
+    sameAspect(a.aspect, b.aspect) &&
+    a.mirrored === b.mirrored &&
+    a.quarterTurns === b.quarterTurns &&
+    numbersOf(a).every((n, i) => Math.abs(n - (other[i] ?? 0)) <= reach)
+  );
+};
 
 export const serialize = (value: CropValue): string =>
   JSON.stringify({ v: 1, ...value });

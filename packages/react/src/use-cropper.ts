@@ -1,6 +1,6 @@
 "use client";
 
-import { createCropper } from "@zriz/core";
+import { createCropper, sameAspect } from "@zriz/core";
 import type {
   Aspect,
   Cropper,
@@ -91,7 +91,7 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     }
   }, [cropper, value]);
   useIsomorphicLayoutEffect(() => {
-    if (aspect !== undefined && cropper.getValue().aspect !== aspect) {
+    if (aspect !== undefined && !sameAspect(cropper.getValue().aspect, aspect)) {
       cropper.setAspect(aspect, { reason: "aspect" });
     }
   }, [cropper, aspect, ready, rest.disabled]);

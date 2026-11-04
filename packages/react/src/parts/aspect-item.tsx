@@ -1,5 +1,6 @@
 "use client";
 
+import { sameAspect } from "@zriz/core";
 import type { Aspect } from "@zriz/core";
 import { forwardRef, useContext } from "react";
 
@@ -28,7 +29,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   const inGroup = useContext(AspectGroupContext);
   const { shape } = useContext(RootContextValue);
   const disabled = shape === "circle" && value !== 1;
-  const checked = useCropperState((s) => s.aspect === value);
+  const checked = useCropperState((s) => sameAspect(s.aspect, value));
   const onClick = (event: React.MouseEvent): void => {
     cropper.setAspect(value, { event: event.nativeEvent });
   };

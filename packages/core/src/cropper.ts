@@ -30,6 +30,7 @@ import {
   isSound,
   positive,
   readValue,
+  sameCrop,
   stateToValue,
   toAspect,
   valueToState,
@@ -414,7 +415,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
     const fixed = constrain(saved, "centre");
     const fixedValue = stateToValue(fixed, savedValue.aspect);
-    return valuesEqual(fixedValue, savedValue)
+    return sameCrop(fixedValue, savedValue, saved.image)
       ? [saved, savedValue]
       : [fixed, fixedValue];
   };
@@ -546,15 +547,26 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     refresh();
   };
 
+  const holdIf = (
+    computed: CropValue,
+    held: CropValue | undefined,
+    size: Size
+  ): CropValue => (held && sameCrop(computed, held, size) ? held : computed);
+
   const commitState = (
     next: CropState,
     keep: "size" | "centre",
     action: ActionOptions,
     fallback: ChangeReason,
-    aspect: Aspect = value.aspect
+    aspect: Aspect = value.aspect,
+    given?: CropValue
   ): void => {
     const fixed = constrain(next, keep);
-    const fixedValue = stateToValue(fixed, aspect);
+    const fixedValue = holdIf(
+      holdIf(stateToValue(fixed, aspect), given, fixed.image),
+      value,
+      fixed.image
+    );
     if (isSound(fixedValue)) {
       accept(fixed, fixedValue, action, fallback);
     }
@@ -565,9 +577,13 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const fitReset = (): void => {
     resetFit = image
-      ? stateToValue(
-          constrain(fromValue(resetValue, image), "centre"),
-          resetValue.aspect
+      ? holdIf(
+          stateToValue(
+            constrain(fromValue(resetValue, image), "centre"),
+            resetValue.aspect
+          ),
+          resetValue,
+          image
         )
       : resetValue;
   };
@@ -591,7 +607,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       accept(null, next, action, reason);
       return;
     }
-    commitState(fromValue(next, image), "centre", action, reason, next.aspect);
+    commitState(
+      fromValue(next, image),
+      "centre",
+      action,
+      reason,
+      next.aspect,
+      next
+    );
   };
 
   const cropper: Cropper = {
@@ -800,7 +823,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       const fixed = constrain(fromValue(value, next), "centre");
-      const fixedValue = stateToValue(fixed, value.aspect);
+      const fixedValue = holdIf(stateToValue(fixed, value.aspect), value, next);
       if (first) {
         state = fixed;
         value = fixedValue;
@@ -872,13 +895,25 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
             y: (action.anchor.y - 0.5) * turned.height,
           }
         : { x: state.crop.x, y: state.crop.y };
+      const sized = constrain(
+        {
+          ...state,
+          crop: {
+            ...state.crop,
+            height: state.crop.height * k,
+            width: state.crop.width * k,
+          },
+        },
+        "size"
+      ).crop;
+      const reached = sized.width / state.crop.width;
       const next = {
         ...state,
         crop: {
-          height: state.crop.height * k,
-          width: state.crop.width * k,
-          x: anchor.x + (state.crop.x - anchor.x) * k,
-          y: anchor.y + (state.crop.y - anchor.y) * k,
+          height: sized.height,
+          width: sized.width,
+          x: anchor.x + (state.crop.x - anchor.x) * reached,
+          y: anchor.y + (state.crop.y - anchor.y) * reached,
         },
       };
       commitState(next, "size", action, "imperative");
