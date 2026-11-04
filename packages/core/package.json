@@ -102,7 +102,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "18067 B",
+      "limit": "18102 B",
       "entry": [
         "index"
       ]

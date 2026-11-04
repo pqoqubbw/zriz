@@ -36,7 +36,7 @@ export default [
     entry: ["index"],
     ignore: ["react", "react-dom"],
     import: "*",
-    limit: "24127 B",
+    limit: "24142 B",
     modifyRolldownConfig: production,
     name: "editor (every part)",
     path: "dist/cropper.js",

@@ -369,14 +369,15 @@ export const handleHandlers = (
       const pointer = toWorking(event, drag.placement);
       const span = MIN_HANDLE_SPAN / drag.placement.scale;
       const min = cropper.getMinSize();
+      const { start } = drag;
       const rect = dragHandle(
-        drag.start,
+        start,
         handle,
         { x: pointer.x - drag.grab.x, y: pointer.y - drag.grab.y },
         {
           aspect: state.aspect,
-          minHeight: Math.max(span, min.height),
-          minWidth: Math.max(span, min.width),
+          minHeight: Math.max(span, Math.min(min.height, start.y1 - start.y0)),
+          minWidth: Math.max(span, Math.min(min.width, start.x1 - start.x0)),
           planes: [...imagePlanes(state), ...drag.bounds],
         }
       );

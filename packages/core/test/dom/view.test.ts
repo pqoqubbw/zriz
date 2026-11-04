@@ -1,8 +1,8 @@
 import { double, assert as fcAssert, property, record } from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createCropper } from "../../src";
-import type { CropperOptions } from "../../src";
+import { createCropper, defaultValue } from "../../src";
+import type { Aspect, CropperOptions } from "../../src";
 import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
 import type { HandleEdge } from "../../src/dom";
 import { bindZoomThumb } from "../../src/dom/controls";
@@ -13,7 +13,7 @@ import {
   viewOf,
 } from "../../src/dom/view";
 import type { Box, Layout, Placement } from "../../src/dom/view";
-import type { CropState } from "../../src/geometry";
+import type { CropState, Size } from "../../src/geometry";
 import {
   applyHomography,
   cropCorners,
@@ -437,7 +437,11 @@ describe("a rejected change", () => {
   });
 });
 
-const minCropper = (min: number, viewport = 1000) => {
+const minCropper = (
+  min: number,
+  viewport = 1000,
+  { aspect = "free", ...options }: CropperOptions & { aspect?: Aspect } = {}
+) => {
   vi.stubGlobal("addEventListener", () => {});
   vi.stubGlobal("removeEventListener", () => {});
   vi.stubGlobal("Element", Object);
@@ -446,6 +450,8 @@ const minCropper = (min: number, viewport = 1000) => {
     clock: time.clock,
     image: { height: 1000, width: 1000 },
     minSize: { height: min, width: min },
+    value: { ...defaultValue, aspect },
+    ...options,
   });
   viewOf(cropper).setLayout({
     dpr: 1,
@@ -456,29 +462,40 @@ const minCropper = (min: number, viewport = 1000) => {
   return { cropper, time };
 };
 
+const edgeShare = (edge: HandleEdge, before: string, after: string): number => {
+  if (edge.includes(before)) {
+    return 0;
+  }
+  return edge.includes(after) ? 1 : 0.5;
+};
+
+const pointerAt = (clientX: number, clientY: number) => [
+  {
+    button: 0,
+    clientX,
+    clientY,
+    currentTarget: null,
+    pointerId: 1,
+    pointerType: "mouse",
+  },
+];
+
 const dragEdge = (
   { cropper, time }: ReturnType<typeof minCropper>,
   edge: HandleEdge,
-  dx: number
+  dx: number,
+  dy = 0
 ): void => {
   const rect = viewOf(cropper).frame()?.rect;
-  const x = (rect?.x ?? 0) + (rect?.width ?? 0);
-  const y = (rect?.y ?? 0) + (rect?.height ?? 0) / 2;
+  const x =
+    (rect?.x ?? 0) + (rect?.width ?? 0) * edgeShare(edge, "left", "right");
+  const y =
+    (rect?.y ?? 0) + (rect?.height ?? 0) * edgeShare(edge, "top", "bottom");
   const handlers = handleHandlers(cropper, edge);
-  const at = (clientX: number) => [
-    {
-      button: 0,
-      clientX,
-      clientY: y,
-      currentTarget: null,
-      pointerId: 1,
-      pointerType: "mouse",
-    },
-  ];
-  Reflect.apply(handlers.onPointerDown, undefined, at(x));
-  Reflect.apply(handlers.onPointerMove, undefined, at(x + dx));
+  Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
+  Reflect.apply(handlers.onPointerMove, undefined, pointerAt(x + dx, y + dy));
   time.frame();
-  Reflect.apply(handlers.onPointerUp, undefined, at(x + dx));
+  Reflect.apply(handlers.onPointerUp, undefined, pointerAt(x + dx, y + dy));
   time.frame();
 };
 
@@ -495,6 +512,67 @@ describe("a handle at minSize", () => {
     dragEdge(context, "right", -viewport);
     expect(context.cropper.getPixelCrop()?.pixelRect?.width).toBe(min);
   });
+
+  it.each([
+    ["bottom", -2000, 200],
+    ["top", 2000, 600],
+  ] as const)(
+    "stops the %s handle at the minimum height with the far edge in place",
+    (edge, dy, top) => {
+      const context = minCropper(200);
+      context.cropper.setValue({ size: { height: 0.6, width: 0.6 } });
+      dragEdge(context, edge, 0, dy);
+      expect(context.cropper.getPixelCrop()?.pixelRect).toStrictEqual({
+        height: 200,
+        left: 200,
+        top,
+        width: 600,
+      });
+    }
+  );
+
+  it.each<[string, Size, number, Size, HandleEdge, number]>([
+    [
+      "a tall photo",
+      { height: 800, width: 300 },
+      1,
+      { height: 512, width: 512 },
+      "bottom-right",
+      -1,
+    ],
+    [
+      "a wide photo",
+      { height: 2000, width: 3000 },
+      3,
+      { height: 1500, width: 100 },
+      "bottom-right",
+      -1,
+    ],
+    [
+      "a square photo",
+      { height: 1000, width: 1000 },
+      16 / 9,
+      { height: 800, width: 800 },
+      "top-left",
+      1,
+    ],
+  ])(
+    "moves a locked crop under its minimum by no more than the drag on %s",
+    (_, image, aspect, minSize, edge, inward) => {
+      const context = minCropper(1, 1000, { aspect, image, minSize });
+      const { cropper } = context;
+      const before = cropper.getCropState()?.crop;
+      const scale = viewOf(cropper).frame()?.scale ?? 1;
+      dragEdge(context, edge, inward, inward);
+      const after = cropper.getCropState()?.crop;
+      expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeLessThan(
+        2 / scale
+      );
+      expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(
+        2 / scale
+      );
+    }
+  );
 
   it("keeps the other side and the opposite edge where they were", () => {
     const context = minCropper(200);
