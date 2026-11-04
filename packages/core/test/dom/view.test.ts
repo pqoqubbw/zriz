@@ -692,6 +692,69 @@ describe("a handle on a crop under the 88 px floor", () => {
   });
 });
 
+const atCeiling = (
+  maxZoom: number,
+  size: { height: number; width: number }
+) => {
+  const context = thinCropper({ height: 3000, width: 4000 }, 400, {
+    maxZoom,
+  });
+  context.cropper.setValue({ size });
+  context.cropper.setZoom(maxZoom);
+  context.time.frames(2);
+  return context;
+};
+
+describe("a handle at the zoom ceiling", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    [15, -100],
+    [15, -300],
+    [8, -100],
+  ])(
+    "keeps the far corner at max zoom %s when a corner moves %s px in",
+    (maxZoom, inward) => {
+      const context = atCeiling(maxZoom, {
+        height: 1 / maxZoom,
+        width: 1 / maxZoom,
+      });
+      const before = context.cropper.getCropState()?.crop;
+      const crop = held(context, "bottom-right", inward, inward);
+      expect(crop.x - crop.width / 2).toBeCloseTo(
+        (before?.x ?? 0) - (before?.width ?? 0) / 2,
+        6
+      );
+      expect(crop.y - crop.height / 2).toBeCloseTo(
+        (before?.y ?? 0) - (before?.height ?? 0) / 2,
+        6
+      );
+      expect(context.cropper.getZoom()).toBeCloseTo(maxZoom, 6);
+    }
+  );
+
+  it("keeps the other side and the far edge when an edge moves in", () => {
+    const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
+    const before = context.cropper.getCropState()?.crop;
+    const crop = held(context, "right", -50);
+    expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
+    expect(crop.x - crop.width / 2).toBeCloseTo(
+      (before?.x ?? 0) - (before?.width ?? 0) / 2,
+      6
+    );
+  });
+
+  it("still shrinks the side that does not set the zoom", () => {
+    const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
+    const before = context.cropper.getCropState()?.crop;
+    const crop = held(context, "bottom", 0, -5);
+    expect(crop.height).toBeLessThan(before?.height ?? 0);
+    expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+  });
+});
+
 describe("zoom thumb", () => {
   it("does not write the style while the zoom stands still", () => {
     const { cropper, time } = photoCropper();

@@ -4,7 +4,7 @@ import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
 import type { Crop, HalfPlane, Point, Rect } from "../geometry/types";
 import { holdCursor } from "./cursor";
-import { bindPointers, capture, targetOf } from "./input";
+import { bindPointers, capture, stopAtZoomCeiling, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
 import { cssMatrix, viewOf } from "./view";
@@ -369,6 +369,7 @@ export const handleHandlers = (
       const pointer = toWorking(event, drag.placement);
       const span = MIN_HANDLE_SPAN / drag.placement.scale;
       const min = cropper.getMinSize();
+      const planes = imagePlanes(state);
       const rect = dragHandle(
         drag.start,
         handle,
@@ -377,18 +378,23 @@ export const handleHandlers = (
           aspect: state.aspect,
           minHeight: Math.max(span, min.height),
           minWidth: Math.max(span, min.width),
-          planes: [...imagePlanes(state), ...drag.bounds],
+          planes: [...planes, ...drag.bounds],
         }
       );
       cropper.setCropState(
         {
           ...state,
-          crop: {
-            height: rect.y1 - rect.y0,
-            width: rect.x1 - rect.x0,
-            x: (rect.x0 + rect.x1) / 2,
-            y: (rect.y0 + rect.y1) / 2,
-          },
+          crop: stopAtZoomCeiling(
+            planes,
+            state.crop,
+            {
+              height: rect.y1 - rect.y0,
+              width: rect.x1 - rect.x0,
+              x: (rect.x0 + rect.x1) / 2,
+              y: (rect.y0 + rect.y1) / 2,
+            },
+            cropper.getMaxZoom()
+          ),
         },
         { event, keep: "size", reason: "resize" }
       );

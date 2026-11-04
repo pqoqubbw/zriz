@@ -1,3 +1,36 @@
+import { largestFit } from "../geometry/coverage";
+import type { Crop, HalfPlane } from "../geometry/types";
+
+export const stopAtZoomCeiling = (
+  planes: readonly HalfPlane[],
+  from: Crop,
+  to: Crop,
+  maxZoom: number
+): Crop => {
+  const at = (share: number): Crop => ({
+    height: from.height + share * (to.height - from.height),
+    width: from.width + share * (to.width - from.width),
+    x: from.x + share * (to.x - from.x),
+    y: from.y + share * (to.y - from.y),
+  });
+  const under = (crop: Crop): boolean =>
+    largestFit(planes, crop).scale * maxZoom >= 1;
+  if (under(to)) {
+    return to;
+  }
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 30; step += 1) {
+    const middle = (low + high) / 2;
+    if (under(at(middle))) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  return at(low);
+};
+
 export interface PointerHandlers {
   onPointerDown: (event: PointerEvent) => void;
   onPointerMove: (event: PointerEvent) => void;
