@@ -1,4 +1,3 @@
-import { positiveZero } from "./geometry/angle";
 import { straightenLimit } from "./geometry/constraints";
 import { largestFit, minScaleAt } from "./geometry/coverage";
 import { exportPlan } from "./geometry/export-plan";
@@ -24,6 +23,7 @@ import {
   ROTATION_LIMIT,
   aspectRatio,
   changedFields,
+  clean,
   defaultValue,
   focalLength,
   stateToValue,
@@ -253,7 +253,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
     const limit = rotationLimit();
-    const angle = positiveZero(Math.min(Math.max(next.angle, -limit), limit));
+    const angle = clean(Math.min(Math.max(next.angle, -limit), limit));
     const shaped = angle === next.angle ? next : setAngle(next, angle);
     const planes = imagePlanes(shaped);
     const { x, y } = shaped.crop;
@@ -672,7 +672,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         Number.isFinite(given.height) &&
         given.width > 0 &&
         given.height > 0
-          ? { height: given.height, width: given.width }
+          ? {
+              height: Math.round(given.height) || 1,
+              width: Math.round(given.width) || 1,
+            }
           : null;
       const first = state === null;
       image = next;

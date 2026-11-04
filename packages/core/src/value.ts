@@ -54,6 +54,9 @@ export const aspectRatio = (
   return aspect;
 };
 
+export const clean = (value: number): number =>
+  positiveZero(Math.round(value * 1e12) / 1e12);
+
 export const focalLength = (image: Size, millimetres = 26): number =>
   (millimetres / 36) * Math.max(image.width, image.height);
 
@@ -62,10 +65,11 @@ export const valueToState = (
   image: Size,
   focal: number = focalLength(image)
 ): CropState => {
-  const turned = turnedSize(image, value.quarterTurns);
+  const turns = toQuarterTurns(Math.round(value.quarterTurns));
+  const turned = turnedSize(image, turns);
   return {
     angle: value.rotation,
-    aspect: aspectRatio(value.aspect, image, value.quarterTurns),
+    aspect: aspectRatio(value.aspect, image, turns),
     crop: {
       height: value.size.height * turned.height,
       width: value.size.width * turned.width,
@@ -74,13 +78,14 @@ export const valueToState = (
     },
     flip: value.mirrored,
     image,
-    perspective: { ...value.perspective, focal },
-    turns: value.quarterTurns,
+    perspective: {
+      focal,
+      horizontal: clean(value.perspective.horizontal),
+      vertical: clean(value.perspective.vertical),
+    },
+    turns,
   };
 };
-
-const clean = (value: number): number =>
-  positiveZero(Math.round(value * 1e12) / 1e12);
 
 export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   const turned = turnedSize(state.image, state.turns);
@@ -145,7 +150,7 @@ const finite = (value: unknown, fallback: number): number =>
 const clamp = (value: number, limit: number): number =>
   positiveZero(Math.min(Math.max(value, -limit), limit));
 
-const positive = (value: unknown, fallback: number): number =>
+export const positive = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;

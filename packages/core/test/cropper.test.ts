@@ -625,3 +625,79 @@ describe("what the cropper holds on to", () => {
     expect(cropper.getZoom()).toBeGreaterThan(1);
   });
 });
+
+const isTurns = (value: number): value is CropValue["quarterTurns"] =>
+  Number.isFinite(value);
+
+describe("value edges", () => {
+  it("treats an angle that reads as level as level", () => {
+    const { cropper } = setup();
+    cropper.setRotation(10);
+    cropper.setRotation(1e-13);
+    expect(cropper.getValue().rotation).toBe(0);
+    expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
+  });
+
+  it("gives a level plan after angles that sum to almost zero", () => {
+    const { cropper } = setup();
+    let angle = 0;
+    for (const step of [0.1, 0.1, 0.1, -0.1, -0.1, -0.1]) {
+      angle += step;
+      cropper.setRotation(angle);
+    }
+    expect(cropper.getCropState()?.angle).toBe(0);
+    expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
+  });
+
+  it("treats a perspective that reads as flat as flat", () => {
+    const { cropper } = setup();
+    cropper.setValue({ perspective: { horizontal: 0, vertical: 10 } });
+    cropper.setValue({ perspective: { horizontal: 1e-13, vertical: 1e-13 } });
+    expect(cropper.getPixelCrop()?.homography).toBeNull();
+    expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
+  });
+
+  it("rounds a fractional image size to whole pixels", () => {
+    const { cropper } = setup({ image: { height: 10, width: 10.5 } });
+    expect(cropper.getPixelCrop()?.pixelRect).toStrictEqual({
+      height: 10,
+      left: 0,
+      top: 0,
+      width: 11,
+    });
+  });
+
+  it("keeps an image under half a pixel at one pixel", () => {
+    const { cropper } = setup({ image: { height: 0.4, width: 0.4 } });
+    expect(cropper.getCropState()?.image).toStrictEqual({
+      height: 1,
+      width: 1,
+    });
+  });
+
+  it.each([
+    [1.5, 2],
+    [5, 1],
+    [-1, 3],
+  ])("reads quarter turns %d as %d", (given, turns) => {
+    if (!isTurns(given)) {
+      throw new Error("not a number");
+    }
+    const quarterTurns = given;
+    const set = setup();
+    set.cropper.setValue({ quarterTurns });
+    expect(set.cropper.getValue().quarterTurns).toBe(turns);
+    const held = setup({ defaultValue: { quarterTurns } });
+    expect(held.cropper.getValue().quarterTurns).toBe(turns);
+    const controlled = setup({
+      value: { ...held.cropper.getValue(), quarterTurns },
+    });
+    expect(controlled.cropper.getValue().quarterTurns).toBe(turns);
+    const late = setup({
+      image: undefined,
+      value: { ...held.cropper.getValue(), quarterTurns },
+    });
+    late.cropper.setImage(photo);
+    expect(late.cropper.getValue().quarterTurns).toBe(turns);
+  });
+});
