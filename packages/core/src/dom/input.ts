@@ -99,9 +99,17 @@ export const pressLost = (
   (event.pointerType === "mouse" && event.buttons === 0) ||
   element?.getClientRects().length === 0;
 
+const closedRoot = (node: Node): node is ShadowRoot =>
+  "mode" in node && node.mode === "closed";
+
+const within = (node: Element, path: EventTarget[]): boolean => {
+  const root = node.getRootNode();
+  return path.includes(node) || (closedRoot(root) && within(root.host, path));
+};
+
 export const outside = (element: Element | null, event: Event): boolean =>
   event.target !== null &&
-  (element === null || !event.composedPath().includes(element));
+  (element === null || !within(element, event.composedPath()));
 
 export const watchLoss = (
   cropper: Cropper,

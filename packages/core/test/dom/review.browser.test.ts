@@ -921,4 +921,34 @@ describe("writes during a held gesture", () => {
       expect(r.cropper.getState().interacting).toBeNull();
     }
   });
+
+  it("a dial in a shadow root keeps its throw, and a release elsewhere ends it", () => {
+    for (const mode of ["open", "closed"] as const) {
+      const r = rig();
+      const host = document.createElement("div");
+      document.body.append(host);
+      const dial = document.createElement("div");
+      dial.style.cssText = "width:300px;height:40px;";
+      host.attachShadow({ mode }).append(dial);
+      cleanups.push(bindDial(r.cropper, dial), () => {
+        host.remove();
+      });
+      const press = (end: EventTarget): void => {
+        const from = performance.now();
+        dial.dispatchEvent(stamped("pointerdown", 100, from));
+        for (let i = 1; i <= 5; i += 1) {
+          dial.dispatchEvent(
+            stamped("pointermove", 100 + i * 15, from + i * 16)
+          );
+        }
+        end.dispatchEvent(stamped("pointerup", 175, from + 80));
+      };
+      press(dial);
+      expect(r.cropper.getState().interacting).toBe("dial");
+      r.time.frames(240);
+      expect(r.cropper.getState().interacting).toBeNull();
+      press(document.body);
+      expect(r.cropper.getState().interacting).toBeNull();
+    }
+  });
 });
