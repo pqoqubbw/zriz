@@ -81,16 +81,22 @@ export const projectOntoPlanes = (
   given: Point,
   epsilon = 1e-9
 ): Point => {
-  if (insidePlanes(planes, given, epsilon) || Number.isNaN(given.x + given.y)) {
+  if (
+    insidePlanes(planes, given, epsilon) ||
+    Number.isNaN(given.x) ||
+    Number.isNaN(given.y)
+  ) {
     return given;
   }
-  const reach = 1024 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
+  const reach = 1e6 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
   const point = {
     x: Math.min(Math.max(given.x, -reach), reach),
     y: Math.min(Math.max(given.y, -reach), reach),
   };
   const candidates: Point[] = planes.map((plane) => {
-    const k = plane.nx * point.x + plane.ny * point.y - plane.d;
+    const k =
+      (plane.nx * point.x + plane.ny * point.y - plane.d) /
+      (plane.nx * plane.nx + plane.ny * plane.ny);
     return { x: point.x - k * plane.nx, y: point.y - k * plane.ny };
   });
   for (const [index, a] of planes.entries()) {

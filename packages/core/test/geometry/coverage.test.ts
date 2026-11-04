@@ -93,6 +93,21 @@ describe("coverage with pan", () => {
     );
   });
 
+  it("keeps the free axis of a pan far past a crop with little room", () => {
+    const n = Math.SQRT1_2;
+    const { x, y } = projectOntoPlanes(
+      [
+        { d: 1, nx: n, ny: n },
+        { d: 1, nx: -n, ny: -n },
+        { d: 1, nx: -n, ny: n },
+        { d: 1, nx: n, ny: -n },
+      ],
+      { x: (5000 - 0.5) * n, y: (5000 + 0.5) * n }
+    );
+    expect((x + y) * n).toBeCloseTo(1, 6);
+    expect((y - x) * n).toBeCloseTo(0.5, 6);
+  });
+
   it("beats every sampled feasible pan with the clamp", () => {
     assert(
       property(
@@ -254,6 +269,60 @@ describe("coverage with pan", () => {
     const { center } = largestFit(imagePlanes(state), state.crop);
     expect(Object.is(center.x, -0)).toBeFalsy();
     expect(Object.is(center.y, -0)).toBeFalsy();
+  });
+});
+
+describe("planes the cropper does not build", () => {
+  const stretched = [
+    { d: 600, nx: 2, ny: 0 },
+    { d: 200, nx: -2, ny: 0 },
+    { d: 200, nx: 0, ny: 2 },
+    { d: 200, nx: 0, ny: -2 },
+  ];
+  const slanted = [
+    { d: 100, nx: 1, ny: 0 },
+    { d: 100, nx: -1, ny: 0 },
+    { d: 200, nx: 0.6, ny: 0.8 },
+    { d: -40, nx: -0.6, ny: -0.8 },
+  ];
+
+  it.each([
+    ["normals that are not unit", stretched],
+    ["sides that are not perpendicular", slanted],
+  ])("fits a view inside %s", (_, planes) => {
+    const view = { height: 10, width: 10 };
+    const { center, scale } = largestFit(planes, view);
+    expect(
+      insidePlanes(
+        panPlanes(planes, view.width / scale, view.height / scale),
+        center,
+        1e-6
+      )
+    ).toBeTruthy();
+  });
+
+  it("gives the scale of a stretched rectangle", () => {
+    expect(
+      largestFit(stretched, { height: 100, width: 100 }).scale
+    ).toBeCloseTo(0.5, 9);
+  });
+
+  it("projects along the plane a point breaks", () => {
+    const point = projectOntoPlanes(stretched, { x: 500, y: 0 });
+    expect(point.x).toBeCloseTo(300, 9);
+    expect(point.y).toBeCloseTo(0, 9);
+  });
+
+  it("finds the nearest point on a plane with a long normal", () => {
+    const point = projectOntoPlanes(
+      [
+        { d: 0, nx: 3, ny: 4 },
+        { d: 500, nx: 0, ny: -5 },
+      ],
+      { x: 100, y: 0 }
+    );
+    expect(point.x).toBeCloseTo(64, 9);
+    expect(point.y).toBeCloseTo(-48, 9);
   });
 });
 

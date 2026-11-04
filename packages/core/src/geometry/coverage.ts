@@ -116,7 +116,10 @@ const flatFit = (
     a.nx !== -b.nx ||
     a.ny !== -b.ny ||
     c.nx !== -d.nx ||
-    c.ny !== -d.ny
+    c.ny !== -d.ny ||
+    Math.abs(a.nx * a.nx + a.ny * a.ny - 1) > 1e-9 ||
+    Math.abs(c.nx * c.nx + c.ny * c.ny - 1) > 1e-9 ||
+    Math.abs(a.nx * c.nx + a.ny * c.ny) > 1e-9
   ) {
     return null;
   }

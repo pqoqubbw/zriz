@@ -1746,6 +1746,19 @@ describe("input validation", () => {
     expectValid(later);
   });
 
+  it.each([
+    ["Infinity", huge, 0, 0.75, 0.5],
+    ["1e200", 1e200, 0, 0.75, 0.5],
+    ["opposite infinities", huge, -huge, 0.75, 0.25],
+    ["opposite 1e308", 1e308, -1e308, 0.75, 0.25],
+    ["same sign 1e308", 1e308, 1e308, 0.75, 0.75],
+  ])("lands on the edge a pan of %s points at", (_, dx, dy, x, y) => {
+    const { cropper } = setup();
+    cropper.setZoom(2);
+    cropper.panBy(dx, dy);
+    expect(cropper.getValue().center).toStrictEqual({ x, y });
+  });
+
   it("lets maxZoom Infinity through", () => {
     const { cropper } = setup({ maxZoom: huge });
     expect(cropper.getMaxZoom()).toBe(huge);
