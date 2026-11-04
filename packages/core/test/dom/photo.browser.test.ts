@@ -32,11 +32,13 @@ const stripes = async (): Promise<Blob> => {
 const mount = async (
   previewEdge: number,
   blob?: Blob,
-  defaultValue?: Partial<CropValue>
+  defaultValue?: Partial<CropValue>,
+  display = ""
 ) => {
   const viewport = document.createElement("div");
   viewport.style.cssText = "position:relative;width:400px;height:300px;";
   const photo = document.createElement("div");
+  photo.style.display = display;
   viewport.append(photo);
   document.body.append(viewport);
   const cropper = createCropper({ defaultValue });
@@ -236,6 +238,18 @@ const failing = (op: string) => {
     spy.mockRestore();
   });
   return { total: () => total };
+};
+
+const watchErrors = (): string[] => {
+  const errors: string[] = [];
+  const onError = (event: ErrorEvent): void => {
+    errors.push(event.message);
+  };
+  window.addEventListener("error", onError);
+  cleanups.push(() => {
+    window.removeEventListener("error", onError);
+  });
+  return errors;
 };
 
 const lines = async (width: number): Promise<Blob> => {
@@ -1027,6 +1041,32 @@ describe("photo layer", () => {
       photo.querySelector("canvas")?.width
     );
     expect(jobs.total()).toBe(1);
+  });
+
+  it("frees a hidden copy without a window error when it shows after destroy", async () => {
+    const errors = watchErrors();
+    const { cropper, photo } = await mount(1024, undefined, undefined, "none");
+    await nextFrame();
+    cropper.destroy();
+    await nextFrame();
+    photo.style.display = "block";
+    await expect
+      .poll(() => photo.querySelector("canvas")?.width, { timeout: 3000 })
+      .toBe(0);
+    expect(errors).toStrictEqual([]);
+  });
+
+  it("frees the photo without a window error when the context returns after destroy", async () => {
+    const errors = watchErrors();
+    stalled("motion");
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    canvas?.dispatchEvent(new Event("contextlost"));
+    cropper.destroy();
+    canvas?.dispatchEvent(new Event("contextrestored"));
+    expect(canvas?.width).toBe(0);
+    expect(errors).toStrictEqual([]);
   });
 
   it("shares one moving image file between copies of a photo", async () => {

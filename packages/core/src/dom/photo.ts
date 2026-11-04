@@ -402,20 +402,24 @@ export const bindPhoto = (
     show(false);
   };
 
-  const resized = (): void => {
-    const next = container.clientWidth > 0;
-    if (next === boxed) {
-      return;
-    }
-    boxed = next;
+  const wake = (): void => {
+    load();
     ensure();
     refresh();
   };
 
+  const onBox = (): void => {
+    const next = container.clientWidth > 0;
+    if (next !== boxed) {
+      boxed = next;
+      wake();
+    }
+  };
+
   afterPaint(async () => await import("./sharpen"));
   rest.addEventListener("contextlost", lost);
-  rest.addEventListener("contextrestored", refresh);
-  const observer = new (windowOf(container).ResizeObserver)(resized);
+  rest.addEventListener("contextrestored", wake);
+  const observer = new (windowOf(container).ResizeObserver)(onBox);
   observer.observe(container);
   load();
   const offImage = onImage(cropper, load);
@@ -428,7 +432,7 @@ export const bindPhoto = (
     offState();
     observer.disconnect();
     rest.removeEventListener("contextlost", lost);
-    rest.removeEventListener("contextrestored", refresh);
+    rest.removeEventListener("contextrestored", wake);
     cancel();
     loading += 1;
     clearMotion();
