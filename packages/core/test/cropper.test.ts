@@ -2262,6 +2262,17 @@ describe("minSize on a free crop", () => {
     expect(pixels(cropper)).toStrictEqual({ height: 300, width: 300 });
   });
 
+  it("keeps the short side of a crop that spans the photo at a tiny angle", () => {
+    const { cropper } = setup({
+      image: null,
+      minSize: { height: 1, width: 4000 },
+    });
+    cropper.setValue({ rotation: 5e-13 });
+    cropper.setImage(photo);
+    expect(sound(cropper.getValue())).toBeTruthy();
+    expect(cropper.getValue().size.height).toBeCloseTo(1 / 3000, 9);
+  });
+
   it("reports the minimum it holds", () => {
     const { cropper } = setup({ minSize: { height: 100, width: 5000 } });
     expect(cropper.getMinSize()).toStrictEqual({ height: 100, width: 4000 });
