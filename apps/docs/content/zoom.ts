@@ -27,7 +27,9 @@ const ZOOM_PAGE = defineDoc({
         "zriz sets the thumb's `inset-inline-start` on a log scale, so 2× sits 26% along a 15× track. this centres a round thumb on that point:"
       ),
       code("zoom/thumb.css"),
-      p("in a right-to-left layout, use `translate: 50% 0`.")
+      p(
+        "in a right-to-left layout, use `translate: 50% 0`. forced colours mode drops a plain background, so the second rule paints the thumb in `CanvasText`."
+      )
     ),
     section(
       "stop the slider at 5×",
@@ -40,11 +42,13 @@ const ZOOM_PAGE = defineDoc({
       )
     ),
     section(
-      "disable a step at the limit",
+      "mark a step at the limit",
       p(
-        "at 1× and at `maxZoom`, a press does nothing, but the button stays enabled. `useZoom` tells you where the zoom is. render this inside `Root`:"
+        "at 1× and at `maxZoom`, a press does nothing, but the button stays enabled. `useZoom` tells you where the zoom is. use `aria-disabled` for this, because `disabled` drops keyboard focus from the button at the limit. render this inside `Root`:"
       ),
-      code("zoom/steps.tsx")
+      code("zoom/steps.tsx"),
+      p("the browser dims only `disabled`, so paint the off state yourself:"),
+      code("zoom/steps.css")
     ),
     section(
       "build your own slider",

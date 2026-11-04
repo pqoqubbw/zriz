@@ -37,7 +37,11 @@ const FULL_EDITOR_PAGE = defineDoc({
         ["const track", "};"],
         ["const thumb", "};"],
         ["<Cropper.Zoom", "</Cropper.Zoom>"]
-      )
+      ),
+      p(
+        "forced colours mode removes a gradient and a plain background, so the slider would vanish. this file brings both back in `CanvasText`. the styles above are inline, so it needs `!important`:"
+      ),
+      code("full-editor/forced-colors.css")
     ),
     section(
       "pick an aspect ratio",

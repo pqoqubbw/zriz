@@ -6,3 +6,8 @@
   translate: -50% 0;
   background: #111;
 }
+@media (forced-colors: active) {
+  [data-zriz-item="zoom-thumb"] {
+    background: CanvasText;
+  }
+}

@@ -1,0 +1,12 @@
+@media (forced-colors: active) {
+  [data-zriz-item="zoom"] {
+    forced-color-adjust: none;
+    background-image: linear-gradient(
+      CanvasText,
+      CanvasText
+    ) !important;
+  }
+  [data-zriz-item="zoom-thumb"] {
+    background: CanvasText !important;
+  }
+}

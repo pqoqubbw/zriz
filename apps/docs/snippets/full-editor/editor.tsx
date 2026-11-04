@@ -10,6 +10,7 @@ import type {
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useEffect, useRef, useState } from "react";
+import "./forced-colors.css";
 
 const handles = [
   "top-left",
