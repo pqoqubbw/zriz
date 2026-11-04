@@ -5635,7 +5635,7 @@ if a plugin holds a timer or a socket, call \`destroy()\` yourself when you are 
   ends any gesture, drops all motion, commits what is there and emits \`stop\`. the cropper keeps working
 - \`destroy\` \`() => void\`
 
-  runs each plugin's \`destroy\`, emits \`destroy\` and drops every listener. the cropper is finished, and every later write is ignored
+  runs each plugin's \`destroy\`, emits \`destroy\`, detaches the photo and drops every listener. the cropper is finished, and every later write is ignored
 "
 `;
 
@@ -6094,7 +6094,7 @@ with \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
   jpeg and webp quality, from 0 to 1
 - \`maxSize\` \`{ width, height }\`
 
-  scales the file down to fit inside this box, never up
+  scales the file down to fit inside this box, never up. a box with a side that is not a positive number is ignored
 - \`colorSpace\` \`"srgb" | "display-p3"\` = \`"srgb"\`
 
   \`"display-p3"\` keeps wide colour when the photo came from a file or url. it decodes on the main thread
@@ -6188,7 +6188,7 @@ call \`getPixelCrop()\` when you upload, because a photo the user never touches 
 
 - \`width\` \`number\`
 
-  the output width in pixels, never below 1 px. \`getPixelCrop()\` takes a scale, 1 by default
+  the output width in pixels, never below 1 px. \`getPixelCrop()\` takes a scale, 1 by default and for anything but a positive number
 - \`height\` \`number\`
 
   the output height in pixels at the same scale
@@ -7012,7 +7012,7 @@ if that server wants a token in a header, fetch the photo yourself with that hea
 | bmp | opens in every current browser, but safari cannot open some bmp files with a v4 or v5 header. those fail with \`decode\`. pass a \`decode\` function to open them, or convert the file to jpeg first |
 | heic, jpeg xl, tiff | open where the browser decodes them. they fail with \`unsupported-format\` elsewhere, and when the file is damaged |
 | svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
-| animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif |
+| animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif. an \`img\` already playing opens on the frame it shows in safari, so pass a \`Blob\` for the first frame |
 
 every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo.
 
@@ -7131,9 +7131,9 @@ export const Heic = ({ onSave }: Props) => {
 
 \`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick aborts the load still running, so a slow file never replaces a newer one.
 
-\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`.
+\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
 
-\`attachImage\` frees a photo when it leaves its last cropper. a freed photo cannot be attached again, so load it again.
+\`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. a freed photo cannot be attached again, so load it again.
 
 ## handle a failed load
 
