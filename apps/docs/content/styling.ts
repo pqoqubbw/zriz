@@ -110,7 +110,7 @@ const STYLING_PAGE = defineDoc({
       ),
       code("styling/pin.jsx.tsx"),
       p(
-        "in forced colours mode, the stylesheet switches lines, grid and ticks to `CanvasText` and the accent to `Highlight`, so the crop stays visible."
+        "in forced colours mode, the marks the stylesheet paints switch to `CanvasText`, and the dial's centre line to `Highlight` during a drag. the `--zriz-*` variables keep your values, so css of your own that reads one needs a `forced-colors` rule with a system colour."
       )
     ),
     section(
