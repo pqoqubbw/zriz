@@ -207,6 +207,36 @@ const stalled = (op: string) => {
   };
 };
 
+const failing = (op: string) => {
+  const post: unknown = Reflect.get(Worker.prototype, "postMessage");
+  if (typeof post !== "function") {
+    throw new TypeError("no postMessage");
+  }
+  let total = 0;
+  const spy = vi.spyOn(Worker.prototype, "postMessage");
+  spy.mockImplementation(function record(
+    this: Worker,
+    ...args: Parameters<Worker["postMessage"]>
+  ): void {
+    const message: unknown = args[0];
+    if (isJob(message) && message.op === op) {
+      total += 1;
+      const { id } = message;
+      setTimeout(() => {
+        this.dispatchEvent(
+          new MessageEvent("message", { data: { error: "failed", id } })
+        );
+      }, 0);
+      return;
+    }
+    Reflect.apply(post, this, args);
+  });
+  cleanups.push(() => {
+    spy.mockRestore();
+  });
+  return { total: () => total };
+};
+
 const pageRule = (css: string): void => {
   const sheet = document.createElement("style");
   sheet.textContent = css;
@@ -787,5 +817,53 @@ describe("photo layer", () => {
     canvas.dispatchEvent(new Event("contextrestored"));
     await sharp(photo);
     expect(canvas.style.visibility).toBe("visible");
+  });
+
+  it("clears will-change after a settle on a perspective frame", async () => {
+    const { cropper, photo } = await mount(1024, undefined, TILT);
+    const image = await visibleImage(photo);
+    cropper.begin("pan");
+    expect(image.style.willChange).toBe("transform");
+    cropper.end();
+    await expect.poll(() => image.style.willChange).toBe("");
+    expect(image.style.visibility).toBe("visible");
+  });
+
+  it("paints the preview and clears will-change when a sharpen job fails", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const image = await (async () => {
+      cropper.begin("pan");
+      const found = await visibleImage(photo);
+      cropper.end();
+      await sharp(photo);
+      return found;
+    })();
+    const jobs = failing("resample");
+    cropper.begin("pan");
+    cropper.setZoom(1.2);
+    await nextFrame();
+    cropper.end();
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    await sharp(photo);
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("visible");
+    expect(image.style.visibility).toBe("hidden");
+    expect(image.style.willChange).toBe("");
+  });
+
+  it("keeps will-change when a job ends during the next gesture", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    cropper.begin("pan");
+    const image = await visibleImage(photo);
+    cropper.end();
+    await sharp(photo);
+    const jobs = stalled("resample");
+    cropper.setZoom(1.2);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    cropper.begin("pan");
+    await jobs.release();
+    expect(image.style.willChange).toBe("transform");
+    cropper.end();
   });
 });

@@ -178,7 +178,7 @@ export const bindPhoto = (
       frame,
       current,
       () => ticket === token
-    );
+    ).catch(() => ({ bitmap: null, region: whole(current) }));
     if (ticket !== token || !settled()) {
       bitmap?.close();
       return;
@@ -212,6 +212,9 @@ export const bindPhoto = (
     withTimeout(sharpen(frame, ticket), TIMEOUT, undefined)
       .finally(() => {
         running = false;
+        if (!moving) {
+          motion.style.willChange = "";
+        }
         drain();
       })
       .catch(() => null);
