@@ -396,6 +396,104 @@ const value = (rotation: number): CropValue => ({
   size: { height: 1, width: 1 },
 });
 
+describe("focus when Reset hides", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("moves focus to Area when a press hides the focused button", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        <Cropper.Reset>Reset</Cropper.Reset>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+    reset.focus();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() => {
+      expect(reset.hidden).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(item(screen.container, "area"));
+  });
+
+  it("moves focus on a reset from outside and finds Area from a portal", async () => {
+    const api = createRef<CropperApi>();
+    const away = document.createElement("div");
+    document.body.append(away);
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        {createPortal(<Cropper.Reset id="away">Reset</Cropper.Reset>, away)}
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = away.querySelector<HTMLElement>("#away");
+    reset?.focus();
+    expect(document.activeElement).toBe(reset);
+    api.current?.reset();
+    await vi.waitFor(() => {
+      expect(reset?.hidden).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(item(screen.container, "area"));
+    await cleanup();
+    away.remove();
+  });
+
+  it("falls back to the next control without an Area", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Reset>Reset</Cropper.Reset>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+    reset.focus();
+    reset.click();
+    await vi.waitFor(() => {
+      expect(reset.hidden).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(item(screen.container, "rotate"));
+  });
+
+  it("leaves focus alone when the button stays visible or another part has it", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        <Cropper.Reset hidden={false}>Keep</Cropper.Reset>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+    reset.focus();
+    reset.click();
+    await vi.waitFor(() => {
+      expect(reset.dataset.pristine).toBe("");
+    });
+    expect(document.activeElement).toBe(reset);
+  });
+});
+
 describe("what the warnings count", () => {
   afterEach(async () => {
     await cleanup();

@@ -43,6 +43,7 @@ export type Part<P, E> = ForwardRefExoticComponent<
 >;
 
 export interface RootContext {
+  box?: ElementBox;
   shape: "rect" | "circle";
   instructions: string | undefined;
   dir: "ltr" | "rtl";

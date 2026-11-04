@@ -1,10 +1,16 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useContext } from "react";
 
 import { useCropperContext } from "../context";
+import {
+  RootContextValue,
+  useElementBox,
+  useIsomorphicLayoutEffect,
+  useMergedRef,
+} from "../part";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface ResetState {
@@ -19,12 +25,28 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
 >(function Reset(props, ref) {
   const cropper = useCropperContext();
   const pristine = useCropperState((s) => s.pristine);
+  const disabled = useAriaDisabled();
+  const { box: root } = useContext(RootContextValue);
+  const box = useElementBox();
+  const focused = box.get()?.matches(":focus") === true;
+  useIsomorphicLayoutEffect(() => {
+    if (pristine && focused && box.get()?.matches("[hidden]") === true) {
+      const scope = root?.get();
+      (
+        scope?.querySelector<HTMLElement>('[data-zriz-item="area"]') ??
+        scope?.querySelector<HTMLElement>(
+          '[tabindex="0"],button:enabled:not([hidden])'
+        )
+      )?.focus({ preventScroll: true });
+    }
+  }, [box, focused, pristine, root]);
   const onClick = (event: React.MouseEvent): void => {
     cropper.reset({ event: event.nativeEvent });
   };
   return usePart(
     "button",
     {
+      "aria-disabled": disabled,
       "data-pristine": pristine ? "" : undefined,
       "data-zriz-item": "reset",
       hidden: pristine,
@@ -32,7 +54,7 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
       type: "button",
     },
     props,
-    ref,
+    useMergedRef<HTMLButtonElement>(box.set, ref),
     { pristine }
   );
 });
