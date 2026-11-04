@@ -21,9 +21,6 @@ export interface Lane<K> {
 const program = (kernel: string): string =>
   `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:error instanceof ReferenceError?"zriz:worker:failed":String(error&&error.message||error)})}finally{for(const arg of args){const held=arg&&arg.source||arg;if(held instanceof ImageBitmap)held.close()}}}`;
 
-const isReply = (value: unknown): value is Reply =>
-  typeof value === "object" && value !== null && "id" in value;
-
 export const lane = <K>(kernel: () => K): Lane<K> => {
   let worker: Worker | null | undefined;
   let local: K | null = null;
@@ -47,12 +44,9 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
         new Blob([program(kernel.toString())], { type: "text/javascript" })
       );
       const created = new Worker(url);
-      created.addEventListener("message", (event: MessageEvent<unknown>) => {
+      created.addEventListener("message", (event: MessageEvent<Reply>) => {
         URL.revokeObjectURL(url);
         const reply = event.data;
-        if (!isReply(reply)) {
-          return;
-        }
         const entry = waiting.get(reply.id);
         waiting.delete(reply.id);
         if (reply.error === undefined) {
