@@ -13,6 +13,7 @@ export const exportImage = async (
   if (options.signal?.aborted === true) {
     throw aborted();
   }
+  const attached = imageOf(cropper);
   const render = await withTimeout(
     import("./render").catch((error: unknown) => {
       throw new ZrizError("decode", `zriz: ${String(error)}`);
@@ -20,6 +21,9 @@ export const exportImage = async (
     TIMEOUT * 2,
     options.signal
   );
+  if (imageOf(cropper) !== attached) {
+    throw aborted();
+  }
   return await render.exportImage(cropper, image, options);
 };
 

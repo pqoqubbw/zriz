@@ -147,7 +147,7 @@
       "name": "exportCrop",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "590 B",
+      "limit": "604 B",
       "entry": [
         "index"
       ]

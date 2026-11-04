@@ -57,12 +57,6 @@ export const exportImage = async (
   if (!state || !base) {
     throw new ZrizError("no-image", "zriz: nothing to export yet");
   }
-  if (
-    state.image.width !== image.width ||
-    state.image.height !== image.height
-  ) {
-    throw aborted();
-  }
   const type =
     options.type ?? (options.shape === "circle" ? "image/png" : "image/jpeg");
   const first = firstScale(base, options, type);

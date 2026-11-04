@@ -86,6 +86,35 @@ describe("load and export", () => {
     }
   );
 
+  it("exports a larger copy of the attached photo", async () => {
+    const paint = async (width: number, height: number): Promise<Blob> => {
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("no 2d context");
+      }
+      context.fillStyle = "#f00";
+      context.fillRect(0, 0, width / 2, height);
+      context.fillStyle = "#00f";
+      context.fillRect(width / 2, 0, width / 2, height);
+      return await canvas.convertToBlob({ type: "image/png" });
+    };
+    const thumbnail = await loadImage(await paint(400, 300));
+    const original = await loadImage(await paint(1600, 1200));
+    const cropper = createCropper();
+    attachImage(cropper, thumbnail);
+    const result = await exportImage(cropper, original, { type: "image/png" });
+    expect([result.width, result.height]).toStrictEqual([400, 300]);
+    const [left, right] = await pixels(result.blob, [
+      [50, 150],
+      [350, 150],
+    ]);
+    expect(near(left, [255, 0, 0])).toBeTruthy();
+    expect(near(right, [0, 0, 255])).toBeTruthy();
+    attachImage(cropper, null);
+    original.preview.close();
+  });
+
   it("exports a straightened crop with no empty corners", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const cropper = createCropper({ image });

@@ -627,13 +627,17 @@ describe("exports in turn", () => {
     await expect(second).resolves.toBe("resolved");
   });
 
-  it("rejects as aborted when another photo's plan is in the cropper", async () => {
+  it("exports a larger copy of the attached photo at the plan's size", async () => {
     vi.useRealTimers();
-    const { go, loaded, via: posted } = await inTurn();
-    await expect(codeOf(go({}, { ...loaded, width: 900 }))).resolves.toBe(
-      "aborted"
-    );
-    expect(posted).not.toHaveBeenCalled();
+    const { go, loaded, replies, via: posted } = await inTurn();
+    const original = { ...loaded, height: 3000, width: 4000 };
+    const job = go({}, original);
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(1);
+    });
+    replies[0]?.(reply);
+    await expect(job).resolves.toMatchObject({ height: 300, width: 400 });
+    expect(posted).toHaveBeenCalledOnce();
   });
 
   it("rejects as aborted when a bitmap source closed while it waited", async () => {

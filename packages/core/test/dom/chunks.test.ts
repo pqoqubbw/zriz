@@ -112,6 +112,27 @@ describe("lazy chunk failures", () => {
     expect(render).not.toHaveBeenCalled();
   });
 
+  it("rejects as aborted when a new photo arrives during the chunk download", async () => {
+    vi.resetModules();
+    vi.stubGlobal("ImageBitmap", Map);
+    const render = vi.fn<() => Promise<never>>();
+    const { promise, resolve } = deferred<undefined>();
+    vi.doMock(import("../../src/dom/render"), async () => {
+      await promise;
+      return { exportImage: render };
+    });
+    const { exportCrop } = await import("../../src/dom/export");
+    const { attachImage } = await import("../../src/dom/image-store");
+    const cropper = createCropper();
+    attachImage(cropper, loaded);
+    const work = exportCrop(cropper);
+    await delay(1);
+    attachImage(cropper, { ...loaded, height: 3, id: 2 });
+    resolve(undefined);
+    await expect(work).rejects.toHaveProperty("code", "aborted");
+    expect(render).not.toHaveBeenCalled();
+  });
+
   it("rejects an svg load with a ZrizError when the svg chunk fails to load", async () => {
     vi.resetModules();
     vi.doMock(import("../../src/dom/svg"), failed);
