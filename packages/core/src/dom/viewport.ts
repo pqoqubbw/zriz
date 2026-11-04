@@ -214,6 +214,25 @@ export const viewportController = (
   let observer: ResizeObserver | null = null;
   let dprQuery: MediaQueryList | null = null;
 
+  const rebase = (): void => {
+    const state = cropper.getCropState();
+    const frame = view.frame();
+    if (!state || !frame || pointers.size === 0) {
+      start = null;
+      return;
+    }
+    const points = [...pointers.values()];
+    const { distance, angle } = spread(points);
+    start = {
+      angle,
+      centroid: centroidOf(points),
+      distance,
+      scale: frame.scale,
+      state,
+    };
+    rotating = false;
+  };
+
   const measure = (): void => {
     if (!element) {
       view.setLayout(null);
@@ -232,6 +251,9 @@ export const viewportController = (
       width: element.clientWidth,
     };
     view.setLayout(layout.width > 0 && layout.height > 0 ? layout : null);
+    if (view.frame()?.scale !== start?.scale) {
+      rebase();
+    }
   };
 
   const onDpr = (): void => {
@@ -266,25 +288,6 @@ export const viewportController = (
     x: event.clientX - origin.x,
     y: event.clientY - origin.y,
   });
-
-  const rebase = (): void => {
-    const state = cropper.getCropState();
-    const frame = view.frame();
-    if (!state || !frame || pointers.size === 0) {
-      start = null;
-      return;
-    }
-    const points = [...pointers.values()];
-    const { distance, angle } = spread(points);
-    start = {
-      angle,
-      centroid: centroidOf(points),
-      distance,
-      scale: frame.scale,
-      state,
-    };
-    rotating = false;
-  };
 
   const offsetOf = (begin: Start): Point => {
     const frame = view.frame();

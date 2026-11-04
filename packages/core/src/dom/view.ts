@@ -637,6 +637,7 @@ export const viewOf = (cropper: Cropper): View => {
     },
     setLayout(next) {
       layout = next;
+      last = compute();
       cropper.invalidate();
     },
     setOptions(next) {

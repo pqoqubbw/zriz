@@ -656,3 +656,54 @@ describe("dom binders", () => {
     );
   });
 });
+
+describe("viewport resize during a pan", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("keeps the photo under the finger", async () => {
+    const fixture = mount();
+    const { cropper, viewport } = fixture;
+    cropper.setValue({ size: { height: 0.5, width: 0.5 } });
+    const view = viewOf(cropper);
+    const screenX = (): number => {
+      const frame = view.frame();
+      if (!frame) {
+        throw new Error("no frame");
+      }
+      return applyHomography(frame.matrix, { x: 2000, y: 1500 }).x;
+    };
+    const press = (type: string, clientX: number): void => {
+      viewport.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons: 1,
+          clientX,
+          clientY: 150,
+          pointerId: 1,
+          pointerType: "touch",
+        })
+      );
+    };
+    await frames();
+    press("pointerdown", 200);
+    press("pointermove", 190);
+    await frames();
+    const scale = view.frame()?.scale;
+    viewport.style.width = "240px";
+    viewport.style.height = "180px";
+    await expect.poll(() => view.frame()?.scale).not.toBe(scale);
+    press("pointermove", 180);
+    await frames();
+    const resized = screenX();
+    press("pointermove", 150);
+    await frames();
+    const moved = screenX() - resized;
+    press("pointerup", 150);
+    expect(moved).toBeCloseTo(-30, 3);
+  });
+});
