@@ -237,7 +237,12 @@ const failing = (op: string) => {
   cleanups.push(() => {
     spy.mockRestore();
   });
-  return { total: () => total };
+  return {
+    heal: () => {
+      spy.mockRestore();
+    },
+    total: () => total,
+  };
 };
 
 const watchErrors = (): string[] => {
@@ -929,26 +934,54 @@ describe("photo layer", () => {
     expect(image.style.visibility).toBe("visible");
   });
 
-  it("paints the preview and clears will-change when a sharpen job fails", async () => {
+  it("paints the preview without data-sharp when a sharpen job fails, and tries again on the next settle", async () => {
     const { cropper, photo } = await mount(1024);
     await sharp(photo);
-    const image = await (async () => {
-      cropper.begin("pan");
-      const found = await visibleImage(photo);
-      cropper.end();
-      await sharp(photo);
-      return found;
-    })();
+    cropper.begin("pan");
+    const image = await visibleImage(photo);
+    cropper.end();
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
     const jobs = failing("resample");
     cropper.begin("pan");
     cropper.setZoom(1.2);
     await nextFrame();
     cropper.end();
     await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
-    await sharp(photo);
-    expect(photo.querySelector("canvas")?.style.visibility).toBe("visible");
+    await expect
+      .poll(() => canvas?.style.visibility, { timeout: 3000 })
+      .toBe("visible");
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
     expect(image.style.visibility).toBe("hidden");
     expect(image.style.willChange).toBe("");
+    cropper.begin("pan");
+    await nextFrame();
+    cropper.end();
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
+    jobs.heal();
+    cropper.begin("pan");
+    await nextFrame();
+    cropper.end();
+    await sharp(photo);
+  });
+
+  it("does not take a frame the failed job painted over for the sharp one", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const jobs = failing("resample");
+    cropper.setZoom(1.2);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    await expect
+      .poll(() => Object.hasOwn(photo.dataset, "sharp"), { timeout: 3000 })
+      .toBeFalsy();
+    await expect
+      .poll(() => photo.querySelector("canvas")?.style.visibility, {
+        timeout: 3000,
+      })
+      .toBe("visible");
+    cropper.setZoom(1);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
   });
 
   it("keeps will-change when a job ends during the next gesture", async () => {

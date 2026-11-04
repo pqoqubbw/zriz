@@ -207,20 +207,20 @@ export const bindPhoto = (
     if (ticket !== token) {
       return;
     }
-    const { bitmap, region } = await refine(
-      frame,
-      current,
-      () => ticket === token
-    ).catch(() => ({ bitmap: null, region: whole(current) }));
+    const fine = await refine(frame, current, () => ticket === token).catch(
+      () => null
+    );
+    const bitmap = fine?.bitmap;
     if (ticket !== token || !settled()) {
       bitmap?.close();
       return;
     }
     const source = bitmap ?? current.preview;
-    paint(frame, source, region, source);
+    paint(frame, source, fine?.region ?? whole(current), source);
     bitmap?.close();
-    if (blank) {
-      show(false);
+    if (blank || !fine) {
+      drawn = null;
+      show(false, !blank);
       return;
     }
     drawn = {
