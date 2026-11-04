@@ -11,27 +11,27 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           column("brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["editor", "every part from `@zriz/react/cropper`", "22.80 kB"],
-          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "17.37 kB"],
-          ["root only", "`Root`", "12.03 kB"],
+          ["editor", "every part from `@zriz/react/cropper`", "22.14 kB"],
+          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "17.00 kB"],
+          ["root only", "`Root`", "11.79 kB"],
           [
             "vanilla avatar",
-            "`createCropper` and the four binders the avatar needs",
-            "10.99 kB",
+            "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
+            "14.64 kB",
           ],
           ["server", "`toSharp` from `@zriz/core`", "377 B"],
           ["stylesheet", "`styles.css`, which is optional", "842 B"],
         ],
       }),
       p(
-        "measured with size-limit 14.3 on 2 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the `production` export condition, so development warnings do not count."
+        "measured with size-limit 14.3 on 4 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the `production` export condition, so development warnings do not count."
       ),
       p("with gzip, the stylesheet is 968 B.")
     ),
     section(
       "loaded later",
       p(
-        "four chunks stay out of the first load and download the first time a photo needs them:"
+        "four chunks stay out of the first load and download the first time a photo needs them. each row is what the chunk adds to the avatar set:"
       ),
       table({
         columns: [
@@ -43,23 +43,23 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           [
             "render",
             "the first export. it starts downloading once the first photo attaches",
-            "2.95 kB",
+            "1.92 kB",
           ],
           [
             "sharpen",
             "the sharper redraw at rest and on deep zoom. it starts downloading after the first paint",
-            "1.83 kB",
+            "393 B",
           ],
-          ["svg", "the photo is an svg", "1.25 kB"],
+          ["svg", "the photo is an svg", "564 B"],
           [
             "source",
             "you pass an `img`, `video`, `canvas` or `OffscreenCanvas` to `loadImage`. `Root` never loads it",
-            "555 B",
+            "325 B",
           ],
         ],
       }),
       p(
-        "bundled and compressed as one file with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 20.62 kB. that is less than the sum of the rows, because brotli compresses the shared code once."
+        "with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 20.20 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: `render` is 2.89 kB."
       )
     ),
     section(
