@@ -2,6 +2,7 @@ import type { Cropper } from "../cropper";
 import type { Matrix3 } from "../geometry/types";
 import type { LoadedImage } from "./image";
 import { imageOf, onImage } from "./image-store";
+import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { TIMEOUT, withTimeout } from "./turn";
@@ -16,6 +17,12 @@ interface Drawn {
   dpr: number;
 }
 
+interface MotionFile {
+  url: Promise<string>;
+  users: number;
+}
+
+const files = new WeakMap<LoadedImage, MotionFile>();
 const SAME = 1e-6;
 const LAYOUT_IDLE = 120;
 
@@ -34,6 +41,29 @@ const whole = (image: LoadedImage): Region => ({
   x: 0,
   y: 0,
 });
+
+const takeFile = async (image: LoadedImage): Promise<string> => {
+  const file = files.get(image) ?? {
+    url: motionOff(image.id, motionType(image)).then((blob) =>
+      URL.createObjectURL(blob)
+    ),
+    users: 0,
+  };
+  file.users += 1;
+  files.set(image, file);
+  return await file.url;
+};
+
+const dropFile = (image: LoadedImage): void => {
+  const file = files.get(image);
+  if (file) {
+    file.users -= 1;
+    if (file.users === 0) {
+      files.delete(image);
+      file.url.then(URL.revokeObjectURL.bind(URL)).catch(() => null);
+    }
+  }
+};
 
 const childOf = <K extends "img" | "canvas">(
   container: HTMLElement,
@@ -86,7 +116,6 @@ export const bindPhoto = (
     visibility: "hidden",
   });
   let image: LoadedImage | null = null;
-  let url: string | null = null;
   let motionReady = false;
   let drawn: Drawn | null = null;
   let token = 0;
@@ -98,6 +127,8 @@ export const bindPhoto = (
   let transform = "";
   let moving = false;
   let blank = false;
+  let boxed = container.clientWidth > 0;
+  let held: LoadedImage | null = null;
 
   let shown = "";
   const show = (canvas: boolean, fallback = canvas): void => {
@@ -168,7 +199,7 @@ export const bindPhoto = (
   };
 
   const sharpen = async (frame: ViewFrame, ticket: number): Promise<void> => {
-    if (!image || !isAffine(frame.matrix)) {
+    if (!image || !boxed || !isAffine(frame.matrix)) {
       return;
     }
     const current = image;
@@ -248,7 +279,7 @@ export const bindPhoto = (
     drawn.dpr === frame.layout.dpr;
 
   const write = (frame: ViewFrame): void => {
-    if (!image) {
+    if (!image || !boxed) {
       return;
     }
     const { layout } = frame;
@@ -290,11 +321,10 @@ export const bindPhoto = (
   };
 
   const prepare = async (next: LoadedImage, ticket: number): Promise<void> => {
-    const blob = await motionOff(next.id, motionType(next));
+    const url = await takeFile(next);
     if (ticket !== loading) {
       return;
     }
-    url = URL.createObjectURL(blob);
     motion.src = url;
     await motion.decode();
     if (ticket === loading) {
@@ -305,10 +335,17 @@ export const bindPhoto = (
     }
   };
 
+  const ensure = (): void => {
+    if (image && boxed && held !== image) {
+      held = image;
+      prepare(image, loading).catch(() => null);
+    }
+  };
+
   const clearMotion = (): void => {
-    if (url !== null) {
-      URL.revokeObjectURL(url);
-      url = null;
+    if (held) {
+      dropFile(held);
+      held = null;
     }
     motion.removeAttribute("src");
   };
@@ -332,7 +369,7 @@ export const bindPhoto = (
     }
     motion.style.width = `${next.width}px`;
     motion.style.height = `${next.height}px`;
-    prepare(next, loading).catch(() => null);
+    ensure();
     refresh();
   };
 
@@ -365,9 +402,21 @@ export const bindPhoto = (
     show(false);
   };
 
+  const resized = (): void => {
+    const next = container.clientWidth > 0;
+    if (next === boxed) {
+      return;
+    }
+    boxed = next;
+    ensure();
+    refresh();
+  };
+
   afterPaint(async () => await import("./sharpen"));
   rest.addEventListener("contextlost", lost);
   rest.addEventListener("contextrestored", refresh);
+  const observer = new (windowOf(container).ResizeObserver)(resized);
+  observer.observe(container);
   load();
   const offImage = onImage(cropper, load);
   const offFrame = view.onFrame(write);
@@ -377,6 +426,7 @@ export const bindPhoto = (
     offImage();
     offFrame();
     offState();
+    observer.disconnect();
     rest.removeEventListener("contextlost", lost);
     rest.removeEventListener("contextrestored", refresh);
     cancel();

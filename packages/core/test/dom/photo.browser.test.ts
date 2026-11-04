@@ -1005,4 +1005,57 @@ describe("photo layer", () => {
     await sharp(photo);
     expect(photo.querySelector("img")?.style.willChange).toBe("");
   });
+
+  it("does no photo work in a copy without a box until it shows", async () => {
+    const jobs = flights("motion");
+    const { cropper, photo, viewport } = await mount(1024);
+    const hidden = document.createElement("div");
+    hidden.style.display = "none";
+    viewport.append(hidden);
+    const stop = bindPhoto(cropper, hidden);
+    cleanups.unshift(stop);
+    await sharp(photo);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 200);
+    });
+    expect(jobs.total()).toBe(1);
+    expect(hidden.querySelector("canvas")?.width).toBe(300);
+    expect(Object.hasOwn(hidden.dataset, "sharp")).toBeFalsy();
+    hidden.style.display = "block";
+    await sharp(hidden);
+    expect(hidden.querySelector("canvas")?.width).toBe(
+      photo.querySelector("canvas")?.width
+    );
+    expect(jobs.total()).toBe(1);
+  });
+
+  it("shares one moving image file between copies of a photo", async () => {
+    const jobs = flights("motion");
+    const made = vi.spyOn(URL, "createObjectURL");
+    const revoked = vi.spyOn(URL, "revokeObjectURL");
+    cleanups.push(() => {
+      made.mockRestore();
+      revoked.mockRestore();
+    });
+    const { cropper, photo, viewport } = await mount(1024);
+    const copy = document.createElement("div");
+    viewport.append(copy);
+    const stop = bindPhoto(cropper, copy);
+    await sharp(photo);
+    await sharp(copy);
+    const first = photo.querySelector("img");
+    const second = copy.querySelector("img");
+    await expect.poll(() => first?.src).toBeTruthy();
+    await expect.poll(() => second?.src).toBeTruthy();
+    expect(second?.src).toBe(first?.src);
+    expect(jobs.total()).toBe(1);
+    const src = first?.src ?? "";
+    stop();
+    expect(revoked).not.toHaveBeenCalledWith(src);
+    cropper.begin("pan");
+    await visibleImage(photo);
+    cropper.end();
+    attachImage(cropper, null);
+    await expect.poll(() => revoked.mock.calls.flat()).toContain(src);
+  });
 });
