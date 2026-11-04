@@ -316,6 +316,8 @@ describe("handle drag constraints", () => {
   it("stays monotone in the pointer", () => {
     assert(
       property(stateArb, (s) => {
+        vi.mocked(planesModule.projectOntoPlanes).mockClear();
+
         const { planes } = limitsFor(s, 0);
         const start = toRect(s);
         const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
