@@ -40,10 +40,10 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
+const input = byId("file") as HTMLInputElement;
 let last: AbortController | undefined;
 
-const onFile = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
+const onFile = async () => {
   const file = input.files?.[0];
   if (!file) return;
   last?.abort();
@@ -59,8 +59,8 @@ const onFile = async (event: Event) => {
   }
 };
 
-byId("file").addEventListener("change", onFile);
+input.addEventListener("change", onFile);
 cleanups.push(() => {
   last?.abort();
-  byId("file").removeEventListener("change", onFile);
+  input.removeEventListener("change", onFile);
 });

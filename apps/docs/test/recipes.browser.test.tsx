@@ -720,6 +720,7 @@ describe("docs recipes", () => {
 
   describe("vanilla", () => {
     let cropper: CropperApi;
+    let host: HTMLElement;
     let input: HTMLInputElement;
     let status: HTMLElement;
 
@@ -730,8 +731,7 @@ describe("docs recipes", () => {
     };
 
     beforeAll(async () => {
-      const host = document.createElement("div");
-
+      host = document.createElement("div");
       host.innerHTML = markup;
       document.body.append(host);
       ({ cropper } = await import("../snippets/vanilla-js/cropper"));
@@ -774,14 +774,17 @@ describe("docs recipes", () => {
       expect(status.textContent).toBe("");
     });
 
-    it("lets go of the picker and the last load on teardown", async () => {
+    it("lets go of the picker and the last load on teardown, with the page section gone", async () => {
       const removed = vi.spyOn(input, "removeEventListener");
+      const destroyed = vi.spyOn(cropper, "destroy");
       const late = held(await flat(700, 500));
 
       pick(input, late.file);
+      host.remove();
       await import("../snippets/vanilla-js/teardown");
 
       expect(removed).toHaveBeenCalledWith("change", expect.any(Function));
+      expect(destroyed).toHaveBeenCalledOnce();
 
       late.open();
       await frames(10);

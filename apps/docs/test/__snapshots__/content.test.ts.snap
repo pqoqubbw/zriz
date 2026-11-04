@@ -2525,10 +2525,10 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
+const input = byId("file") as HTMLInputElement;
 let last: AbortController | undefined;
 
-const onFile = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
+const onFile = async () => {
   const file = input.files?.[0];
   if (!file) return;
   last?.abort();
@@ -2544,10 +2544,10 @@ const onFile = async (event: Event) => {
   }
 };
 
-byId("file").addEventListener("change", onFile);
+input.addEventListener("change", onFile);
 cleanups.push(() => {
   last?.abort();
-  byId("file").removeEventListener("change", onFile);
+  input.removeEventListener("change", onFile);
 });",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span>
@@ -2591,10 +2591,10 @@ cleanups.push(() => {
   cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span><span class=t>bindHandle</span><span class=p>(</span>cropper<span class=p>,</span> handle<span class=p>,</span> corner<span class=p>));</span>
 <span class=p>}</span>
 
+<span class=k>const</span> input <span class=p>= </span><span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>) </span><span class=k>as</span> HTMLInputElement<span class=p>;</span>
 <span class=k>let</span> last<span class=p>:</span> AbortController <span class=p>|</span> undefined<span class=p>;</span>
 
-<span class=k>const </span><span class=t>onFile </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>event<span class=p>:</span> Event<span class=p>) =&gt; {</span>
-  <span class=k>const</span> input <span class=p>=</span> event<span class=p>.</span>target <span class=k>as</span> HTMLInputElement<span class=p>;</span>
+<span class=k>const </span><span class=t>onFile </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>const</span> file <span class=p>=</span> input<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>];</span>
   <span class=k>if </span><span class=p>(!</span>file<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
@@ -2610,10 +2610,10 @@ cleanups.push(() => {
   <span class=p>}</span>
 <span class=p>};</span>
 
-<span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>).</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
+input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
 cleanups<span class=p>.</span><span class=t>push</span><span class=p>(() =&gt; {</span>
   last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
-  <span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>).</span><span class=t>removeEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
+  input<span class=p>.</span><span class=t>removeEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
 <span class=p>});</span>",
   ],
   [
@@ -9286,10 +9286,10 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
+const input = byId("file") as HTMLInputElement;
 let last: AbortController | undefined;
 
-const onFile = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
+const onFile = async () => {
   const file = input.files?.[0];
   if (!file) return;
   last?.abort();
@@ -9305,10 +9305,10 @@ const onFile = async (event: Event) => {
   }
 };
 
-byId("file").addEventListener("change", onFile);
+input.addEventListener("change", onFile);
 cleanups.push(() => {
   last?.abort();
-  byId("file").removeEventListener("change", onFile);
+  input.removeEventListener("change", onFile);
 });
 \`\`\`
 
