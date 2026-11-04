@@ -1,6 +1,5 @@
 "use client";
 
-import type { Cropper } from "@zriz/core";
 import type {
   ComponentPropsWithoutRef,
   ForwardRefExoticComponent,
@@ -44,20 +43,16 @@ export type Part<P, E> = ForwardRefExoticComponent<
 export interface RootContext {
   shape: "rect" | "circle";
   instructions: string;
-  src: string | null;
-  crossOrigin: "anonymous" | "use-credentials" | undefined;
   dir: "ltr" | "rtl";
   locale: string | undefined;
 }
 
 export const RootContextValue: React.Context<RootContext> =
   createContext<RootContext>({
-    crossOrigin: undefined,
     dir: "ltr",
     instructions: "",
     locale: undefined,
     shape: "rect",
-    src: null,
   });
 
 export const useIsomorphicLayoutEffect: typeof useEffect =
@@ -145,5 +140,3 @@ export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
   }
   return props;
 };
-
-export type Bind = (cropper: Cropper, element: HTMLElement) => () => void;

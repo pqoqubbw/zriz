@@ -167,8 +167,8 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     [cropper, external]
   );
   const context = useMemo<RootContext>(
-    () => ({ crossOrigin, dir, instructions, locale, shape, src: null }),
-    [crossOrigin, dir, instructions, locale, shape]
+    () => ({ dir, instructions, locale, shape }),
+    [dir, instructions, locale, shape]
   );
   const gesture = snapshot.interacting;
   const element = usePart(
