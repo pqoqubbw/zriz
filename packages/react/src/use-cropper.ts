@@ -114,7 +114,7 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
   return cropper;
 };
 
-const useTarget = (cropper?: Cropper): Cropper => {
+export const useTarget = (cropper?: Cropper): Cropper => {
   const context = useContext(CropperContext);
   const target = cropper ?? context;
   if (!target) {

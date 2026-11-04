@@ -1,10 +1,9 @@
 "use client";
 
 import type { Cropper } from "@zriz/core";
-import { useCallback, useSyncExternalStore, useContext } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
-import { CropperContext } from "./context";
-import { useCropperState } from "./use-cropper";
+import { useCropperState, useTarget } from "./use-cropper";
 
 export interface UseZoom {
   value: number;
@@ -18,11 +17,7 @@ export interface UseZoom {
 export const useZoom = (
   options: { max?: number; cropper?: Cropper } = {}
 ): UseZoom => {
-  const context = useContext(CropperContext);
-  const cropper = options.cropper ?? context;
-  if (!cropper) {
-    throw new Error("zriz: pass a cropper or render inside <Cropper.Root>");
-  }
+  const cropper = useTarget(options.cropper);
   const max = options.max ?? cropper.getMaxZoom();
   const value = useSyncExternalStore(
     (listener) => cropper.on("frame", listener),
