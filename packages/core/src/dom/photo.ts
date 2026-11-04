@@ -216,6 +216,14 @@ export const bindPhoto = (
     }
   };
 
+  const clearMotion = (): void => {
+    if (url !== null) {
+      URL.revokeObjectURL(url);
+      url = null;
+    }
+    motion.removeAttribute("src");
+  };
+
   const load = (): void => {
     const next = imageOf(cropper);
     if (next === image) {
@@ -225,18 +233,16 @@ export const bindPhoto = (
     drawn = null;
     motionReady = false;
     token += 1;
-    if (url !== null) {
-      URL.revokeObjectURL(url);
-      url = null;
-    }
-    motion.removeAttribute("src");
+    clearMotion();
     show(false);
+    loading += 1;
     if (!next) {
+      rest.width = 0;
+      rest.height = 0;
       return;
     }
     motion.style.width = `${next.width}px`;
     motion.style.height = `${next.height}px`;
-    loading += 1;
     prepare(next, loading).catch(() => null);
     const frame = view.frame();
     if (frame) {
@@ -279,9 +285,7 @@ export const bindPhoto = (
     if (pending !== null) {
       clearTimeout(pending);
     }
-    if (url !== null) {
-      URL.revokeObjectURL(url);
-    }
+    clearMotion();
     rest.width = 0;
     rest.height = 0;
   };

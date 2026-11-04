@@ -125,4 +125,54 @@ describe("photo layer", () => {
       .toBeGreaterThan(150);
     await sharp(photo);
   });
+
+  it("takes the photo off the moving image and the canvas when it goes", async () => {
+    const { cropper, photo } = await mount(1024);
+    const motion = photo.querySelector("img");
+    const canvas = photo.querySelector("canvas");
+    await expect
+      .poll(() => motion?.getAttribute("src") ?? "", { timeout: 3000 })
+      .toMatch(/^blob:/u);
+    await sharp(photo);
+    attachImage(cropper, null);
+    expect(motion?.hasAttribute("src")).toBeFalsy();
+    expect([canvas?.width, canvas?.height]).toStrictEqual([0, 0]);
+  });
+
+  it("sets no moving image for a photo that left while it encoded", async () => {
+    const { cropper, photo } = await mount(1024);
+    const motion = photo.querySelector("img");
+    const next = await loadImage(await stripes(), { previewEdge: 1024 });
+    attachImage(cropper, next);
+    attachImage(cropper, null);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500);
+    });
+    expect(motion?.hasAttribute("src")).toBeFalsy();
+  });
+
+  it("clears the moving image when unbound", async () => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const photo = document.createElement("div");
+    viewport.append(photo);
+    document.body.append(viewport);
+    const cropper = createCropper();
+    const offViewport = bindViewport(cropper, viewport);
+    const offPhoto = bindPhoto(cropper, photo);
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    const motion = photo.querySelector("img");
+    await expect
+      .poll(() => motion?.getAttribute("src") ?? "", { timeout: 3000 })
+      .toMatch(/^blob:/u);
+    offPhoto();
+    expect(motion?.hasAttribute("src")).toBeFalsy();
+    offViewport();
+    attachImage(cropper, null);
+    cropper.destroy();
+    viewport.remove();
+  });
 });

@@ -1,3 +1,6 @@
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
+
 import {
   constantFrom,
   double,
@@ -576,5 +579,49 @@ describe("invariants", () => {
         }
       )
     );
+  });
+});
+
+const isCollector = (value: unknown): value is () => void =>
+  typeof value === "function";
+
+describe("what the cropper holds on to", () => {
+  it("keeps only the size of the image it was given", () => {
+    const given = { height: 30, preview: {}, width: 40 };
+    const cropper = createCropper({ clock: fakeClock().clock, image: given });
+    expect(cropper.getCropState()?.image).toStrictEqual({
+      height: 30,
+      width: 40,
+    });
+    cropper.setImage(given);
+    expect(cropper.getCropState()?.image).toStrictEqual({
+      height: 30,
+      width: 40,
+    });
+  });
+
+  it("drops the last event after its frame", async () => {
+    setFlagsFromString("--expose-gc");
+    const collect: unknown = runInNewContext("gc");
+    if (!isCollector(collect)) {
+      throw new TypeError("no gc");
+    }
+    const { clock, frames } = fakeClock();
+    const cropper = createCropper({
+      clock,
+      image: { height: 3000, width: 4000 },
+    });
+    frames(2);
+    const ref = (() => {
+      const event = new Event("pointermove");
+      cropper.setZoom(2, { event });
+      return new WeakRef(event);
+    })();
+    frames(3);
+    await vi.waitFor(() => {
+      collect();
+      expect(ref.deref() === undefined).toBeTruthy();
+    });
+    expect(cropper.getZoom()).toBeGreaterThan(1);
   });
 });

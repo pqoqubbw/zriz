@@ -1,5 +1,5 @@
 import { double, assert as fcAssert, property, record } from "fast-check";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import {
@@ -311,4 +311,34 @@ describe("view", () => {
       view.destroy();
     }
   );
+});
+
+describe("view lifetime", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("stops its timers with the cropper", () => {
+    vi.useFakeTimers();
+    const { clock } = fakeClock();
+    const cropper = createCropper({
+      clock,
+      image: { height: 100, width: 100 },
+    });
+    const view = viewOf(cropper);
+    view.setLayout({
+      dpr: 1,
+      height: 600,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 800,
+    });
+    cropper.begin("resize");
+    view.hold();
+    view.release();
+    cropper.end();
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    cropper.destroy();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(viewOf(cropper)).not.toBe(view);
+  });
 });

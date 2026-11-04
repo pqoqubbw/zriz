@@ -380,6 +380,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       previous: emitted,
       reason: dirtyReason,
     };
+    dirtyEvent = undefined;
     if (details.changed.length === 0) {
       return;
     }
@@ -671,7 +672,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         Number.isFinite(given.height) &&
         given.width > 0 &&
         given.height > 0
-          ? given
+          ? { height: given.height, width: given.width }
           : null;
       const first = state === null;
       image = next;

@@ -666,5 +666,8 @@ export const viewOf = (cropper: Cropper): View => {
     },
   };
   views.set(cropper, view);
+  cropper.on("destroy", () => {
+    view.destroy();
+  });
   return view;
 };
