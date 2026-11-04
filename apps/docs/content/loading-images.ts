@@ -73,7 +73,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "export size",
-            "16.8 megapixels on a touch screen and 268 megapixels elsewhere. a bigger crop comes out scaled down",
+            "16.8 megapixels on a touch screen and 268 megapixels elsewhere, with a long edge of at most 16383 px for webp and 65500 px for other types. a bigger crop comes out scaled down",
           ],
         ],
       }),

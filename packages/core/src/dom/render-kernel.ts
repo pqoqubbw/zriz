@@ -117,7 +117,11 @@ export const renderKernel = (): RenderKernel => {
   ): void => {
     const back = invert(toOutput);
     const { width, height } = context.canvas;
-    const steps = 24;
+    const steps = Math.min(
+      64,
+      Math.max(24, Math.ceil(Math.max(width, height) / 64))
+    );
+    const flip = (back[6] ?? 0) * (back[7] ?? 0) > 0;
     const triangle = (
       p: [number, number],
       q: [number, number],
@@ -134,17 +138,11 @@ export const renderKernel = (): RenderKernel => {
       const m12 = ((r[0] - p[0]) * (bx - ax) - (q[0] - p[0]) * (cx - ax)) / det;
       const m21 = ((q[1] - p[1]) * (cy - ay) - (r[1] - p[1]) * (by - ay)) / det;
       const m22 = ((r[1] - p[1]) * (bx - ax) - (q[1] - p[1]) * (cx - ax)) / det;
-      const mx = (p[0] + q[0] + r[0]) / 3;
-      const my = (p[1] + q[1] + r[1]) / 3;
-      const out = ([x, y]: [number, number]): [number, number] => {
-        const length = Math.hypot(x - mx, y - my) || 1;
-        return [x + ((x - mx) / length) * 0.5, y + ((y - my) / length) * 0.5];
-      };
       context.save();
       context.beginPath();
-      context.moveTo(...out(p));
-      context.lineTo(...out(q));
-      context.lineTo(...out(r));
+      context.moveTo(...p);
+      context.lineTo(...q);
+      context.lineTo(...r);
       context.closePath();
       context.clip();
       context.setTransform(
@@ -158,16 +156,23 @@ export const renderKernel = (): RenderKernel => {
       context.drawImage(image, 0, 0);
       context.restore();
     };
+    context.globalCompositeOperation = "lighter";
     for (let i = 0; i < steps; i += 1) {
       for (let j = 0; j < steps; j += 1) {
         const x0 = (i / steps) * width;
         const x1 = ((i + 1) / steps) * width;
         const y0 = (j / steps) * height;
         const y1 = ((j + 1) / steps) * height;
-        triangle([x0, y0], [x1, y0], [x1, y1]);
-        triangle([x0, y0], [x1, y1], [x0, y1]);
+        if (flip) {
+          triangle([x1, y0], [x1, y1], [x0, y1]);
+          triangle([x1, y0], [x0, y1], [x0, y0]);
+        } else {
+          triangle([x0, y0], [x1, y0], [x1, y1]);
+          triangle([x0, y0], [x1, y1], [x0, y1]);
+        }
       }
     }
+    context.globalCompositeOperation = "source-over";
   };
 
   const dead = (context: Context): boolean => {
@@ -185,42 +190,50 @@ export const renderKernel = (): RenderKernel => {
     });
   };
 
+  const smooth = (context: Context): void => {
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+  };
+
   const paint = (
+    canvas: Canvas,
     full: Drawable,
     job: RenderJob,
     plan: KernelPlan
-  ): { canvas: Canvas; empty: boolean } => {
-    const canvas = canvasFor(plan.width, plan.height);
+  ): void => {
+    const context = contextOf(canvas, job.colorSpace);
+    if (dead(context)) {
+      throw fail("blank", "the browser drew a blank canvas");
+    }
+    smooth(context);
+    const [a = 1, b = 0, c = 0, d = 1, e = 0, f = 0] = plan.forward;
+    let scale =
+      (Math.sqrt(Math.abs(a * d - b * c)) * job.image.width) / full.width;
+    let small = full;
+    const steps: Canvas[] = [];
     try {
-      const context = contextOf(canvas, job.colorSpace);
-      const empty = dead(context);
-      if (empty) {
-        return { canvas, empty };
+      while (scale > 0 && scale < 0.5) {
+        const width = Math.ceil(small.width / 2);
+        const height = Math.ceil(small.height / 2);
+        const step = canvasFor(width, height);
+        steps.push(step);
+        const half = contextOf(step, job.colorSpace);
+        if (dead(half)) {
+          break;
+        }
+        smooth(half);
+        half.drawImage(small.drawable, 0, 0, width, height);
+        small = { drawable: step, height, width };
+        scale *= 2;
       }
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      if (job.circle) {
-        context.beginPath();
-        context.ellipse(
-          plan.width / 2,
-          plan.height / 2,
-          plan.width / 2,
-          plan.height / 2,
-          0,
-          0,
-          Math.PI * 2
-        );
-        context.clip();
-      }
-      const [a = 1, b = 0, c = 0, d = 1, e = 0, f = 0] = plan.forward;
-      const fx = full.width / job.image.width;
-      const fy = full.height / job.image.height;
+      const fx = small.width / job.image.width;
+      const fy = small.height / job.image.height;
       if (plan.homography) {
         const cx = job.image.width / 2;
         const cy = job.image.height / 2;
         mesh(
           context,
-          full.drawable,
+          small.drawable,
           multiply(
             [a, c, e + a * cx + c * cy, b, d, f + b * cx + d * cy, 0, 0, 1],
             multiply(
@@ -231,13 +244,27 @@ export const renderKernel = (): RenderKernel => {
         );
       } else {
         context.setTransform(a / fx, b / fx, c / fy, d / fy, e, f);
-        context.drawImage(full.drawable, 0, 0);
+        context.drawImage(small.drawable, 0, 0);
         context.setTransform(1, 0, 0, 1, 0, 0);
       }
-      return { canvas, empty };
-    } catch (error) {
-      free(canvas);
-      throw error;
+    } finally {
+      for (const step of steps) {
+        free(step);
+      }
+    }
+    if (job.circle) {
+      context.globalCompositeOperation = "destination-in";
+      context.beginPath();
+      context.ellipse(
+        plan.width / 2,
+        plan.height / 2,
+        plan.width / 2,
+        plan.height / 2,
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
     }
   };
 
@@ -282,19 +309,25 @@ export const renderKernel = (): RenderKernel => {
           : opened;
       try {
         for (const [index, plan] of job.plans.entries()) {
-          const { canvas, empty } = paint(full, job, plan);
+          const canvas = canvasFor(plan.width, plan.height);
           try {
-            if (!empty) {
-              return {
-                blob: await encode(canvas, job.type, job.quality),
-                index,
-              };
+            paint(canvas, full, job, plan);
+            return {
+              blob: await encode(canvas, job.type, job.quality),
+              index,
+            };
+          } catch (error) {
+            if (
+              index === job.plans.length - 1 ||
+              (error instanceof Error && error.name === "SecurityError")
+            ) {
+              throw error;
             }
           } finally {
             free(canvas);
           }
         }
-        throw fail("blank", "the browser drew a blank canvas");
+        throw fail("blank", "nothing to render");
       } finally {
         if (opened !== job.source && opened instanceof ImageBitmap) {
           opened.close();

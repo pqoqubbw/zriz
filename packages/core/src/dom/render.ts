@@ -1,4 +1,5 @@
 import type { Cropper } from "../cropper";
+import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { TIMEOUT, outputLimit, toZriz, withTimeout } from "./image";
 import type { ExportOptions, ExportResult, LoadedImage } from "./image";
@@ -23,6 +24,26 @@ const renderOff = async (job: RenderJob): Promise<RenderReply> =>
 const renderHere = async (job: RenderJob): Promise<RenderReply> =>
   await rendering().here().render(job);
 
+const firstScale = (
+  base: Size,
+  options: ExportOptions,
+  type: string
+): number => {
+  const fit = options.maxSize
+    ? Math.min(
+        1,
+        options.maxSize.width / base.width,
+        options.maxSize.height / base.height
+      )
+    : 1;
+  return Math.min(
+    fit > 0 ? fit : 1,
+    Math.sqrt(outputLimit() / (base.width * base.height)),
+    (type === "image/webp" ? 16_383 : 65_500) /
+      Math.max(base.width, base.height)
+  );
+};
+
 export const exportImage = async (
   cropper: Cropper,
   image: LoadedImage,
@@ -35,17 +56,7 @@ export const exportImage = async (
   }
   const type =
     options.type ?? (options.shape === "circle" ? "image/png" : "image/jpeg");
-  const fit = options.maxSize
-    ? Math.min(
-        1,
-        options.maxSize.width / base.width,
-        options.maxSize.height / base.height
-      )
-    : 1;
-  const first = Math.min(
-    fit > 0 ? fit : 1,
-    Math.sqrt(outputLimit() / (base.width * base.height))
-  );
+  const first = firstScale(base, options, type);
   const scales = [first, first / 2, first / 4];
   const crops = scales.map((scale) => cropper.getPixelCrop(scale) ?? base);
   const plans = crops.map((plan) => ({

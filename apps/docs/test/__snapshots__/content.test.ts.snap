@@ -6105,7 +6105,7 @@ with \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
 
   cancels a running export, which then rejects with \`aborted\`
 
-\`exportCrop\` resolves to \`{ blob, type, width, height, scaled, crop }\`. read \`type\` before you name the file, because a browser that cannot encode the type you asked for returns png. \`scaled\` is \`true\` when the file came out smaller than the crop. three things cause it: \`maxSize\`, the export size limit in [loading images](https://zriz.dev/docs/loading-images.md), and the \`blank\` retry on [errors](https://zriz.dev/docs/errors.md). \`crop\` is the export plan the file was drawn from, at the scale it came out.
+\`exportCrop\` resolves to \`{ blob, type, width, height, scaled, crop }\`. read \`type\` before you name the file, because a browser that cannot encode the type you asked for returns png. \`scaled\` is \`true\` when the file came out smaller than the crop. three things cause it: \`maxSize\`, the export size limit in [loading images](https://zriz.dev/docs/loading-images.md), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. \`crop\` is the export plan the file was drawn from, at the scale it came out.
 
 the browser drops exif, gps data and 16-bit depth from the file.
 
@@ -7023,7 +7023,7 @@ a worker decodes a preview sized for the screen. the original stays a blob until
 | limit | size |
 | - | - |
 | preview size | twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere |
-| export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere. a bigger crop comes out scaled down |
+| export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere, with a long edge of at most 16383 px for webp and 65500 px for other types. a bigger crop comes out scaled down |
 
 the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
 

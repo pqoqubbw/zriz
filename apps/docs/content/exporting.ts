@@ -70,7 +70,7 @@ const EXPORTING_PAGE = defineDoc({
         "option"
       ),
       p(
-        "`exportCrop` resolves to `{ blob, type, width, height, scaled, crop }`. read `type` before you name the file, because a browser that cannot encode the type you asked for returns png. `scaled` is `true` when the file came out smaller than the crop. three things cause it: `maxSize`, the export size limit in [loading images](loading-images), and the `blank` retry on [errors](errors). `crop` is the export plan the file was drawn from, at the scale it came out."
+        "`exportCrop` resolves to `{ blob, type, width, height, scaled, crop }`. read `type` before you name the file, because a browser that cannot encode the type you asked for returns png. `scaled` is `true` when the file came out smaller than the crop. three things cause it: `maxSize`, the export size limit in [loading images](loading-images), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. `crop` is the export plan the file was drawn from, at the scale it came out."
       ),
       p("the browser drops exif, gps data and 16-bit depth from the file.")
     ),

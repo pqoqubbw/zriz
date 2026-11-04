@@ -320,6 +320,176 @@ describe("load and export", () => {
   });
 });
 
+const alphaOf = async (blob: Blob): Promise<ImageData> => {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  context.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return context.getImageData(0, 0, canvas.width, canvas.height);
+};
+
+const painted = async (
+  width: number,
+  height: number,
+  draw: (context: OffscreenCanvasRenderingContext2D) => void
+): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  draw(context);
+  return await canvas.convertToBlob({ type: "image/png" });
+};
+
+const stripes = async (width: number, height: number): Promise<Blob> =>
+  await painted(width, height, (context) => {
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = "#fff";
+    for (let x = 1; x < width; x += 2) {
+      context.fillRect(x, 0, 1, height);
+    }
+  });
+
+const centreRowDeviation = ({ data, height, width }: ImageData): number => {
+  const y = Math.floor(height / 2);
+  const values: number[] = [];
+  for (let x = Math.floor(width * 0.2); x < width * 0.8; x += 1) {
+    values.push(data[(y * width + x) * 4] ?? 0);
+  }
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return Math.sqrt(
+    values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length
+  );
+};
+
+describe("export quality", () => {
+  it.each(["srgb", "display-p3"] as const)(
+    "softens a round edge on the %s route",
+    async (colorSpace) => {
+      const image = await loadImage(
+        await painted(400, 400, (context) => {
+          context.fillStyle = "rgb(220 30 30)";
+          context.fillRect(0, 0, 400, 400);
+        })
+      );
+      const cropper = createCropper({ defaultValue: { aspect: 1 } });
+      attachImage(cropper, image);
+      const { blob } = await exportCrop(cropper, {
+        colorSpace,
+        shape: "circle",
+        type: "image/png",
+      });
+      const { data } = await alphaOf(blob);
+      let soft = 0;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] !== 0 && data[i] !== 255) {
+          soft += 1;
+        }
+      }
+      expect(data[3]).toBe(0);
+      expect(soft).toBeGreaterThan(400);
+    }
+  );
+
+  it.each([
+    ["an opaque photo", "rgb(40 90 200)", 255, 12],
+    ["a half transparent photo", "rgb(40 90 200 / 0.5)", 128, 127],
+  ] as const)(
+    "keeps the alpha of %s across the perspective mesh",
+    async (_name, fill, want, limit) => {
+      const image = await loadImage(
+        await painted(800, 600, (context) => {
+          context.fillStyle = fill;
+          context.fillRect(0, 0, 800, 600);
+        })
+      );
+      const cropper = createCropper({});
+      attachImage(cropper, image);
+      cropper.setValue({
+        perspective: { horizontal: -10, vertical: 15 },
+        rotation: 3,
+      });
+      const result = await exportCrop(cropper, { type: "image/png" });
+      const { data, height, width } = await alphaOf(result.blob);
+      let total = 0;
+      let off = 0;
+      let worst = 0;
+      for (let y = 3; y < height - 3; y += 1) {
+        for (let x = 3; x < width - 3; x += 1) {
+          const delta = Math.abs((data[(y * width + x) * 4 + 3] ?? 0) - want);
+          total += 1;
+          if (delta > 1) {
+            off += 1;
+            worst = Math.max(worst, delta);
+          }
+        }
+      }
+      expect(result.crop.homography).not.toBeNull();
+      expect(off / total).toBeLessThan(0.01);
+      expect(worst).toBeLessThanOrEqual(limit);
+    }
+  );
+
+  it.each([
+    ["at 0.37", 1351, 1000, 500, undefined, false],
+    ["at 0.128", 4000, 3000, 512, undefined, false],
+    ["through the mesh", 1351, 1000, 500, undefined, true],
+    ["on the display-p3 route", 1351, 1000, 500, "display-p3", false],
+  ] as const)(
+    "flattens 1 px stripes %s",
+    async (_name, width, height, edge, colorSpace, tilted) => {
+      const image = await loadImage(await stripes(width, height));
+      const cropper = createCropper({ focalLength: 40 });
+      attachImage(cropper, image);
+      if (tilted) {
+        cropper.setValue({ perspective: { horizontal: 8, vertical: 10 } });
+      }
+      const { blob } = await exportCrop(cropper, {
+        colorSpace,
+        maxSize: { height: edge, width: edge },
+        type: "image/png",
+      });
+      expect(centreRowDeviation(await alphaOf(blob))).toBeLessThan(30);
+    }
+  );
+
+  it("keeps a wide webp whole and reports its real size", async () => {
+    const canvas = new OffscreenCanvas(20_000, 100);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("no 2d context");
+    }
+    context.fillStyle = "#f00";
+    context.fillRect(0, 0, 16_383, 100);
+    context.fillStyle = "#00f";
+    context.fillRect(16_383, 0, 3617, 100);
+    const image = await loadImage(canvas.transferToImageBitmap());
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    const result = await exportCrop(cropper, {
+      quality: 1,
+      type: "image/webp",
+    });
+    const { data, height, width } = await alphaOf(result.blob);
+    const edge = data.slice(
+      Math.floor(height / 2) * width * 4 + (width - 2) * 4
+    );
+    expect([result.width, result.height, result.scaled]).toStrictEqual([
+      width,
+      height,
+      true,
+    ]);
+    expect(width).toBeLessThanOrEqual(16_383);
+    expect(edge[2]).toBeGreaterThan(edge[0] ?? 0);
+  });
+});
+
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 
 const foreign = `<svg ${SVG_NS} width="200" height="100"><foreignObject width="200" height="100"><div xmlns="http://www.w3.org/1999/xhtml" style="width:200px;height:100px;background:#c33"></div></foreignObject></svg>`;
