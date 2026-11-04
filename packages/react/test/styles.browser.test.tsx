@@ -252,6 +252,20 @@ const noPhoto = (api?: React.Ref<CropperApi>) => (
   </Cropper.Root>
 );
 
+const userStyled = (api: React.Ref<CropperApi>) => (
+  <Cropper.Root actionsRef={api}>
+    <Cropper.Viewport>
+      <Cropper.Area aria-label="Crop" style={{ position: "fixed" }}>
+        <Cropper.Handle
+          position="top-left"
+          style={{ position: "fixed", touchAction: "manipulation" }}
+        />
+      </Cropper.Area>
+    </Cropper.Viewport>
+    <Cropper.Announcer announce={() => null} style={{ overflow: "visible" }} />
+  </Cropper.Root>
+);
+
 const withPhoto = (ref: React.Ref<CropperApi>) => (
   <Cropper.Root actionsRef={ref} image={{ height: 300, width: 400 }}>
     <Cropper.Viewport style={{ height: 100, padding: 10, width: 120 }}>
@@ -280,6 +294,17 @@ describe("before the photo is placed", () => {
     ).toStrictEqual([true, true]);
     expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
     expect(page.scrollHeight).toBeLessThanOrEqual(page.clientHeight);
+  });
+
+  it("leaves a style of the user's on a part after hydration", async () => {
+    const { root } = await hydrate(userStyled);
+    const handle = getComputedStyle(pick('[data-zriz-item="handle"]'));
+    const { position, touchAction } = handle;
+    const { overflow } = getComputedStyle(pick('[data-zriz-item="announcer"]'));
+    root.unmount();
+    expect(position).toBe("fixed");
+    expect(touchAction).toBe("manipulation");
+    expect(overflow).toBe("visible");
   });
 
   it("paints no corner marks after hydration while there is no photo", async () => {

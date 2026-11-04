@@ -15,6 +15,7 @@ import {
 import { useCropperContext } from "../context";
 import {
   RootContextValue,
+  keepStyle,
   nativeProps,
   useElementBox,
   useMergedRef,
@@ -33,6 +34,16 @@ export interface DialProps extends PartProps<"div", DialState> {
   /** Formatting of the spoken value. @default degrees, long unit */
   format?: Intl.NumberFormatOptions | undefined;
 }
+
+const STYLE = {
+  WebkitTapHighlightColor: "transparent",
+  WebkitUserSelect: "none",
+  position: "relative",
+  touchAction: "pan-y",
+  userSelect: "none",
+} as const;
+
+const keep = keepStyle(STYLE);
 
 export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
@@ -60,6 +71,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   const spoken = useSameJson(format);
   const own = useCallback(
     (node: HTMLDivElement) => {
+      keep(node);
       const clear = box.set(node);
       warnUnlabelled("Dial", node);
       warnFormat("Dial", locale, spoken);
@@ -82,13 +94,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
       "data-zriz-item": "dial",
       ...nativeProps(handlers),
       role: "slider",
-      style: {
-        WebkitTapHighlightColor: "transparent",
-        WebkitUserSelect: "none",
-        position: "relative",
-        touchAction: "pan-y",
-        userSelect: "none",
-      },
+      style: STYLE,
       tabIndex: 0,
     },
     props,

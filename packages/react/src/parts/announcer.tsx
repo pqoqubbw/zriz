@@ -4,7 +4,7 @@ import type { CommitDetails, CropValue } from "@zriz/core";
 import { forwardRef, useEffect, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { useLatest } from "../part";
+import { keepStyle, useKeptStyle, useLatest } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
@@ -15,6 +15,17 @@ export interface AnnouncerProps extends Omit<
   /** What to say after each commit. Return null to stay quiet. */
   announce: (value: CropValue, details: CommitDetails) => string | null;
 }
+
+const STYLE = {
+  clipPath: "inset(50%)",
+  height: "1px",
+  overflow: "hidden",
+  position: "absolute",
+  whiteSpace: "nowrap",
+  width: "1px",
+} as const;
+
+const keep = keepStyle(STYLE);
 
 export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
@@ -44,17 +55,10 @@ export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
       children: message,
       "data-zriz-item": "announcer",
       role: "status",
-      style: {
-        clipPath: "inset(50%)",
-        height: 1,
-        overflow: "hidden",
-        position: "absolute",
-        whiteSpace: "nowrap",
-        width: 1,
-      },
+      style: STYLE,
     },
     props,
-    ref,
+    useKeptStyle(keep, ref),
     {}
   );
 });

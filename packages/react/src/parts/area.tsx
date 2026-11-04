@@ -40,6 +40,9 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   const own = useCallback(
     (element: HTMLDivElement) => {
       warnUnlabelled("Area", element);
+      if (element.dataset.shape === "circle" && !element.style.borderRadius) {
+        element.style.borderRadius = "50%";
+      }
       return bindArea(cropper, element, { liveVariables });
     },
     [cropper, liveVariables]

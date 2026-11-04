@@ -104,7 +104,10 @@ const LOADING_IMAGES_PAGE = defineDoc({
             "each host you load photos from, plus `blob:` and `data:` if you pass those urls as `src`. without it the load fails with `cross-origin`",
           ],
         ],
-      })
+      }),
+      p(
+        "a strict `style-src` also refuses `style` attributes in server html. the parts write their own styles again during hydration, so they work after it. a `style` prop of yours on a server rendered part stays refused. add `style-src-attr 'unsafe-inline'` to allow it."
+      )
     ),
     section(
       "open heic on every browser",

@@ -2,10 +2,11 @@
 
 import { handleHandlers, viewOf } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
-import { forwardRef, useMemo, useState } from "react";
+import { forwardRef, useCallback, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
 import {
+  keepStyle,
   nativeProps,
   useElementBox,
   useLatest,
@@ -57,6 +58,10 @@ const placement = (position: HandleEdge): React.CSSProperties => {
   return style;
 };
 
+const restore = (node: HTMLElement, edge: { readonly current: HandleEdge }) => {
+  keepStyle(placement(edge.current))(node);
+};
+
 export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   HandleProps
@@ -69,6 +74,13 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
     [box, cropper, edge]
   );
   useRelease(handlers);
+  const own = useCallback(
+    (node: HTMLDivElement) => {
+      restore(node, edge);
+      return box.set(node);
+    },
+    [box, edge]
+  );
   const [mine, setMine] = useState(false);
   const active = useCropperState((s) => mine && s.interacting === "resize");
   if (mine && !active) {
@@ -96,7 +108,7 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
       style: placement(position),
     },
     props,
-    useMergedRef<HTMLDivElement>(box.set, ref),
+    useMergedRef(own, ref),
     { active, position }
   );
 });

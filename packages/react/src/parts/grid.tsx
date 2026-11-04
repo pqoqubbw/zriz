@@ -6,6 +6,7 @@ import { forwardRef, useState, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 
 import { useCropperContext } from "../context";
+import { keepStyle, useKeptStyle } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
@@ -15,18 +16,39 @@ export interface GridState {
 
 export type GridProps = PartProps<"div", GridState>;
 
-const line = (axis: "x" | "y", at: number, coarse: boolean): ReactElement => (
-  <span
-    data-axis={axis}
-    data-coarse={coarse ? "" : undefined}
-    key={`${axis}${at}`}
-    style={
-      axis === "x"
-        ? { bottom: 0, left: `${at * 100}%`, position: "absolute", top: 0 }
-        : { left: 0, position: "absolute", right: 0, top: `${at * 100}%` }
-    }
-  />
-);
+const STYLE = {
+  inset: 0,
+  pointerEvents: "none",
+  position: "absolute",
+} as const;
+
+const keep = keepStyle(STYLE);
+
+const line = (axis: "x" | "y", at: number, coarse: boolean): ReactElement => {
+  const style =
+    axis === "x"
+      ? ({
+          bottom: 0,
+          left: `${at * 100}%`,
+          position: "absolute",
+          top: 0,
+        } as const)
+      : ({
+          left: 0,
+          position: "absolute",
+          right: 0,
+          top: `${at * 100}%`,
+        } as const);
+  return (
+    <span
+      data-axis={axis}
+      data-coarse={coarse ? "" : undefined}
+      key={`${axis}${at}`}
+      ref={keepStyle(style)}
+      style={style}
+    />
+  );
+};
 
 const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
   const count = mode === "fine" ? 9 : 3;
@@ -64,10 +86,10 @@ export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
       "data-grid": grid,
       "data-visible": grid === "none" ? undefined : "",
       "data-zriz-item": "grid",
-      style: { inset: 0, pointerEvents: "none", position: "absolute" },
+      style: STYLE,
     },
     props,
-    ref,
+    useKeptStyle(keep, ref),
     { grid }
   );
 });

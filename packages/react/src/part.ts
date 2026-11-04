@@ -19,7 +19,7 @@ import {
   useState,
 } from "react";
 
-import { attach } from "./merge-props";
+import { attach, mergeRefs } from "./merge-props";
 import type { ClassName, RenderProp } from "./use-render";
 
 type ElementOf<T> = T extends keyof HTMLElementTagNameMap
@@ -76,6 +76,25 @@ export const useLatest = <T>(value: T): { readonly current: T } => {
   });
   return ref;
 };
+
+export const keepStyle =
+  (base: React.CSSProperties) =>
+  (node: HTMLElement | null): undefined => {
+    if (node) {
+      const { style } = node;
+      for (const [key, value] of Object.entries(base)) {
+        if (Reflect.get(style, key) === "") {
+          Reflect.set(style, key, value);
+        }
+      }
+    }
+    return undefined;
+  };
+
+export const useKeptStyle = (
+  keep: (node: HTMLElement | null) => undefined,
+  ref: Ref<HTMLElement> | undefined
+): Ref<HTMLElement> => useMemo(() => mergeRefs(keep, ref), [keep, ref]);
 
 export interface ElementBox {
   get: () => Element | null;

@@ -7246,6 +7246,8 @@ a content security policy needs these sources:
 | \`img-src data:\` | svg files. without it an svg fails with \`decode\` |
 | \`connect-src\` | each host you load photos from, plus \`blob:\` and \`data:\` if you pass those urls as \`src\`. without it the load fails with \`cross-origin\` |
 
+a strict \`style-src\` also refuses \`style\` attributes in server html. the parts write their own styles again during hydration, so they work after it. a \`style\` prop of yours on a server rendered part stays refused. add \`style-src-attr 'unsafe-inline'\` to allow it.
+
 ## open heic on every browser
 
 to decode a format the browser cannot, call \`loadImage\` yourself and pass a \`decode\` function. zriz calls it only when the browser's own decode fails. it gets the \`Blob\` and returns an \`ImageBitmap\`. save this as \`decoder.ts\`. its \`convert\` sends the file to a route on your server that turns it into jpeg. \`loadImage\` and \`attachImage\` come from \`@zriz/core/dom\`, so add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md):
