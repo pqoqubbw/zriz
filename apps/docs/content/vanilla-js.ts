@@ -25,7 +25,7 @@ const VANILLA_JS_PAGE = defineDoc({
         'each binder writes geometry inline and returns its cleanup. `bindHandle` also takes `"top"`, `"right"`, `"bottom"` and `"left"` for the edge bars. after you pick a file, the photo shows under a 4:3 crop. the handles have no layout until the next section places them.'
       ),
       p(
-        "when a file does not open, `loadImage` rejects with a `ZrizError`, and [errors](errors) lists its codes."
+        "each pick aborts the load before it, so a slow file never replaces a newer one, and clears the old message. a cleanup aborts the last load and removes the listener. when a file does not open, `loadImage` rejects with a `ZrizError`, and [errors](errors) lists its codes."
       )
     ),
     section(

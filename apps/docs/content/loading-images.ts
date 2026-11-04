@@ -120,13 +120,13 @@ const LOADING_IMAGES_PAGE = defineDoc({
       ),
       code("loading-images/heic.tsx"),
       p(
-        "`ready` turns the save button on once the photo is attached. `onSave` gets the cropper for `exportCrop`, as in [exporting](exporting). a new pick aborts the load still running, so a slow file never replaces a newer one."
+        "`ready` turns the save button on once the photo is attached. `onSave` gets the cropper for `exportCrop`, as in [exporting](exporting). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left."
       ),
       p(
         "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
       ),
       p(
-        "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. a freed photo cannot be attached again, so load it again."
+        "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again."
       )
     ),
     section(

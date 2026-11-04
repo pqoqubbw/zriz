@@ -40,13 +40,27 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
-byId("file").addEventListener("change", async (event) => {
+let last: AbortController | undefined;
+
+const onFile = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  last?.abort();
+  const controller = new AbortController();
+  const { signal } = controller;
+  last = controller;
+  byId("status").textContent = "";
   try {
-    attachImage(cropper, await loadImage(file));
+    attachImage(cropper, await loadImage(file, { signal }));
   } catch {
+    if (signal.aborted) return;
     byId("status").textContent = "this photo does not open.";
   }
+};
+
+byId("file").addEventListener("change", onFile);
+cleanups.push(() => {
+  last?.abort();
+  byId("file").removeEventListener("change", onFile);
 });

@@ -1691,7 +1691,7 @@ export const open = async (
 
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { open } from "./decoder";
 
 type Props = { onSave: (cropper: CropperApi) => void };
@@ -1701,6 +1701,8 @@ export const Heic = ({ onSave }: Props) => {
   const last = useRef<AbortController | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => () => last.current?.abort(), []);
 
   return (
     <>
@@ -1749,7 +1751,7 @@ export const Heic = ({ onSave }: Props) => {
 
 <span class=k>import type </span><span class=p>{</span> Cropper <span class=k>as</span> CropperApi <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
-<span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> open <span class=p>} </span><span class=k>from </span><span class=s>"./decoder"</span><span class=p>;</span>
 
 <span class=k>type</span> Props <span class=p>= {</span> onSave<span class=p>: (</span>cropper<span class=p>:</span> CropperApi<span class=p>) =&gt;</span> void <span class=p>};</span>
@@ -1759,6 +1761,8 @@ export const Heic = ({ onSave }: Props) => {
   <span class=k>const</span> last <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>ready<span class=p>,</span> setReady<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>failed<span class=p>,</span> setFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
 
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
@@ -2479,15 +2483,29 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
-byId("file").addEventListener("change", async (event) => {
+let last: AbortController | undefined;
+
+const onFile = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  last?.abort();
+  const controller = new AbortController();
+  const { signal } = controller;
+  last = controller;
+  byId("status").textContent = "";
   try {
-    attachImage(cropper, await loadImage(file));
+    attachImage(cropper, await loadImage(file, { signal }));
   } catch {
+    if (signal.aborted) return;
     byId("status").textContent = "this photo does not open.";
   }
+};
+
+byId("file").addEventListener("change", onFile);
+cleanups.push(() => {
+  last?.abort();
+  byId("file").removeEventListener("change", onFile);
 });",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span>
@@ -2531,15 +2549,29 @@ byId("file").addEventListener("change", async (event) => {
   cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span><span class=t>bindHandle</span><span class=p>(</span>cropper<span class=p>,</span> handle<span class=p>,</span> corner<span class=p>));</span>
 <span class=p>}</span>
 
-<span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>).</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>, </span><span class=k>async </span><span class=p>(</span>event<span class=p>) =&gt; {</span>
+<span class=k>let</span> last<span class=p>:</span> AbortController <span class=p>|</span> undefined<span class=p>;</span>
+
+<span class=k>const </span><span class=t>onFile </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>event<span class=p>:</span> Event<span class=p>) =&gt; {</span>
   <span class=k>const</span> input <span class=p>=</span> event<span class=p>.</span>target <span class=k>as</span> HTMLInputElement<span class=p>;</span>
   <span class=k>const</span> file <span class=p>=</span> input<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>];</span>
   <span class=k>if </span><span class=p>(!</span>file<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
+  <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+  <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+  last <span class=p>=</span> controller<span class=p>;</span>
+  <span class=t>byId</span><span class=p>(</span><span class=s>"status"</span><span class=p>).</span>textContent <span class=p>= </span><span class=s>""</span><span class=p>;</span>
   <span class=k>try </span><span class=p>{</span>
-    <span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>await </span><span class=t>loadImage</span><span class=p>(</span>file<span class=p>));</span>
+    <span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>await </span><span class=t>loadImage</span><span class=p>(</span>file<span class=p>, {</span> signal <span class=p>}));</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
+    <span class=k>if </span><span class=p>(</span>signal<span class=p>.</span>aborted<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=t>byId</span><span class=p>(</span><span class=s>"status"</span><span class=p>).</span>textContent <span class=p>= </span><span class=s>"this photo does not open."</span><span class=p>;</span>
   <span class=p>}</span>
+<span class=p>};</span>
+
+<span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>).</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
+cleanups<span class=p>.</span><span class=t>push</span><span class=p>(() =&gt; {</span>
+  last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
+  <span class=t>byId</span><span class=p>(</span><span class=s>"file"</span><span class=p>).</span><span class=t>removeEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
 <span class=p>});</span>",
   ],
   [
@@ -7357,7 +7389,7 @@ pass a ref to \`actionsRef\`, leave \`src\` unset on \`Root\` and call \`open()\
 
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { open } from "./decoder";
 
 type Props = { onSave: (cropper: CropperApi) => void };
@@ -7367,6 +7399,8 @@ export const Heic = ({ onSave }: Props) => {
   const last = useRef<AbortController | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => () => last.current?.abort(), []);
 
   return (
     <>
@@ -7413,11 +7447,11 @@ export const Heic = ({ onSave }: Props) => {
 };
 \`\`\`
 
-\`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick aborts the load still running, so a slow file never replaces a newer one.
+\`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left.
 
 \`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
 
-\`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. a freed photo cannot be attached again, so load it again.
+\`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again.
 
 ## handle a failed load
 
@@ -8786,21 +8820,35 @@ for (const corner of corners) {
   cleanups.push(bindHandle(cropper, handle, corner));
 }
 
-byId("file").addEventListener("change", async (event) => {
+let last: AbortController | undefined;
+
+const onFile = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  last?.abort();
+  const controller = new AbortController();
+  const { signal } = controller;
+  last = controller;
+  byId("status").textContent = "";
   try {
-    attachImage(cropper, await loadImage(file));
+    attachImage(cropper, await loadImage(file, { signal }));
   } catch {
+    if (signal.aborted) return;
     byId("status").textContent = "this photo does not open.";
   }
+};
+
+byId("file").addEventListener("change", onFile);
+cleanups.push(() => {
+  last?.abort();
+  byId("file").removeEventListener("change", onFile);
 });
 \`\`\`
 
 each binder writes geometry inline and returns its cleanup. \`bindHandle\` also takes \`"top"\`, \`"right"\`, \`"bottom"\` and \`"left"\` for the edge bars. after you pick a file, the photo shows under a 4:3 crop. the handles have no layout until the next section places them.
 
-when a file does not open, \`loadImage\` rejects with a \`ZrizError\`, and [errors](https://zriz.dev/docs/errors.md) lists its codes.
+each pick aborts the load before it, so a slow file never replaces a newer one, and clears the old message. a cleanup aborts the last load and removes the listener. when a file does not open, \`loadImage\` rejects with a \`ZrizError\`, and [errors](https://zriz.dev/docs/errors.md) lists its codes.
 
 ## place the handles
 

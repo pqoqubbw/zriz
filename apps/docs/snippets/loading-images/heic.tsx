@@ -2,7 +2,7 @@
 
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { open } from "./decoder";
 
 type Props = { onSave: (cropper: CropperApi) => void };
@@ -12,6 +12,8 @@ export const Heic = ({ onSave }: Props) => {
   const last = useRef<AbortController | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => () => last.current?.abort(), []);
 
   return (
     <>
