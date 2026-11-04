@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
+import type { CropValue, Cropper } from "../../src";
 import {
   attachImage,
   bindPhoto,
@@ -121,6 +122,92 @@ const contrast = (canvas: HTMLCanvasElement): number => {
   return high - low;
 };
 
+const gradient = async (): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(1600, 1200);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  const fill = context.createLinearGradient(0, 0, 1600, 0);
+  fill.addColorStop(0, "#000");
+  fill.addColorStop(1, "#f00");
+  context.fillStyle = fill;
+  context.fillRect(0, 0, 1600, 1200);
+  return await canvas.convertToBlob({ type: "image/png" });
+};
+
+const paintError = (cropper: Cropper, photo: HTMLElement): number => {
+  const canvas = photo.querySelector("canvas");
+  const frame = viewOf(cropper).frame();
+  const context = canvas?.getContext("2d");
+  if (!frame || !context) {
+    throw new Error("nothing painted");
+  }
+  const [a, , e] = frame.matrix;
+  const { dpr } = frame.layout;
+  const y = Math.floor(frame.layout.height * dpr * 0.5);
+  return Math.max(
+    ...[0.15, 0.5, 0.85].map((share) => {
+      const x = Math.floor(frame.layout.width * dpr * share);
+      const red = context.getImageData(x, y, 1, 1).data[0] ?? 0;
+      return Math.abs(red - (((x + 0.5) / dpr - e) / a / 1600) * 255);
+    })
+  );
+};
+
+const stalled = (op: string) => {
+  const parked: (() => void)[] = [];
+  let total = 0;
+  let replies = 0;
+  const post: unknown = Reflect.get(Worker.prototype, "postMessage");
+  if (typeof post !== "function") {
+    throw new TypeError("no postMessage");
+  }
+  const spy = vi.spyOn(Worker.prototype, "postMessage");
+  spy.mockImplementation(function record(
+    this: Worker,
+    ...args: Parameters<Worker["postMessage"]>
+  ): void {
+    const message: unknown = args[0];
+    if (isJob(message) && message.op === op) {
+      total += 1;
+      if (total === 1) {
+        const onReply = (event: MessageEvent<{ id: number }>): void => {
+          if (event.data.id === message.id) {
+            replies += 1;
+            this.removeEventListener("message", onReply);
+          }
+        };
+        this.addEventListener("message", onReply);
+        parked.push(() => {
+          Reflect.apply(post, this, args);
+        });
+        return;
+      }
+    }
+    Reflect.apply(post, this, args);
+  });
+  cleanups.push(() => {
+    spy.mockRestore();
+  });
+  return {
+    release: async () => {
+      for (const send of parked.splice(0)) {
+        send();
+      }
+      await expect.poll(() => replies, { timeout: 3000 }).toBe(1);
+      await nextFrame();
+    },
+    total: () => total,
+  };
+};
+
+const waitForLayout = async (cropper: Cropper, width: number): Promise<void> => {
+  await expect
+    .poll(() => viewOf(cropper).frame()?.layout.width, { timeout: 2000 })
+    .toBe(width);
+};
+
 describe("photo layer", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
@@ -223,6 +310,74 @@ describe("photo layer", () => {
     cropper.end();
     await sharp(photo);
     expect(jobs.total()).toBe(0);
+  });
+
+  it.each<[string, (cropper: Cropper, before: CropValue) => void]>([
+    [
+      "setZoom",
+      (cropper) => {
+        cropper.setZoom(1);
+      },
+    ],
+    [
+      "setValue",
+      (cropper, before) => {
+        cropper.setValue(before);
+      },
+    ],
+  ])(
+    "keeps the drawn canvas when %s returns to it while a later job runs",
+    async (_, back) => {
+      const { cropper, photo } = await mount(400, await gradient());
+      await sharp(photo);
+      const before = cropper.getValue();
+      const jobs = stalled("region");
+      cropper.begin("pan");
+      cropper.setZoom(3);
+      await nextFrame();
+      cropper.end();
+      await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+      back(cropper, before);
+      await nextFrame();
+      await jobs.release();
+      await sharp(photo);
+      expect(paintError(cropper, photo)).toBeLessThan(5);
+    }
+  );
+
+  it("drops the waiting job of a resize there and back", async () => {
+    const { cropper, photo, viewport } = await mount(1024, await gradient());
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    const width = canvas?.width;
+    const jobs = flights("resample");
+    viewport.style.width = "300px";
+    await waitForLayout(cropper, 300);
+    viewport.style.width = "400px";
+    await waitForLayout(cropper, 400);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 300);
+    });
+    expect(jobs.total()).toBe(0);
+    expect(canvas?.width).toBe(width);
+    expect(paintError(cropper, photo)).toBeLessThan(5);
+    await sharp(photo);
+  });
+
+  it("redraws at the new pixel ratio when only the ratio changed", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const layout = viewOf(cropper).frame()?.layout;
+    const canvas = photo.querySelector("canvas");
+    if (!layout || !canvas) {
+      throw new Error("no layout");
+    }
+    const dpr = layout.dpr * 2;
+    viewOf(cropper).setLayout({ ...layout, dpr });
+    await expect
+      .poll(() => canvas.width, { timeout: 3000 })
+      .toBe(layout.width * dpr);
+    await sharp(photo);
   });
 
   it("draws a cropped resample where the whole preview would land", async () => {

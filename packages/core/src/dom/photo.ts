@@ -11,6 +11,7 @@ interface Drawn {
   matrix: Matrix3;
   width: number;
   height: number;
+  dpr: number;
 }
 
 const SAME = 1e-6;
@@ -165,6 +166,7 @@ export const bindPhoto = (
     paint(frame, source, region, source);
     bitmap?.close();
     drawn = {
+      dpr: frame.layout.dpr,
       height: frame.layout.height,
       matrix: frame.matrix,
       width: frame.layout.width,
@@ -190,12 +192,17 @@ export const bindPhoto = (
       .catch(() => null);
   };
 
-  const schedule = (frame: ViewFrame, delay = 0): void => {
+  const cancel = (): void => {
     token += 1;
-    const ticket = token;
     if (pending !== null) {
       clearTimeout(pending);
+      pending = null;
     }
+  };
+
+  const schedule = (frame: ViewFrame, delay = 0): void => {
+    cancel();
+    const ticket = token;
     pending = setTimeout(() => {
       pending = null;
       waiting = { frame, ticket };
@@ -207,7 +214,8 @@ export const bindPhoto = (
     drawn !== null &&
     sameMatrix(drawn.matrix, frame.matrix) &&
     drawn.width === frame.layout.width &&
-    drawn.height === frame.layout.height;
+    drawn.height === frame.layout.height &&
+    drawn.dpr === frame.layout.dpr;
 
   const write = (frame: ViewFrame): void => {
     if (!image) {
@@ -226,6 +234,7 @@ export const bindPhoto = (
       motion.style.transform = next;
     }
     if (isDrawn(frame)) {
+      cancel();
       if (settled()) {
         reuse();
       }
@@ -330,11 +339,8 @@ export const bindPhoto = (
     offImage();
     offFrame();
     offState();
-    token += 1;
+    cancel();
     loading += 1;
-    if (pending !== null) {
-      clearTimeout(pending);
-    }
     clearMotion();
     rest.width = 0;
     rest.height = 0;
