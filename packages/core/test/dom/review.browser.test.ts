@@ -1153,6 +1153,23 @@ describe("binding twice", () => {
     viewport.remove();
   });
 
+  it("a second dispose of a dial leaves another dial's options alone", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    const stopFirst = bindDial(cropper, first, { gain: 2 });
+    const stopSecond = bindDial(cropper, second, { gain: 2 });
+    stopFirst();
+    stopFirst();
+    expect(dialState(cropper).options().gain).toBe(2);
+    stopSecond();
+    expect(dialState(cropper).options().gain).toBeUndefined();
+    const stopLast = bindDial(cropper, first, { gain: 3 });
+    stopLast();
+    expect(dialState(cropper).options().gain).toBeUndefined();
+    cropper.destroy();
+  });
+
   it("a second dial with no options keeps the first one's direction", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const first = document.createElement("div");

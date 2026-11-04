@@ -454,7 +454,12 @@ export const bindDial = (
     element.toggleAttribute("data-dragging", dial.dragging());
   };
   const offChange = dial.onChange(sync);
+  let bound = true;
   return () => {
+    if (!bound) {
+      return;
+    }
+    bound = false;
     dial.binders -= 1;
     if (dial.binders === 0) {
       dial.setOptions({});
