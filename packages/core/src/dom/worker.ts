@@ -99,12 +99,16 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
 const fallback = (error: unknown): boolean =>
   error instanceof Error && error.message.startsWith("zriz:worker:");
 
-export const via = async <K, T>(
+export const via = async <
+  K extends Record<O, (...args: A) => Promise<T>>,
+  O extends keyof K & string,
+  const A extends readonly unknown[],
+  T,
+>(
   target: Lane<K>,
-  op: keyof K & string,
-  args: readonly unknown[],
-  check: (value: unknown) => value is T,
-  here: (kernel: K) => Promise<T>
+  op: O,
+  args: A,
+  check: (value: unknown) => value is T
 ): Promise<T> => {
   try {
     const reply = await target.call(op, args);
@@ -116,7 +120,7 @@ export const via = async <K, T>(
       throw error;
     }
   }
-  return await here(target.here());
+  return await target.here()[op](...args);
 };
 
 let decoder: Lane<Kernel> | undefined;
@@ -141,43 +145,23 @@ export const decodeOff = async (
   edge: number,
   keep?: number
 ): Promise<DecodeReply> =>
-  await via(
-    decoding(),
-    "decode",
-    [blob, edge, keep],
-    isDecode,
-    async (kernel) => await kernel.decode(blob, edge, keep)
-  );
+  await via(decoding(), "decode", [blob, edge, keep], isDecode);
 
 export const keepOff = async (
   id: number,
   bitmap: ImageBitmap
 ): Promise<void> => {
-  await via(decoding(), "keep", [id, bitmap], isNothing, async (kernel) => {
-    await kernel.keep(id, bitmap);
-  });
+  await via(decoding(), "keep", [id, bitmap], isNothing);
 };
 
 export const motionOff = async (id: number, type: string): Promise<Blob> =>
-  await via(
-    decoding(),
-    "motion",
-    [id, type],
-    isBlob,
-    async (kernel) => await kernel.motion(id, type)
-  );
+  await via(decoding(), "motion", [id, type], isBlob);
 
 export const resampleOff = async (
   id: number,
   scale: number
 ): Promise<ImageBitmap> =>
-  await via(
-    decoding(),
-    "resample",
-    [id, scale],
-    isBitmap,
-    async (kernel) => await kernel.resample(id, scale)
-  );
+  await via(decoding(), "resample", [id, scale], isBitmap);
 
 export const regionOff = async (
   source: Blob | ImageBitmap,
@@ -185,18 +169,10 @@ export const regionOff = async (
   width: number,
   height: number
 ): Promise<ImageBitmap> =>
-  await via(
-    decoding(),
-    "region",
-    [source, rect, width, height],
-    isBitmap,
-    async (kernel) => await kernel.region(source, rect, width, height)
-  );
+  await via(decoding(), "region", [source, rect, width, height], isBitmap);
 
 export const releaseOff = async (id: number): Promise<void> => {
-  await via(decoding(), "release", [id], isNothing, async (kernel) => {
-    await kernel.release(id);
-  });
+  await via(decoding(), "release", [id], isNothing);
 };
 
 export const workerActive = (): boolean => decoder?.active() ?? false;

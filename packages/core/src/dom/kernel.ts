@@ -13,7 +13,7 @@ export interface Region {
 
 export interface Kernel {
   decode: (blob: Blob, edge: number, keep?: number) => Promise<DecodeReply>;
-  keep: (id: number, bitmap: ImageBitmap) => Promise<void>;
+  keep: (id: number, bitmap: ImageBitmap) => Promise<undefined>;
   motion: (id: number, type: string) => Promise<Blob>;
   resample: (id: number, scale: number) => Promise<ImageBitmap>;
   region: (
@@ -22,7 +22,7 @@ export interface Kernel {
     width: number,
     height: number
   ) => Promise<ImageBitmap>;
-  release: (id: number) => Promise<void>;
+  release: (id: number) => Promise<undefined>;
 }
 
 export const imageKernel = (): Kernel => {

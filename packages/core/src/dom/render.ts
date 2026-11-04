@@ -21,13 +21,7 @@ const isRender = (value: unknown): value is RenderReply =>
   typeof value === "object" && value !== null && "blob" in value;
 
 const renderOff = async (job: RenderJob): Promise<RenderReply> =>
-  await via(
-    rendering(),
-    "render",
-    [job],
-    isRender,
-    async (kernel) => await kernel.render(job)
-  );
+  await via(rendering(), "render", [job], isRender);
 
 const renderHere = async (job: RenderJob): Promise<RenderReply> =>
   await rendering().here().render(job);
