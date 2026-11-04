@@ -1,3 +1,4 @@
+import "../../core/src/styles.css";
 import type { Cropper as CropperApi, CropValue } from "@zriz/core";
 import axe from "axe-core";
 import { createRef, useState } from "react";
