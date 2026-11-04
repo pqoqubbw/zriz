@@ -71,8 +71,15 @@ describe("exportImage size", () => {
     ]);
   });
 
-  it("keeps the one pixel floor for an empty box", async () => {
-    const out = await run(900, 600, { height: 100, width: 0 });
-    expect([out.width, out.height, out.scaled]).toStrictEqual([1, 1, true]);
+  it.each([
+    { height: 100, width: 0 },
+    { height: -1, width: 100 },
+  ])("ignores an empty box", async (maxSize) => {
+    const out = await run(900, 600, maxSize);
+    expect([out.width, out.height, out.scaled]).toStrictEqual([
+      900,
+      600,
+      false,
+    ]);
   });
 });

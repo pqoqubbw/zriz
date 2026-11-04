@@ -155,7 +155,7 @@ describe("export plan", () => {
 });
 
 describe("export plan scale", () => {
-  it.each([[Number.NaN], [Number.POSITIVE_INFINITY]])(
+  it.each([[Number.NaN], [Number.POSITIVE_INFINITY], [0], [-1]])(
     "falls back to scale 1 for %d",
     (scale) => {
       assert(

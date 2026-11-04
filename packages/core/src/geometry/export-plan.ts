@@ -1,3 +1,4 @@
+import { positive } from "../value";
 import { sinCosDegrees } from "./angle";
 import {
   IDENTITY_MATRIX3,
@@ -127,7 +128,7 @@ export const exportPlan = (
     ({ pixelRect, crop } = snappedCrop(state));
   }
   const scale = Math.max(
-    Number.isFinite(requestedScale) ? requestedScale : 1,
+    positive(requestedScale, 1),
     1 / crop.width,
     1 / crop.height
   );

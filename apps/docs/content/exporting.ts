@@ -47,7 +47,7 @@ const EXPORTING_PAGE = defineDoc({
           },
           {
             name: "maxSize",
-            text: "scales the file down to fit inside this box, never up",
+            text: "scales the file down to fit inside this box, never up. a box with a side that is not a positive number is ignored",
             type: "{ width, height }",
           },
           {
@@ -105,7 +105,7 @@ const EXPORTING_PAGE = defineDoc({
         [
           {
             name: "width",
-            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default",
+            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default and for anything but a positive number",
             type: "number",
           },
           {

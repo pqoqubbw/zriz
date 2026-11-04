@@ -43,7 +43,7 @@ export const exportImage = async (
       )
     : 1;
   const first = Math.min(
-    Number.isNaN(fit) ? 1 : fit,
+    fit > 0 ? fit : 1,
     Math.sqrt(outputLimit() / (base.width * base.height))
   );
   const scales = [first, first / 2, first / 4];
