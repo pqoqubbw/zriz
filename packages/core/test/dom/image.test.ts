@@ -1,3 +1,4 @@
+import { getEventListeners } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -5,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import { ZrizError, attachImage, loadImage } from "../../src/dom";
 import { freeImage, raster, toZriz } from "../../src/dom/image";
+import type { LoadOptions, LoadedImage } from "../../src/dom/image";
+import { exportImage } from "../../src/dom/render";
 import { withTimeout } from "../../src/dom/turn";
 import { FakeWorker } from "./fake-worker";
 
@@ -783,5 +786,218 @@ describe("reading the format", () => {
 
   it("ignores a brand spelled across the bytes of two others", () => {
     expect(raster(ftyp("xxav", "ifxx")).mime).toBeNull();
+  });
+});
+
+const heic = (): LoadedImage => ({
+  animated: false,
+  height: 40,
+  id: 1,
+  mime: "image/heic",
+  preview: new FakeBitmap(40, 40, "main"),
+  source: jpeg(),
+  width: 40,
+});
+
+const listeners = (signal: AbortSignal): number =>
+  getEventListeners(signal, "abort").length;
+
+describe("limits a caller branches on", () => {
+  beforeEach(() => {
+    open.clear();
+    decodes = 0;
+    made = 0;
+    decodeFails = false;
+    copyFails = false;
+    gate = Promise.resolve();
+    stub(false);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects a load past its timeout", async () => {
+    gate = new Promise(noop);
+    const error = await failure(loadImage(jpeg(), { timeout: 0 }));
+    expect(codeOf(error)).toBe("timeout");
+  });
+
+  it("rejects a load past 15 s by default", async () => {
+    gate = new Promise(noop);
+    vi.useFakeTimers();
+    const settled = vi.fn<(error: unknown) => void>();
+    const load = failure(loadImage(jpeg()));
+    void load.then(settled);
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(settled).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(codeOf(await load)).toBe("timeout");
+  });
+
+  it("clears its timer and listener when the work wins", async () => {
+    vi.useFakeTimers();
+    const { signal } = new AbortController();
+    await expect(withTimeout(Promise.resolve(1), 1000, signal)).resolves.toBe(
+      1
+    );
+    expect(vi.getTimerCount()).toBe(0);
+    expect(listeners(signal)).toBe(0);
+  });
+
+  it("clears its timer and listener when the work fails", async () => {
+    vi.useFakeTimers();
+    const { signal } = new AbortController();
+    const error = await failure(
+      withTimeout(Promise.reject(new Error("no")), 1000, signal)
+    );
+    expect(messageOf(error)).toBe("no");
+    expect(vi.getTimerCount()).toBe(0);
+    expect(listeners(signal)).toBe(0);
+  });
+
+  it("clears its timer and listener when an aborted signal wins", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const work = failure(withTimeout(never, 1000, controller.signal));
+    controller.abort();
+    expect(codeOf(await work)).toBe("aborted");
+    expect(vi.getTimerCount()).toBe(0);
+    expect(listeners(controller.signal)).toBe(0);
+  });
+
+  it.each(["timeout", "aborted"] as const)(
+    "keeps the %s code through toZriz, whatever the file",
+    (code) => {
+      const error = new ZrizError(code, "zriz: stop");
+      expect(toZriz(error)).toBe(error);
+      expect(toZriz(error, "image/heic")).toBe(error);
+    }
+  );
+
+  it("reports a heic export aborted mid render as aborted", async () => {
+    gate = new Promise(noop);
+    const controller = new AbortController();
+    const image = heic();
+    const run = failure(
+      exportImage(createCropper({ image }), image, {
+        signal: controller.signal,
+      })
+    );
+    controller.abort();
+    expect(codeOf(await run)).toBe("aborted");
+  });
+
+  it("reports a heic export past 30 s as timeout", async () => {
+    gate = new Promise(noop);
+    vi.useFakeTimers();
+    const image = heic();
+    const settled = vi.fn<(error: unknown) => void>();
+    const run = failure(exportImage(createCropper({ image }), image));
+    void run.then(settled);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(settled).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(codeOf(await run)).toBe("timeout");
+  });
+});
+
+const hooked = async (full: FakeBitmap, options: LoadOptions = {}) =>
+  await loadImage(jpeg(), {
+    decode: async () => await Promise.resolve(full),
+    previewEdge: 100,
+    ...options,
+  });
+
+const bitmap = (width = 400, height = 300): FakeBitmap =>
+  new FakeBitmap(width, height, "main");
+
+describe("releasing a separate source bitmap", () => {
+  beforeEach(() => {
+    open.clear();
+    decodes = 0;
+    made = 0;
+    decodeFails = true;
+    copyFails = false;
+    gate = Promise.resolve();
+    stub(false);
+    vi.stubGlobal("OffscreenCanvas", () => {
+      return {
+        getContext: () => ({
+          drawImage: noop,
+          getImageData: () => ({ data: [1] }),
+        }),
+      };
+    });
+  });
+
+  afterEach(() => {
+    decodeFails = false;
+    vi.unstubAllGlobals();
+  });
+
+  it("closes the source and the preview when the photo is removed", async () => {
+    const full = bitmap();
+    const image = await hooked(full);
+    expect(image.source).toBe(full);
+    expect(image.preview).not.toBe(full);
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    attachImage(cropper, null);
+    expect(open.has(full)).toBeFalsy();
+    await noneLive();
+  });
+
+  it("closes the old photo and keeps the new one on a swap", async () => {
+    const first = bitmap();
+    const second = bitmap(800, 600);
+    const old = await hooked(first);
+    const next = await hooked(second);
+    const cropper = createCropper();
+    attachImage(cropper, old);
+    attachImage(cropper, next);
+    expect(open.has(first)).toBeFalsy();
+    expect(open.has(second)).toBeTruthy();
+    expect(next.preview.width).toBe(100);
+    attachImage(cropper, null);
+    expect(open.has(second)).toBeFalsy();
+  });
+
+  it("keeps a photo that is attached again", async () => {
+    const full = bitmap();
+    const image = await hooked(full);
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    attachImage(cropper, image);
+    expect(open.has(full)).toBeTruthy();
+    attachImage(cropper, null);
+    expect(open.has(full)).toBeFalsy();
+  });
+
+  it("closes a large bitmap passed as the source when it is removed", async () => {
+    const full = bitmap();
+    const image = await loadImage(full, { previewEdge: 100 });
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    attachImage(cropper, null);
+    expect(open.has(full)).toBeFalsy();
+    await noneLive();
+  });
+
+  it("closes what a decode hook returns after the load was aborted", async () => {
+    const full = bitmap();
+    const controller = new AbortController();
+    const error = await failure(
+      hooked(full, {
+        decode: async () => {
+          controller.abort();
+          return await Promise.resolve(full);
+        },
+        signal: controller.signal,
+      })
+    );
+    expect(codeOf(error)).toBe("aborted");
+    await noneLive();
   });
 });

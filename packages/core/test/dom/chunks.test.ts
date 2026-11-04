@@ -53,7 +53,7 @@ describe("lazy chunk failures", () => {
     expect(error).toBeInstanceOf(await zrizError());
   });
 
-  it("rejects export as aborted while the render chunk is still loading", async () => {
+  it("rejects export as aborted before it loads the render chunk", async () => {
     vi.resetModules();
     vi.doMock(import("../../src/dom/render"), pending);
     const { exportImage } = await import("../../src/dom/export");

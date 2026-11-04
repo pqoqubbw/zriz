@@ -346,6 +346,30 @@ describe("export retry", () => {
     expect(allFreed(made)).toBeTruthy();
   });
 
+  it.each([
+    [50_000_000, 8000, false],
+    [20_000_000, 4000, true],
+    [5_000_000, 2000, true],
+  ])(
+    "encodes the first size under a blank limit of %d",
+    async (blank, width, scaled) => {
+      const { made } = fakeCanvas({ blank });
+      const { result } = await painted(8000, 6000);
+      expect([result.width, result.scaled]).toStrictEqual([width, scaled]);
+      expect(allFreed(made)).toBeTruthy();
+    }
+  );
+
+  it("rejects as blank after the last size, with nothing left allocated", async () => {
+    const { made } = fakeCanvas({ blank: 0 });
+    const error: unknown = await painted(8000, 6000).catch(
+      (error_: unknown) => error_
+    );
+    expect(error).toBeInstanceOf(ZrizError);
+    expect(error).toHaveProperty("code", "blank");
+    expect(allFreed(made)).toBeTruthy();
+  });
+
   it("frees the canvas when every size fails", async () => {
     const { made } = fakeCanvas({ drawThrows: 0 });
     await expect(painted(8000, 6000)).rejects.toThrow("draw failed");
