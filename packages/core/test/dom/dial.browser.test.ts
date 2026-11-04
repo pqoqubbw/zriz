@@ -497,3 +497,38 @@ describe("dial", () => {
     }
   );
 });
+
+const dialEvent = (clientX: number): PointerEvent =>
+  new PointerEvent("pointermove", { button: 0, clientX, pointerId: 1 });
+
+describe("dial options with no usable number", () => {
+  const element = document.createElement("div");
+
+  it.each([
+    ["gain", { gain: 0 }],
+    ["tau", { tau: 0 }],
+    ["gain", { gain: Number.NaN }],
+    ["tau", { tau: -1 }],
+  ])("falls back to the default %s", async (_, options) => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    cleanups.push(() => {
+      cropper.destroy();
+    });
+    const handlers = dialHandlers(cropper, options, () => element);
+    handlers.onPointerDown(dialEvent(100));
+    for (const x of [130, 160, 190, 220]) {
+      handlers.onPointerMove(dialEvent(x));
+      await frames(1);
+    }
+    handlers.onPointerUp(dialEvent(220));
+    time.frames(2000);
+    expect(Number.isFinite(cropper.getValue().rotation)).toBeTruthy();
+    expect(Number.isFinite(cropper.getValue().center.x)).toBeTruthy();
+    expect(Number.isNaN(dialState(cropper).overshoot())).toBeFalsy();
+    expect(cropper.getState().settling).toBeFalsy();
+  });
+});

@@ -1,6 +1,7 @@
 import type { Cropper } from "../cropper";
 import { rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
+import { positive } from "../value";
 import { holdCursor } from "./cursor";
 import { bindPointers, capture, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
@@ -104,7 +105,7 @@ export const dialHandlers = (
   let width = 1;
   let stopSettle: (() => void) | null = null;
 
-  const gain = (): number => dial.options().gain ?? GAIN;
+  const gain = (): number => positive(dial.options().gain, GAIN);
   const sign = (): number => (dial.options().dir === "rtl" ? -1 : 1);
 
   const show = (raw: number, dragging: boolean): void => {
@@ -122,7 +123,7 @@ export const dialHandlers = (
 
   const fling = (velocity: number, from: number, event: Event): void => {
     const limit = cropper.getRotationLimit();
-    const tau = dial.options().tau ?? TAU;
+    const tau = positive(dial.options().tau, TAU);
     const rest = from + (velocity / 1000) * tau;
     let elapsed = 0;
     const target = clamp(rest, limit);
@@ -373,7 +374,7 @@ export const bindDialTicks = (
       strip.append(document.createElement("span"));
     }
   }
-  const spacing = (): number => (dial.options().gain ?? GAIN) * DIAL_STEP;
+  const spacing = (): number => positive(dial.options().gain, GAIN) * DIAL_STEP;
   const ticks = [...strip.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
