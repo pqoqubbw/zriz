@@ -389,6 +389,23 @@ const RootDisabled = ({ off }: { off: boolean }) => (
   </Cropper.Root>
 );
 
+const QuietItem = ({ off }: { off: boolean }) => (
+  <Cropper.Root defaultValue={{ aspect: 1 }} image={PHOTO}>
+    <Cropper.AspectGroup aria-label="Aspect">
+      <Cropper.AspectItem
+        disabled={off}
+        render={({ disabled: _native, ...rest }) => <div {...rest} />}
+        value={1}
+      >
+        Square
+      </Cropper.AspectItem>
+      <Cropper.AspectItem render={<div />} value={2}>
+        Wide
+      </Cropper.AspectItem>
+    </Cropper.AspectGroup>
+  </Cropper.Root>
+);
+
 const Sliders = ({
   api,
   ...props
@@ -665,6 +682,43 @@ describe("what the warnings count", () => {
 describe("aspect items that are not buttons", () => {
   afterEach(async () => {
     await cleanup();
+  });
+
+  it("tells assistive tech which items are disabled", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Group api={api} />);
+    const radios = [
+      ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ];
+    expect(
+      radios.map((radio) => radio.getAttribute("aria-disabled"))
+    ).toStrictEqual([null, "true", null]);
+  });
+
+  it("marks a locked item on a circle as disabled", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO} shape="circle">
+        <Cropper.AspectItem render={<div />} value={2}>
+          Wide
+        </Cropper.AspectItem>
+      </Cropper.Root>
+    );
+    expect(
+      item(screen.container, "aspect-item").getAttribute("aria-disabled")
+    ).toBe("true");
+  });
+
+  it("moves the tab stop when an item that hides the attribute turns disabled", async () => {
+    const screen = await render(<QuietItem off={false} />);
+    await frames();
+    const radios = [
+      ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ];
+    expect(radios[1]?.tabIndex).toBe(-1);
+    await screen.rerender(<QuietItem off />);
+    await vi.waitFor(() => {
+      expect(radios[1]?.tabIndex).toBe(0);
+    });
   });
 
   it("moves with arrows and skips a disabled item", async () => {

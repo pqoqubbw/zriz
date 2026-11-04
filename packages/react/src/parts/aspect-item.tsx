@@ -30,6 +30,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   const { shape } = useContext(RootContextValue);
   const disabled = off === true || (shape === "circle" && value !== 1);
   const checked = useCropperState((s) => sameAspect(s.aspect, value));
+  const rootDisabled = useAriaDisabled();
   const onClick = (event: React.MouseEvent): void => {
     if (!disabled) {
       cropper.setAspect(value, { event: event.nativeEvent });
@@ -43,7 +44,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
     "button",
     {
       "aria-checked": inGroup ? checked : undefined,
-      "aria-disabled": useAriaDisabled(),
+      "aria-disabled": disabled || rootDisabled,
       "aria-pressed": inGroup ? undefined : checked,
       "data-checked": checked ? "" : undefined,
       "data-disabled": disabled ? "" : undefined,
