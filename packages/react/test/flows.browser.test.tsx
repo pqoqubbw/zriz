@@ -15,7 +15,7 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { commands, userEvent } from "vitest/browser";
+import { server, commands, userEvent } from "vitest/browser";
 
 import { useCropperFrame } from "../src";
 import * as Cropper from "../src/cropper";
@@ -706,30 +706,35 @@ describe("element sources with real decode", () => {
     URL.revokeObjectURL(url);
   });
 
-  it("a video frame", async () => {
-    const bytes = Uint8Array.from(
-      atob(BLUE_WEBM),
-      (c) => c.codePointAt(0) ?? 0
-    );
-    const url = URL.createObjectURL(new Blob([bytes], { type: "video/webm" }));
-    const video = document.createElement("video");
+  it.skipIf(server.browser === "webkit" && server.platform === "linux")(
+    "a video frame",
+    async () => {
+      const bytes = Uint8Array.from(
+        atob(BLUE_WEBM),
+        (c) => c.codePointAt(0) ?? 0
+      );
+      const url = URL.createObjectURL(
+        new Blob([bytes], { type: "video/webm" })
+      );
+      const video = document.createElement("video");
 
-    video.muted = true;
-    video.preload = "auto";
+      video.muted = true;
+      video.preload = "auto";
 
-    await new Promise((resolve, reject) => {
-      video.addEventListener("loadeddata", resolve, { once: true });
-      video.addEventListener("error", reject, { once: true });
-      video.src = url;
-      video.load();
-    });
+      await new Promise((resolve, reject) => {
+        video.addEventListener("loadeddata", resolve, { once: true });
+        video.addEventListener("error", reject, { once: true });
+        video.src = url;
+        video.load();
+      });
 
-    const image = await loadImage(video);
+      const image = await loadImage(video);
 
-    expect(sizeOf(image)).toStrictEqual([320, 240]);
-    image.preview.close();
-    URL.revokeObjectURL(url);
-  });
+      expect(sizeOf(image)).toStrictEqual([320, 240]);
+      image.preview.close();
+      URL.revokeObjectURL(url);
+    }
+  );
 
   it("the decode hook opens bytes the browser cannot, and a throw rejects with the caller's own error", async () => {
     const junk = new Blob(["this is not an image"], { type: "image/x-custom" });

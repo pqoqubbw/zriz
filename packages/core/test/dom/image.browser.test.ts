@@ -1078,8 +1078,10 @@ const playable = async (
   return video;
 };
 
+const BLANK_VIDEO = server.browser === "webkit" && server.platform === "linux";
+
 describe("video sources", () => {
-  it("opens a video once it has a frame", async () => {
+  it.skipIf(BLANK_VIDEO)("opens a video once it has a frame", async () => {
     const { buffer, bytes, init, video } = await streaming();
     const frame = once(video, "loadeddata");
 
@@ -1120,34 +1122,40 @@ describe("video sources", () => {
     video.remove();
   });
 
-  it("opens a video that is clear at its centre", async () => {
-    const video = await playable("ring.webm", "loadeddata");
-    const { preview, width, height } = await loadImage(video);
+  it.skipIf(BLANK_VIDEO)(
+    "opens a video that is clear at its centre",
+    async () => {
+      const video = await playable("ring.webm", "loadeddata");
+      const { preview, width, height } = await loadImage(video);
 
-    expect([width, height]).toStrictEqual([64, 64]);
-    expect(near(paint(preview, 0.05, 0.05), [200, 30, 30, 255])).toBeTruthy();
-    expect(paint(preview)[3]).toBe(server.browser === "webkit" ? 255 : 0);
-    preview.close();
-    video.remove();
-  });
+      expect([width, height]).toStrictEqual([64, 64]);
+      expect(near(paint(preview, 0.05, 0.05), [200, 30, 30, 255])).toBeTruthy();
+      expect(paint(preview)[3]).toBe(server.browser === "webkit" ? 255 : 0);
+      preview.close();
+      video.remove();
+    }
+  );
 
-  it("refuses a video seeking into an unbuffered range", async () => {
-    const { buffer, bytes, init, media, video } = await streaming();
-    const frame = once(video, "loadeddata");
+  it.skipIf(BLANK_VIDEO)(
+    "refuses a video seeking into an unbuffered range",
+    async () => {
+      const { buffer, bytes, init, media, video } = await streaming();
+      const frame = once(video, "loadeddata");
 
-    await appended(buffer, bytes.subarray(init));
-    await frame;
-    const removed = once(buffer, "updateend");
+      await appended(buffer, bytes.subarray(init));
+      await frame;
+      const removed = once(buffer, "updateend");
 
-    buffer.remove(0.5, media.duration);
-    await removed;
-    const seeking = once(video, "seeking");
+      buffer.remove(0.5, media.duration);
+      await removed;
+      const seeking = once(video, "seeking");
 
-    video.currentTime = 0.75;
-    await seeking;
-    await expect(codeOf(loadImage(video))).resolves.toBe("decode");
-    video.remove();
-  });
+      video.currentTime = 0.75;
+      await seeking;
+      await expect(codeOf(loadImage(video))).resolves.toBe("decode");
+      video.remove();
+    }
+  );
 });
 
 describe("sharing and freeing a photo", () => {
