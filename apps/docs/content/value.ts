@@ -103,7 +103,7 @@ const VALUE_PAGE = defineDoc({
       p("pass `rotation` and update it in `onValueChange`:"),
       code("value/controlled.tsx"),
       p(
-        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and calls `onValueChange` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to `maxZoom`. the move also commits, so `onValueCommit` runs too. a prop applied as the photo arrives is silent, and a prop moves the crop only when it changes: it is not applied again after a gesture or another prop moves the crop."
+        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and calls `onValueChange` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to `maxZoom`. the move also commits, so `onValueCommit` runs too. a prop applied as the photo arrives is silent."
       ),
       p(
         "`value` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from `onValueChange`. `Reset` still goes to `defaultValue`, not to the last `value`."

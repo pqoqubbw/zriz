@@ -10,7 +10,7 @@ import { usePart } from "../use-render";
 
 export interface DialValueProps extends PartProps<"span", object> {
   /** Text for an angle in degrees. @default the rounded number */
-  format?: (rotation: number) => string;
+  format?: ((rotation: number) => string) | undefined;
 }
 
 export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<

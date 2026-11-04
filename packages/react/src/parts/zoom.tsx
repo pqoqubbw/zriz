@@ -23,9 +23,9 @@ export interface ZoomState {
 
 export interface ZoomProps extends PartProps<"div", ZoomState> {
   /** Highest zoom the slider reaches. @default maxZoom on Root */
-  max?: number;
+  max?: number | undefined;
   /** Formatting of the spoken value. @default percent */
-  format?: Intl.NumberFormatOptions;
+  format?: Intl.NumberFormatOptions | undefined;
 }
 
 export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
@@ -42,6 +42,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   );
   useRelease(handlers);
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
+  const disabled = useCropperState((s) => s.disabled);
   const own = useCallback(
     (node: HTMLDivElement) => {
       const clear = box.set(node);
@@ -57,6 +58,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   return usePart(
     "div",
     {
+      "aria-disabled": disabled ? true : undefined,
       "aria-orientation": "horizontal",
       "data-dragging": dragging ? "" : undefined,
       "data-zriz-item": "zoom",

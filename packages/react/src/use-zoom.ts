@@ -30,7 +30,7 @@ const heldBy = (event: PointerEvent | KeyboardEvent): number | string =>
   "key" in event ? event.key : event.pointerId;
 
 export const useZoom = (
-  options: { max?: number; cropper?: Cropper } = {}
+  options: { max?: number | undefined; cropper?: Cropper | undefined } = {}
 ): UseZoom => {
   const cropper = useTarget(options.cropper);
   const max = options.max ?? cropper.getMaxZoom();

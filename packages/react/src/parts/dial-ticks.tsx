@@ -14,7 +14,7 @@ export interface DialTicksState {
 
 export interface DialTicksProps extends PartProps<"div", DialTicksState> {
   /** Number of ticks across ±45°. @default 41 */
-  count?: number;
+  count?: number | undefined;
 }
 
 export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<

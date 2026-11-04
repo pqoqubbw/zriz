@@ -1,5 +1,3 @@
-"use client";
-
 import { coverScale } from "@zriz/core";
 import type { Size } from "@zriz/core";
 
@@ -9,7 +7,7 @@ export interface UseCoverScaleOptions {
   /** Crop size in image pixels. */
   crop: Size;
   /** Straighten angle in degrees. @default 0 */
-  rotation?: number;
+  rotation?: number | undefined;
 }
 
 export const useCoverScale = ({

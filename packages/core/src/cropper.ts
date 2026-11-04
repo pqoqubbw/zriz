@@ -109,7 +109,7 @@ export interface CropperEvents {
 export interface CropperPlugin {
   name: string;
   init: (cropper: Cropper) => void;
-  destroy?: () => void;
+  destroy?: (() => void) | undefined;
 }
 
 export interface CropperOptions {
@@ -147,7 +147,10 @@ export interface Cropper {
   setOptions: (options: Partial<CropperOptions>) => void;
   setValue: (value: Partial<CropValue>, options?: ActionOptions) => void;
   setRotation: (degrees: number, options?: ActionOptions) => void;
-  setZoom: (zoom: number, options?: ActionOptions & { anchor?: Point }) => void;
+  setZoom: (
+    zoom: number,
+    options?: ActionOptions & { anchor?: Point | undefined }
+  ) => void;
   panBy: (dx: number, dy: number, options?: ActionOptions) => void;
   setAspect: (aspect: Aspect, options?: ActionOptions) => void;
   rotate90: (direction?: "ccw" | "cw", options?: ActionOptions) => void;
@@ -166,7 +169,7 @@ export interface Cropper {
   retarget: (value: Record<string, unknown>) => () => void;
   setCropState: (
     next: CropState,
-    options?: ActionOptions & { keep?: "size" | "centre" }
+    options?: ActionOptions & { keep?: "size" | "centre" | undefined }
   ) => void;
   run: (task: FrameTask, blocking?: boolean) => () => void;
   invalidate: () => void;

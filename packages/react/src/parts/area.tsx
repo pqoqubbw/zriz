@@ -22,7 +22,7 @@ export interface AreaState {
 
 export interface AreaProps extends PartProps<"div", AreaState> {
   /** Write --zriz-rotation, --zriz-zoom, their -progress and --zriz-overscroll on this element each frame. */
-  liveVariables?: boolean;
+  liveVariables?: boolean | undefined;
 }
 
 export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<

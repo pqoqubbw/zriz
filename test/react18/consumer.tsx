@@ -1,6 +1,19 @@
 import "@zriz/react/styles.css";
-import { mergeRefs, useRender } from "@zriz/react";
-import type { AreaProps, RotateProps } from "@zriz/react";
+import {
+  mergeProps,
+  mergeRefs,
+  useCoverScale,
+  useRender,
+  useZoom,
+} from "@zriz/react";
+import type {
+  AreaProps,
+  AspectGroupState,
+  ChangeReason,
+  CropperPlugin,
+  DialTicksState,
+  RotateProps,
+} from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { createRef, forwardRef, useRef } from "react";
 import type { ReactElement } from "react";
@@ -81,6 +94,67 @@ export const App = (): ReactElement => {
       <Cropper.Instructions>drag to move</Cropper.Instructions>
       <Cropper.Announcer announce={() => null} />
       <OwnButton>own</OwnButton>
+    </Cropper.Root>
+  );
+};
+
+export const merged = (props: RotateProps): object => mergeProps({}, props);
+
+export const OwnSvg = ({
+  own,
+}: {
+  own: React.Ref<SVGSVGElement>;
+}): ReactElement => useRender({ props: {}, ref: own, state: {}, tag: "svg" });
+
+export const OwnProps = (props: RotateProps): ReactElement =>
+  useRender({ props, state: {}, tag: "button" });
+
+export type Exported =
+  | AspectGroupState
+  | ChangeReason
+  | CropperPlugin
+  | DialTicksState;
+
+export const Undefined = ({
+  file,
+}: {
+  file: File | undefined;
+}): ReactElement => {
+  const unset = undefined;
+  useZoom({ cropper: unset, max: unset });
+  useCoverScale({
+    crop: { height: 1, width: 1 },
+    image: { height: 1, width: 1 },
+    rotation: unset,
+  });
+  return (
+    <Cropper.Root
+      actionsRef={unset}
+      className={unset}
+      crossOrigin={unset}
+      dir={unset}
+      locale={unset}
+      motion={unset}
+      onError={unset}
+      onLoad={unset}
+      recentreDelay={unset}
+      render={unset}
+      shape={unset}
+      src={file}
+    >
+      <Cropper.Viewport rotateGesture={unset} wheel={unset}>
+        <Cropper.Image alt={unset} />
+        <Cropper.Area aria-label="Crop" liveVariables={unset} />
+      </Cropper.Viewport>
+      <Cropper.Dial aria-label="Dial" format={unset}>
+        <Cropper.DialTicks count={unset} />
+        <Cropper.DialValue format={unset} />
+      </Cropper.Dial>
+      <Cropper.Zoom aria-label="Zoom" format={unset} max={unset}>
+        <Cropper.ZoomThumb max={unset} />
+      </Cropper.Zoom>
+      <Cropper.Flip axis={unset} />
+      <Cropper.Rotate direction={unset} />
     </Cropper.Root>
   );
 };

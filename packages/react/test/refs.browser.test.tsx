@@ -11,6 +11,7 @@ import type { Ref } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 
+import { useRender } from "../src";
 import type { AreaProps } from "../src";
 import * as Cropper from "../src/cropper";
 import { mergeRefs } from "../src/merge-props";
@@ -52,6 +53,9 @@ const userRef = (node: HTMLElement | null) => {
     log.push("cleanup");
   };
 };
+
+const OwnPart = ({ own }: { own: object }) =>
+  useRender({ props: own, state: {}, tag: "span" });
 
 const isCallback = (
   value: unknown
@@ -273,6 +277,12 @@ describe("refs on React 18 and 19", () => {
     expect(object.current).toBeNull();
     expect(log.at(-1)).toMatch(/^(?:cleanup|null)$/u);
     expect(log.filter((entry) => entry === "attach")).toHaveLength(1);
+  });
+
+  it("attaches a ref given in useRender props", async () => {
+    const mine = createRef<HTMLSpanElement>();
+    await render(<OwnPart own={{ ref: mine }} />);
+    expect(mine.current?.tagName).toBe("SPAN");
   });
 
   it("keeps the node when a part gains a render element of the same tag", async () => {

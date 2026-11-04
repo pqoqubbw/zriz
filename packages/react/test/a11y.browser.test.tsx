@@ -1,6 +1,6 @@
 import type { Cropper as CropperApi } from "@zriz/core";
 import axe from "axe-core";
-import { createRef } from "react";
+import { createRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { userEvent } from "vitest/browser";
@@ -200,5 +200,114 @@ describe("accessibility", () => {
     expect(
       screen.container.querySelector('[data-zriz-item="dial"]')
     ).not.toBeNull();
+  });
+});
+
+const stops = (container: Element): string[] =>
+  [...container.querySelectorAll<HTMLElement>('[role="radio"]')]
+    .filter((item) => item.tabIndex === 0)
+    .map((item) => item.textContent);
+
+const Items = () => {
+  const [first, setFirst] = useState(true);
+  return (
+    <>
+      <button
+        id="drop-first"
+        onClick={() => {
+          setFirst(false);
+        }}
+        type="button"
+      >
+        drop
+      </button>
+      {first ? <Cropper.AspectItem value={1}>Square</Cropper.AspectItem> : null}
+      <Cropper.AspectItem value={2}>Wide</Cropper.AspectItem>
+    </>
+  );
+};
+
+describe("part states", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("keeps one tab stop when items change inside their own component", async () => {
+    const screen = await render(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Items />
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    expect(stops(screen.container)).toStrictEqual(["Square"]);
+    document.querySelector<HTMLElement>("#drop-first")?.click();
+    await vi.waitFor(() => {
+      expect(stops(screen.container)).toStrictEqual(["Wide"]);
+    });
+  });
+
+  it("does not move focus in a disabled aspect group", async () => {
+    const screen = await render(
+      <Cropper.Root disabled image={{ height: 300, width: 400 }}>
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={2}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+    const first = screen.container.querySelector<HTMLElement>('[role="radio"]');
+    first?.focus();
+    first?.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })
+    );
+    expect(document.activeElement).toBe(first);
+  });
+
+  it("keeps the instructions link with a custom id", async () => {
+    const screen = await render(
+      <Cropper.Root>
+        <Cropper.Area aria-label="Crop" />
+        <Cropper.Instructions id="mine">help</Cropper.Instructions>
+      </Cropper.Root>
+    );
+    const area = screen.container.querySelector('[data-zriz-item="area"]');
+    const link = area?.getAttribute("aria-describedby") ?? "";
+    expect(document.querySelector(`[id="${link}"]`)?.textContent).toBe("help");
+  });
+
+  it("repeats a message that ends in white space", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Announcer announce={() => "Saved "} />
+      </Cropper.Root>
+    );
+    const status = screen.container.querySelector('[role="status"]');
+    api.current?.setRotation(1);
+    await frames(2);
+    const said = status?.textContent;
+    api.current?.setRotation(2);
+    await frames(2);
+    expect(status?.textContent).not.toBe(said);
+  });
+
+  it("marks a disabled Orientation and disabled sliders", async () => {
+    const screen = await render(
+      <Cropper.Root disabled image={{ height: 300, width: 400 }}>
+        <Cropper.Orientation>turn</Cropper.Orientation>
+        <Cropper.Dial aria-label="Dial" />
+        <Cropper.Zoom aria-label="Zoom" />
+      </Cropper.Root>
+    );
+    const { container } = screen;
+    expect(
+      container.querySelector('[data-zriz-item="orientation"]')
+    ).toHaveProperty("dataset.disabled", "");
+    expect(
+      [...container.querySelectorAll('[role="slider"]')].map((slider) =>
+        slider.getAttribute("aria-disabled")
+      )
+    ).toStrictEqual(["true", "true"]);
   });
 });

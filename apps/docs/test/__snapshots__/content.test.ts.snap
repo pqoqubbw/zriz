@@ -6911,7 +6911,7 @@ when \`Root\` gets \`cropper\`, it ignores its own \`defaultValue\`, \`image\`, 
 
 \`Root\` frees the photo only for a cropper it made. free a \`useCropper\` cropper's photo yourself when the component unmounts, with \`attachImage(cropper, null)\` from \`@zriz/core/dom\`, as the snippet does. add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md).
 
-\`Root\` keeps its photo while \`<Activity>\` hides it. react runs no cleanup when it removes a tree that is hidden, so \`Root\` cannot free the photo then. if you remove a hidden \`Root\`, call \`attachImage(cropper, null)\` yourself first.
+\`Root\` keeps its photo while \`<Activity>\` hides it. react runs no cleanup when it removes a tree that is hidden, so \`Root\` cannot free the photo then. to remove a hidden \`Root\`, make the cropper with \`useCropper\` above it and call \`attachImage(cropper, null)\` yourself.
 
 pass one cropper to one \`Root\`. \`shape\`, \`motion\` and \`recentreDelay\` belong to the cropper, so a second \`Root\` overwrites them, even with its defaults. keep \`Instructions\` in the \`Root\` that holds \`Area\`. your own parts and hooks can reach the cropper through \`CropperContext\` or the \`cropper\` argument.
 
@@ -8502,7 +8502,7 @@ export const Editor = ({ src }: { src: string }) => {
 };
 \`\`\`
 
-\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and calls \`onValueChange\` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to \`maxZoom\`. the move also commits, so \`onValueCommit\` runs too. a prop applied as the photo arrives is silent, and a prop moves the crop only when it changes: it is not applied again after a gesture or another prop moves the crop.
+\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and calls \`onValueChange\` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to \`maxZoom\`. the move also commits, so \`onValueCommit\` runs too. a prop applied as the photo arrives is silent.
 
 \`value\` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
 

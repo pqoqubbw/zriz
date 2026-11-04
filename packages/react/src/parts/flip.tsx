@@ -13,7 +13,7 @@ export interface FlipState {
 
 export interface FlipProps extends PartProps<"button", FlipState> {
   /** Mirror axis. @default "x" */
-  axis?: "x" | "y";
+  axis?: "x" | "y" | undefined;
 }
 
 export const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<

@@ -28,7 +28,7 @@ export interface DialState {
 
 export interface DialProps extends PartProps<"div", DialState> {
   /** Formatting of the spoken value. @default degrees, long unit */
-  format?: Intl.NumberFormatOptions;
+  format?: Intl.NumberFormatOptions | undefined;
 }
 
 export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
@@ -52,6 +52,12 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     state.dragging,
     () => false
   );
+  const readDisabled = (): boolean => cropper.getState().disabled;
+  const disabled = useSyncExternalStore(
+    cropper.subscribe,
+    readDisabled,
+    readDisabled
+  );
   const own = useCallback(
     (node: HTMLDivElement) => {
       const clear = box.set(node);
@@ -67,6 +73,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   return usePart(
     "div",
     {
+      "aria-disabled": disabled ? true : undefined,
       "aria-orientation": "horizontal",
       "data-dragging": dragging ? "" : undefined,
       "data-zriz-item": "dial",

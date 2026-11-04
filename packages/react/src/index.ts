@@ -3,10 +3,10 @@ export { mergeProps, mergeRefs, preventZrizHandler } from "./merge-props";
 export type { PartProps } from "./part";
 export type { AnnouncerProps } from "./parts/announcer";
 export type { AreaProps, AreaState } from "./parts/area";
-export type { AspectGroupProps } from "./parts/aspect-group";
+export type { AspectGroupProps, AspectGroupState } from "./parts/aspect-group";
 export type { AspectItemProps, AspectItemState } from "./parts/aspect-item";
 export type { DialProps, DialState } from "./parts/dial";
-export type { DialTicksProps } from "./parts/dial-ticks";
+export type { DialTicksProps, DialTicksState } from "./parts/dial-ticks";
 export type { DialValueProps } from "./parts/dial-value";
 export type { FlipProps, FlipState } from "./parts/flip";
 export type { GridProps, GridState } from "./parts/grid";
@@ -36,11 +36,17 @@ export type { ClassName, RenderOptions, RenderProp } from "./use-render";
 export { useZoom } from "./use-zoom";
 export type { UseZoom } from "./use-zoom";
 export type {
+  ActionOptions,
   Aspect,
   ChangeDetails,
+  ChangePhase,
+  ChangeReason,
   CommitDetails,
   CropValue,
   Cropper,
+  CropperFrame,
+  CropperOptions,
+  CropperPlugin,
   CropperSnapshot,
   Size,
 } from "@zriz/core";

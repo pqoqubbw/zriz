@@ -44,25 +44,25 @@ export interface RootProps
     UseCropperOptions,
     Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad"> {
   /** The photo: a URL, a Blob or File, or null while empty. */
-  src?: string | Blob | null;
+  src?: string | Blob | null | undefined;
   /** CORS mode for a cross-origin URL. */
-  crossOrigin?: "anonymous" | "use-credentials";
+  crossOrigin?: "anonymous" | "use-credentials" | undefined;
   /** Crop shape. A circle locks the aspect to 1, draws a round mask and exports a round PNG. */
-  shape?: "rect" | "circle";
+  shape?: "rect" | "circle" | undefined;
   /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
-  motion?: "auto" | "always" | "reduce";
+  motion?: "auto" | "always" | "reduce" | undefined;
   /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
-  recentreDelay?: number;
+  recentreDelay?: number | undefined;
   /** Reading direction for keys and sliders. @default "ltr" */
-  dir?: "ltr" | "rtl";
+  dir?: "ltr" | "rtl" | undefined;
   /** Locale for value text. */
-  locale?: string;
+  locale?: string | undefined;
   /** Receives the imperative API. */
-  actionsRef?: Ref<Cropper>;
+  actionsRef?: Ref<Cropper> | undefined;
   /** Called once the photo is decoded and ready to crop. */
-  onLoad?: (image: LoadedImage) => void;
+  onLoad?: ((image: LoadedImage) => void) | undefined;
   /** Called with a typed ZrizError when the photo cannot load. */
-  onError?: (error: ZrizError) => void;
+  onError?: ((error: ZrizError) => void) | undefined;
 }
 
 const IDLE: Chrome = {

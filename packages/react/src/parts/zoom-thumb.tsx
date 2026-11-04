@@ -10,7 +10,7 @@ import { usePart } from "../use-render";
 
 export interface ZoomThumbProps extends PartProps<"div", object> {
   /** Must match the Zoom max. @default maxZoom on Root */
-  max?: number;
+  max?: number | undefined;
 }
 
 export const ZoomThumb: Part<ZoomThumbProps, HTMLDivElement> = forwardRef<

@@ -16,9 +16,9 @@ export interface ViewportState {
 
 export interface ViewportProps extends PartProps<"div", ViewportState> {
   /** What a plain mouse wheel or two-finger trackpad drag does. @default "pan" */
-  wheel?: WheelMode;
+  wheel?: WheelMode | undefined;
   /** Two fingers also straighten the photo. @default true */
-  rotateGesture?: boolean;
+  rotateGesture?: boolean | undefined;
 }
 
 export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<

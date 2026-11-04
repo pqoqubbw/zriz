@@ -8,7 +8,7 @@ import { usePart } from "../use-render";
 
 export interface RotateProps extends PartProps<"button", object> {
   /** Turn direction. @default "ccw" like Photos */
-  direction?: "ccw" | "cw";
+  direction?: "ccw" | "cw" | undefined;
 }
 
 export const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<

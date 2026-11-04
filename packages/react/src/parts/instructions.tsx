@@ -13,10 +13,11 @@ export const Instructions: Part<InstructionsProps, HTMLDivElement> = forwardRef<
   InstructionsProps
 >(function Instructions(props, ref) {
   const { instructions } = useContext(RootContextValue);
+  const own = { ...props, id: instructions };
   return usePart(
     "div",
-    { "data-zriz-item": "instructions", hidden: true, id: instructions },
-    props,
+    { "data-zriz-item": "instructions", hidden: true },
+    own,
     ref,
     {}
   );

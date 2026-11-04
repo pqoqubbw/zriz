@@ -15,7 +15,7 @@ export interface ImageState {
 
 export interface ImageProps extends PartProps<"div", ImageState> {
   /** Text for the photo. Empty when the crop is described elsewhere. @default "" */
-  alt?: string;
+  alt?: string | undefined;
 }
 
 export const Image: Part<ImageProps, HTMLDivElement> = forwardRef<

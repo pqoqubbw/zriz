@@ -22,6 +22,7 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
       if (typeof aspect === "number" && aspect !== 1) {
         orientation = aspect > 1 ? "landscape" : "portrait";
       }
+      const disabled = typeof aspect !== "number" || aspect === 1;
       const onClick = (event: React.MouseEvent): void => {
         const current = cropper.getValue().aspect;
         if (typeof current === "number") {
@@ -34,9 +35,10 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
       return usePart(
         "button",
         {
+          "data-disabled": disabled ? "" : undefined,
           "data-orientation": orientation,
           "data-zriz-item": "orientation",
-          disabled: typeof aspect !== "number" || aspect === 1,
+          disabled,
           onClick,
           type: "button",
         },

@@ -32,9 +32,9 @@ export type PartProps<T extends keyof JSX.IntrinsicElements, S> = Omit<
   "className"
 > & {
   /** A class, or a function of the part's state that returns one. */
-  className?: ClassName<S>;
+  className?: ClassName<S> | undefined;
   /** Your own element, or a function of props and state that returns one. */
-  render?: RenderProp<S>;
+  render?: RenderProp<S> | undefined;
 } & RefAttributes<ElementOf<T>>;
 
 export type Part<P, E> = ForwardRefExoticComponent<
@@ -43,7 +43,7 @@ export type Part<P, E> = ForwardRefExoticComponent<
 
 export interface RootContext {
   shape: "rect" | "circle";
-  instructions: string;
+  instructions: string | undefined;
   dir: "ltr" | "rtl";
   locale: string | undefined;
 }
@@ -51,7 +51,7 @@ export interface RootContext {
 export const RootContextValue: React.Context<RootContext> =
   createContext<RootContext>({
     dir: "ltr",
-    instructions: "",
+    instructions: undefined,
     locale: undefined,
     shape: "rect",
   });
