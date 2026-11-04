@@ -117,10 +117,7 @@ export const mirrorY = (state: CropState): CropState => ({
 });
 
 export const setAngle = (state: CropState, angle: number): CropState => {
-  const centre = applyMatrix2(rotationMatrix(angle - state.angle), {
-    x: state.crop.x,
-    y: state.crop.y,
-  });
+  const centre = applyMatrix2(rotationMatrix(angle - state.angle), state.crop);
   return {
     ...state,
     angle: positiveZero(angle),

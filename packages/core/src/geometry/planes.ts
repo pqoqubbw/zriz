@@ -89,10 +89,9 @@ export const projectOntoPlanes = (
     return given;
   }
   const reach = 1e6 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
-  const point = {
-    x: Math.min(Math.max(given.x, -reach), reach),
-    y: Math.min(Math.max(given.y, -reach), reach),
-  };
+  const inReach = (side: number): number =>
+    Math.min(Math.max(side, -reach), reach);
+  const point = { x: inReach(given.x), y: inReach(given.y) };
   const candidates: Point[] = planes.map((plane) => {
     const k =
       (plane.nx * point.x + plane.ny * point.y - plane.d) /

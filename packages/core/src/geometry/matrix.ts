@@ -1,18 +1,5 @@
 import { sinCosDegrees, toQuarterTurns } from "./angle";
-import type {
-  AffineMatrix,
-  Matrix2,
-  Matrix3,
-  Point,
-  QuarterTurns,
-} from "./types";
-
-const QUARTER_TURN_MATRICES: Readonly<Record<QuarterTurns, Matrix2>> = {
-  0: [1, 0, 0, 1],
-  1: [0, -1, 1, 0],
-  2: [-1, 0, 0, -1],
-  3: [0, 1, -1, 0],
-};
+import type { AffineMatrix, Matrix2, Matrix3, Point } from "./types";
 
 export const IDENTITY_MATRIX3: Readonly<Matrix3> = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
@@ -21,9 +8,10 @@ export const rotationMatrix = (degrees: number): Matrix2 => {
   return [cos, -sin, sin, cos];
 };
 
-export const quarterTurnMatrix = (turns: number): Matrix2 => [
-  ...QUARTER_TURN_MATRICES[toQuarterTurns(turns)],
-];
+export const quarterTurnMatrix = (turns: number): Matrix2 => {
+  const { sin, cos } = sinCosDegrees(90 * toQuarterTurns(turns));
+  return [cos + 0, 0 - sin, sin + 0, cos + 0];
+};
 
 export const multiplyMatrix2 = (a: Matrix2, b: Matrix2): Matrix2 => [
   a[0] * b[0] + a[1] * b[2],
