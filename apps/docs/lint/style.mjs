@@ -1,7 +1,7 @@
 const PASCAL_CASE = /^[A-Z][A-Za-z0-9]*$/u;
 const CONSTANT_CASE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/u;
 const UTILITY =
-  /^(?:(?:\[[^\]]+\]|[\w*-]+(?:-\[[^\]]+\])?):)*!?-?(?:\[[^\]]+\]|(?:flex|grid|block|inline|hidden|contents|sr-only|absolute|relative|sticky|p[xytrbl]?|m[xytrbl]?|gap|size|w|h|min|max|text|font|bg|rounded|shadow|inset|col|row|items|justify|self|overflow|overscroll|cursor|opacity|z|top|left|right|bottom|whitespace|shrink|grow|group|decoration|underline)(?:-\S*)?)$/u;
+  /^(?:(?:\[[^\]]+\]|[\w*-]+(?:-\[[^\]]+\])?):)*!?-?(?:\[[^\]]+:[^\]]+\]|(?:flex|grid|block|inline|hidden|contents|sr-only|absolute|relative|sticky|p[xytrbl]?|m[xytrbl]?|gap|size|w|h|min|max|text|font|bg|rounded|shadow|inset|col|row|items|justify|self|overflow|overscroll|cursor|opacity|z|top|left|right|bottom|whitespace|shrink|grow|group|decoration|underline)(?:-\S*)?)$/u;
 const INLINE_SEGMENT_CONFIG = new Set([
   "dynamic",
   "dynamicParams",
@@ -73,10 +73,14 @@ const isLiteralData = (node) => {
   return false;
 };
 
+const isEmptyLiteral = (value) =>
+  (value.type === "ArrayExpression" && value.elements.length === 0) ||
+  (value.type === "ObjectExpression" && value.properties.length === 0);
+
 const isConstant = (node) => {
   const value = unwrap(node);
 
-  if (!value) {
+  if (!value || isEmptyLiteral(value)) {
     return false;
   }
 
@@ -239,10 +243,14 @@ const constantCase = {
   }),
 };
 
+const isStyleObject = (declarator) =>
+  declarator.id.typeAnnotation?.typeAnnotation?.typeName?.name ===
+  "CSSProperties";
+
 const noClassVariable = {
   create: (context) => ({
     VariableDeclarator: (node) => {
-      if (holdsClasses(node.init)) {
+      if (!isStyleObject(node) && holdsClasses(node.init)) {
         context.report({
           message:
             "Move these classes into a primitive (cva variants) or inline them in className.",

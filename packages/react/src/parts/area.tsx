@@ -2,7 +2,8 @@
 
 import { areaKeyHandlers, bindArea } from "@zriz/core/dom";
 import { warnUnlabelled } from "@zriz/react/warn";
-import { forwardRef, useContext, useCallback, useMemo } from "react";
+import { forwardRef, useCallback, useContext, useMemo } from "react";
+import type { CSSProperties } from "react";
 
 import { useCropperContext } from "../context";
 import { RootContext, nativeProps, useMergedRef, useRelease } from "../part";
@@ -20,8 +21,8 @@ type AreaProps = PartProps<"div", AreaState> & {
   liveVariables?: boolean | undefined;
 };
 
-const SQUARE = { position: "absolute" };
-const ROUND = { ...SQUARE, borderRadius: "50%" };
+const SQUARE: CSSProperties = { position: "absolute" };
+const ROUND: CSSProperties = { ...SQUARE, borderRadius: "50%" };
 
 const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,

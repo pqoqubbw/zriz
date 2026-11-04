@@ -12,11 +12,9 @@ export default defineConfig({
   overrides: [
     {
       excludeFiles: ["apps/docs/snippets/**"],
-      files: ["apps/docs/**"],
+      files: ["apps/docs/**", "packages/*/src/**", "packages/*/test/**"],
       jsPlugins: ["@stylistic/eslint-plugin", "./apps/docs/lint/style.mjs"],
-      plugins: next.plugins ?? [],
       rules: {
-        ...next.rules,
         "@stylistic/padding-line-between-statements": [
           "error",
           { blankLine: "always", next: "return", prev: "*" },
@@ -40,8 +38,16 @@ export default defineConfig({
         "docs/props-type": "error",
         "import/exports-last": "error",
         "import/group-exports": "error",
-        "nextjs/no-html-link-for-pages": "off",
         "typescript/consistent-type-definitions": ["error", "type"],
+      },
+    },
+    {
+      excludeFiles: ["apps/docs/snippets/**"],
+      files: ["apps/docs/**"],
+      plugins: next.plugins ?? [],
+      rules: {
+        ...next.rules,
+        "nextjs/no-html-link-for-pages": "off",
       },
     },
     {
