@@ -72,6 +72,13 @@ export const useZoom = (
     };
     const release = (event: PointerEvent | KeyboardEvent): void => {
       held.delete(heldBy(event));
+      if ("key" in event && event.key === "Meta") {
+        for (const key of held) {
+          if (typeof key === "string") {
+            held.delete(key);
+          }
+        }
+      }
       if (held.size === 0) {
         onValueCommitted();
       }

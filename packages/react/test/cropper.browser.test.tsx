@@ -528,9 +528,11 @@ describe("Root load results", () => {
   });
 });
 
-const ShownValue = memo(({ cropper }: { cropper?: CropperApi }) => (
+const Shown = ({ cropper }: { cropper?: CropperApi }) => (
   <p id="shown">{JSON.stringify(useCropperValue(cropper))}</p>
-));
+);
+
+const ShownValue = memo(Shown);
 
 const shownValue = (): unknown =>
   JSON.parse(document.querySelector("#shown")?.textContent ?? "null");
@@ -1492,6 +1494,10 @@ const firePointer = (type: string, pointerId: number): void => {
   globalThis.dispatchEvent(new PointerEvent(type, { pointerId }));
 };
 
+const fireKey = (type: string, key: string): void => {
+  globalThis.dispatchEvent(new KeyboardEvent(type, { key }));
+};
+
 describe("useZoom gesture", () => {
   afterEach(async () => {
     await cleanup();
@@ -1537,6 +1543,68 @@ describe("useZoom gesture", () => {
     expect(cropper.getState().interacting).toBe("zoom-control");
     firePointer("pointerdown", 2);
     firePointer("pointerup", 2);
+    expect(cropper.getState().interacting).toBe("zoom-control");
+    firePointer("pointerup", 1);
+    expect(cropper.getState().interacting).toBeNull();
+  });
+
+  it("ends the gesture when the window loses focus", async () => {
+    const cropper = photoCropper();
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    firePointer("pointerdown", 1);
+    zoom?.onValueChange(2);
+    globalThis.dispatchEvent(new Event("blur"));
+    expect(cropper.getState().interacting).toBeNull();
+    firePointer("pointerup", 1);
+  });
+
+  it("forgets a letter whose keyup a meta chord swallowed", async () => {
+    const cropper = photoCropper();
+    const commit = vi.fn<() => void>();
+    cropper.on("commit", commit);
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    fireKey("keydown", "Meta");
+    fireKey("keydown", "c");
+    fireKey("keyup", "Meta");
+    firePointer("pointerdown", 1);
+    zoom?.onValueChange(2);
+    firePointer("pointerup", 1);
+    expect(cropper.getState().interacting).toBeNull();
+    await frames(2);
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a held pointer through a meta release", async () => {
+    const cropper = photoCropper();
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    firePointer("pointerdown", 1);
+    zoom?.onValueChange(2);
+    fireKey("keydown", "Meta");
+    fireKey("keyup", "Meta");
     expect(cropper.getState().interacting).toBe("zoom-control");
     firePointer("pointerup", 1);
     expect(cropper.getState().interacting).toBeNull();
