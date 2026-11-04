@@ -43,7 +43,7 @@ export const exportImage = async (
       )
     : 1;
   const first = Math.min(
-    fit,
+    Number.isNaN(fit) ? 1 : fit,
     Math.sqrt(outputLimit() / (base.width * base.height))
   );
   const scales = [first, first / 2, first / 4];
@@ -89,7 +89,7 @@ export const exportImage = async (
       blob,
       crop,
       height: crop.height,
-      scaled: (scales[index] ?? first) < 1,
+      scaled: crop.width < base.width || crop.height < base.height,
       type: blob.type,
       width: crop.width,
     };

@@ -126,7 +126,11 @@ export const exportPlan = (
   if (state.angle === 0 && !hasPerspective) {
     ({ pixelRect, crop } = snappedCrop(state));
   }
-  const scale = Math.max(requestedScale, 1 / crop.width, 1 / crop.height);
+  const scale = Math.max(
+    Number.isFinite(requestedScale) ? requestedScale : 1,
+    1 / crop.width,
+    1 / crop.height
+  );
   const width = Math.max(1, Math.floor(crop.width * scale + 1e-6));
   const height = Math.max(1, Math.floor(crop.height * scale + 1e-6));
   const centre = applyMatrix2(linear, {

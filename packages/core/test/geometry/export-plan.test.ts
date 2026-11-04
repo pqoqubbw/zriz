@@ -23,16 +23,12 @@ import {
   snapEdge,
   sourceToOutputMatrix,
 } from "../../src/geometry";
-import type {
-  AffineMatrix,
-  CropState,
-  ExportPlan,
-  PixelRect,
-  QuarterTurns,
-} from "../../src/geometry";
+import type { CropState, ExportPlan, PixelRect } from "../../src/geometry";
 import { toSharp } from "../../src/to-sharp";
 import { stateArb } from "./arbitraries";
 import { runSharp } from "./run-sharp";
+
+const isPlan = (value: object): value is ExportPlan => "forward" in value;
 
 const corners = (r: PixelRect): [number, number][] => [
   [r.left, r.top],
@@ -158,6 +154,19 @@ describe("export plan", () => {
   });
 });
 
+describe("export plan scale", () => {
+  it.each([[Number.NaN], [Number.POSITIVE_INFINITY]])(
+    "falls back to scale 1 for %d",
+    (scale) => {
+      assert(
+        property(stateArb, (s) => {
+          expect(exportPlan(s, scale)).toStrictEqual(exportPlan(s));
+        })
+      );
+    }
+  );
+});
+
 describe("export plan with perspective", () => {
   it("composes forward and homography around the image centre", () => {
     const state: CropState = {
@@ -174,7 +183,11 @@ describe("export plan with perspective", () => {
       throw new Error("no homography");
     }
     const centre = { x: 800.5, y: 600.5 };
-    const whole = sourceToOutputMatrix(state, { ...plan, crop: state.crop, scale: 1 });
+    const whole = sourceToOutputMatrix(state, {
+      ...plan,
+      crop: state.crop,
+      scale: 1,
+    });
     const point = { x: 300, y: 900 };
     const warped = applyHomography(plan.homography, {
       x: point.x - centre.x,
@@ -197,7 +210,7 @@ describe("export plan with perspective", () => {
   });
 });
 
-describe("toSharp", () => {
+describe(toSharp, () => {
   it("reproduces the axis-aligned export pixel for pixel", async () => {
     await assert(
       asyncProperty(
@@ -338,9 +351,6 @@ describe("toSharp", () => {
           });
           const plan = cropper.getPixelCrop(scale);
           pre(plan !== null && plan.pixelRect === null);
-          if (!plan) {
-            return;
-          }
           const output = await runSharp(
             sharp({
               create: { background: "#808080", channels: 3, ...image },
@@ -375,16 +385,15 @@ describe("toSharp", () => {
           const cropper = createCropper({
             defaultValue: {
               mirrored: quarterTurns > 1,
-              quarterTurns: quarterTurns as QuarterTurns,
+              quarterTurns,
               rotation,
               size: { height: size, width: size },
             },
             image,
           });
           const plan = cropper.getPixelCrop(scale);
-          if (plan) {
-            expect(() => toSharp(plan, image)).not.toThrow();
-          }
+          pre(plan !== null);
+          expect(() => toSharp(plan, image)).not.toThrow();
         }
       )
     );
@@ -400,8 +409,8 @@ describe("toSharp", () => {
     if (!plan) {
       throw new Error("no plan");
     }
-    const refused: Partial<ExportPlan>[] = [
-      { forward: [1, 0, 0, 1, 0] as unknown as AffineMatrix },
+    const refused: Record<string, unknown>[] = [
+      { forward: [1, 0, 0, 1, 0] },
       { forward: [Number.NaN, 0, 0, 1, 0, 0] },
       { forward: [1, 0, 0, 1, Number.POSITIVE_INFINITY, 0] },
       { forward: [0, 0, 0, 0, 0, 0] },
@@ -414,7 +423,11 @@ describe("toSharp", () => {
       { height: Number.NaN },
     ];
     for (const forged of refused) {
-      expect(() => toSharp({ ...plan, ...forged }, image)).toThrow(RangeError);
+      const changed = { ...plan, ...forged };
+      if (!isPlan(changed)) {
+        throw new Error("not a plan");
+      }
+      expect(() => toSharp(changed, image)).toThrow(RangeError);
     }
   });
 
