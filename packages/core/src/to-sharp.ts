@@ -32,6 +32,7 @@ export interface SharpAffineRecipe {
 export type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
 
 const MARGIN = 2;
+const SIMILAR = 1e-6;
 
 const affineOrigin = (
   m: readonly [number, number, number, number],
@@ -57,8 +58,22 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
       rotate: Math.round(plan.rotateExpand.degrees / 90) * 90,
     };
   }
-  const [a, b, c, d, e0, f0]: AffineMatrix = plan.forward;
-  const pad = Math.ceil(MARGIN / Math.min(1, Math.hypot(a, b)));
+  const { forward, height, width } = plan;
+  const [a, b, c, d, e0, f0]: AffineMatrix = forward;
+  const across = Math.hypot(a, b);
+  const pad = Math.ceil(MARGIN / Math.min(1, across));
+  if (
+    forward.length !== 6 ||
+    !forward.every(Number.isFinite) ||
+    !(Number.isInteger(width) && Number.isInteger(height)) ||
+    width < 1 ||
+    height < 1 ||
+    Math.abs(Math.hypot(c, d) - across) > SIMILAR * across ||
+    Math.abs(a * c + b * d) > SIMILAR * across * across ||
+    pad > 2 * Math.min(image.width, image.height) + 1
+  ) {
+    throw new RangeError("zriz: this is not an export plan");
+  }
   const e = e0 - (a + c) * pad;
   const f = f0 - (b + d) * pad;
   const bx = a * 0.5 + c * 0.5 + e - 0.5;
@@ -82,10 +97,10 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
       top: pad,
     },
     extract: {
-      height: plan.height,
+      height,
       left: -(ix + origin.x),
       top: -(iy + origin.y),
-      width: plan.width,
+      width,
     },
     kind: "affine",
     options: { interpolator: "bicubic", odx: bx - ix, ody: by - iy },

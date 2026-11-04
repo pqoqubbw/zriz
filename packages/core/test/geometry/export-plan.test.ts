@@ -20,7 +20,14 @@ import {
   orientationMatrix,
   snapEdge,
 } from "../../src/geometry";
-import type { CropState, PixelRect } from "../../src/geometry";
+import type {
+  AffineMatrix,
+  CropState,
+  ExportPlan,
+  PixelRect,
+  QuarterTurns,
+} from "../../src/geometry";
+import { toSharp } from "../../src/to-sharp";
 import { stateArb } from "./arbitraries";
 import { runSharp } from "./run-sharp";
 
@@ -310,6 +317,63 @@ describe("toSharp", () => {
       ),
       { numRuns: 400 }
     );
+  });
+
+  it("accepts every plan the store makes", () => {
+    assert(
+      property(
+        integer({ max: 20_000, min: 1 }),
+        integer({ max: 20_000, min: 1 }),
+        double({ max: 45, min: -45, noNaN: true }),
+        double({ max: 1, min: 0.001, noNaN: true }),
+        double({ max: 2, min: 1e-6, noNaN: true }),
+        constantFrom(0, 1, 2, 3),
+        (width, height, rotation, size, scale, quarterTurns) => {
+          const image = { height, width };
+          const cropper = createCropper({
+            defaultValue: {
+              mirrored: quarterTurns > 1,
+              quarterTurns: quarterTurns as QuarterTurns,
+              rotation,
+              size: { height: size, width: size },
+            },
+            image,
+          });
+          const plan = cropper.getPixelCrop(scale);
+          if (plan) {
+            expect(() => toSharp(plan, image)).not.toThrow();
+          }
+        }
+      )
+    );
+  });
+
+  it("refuses a plan the store could not have made", () => {
+    const image = { height: 64, width: 64 };
+    const cropper = createCropper({
+      defaultValue: { rotation: 10 },
+      image,
+    });
+    const plan = cropper.getPixelCrop();
+    if (!plan) {
+      throw new Error("no plan");
+    }
+    const refused: Partial<ExportPlan>[] = [
+      { forward: [1, 0, 0, 1, 0] as unknown as AffineMatrix },
+      { forward: [Number.NaN, 0, 0, 1, 0, 0] },
+      { forward: [1, 0, 0, 1, Number.POSITIVE_INFINITY, 0] },
+      { forward: [0, 0, 0, 0, 0, 0] },
+      { forward: [3, 0, 0, 1, 0, 0] },
+      { forward: [1, 0, 3, 1, 0, 0] },
+      { forward: [1e-3, 0, 0, 1e-3, 0, 0] },
+      { width: 0 },
+      { height: -1 },
+      { width: 10.5 },
+      { height: Number.NaN },
+    ];
+    for (const forged of refused) {
+      expect(() => toSharp({ ...plan, ...forged }, image)).toThrow(RangeError);
+    }
   });
 
   it("matches the EXIF orientation table with sharp auto-orient", async () => {

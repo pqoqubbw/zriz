@@ -7759,7 +7759,9 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 
 ## answer the request
 
-the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white.
+the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white. \`toSharp\` throws a \`RangeError\` on a plan that is not a plain turn and scale of the photo, and the route answers that with 422 too.
+
+the plan comes from the browser, so treat it as client input. a plan that passes \`toSharp\` can still need far more memory than the photo, so keep the route behind your own auth and a rate limit.
 
 \`\`\`ts
 export const POST = async (request: Request) => {

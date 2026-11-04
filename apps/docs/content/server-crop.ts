@@ -53,7 +53,10 @@ const SERVER_CROP_PAGE = defineDoc({
     section(
       "answer the request",
       p(
-        "the route is a next.js route handler saved as `app/api/crop/route.ts`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white."
+        "the route is a next.js route handler saved as `app/api/crop/route.ts`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white. `toSharp` throws a `RangeError` on a plan that is not a plain turn and scale of the photo, and the route answers that with 422 too."
+      ),
+      p(
+        "the plan comes from the browser, so treat it as client input. a plan that passes `toSharp` can still need far more memory than the photo, so keep the route behind your own auth and a rate limit."
       ),
       excerpt("server-crop/app/api/crop/route.ts", ["export const POST", "};"])
     ),
