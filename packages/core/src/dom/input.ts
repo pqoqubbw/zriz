@@ -111,7 +111,6 @@ export const watchLoss = (
   const onHidden = (event: Event): void => {
     if (document.visibilityState === "hidden") {
       lost(event);
-      cropper.stop();
     }
   };
   const onPointer = (event: PointerEvent): void => {

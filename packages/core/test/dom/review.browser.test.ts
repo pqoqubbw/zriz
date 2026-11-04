@@ -7,6 +7,7 @@ import {
   bindDial,
   bindHandle,
   bindViewport,
+  dialHandlers,
   dialState,
   exportImage,
   loadImage,
@@ -246,6 +247,28 @@ const drag = (r: Rig, part: HTMLElement): void => {
   fire(part, "pointerdown", 100);
   fire(part, "pointermove", 160, 40);
   r.time.frames(1);
+};
+
+const stamped = (type: string, clientX: number, timeStamp: number) => {
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    buttons: type === "pointerup" ? 0 : 1,
+    clientX,
+    composed: true,
+    pointerId: 2,
+  });
+  Object.defineProperty(event, "timeStamp", { value: timeStamp });
+  return event;
+};
+
+const throwDial = (r: Rig): void => {
+  const handlers = dialHandlers(r.cropper);
+  handlers.onPointerDown(stamped("pointerdown", 100, 0));
+  for (let i = 1; i <= 5; i += 1) {
+    handlers.onPointerMove(stamped("pointermove", 100 + i * 15, i * 16));
+  }
+  handlers.onPointerUp(stamped("pointerup", 175, 80));
+  r.time.frames(2);
 };
 
 describe("gesture lifetime", () => {
@@ -772,5 +795,41 @@ describe("writes during a held gesture", () => {
     fire(r.viewport, "pointerdown", 100);
     expect(r.cropper.getState().interacting).toBe("pan");
     fire(r.viewport, "pointerup", 100);
+  });
+
+  it("hiding the tab leaves an idle cropper and its running tasks alone", () => {
+    const r = rig();
+    const events: string[] = [];
+    for (const type of ["stop", "frame"] as const) {
+      r.cropper.on(type, () => {
+        events.push(type);
+      });
+    }
+    hideTab();
+    expect(events).toStrictEqual([]);
+    let calls = 0;
+    r.cropper.run(() => {
+      calls += 1;
+      return calls < 5;
+    }, false);
+    r.time.frames(2);
+    hideTab();
+    r.time.frames(3);
+    expect(calls).toBe(5);
+  });
+
+  it("a throw on the dial finishes through a hidden tab and reports settle", () => {
+    const r = rig();
+    const settle = vi.fn<() => void>();
+    r.cropper.on("settle", settle);
+    throwDial(r);
+    expect(r.cropper.getState().interacting).toBe("dial");
+    const at = r.cropper.getValue().rotation;
+    hideTab();
+    expect(r.cropper.getState().interacting).toBe("dial");
+    r.time.frames(240);
+    expect(r.cropper.getState().interacting).toBeNull();
+    expect(r.cropper.getValue().rotation).toBeGreaterThan(at);
+    expect(settle).toHaveBeenCalledOnce();
   });
 });
