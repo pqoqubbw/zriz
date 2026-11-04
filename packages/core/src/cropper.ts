@@ -24,6 +24,7 @@ import {
   ROTATION_LIMIT,
   aspectRatio,
   changedFields,
+  clamp,
   clean,
   defaultValue,
   focalLength,
@@ -211,6 +212,20 @@ const attempt = <T>(call: () => T): T | undefined => {
   }
 };
 
+const callAll = <L extends (...args: never[]) => void>(
+  set: Set<L>,
+  args: Parameters<L>
+): void => {
+  const current = [...set];
+  for (const listener of current) {
+    if (set.has(listener)) {
+      attempt(() => {
+        Reflect.apply(listener, undefined, args);
+      });
+    }
+  }
+};
+
 const noop = (): void => undefined;
 
 const isTrue = (flag: unknown): boolean => flag === true;
@@ -229,6 +244,9 @@ const holdIf = (
   const kept = holdCrop(computed, held, size);
   return valuesEqual(kept, held) ? held : kept;
 };
+
+const heldValue = (fixed: CropState, held: CropValue): CropValue =>
+  holdIf(stateToValue(fixed, held.aspect), held, fixed.image);
 
 const lengthenLens = (state: CropState): CropState => {
   const { focal, horizontal, vertical } = state.perspective;
@@ -293,15 +311,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     type: E,
     ...args: Parameters<CropperEvents[E]>
   ): void => {
-    const set = listeners[type];
-    const current = [...set];
-    for (const listener of current) {
-      if (set.has(listener)) {
-        attempt(() => {
-          Reflect.apply(listener, undefined, args);
-        });
-      }
-    }
+    callAll(listeners[type], args);
+  };
+
+  const emitFrame = (time: number): void => {
+    emit("frame", { state, time, value });
   };
 
   const focal = (size: Size): number =>
@@ -336,10 +350,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     );
   };
 
-  const limitAngle = (angle: number): number => {
-    const limit = rotationLimit();
-    return clean(Math.min(Math.max(angle, -limit), limit));
-  };
+  const limitAngle = (angle: number): number =>
+    clean(clamp(angle, rotationLimit()));
 
   const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
     const angle = limitAngle(next.angle);
@@ -347,7 +359,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       angle === next.angle ? next : setAngle(next, angle)
     );
     const planes = imagePlanes(shaped);
-    const { x, y } = shaped.crop;
     const reach = 1e6 * Math.max(shaped.image.width, shaped.image.height);
     let width = Math.min(shaped.crop.width, reach);
     let height = Math.min(shaped.crop.height, reach);
@@ -378,9 +389,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     width *= grow;
     height *= grow;
     let fit = base * grow;
-    if (keep === "centre" && insidePlanes(planes, { x, y }, -EPSILON)) {
+    if (keep === "centre" && insidePlanes(planes, shaped.crop, -EPSILON)) {
       const over = Math.min(
-        minScaleAt(planes, { height, width }, { x, y }),
+        minScaleAt(planes, { height, width }, shaped.crop),
         maxZoom * fit,
         width / min.width,
         height / min.height
@@ -400,15 +411,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       ) {
         const open = Math.max(
           narrow ? min.height : min.width,
-          1 /
-            largestFit(
-              panPlanes(
-                planes,
-                narrow ? min.width : 0,
-                narrow ? 0 : min.height
-              ),
-              { height: narrow ? 1 : 0, width: narrow ? 0 : 1 }
-            ).scale
+          zoomOf(
+            panPlanes(planes, narrow ? min.width : 0, narrow ? 0 : min.height),
+            { height: narrow ? 1 : 0, width: narrow ? 0 : 1 }
+          )
         );
         width = narrow ? min.width : open;
         height = narrow ? open : min.height;
@@ -419,7 +425,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
     const centre = projectOntoPlanes(
       panPlanes(planes, width, height),
-      { x, y },
+      shaped.crop,
       1e-9 + 1e-18 * reach
     );
     return seal({
@@ -452,12 +458,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       return;
     }
     snapshot = next;
-    const current = [...subscribers];
-    for (const subscriber of current) {
-      if (subscribers.has(subscriber)) {
-        attempt(subscriber);
-      }
-    }
+    callAll(subscribers, []);
   };
 
   const sendCommit = (event: Event | undefined, reason: ChangeReason): void => {
@@ -496,11 +497,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       return [saved, savedValue];
     }
     const fixed = constrain(saved, "centre");
-    const fixedValue = holdIf(
-      stateToValue(fixed, savedValue.aspect),
-      savedValue,
-      saved.image
-    );
+    const fixedValue = heldValue(fixed, savedValue);
     return fixedValue === savedValue
       ? [saved, savedValue]
       : [fixed, fixedValue];
@@ -570,7 +567,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     flush();
     if (frameDirty) {
       frameDirty = false;
-      emit("frame", { state, time, value });
+      emitFrame(time);
     }
     settleCommit();
     refresh();
@@ -589,6 +586,42 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     if (handle === null && !destroyed) {
       handle = clock.request(tick);
     }
+  };
+
+  const invalidate = (): void => {
+    frameDirty = true;
+    schedule();
+  };
+
+  const unschedule = (): void => {
+    if (handle !== null) {
+      clock.cancel(handle);
+      handle = null;
+    }
+  };
+
+  const markSent = (): void => {
+    emitted = value;
+    emittedState = state;
+    committed = value;
+  };
+
+  const restartGesture = (): void => {
+    if (gesture) {
+      gesture.start = state;
+      gesture.startValue = value;
+      outside = true;
+    }
+  };
+
+  const join = <T>(set: Set<T>, item: T): (() => void) => {
+    if (destroyed) {
+      return noop;
+    }
+    set.add(item);
+    return () => {
+      set.delete(item);
+    };
   };
 
   const dropHolding = (): void => {
@@ -625,13 +658,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         if (!dirty) {
           emittedState = next;
         }
-        frameDirty = true;
-        schedule();
+        invalidate();
       }
       if (action.emit === false && action.reason !== "controlled" && dirty) {
-        emitted = value;
-        emittedState = state;
-        committed = value;
+        markSent();
         refresh();
       }
       return;
@@ -644,9 +674,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     value = nextValue;
     frameDirty = true;
     if (action.emit === false) {
-      emitted = value;
-      emittedState = state;
-      committed = value;
+      markSent();
     } else {
       dirty = true;
       dirtyReason = action.reason ?? gesture?.reason ?? fallback;
@@ -685,16 +713,12 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       focal(size)
     );
 
+  const placed = (next: CropValue, size: Size): CropState =>
+    constrain(fromValue(next, size), "centre");
+
   const fitReset = (): void => {
     resetFit = image
-      ? holdIf(
-          stateToValue(
-            constrain(fromValue(resetValue, image), "centre"),
-            resetValue.aspect
-          ),
-          resetValue,
-          image
-        )
+      ? heldValue(placed(resetValue, image), resetValue)
       : resetValue;
   };
 
@@ -764,10 +788,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       destroyed = true;
-      if (handle !== null) {
-        clock.cancel(handle);
-        handle = null;
-      }
+      unschedule();
       for (const plugin of initial.plugins ?? []) {
         attempt(() => plugin.destroy?.());
       }
@@ -815,30 +836,20 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       }
       return zoomOf(imagePlanes(state), state.crop);
     },
-    invalidate() {
-      frameDirty = true;
-      schedule();
-    },
-    on(type, listener) {
-      if (destroyed) {
-        return noop;
-      }
-      const set = listeners[type] as Set<typeof listener>;
-      set.add(listener);
-      return () => {
-        set.delete(listener);
-      };
-    },
+    invalidate,
+    on: (type, listener) =>
+      join(listeners[type] as Set<typeof listener>, listener),
     panBy(dx, dy, action = {}) {
       if (!state || disabled()) {
         return;
       }
+      const { width, height } = turnedSize(state.image, state.turns);
       const next = {
         ...state,
         crop: {
           ...state.crop,
-          x: state.crop.x + dx * turnedSize(state.image, state.turns).width,
-          y: state.crop.y + dy * turnedSize(state.image, state.turns).height,
+          x: state.crop.x + dx * width,
+          y: state.crop.y + dy * height,
         },
       };
       commitState(next, "size", action, "pan");
@@ -847,9 +858,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (!outside || !gesture || gesture.owner !== owner) {
         return false;
       }
+      restartGesture();
       outside = false;
-      gesture.start = state;
-      gesture.startValue = value;
       return true;
     },
     reset(action = {}) {
@@ -912,9 +922,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (ratio !== null) {
         const planes = imagePlanes(state);
         const unit = { height: 1, width: ratio };
-        const centre = { x: state.crop.x, y: state.crop.y };
-        const height = insidePlanes(planes, centre, -EPSILON)
-          ? 1 / minScaleAt(planes, unit, centre)
+        const height = insidePlanes(planes, state.crop, -EPSILON)
+          ? 1 / minScaleAt(planes, unit, state.crop)
           : zoomOf(planes, unit);
         next = {
           ...next,
@@ -977,46 +986,29 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
           gesture.start = null;
           outside = true;
         }
-        frameDirty = true;
-        schedule();
+        invalidate();
         refresh();
         return;
       }
-      const fixed = constrain(fromValue(value, next), "centre");
-      const fixedValue = holdIf(stateToValue(fixed, value.aspect), value, next);
+      const fixed = placed(value, next);
+      const fixedValue = heldValue(fixed, value);
       if (first) {
         state = fixed;
         value = fixedValue;
-        emitted = value;
-        emittedState = state;
-        committed = value;
-        if (gesture) {
-          gesture.start = state;
-          gesture.startValue = value;
-          outside = true;
-        }
-        frameDirty = true;
-        schedule();
-        refresh();
-        return;
+        markSent();
+      } else {
+        emittedState = placed(emitted, next);
+        state = fixed;
+        accept(fixed, fixedValue, { reason: "coverage" }, "coverage");
       }
-      emittedState = constrain(fromValue(emitted, next), "centre");
-      state = fixed;
-      frameDirty = true;
-      accept(fixed, fixedValue, { reason: "coverage" }, "coverage");
-      frameDirty = true;
-      schedule();
-      if (gesture) {
+      invalidate();
+      if (!first && gesture) {
         flush();
         if (!valuesEqual(value, committed)) {
           sendCommit(undefined, "coverage");
         }
       }
-      if (gesture) {
-        gesture.start = state;
-        gesture.startValue = value;
-        outside = true;
-      }
+      restartGesture();
       refresh(true);
     },
     setOptions(next) {
@@ -1028,7 +1020,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (state && image) {
         commitState(state, "centre", { reason: "coverage" }, "coverage");
       }
-      cropper.invalidate();
+      invalidate();
       refresh();
     },
     setRotation(degrees, action = {}) {
@@ -1068,16 +1060,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (!state || disabled()) {
         return;
       }
-      const current = zoomOf(imagePlanes(state), state.crop);
-      const target = Math.min(Math.max(zoom, 1), zoomCap());
-      const k = current / target;
+      const k = cropper.getZoom() / Math.min(Math.max(zoom, 1), zoomCap());
       const turned = turnedSize(state.image, state.turns);
       const anchor = action.anchor
         ? {
             x: (action.anchor.x - 0.5) * turned.width,
             y: (action.anchor.y - 0.5) * turned.height,
           }
-        : { x: state.crop.x, y: state.crop.y };
+        : state.crop;
       const sized = constrain(
         scaleToMin({
           ...state,
@@ -1110,27 +1100,16 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       }
       tasks.clear();
       settlePending = false;
-      if (handle !== null) {
-        clock.cancel(handle);
-        handle = null;
-      }
+      unschedule();
       flush();
       settleCommit();
       const time = lastTime ?? 0;
       lastTime = null;
       refresh();
       emit("stop");
-      emit("frame", { state, time, value });
+      emitFrame(time);
     },
-    subscribe(listener) {
-      if (destroyed) {
-        return noop;
-      }
-      subscribers.add(listener);
-      return () => {
-        subscribers.delete(listener);
-      };
-    },
+    subscribe: (listener) => join(subscribers, listener),
   };
 
   listeners.change.add((next, details) =>
