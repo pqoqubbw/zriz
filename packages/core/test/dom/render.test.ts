@@ -105,6 +105,7 @@ interface Limits {
   drawThrows?: number;
   encodeThrows?: number;
   encodeError?: string;
+  loseAfterDraws?: number;
 }
 
 interface Area {
@@ -125,6 +126,13 @@ const noop = (): void => undefined;
 const fakeCanvas = (limits: Limits = {}): { draws: Draw[]; made: Area[] } => {
   const made: Area[] = [];
   const draws: Draw[] = [];
+  let lost: Area | undefined;
+  const gone = (canvas: Area): boolean => {
+    if (draws.length >= (limits.loseAfterDraws ?? Number.POSITIVE_INFINITY)) {
+      lost ??= canvas;
+    }
+    return lost === canvas;
+  };
   const over = (canvas: Area, limit?: number): boolean =>
     limit !== undefined && canvas.width * canvas.height > limit;
   vi.stubGlobal(
@@ -170,11 +178,12 @@ const fakeCanvas = (limits: Limits = {}): { draws: Draw[]; made: Area[] } => {
           fill: noop,
           fillRect: noop,
           getImageData: () => ({
-            data: [1, 2, 3, over(this, limits.blank) ? 0 : 255],
+            data: [1, 2, 3, over(this, limits.blank) || gone(this) ? 0 : 255],
           }),
           globalCompositeOperation: "source-over",
           lineTo: add,
           moveTo: add,
+          putImageData: noop,
           restore: noop,
           save: noop,
           setTransform: (...next: number[]) => {
@@ -264,6 +273,9 @@ const apply = (m: number[], x: number, y: number): [number, number] => {
   ];
 };
 
+const meshOf = (draws: Draw[]): Draw[] =>
+  draws.filter((draw) => draw.operation === "lighter");
+
 const onto = (draws: Draw[]): number[] =>
   draws
     .filter((draw) => draw.args.length === 2)
@@ -272,14 +284,15 @@ const onto = (draws: Draw[]): number[] =>
 const worstError = async (
   width: number,
   height: number,
-  vertical: number
+  vertical: number,
+  horizontal = 0
 ): Promise<{ worst: number; triangles: number }> => {
   const { draws } = fakeCanvas();
   const { cropper, result } = await painted(
     width,
     height,
     {},
-    { horizontal: 0, vertical }
+    { horizontal, vertical }
   );
   const state = cropper.getCropState();
   if (!state) {
@@ -293,8 +306,9 @@ const worstError = async (
       width: result.width,
     })
   );
+  const triangles = meshOf(draws);
   let worst = 0;
-  for (const { points, transform } of draws) {
+  for (const { points, transform } of triangles) {
     const [a = 1, b = 0, c = 0, d = 1, e = 0, f = 0] = transform;
     const back = invert3([a, c, e, b, d, f, 0, 0, 1]);
     const [p = [0, 0], q = [0, 0], r = [0, 0]] = points;
@@ -309,7 +323,7 @@ const worstError = async (
       }
     }
   }
-  return { triangles: draws.length, worst };
+  return { triangles: triangles.length, worst };
 };
 
 const allFreed = (made: Area[]): boolean =>
@@ -446,6 +460,17 @@ describe("export mesh", () => {
     expect(triangles).toBe(8192);
   });
 
+  it.each([
+    [30, 30],
+    [-30, 30],
+  ])(
+    "splits each cell along the better diagonal at vertical %i, horizontal %i",
+    async (vertical, horizontal) => {
+      const { worst } = await worstError(8064, 6048, vertical, horizontal);
+      expect(worst).toBeLessThan(0.5);
+    }
+  );
+
   it("keeps the base lattice on a small export", async () => {
     const { worst, triangles } = await worstError(800, 600, 30);
     expect(triangles).toBe(1152);
@@ -455,9 +480,8 @@ describe("export mesh", () => {
   it("shares exact triangle edges and adds their coverage", async () => {
     const { draws } = fakeCanvas();
     await painted(800, 600, {}, { horizontal: 0, vertical: 15 });
-    expect(draws.every((draw) => draw.operation === "lighter")).toBeTruthy();
     const edges = new Map<string, number>();
-    for (const { points } of draws) {
+    for (const { points } of meshOf(draws)) {
       for (const [i, point] of points.entries()) {
         const next = points[(i + 1) % points.length];
         const edge = [String(point), String(next)].toSorted().join(" ");
@@ -468,6 +492,54 @@ describe("export mesh", () => {
     expect(
       [...edges.values()].filter((count) => count === 2).length
     ).toBeGreaterThan(1000);
+  });
+});
+
+describe("a mesh source", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("draws the triangles from a canvas copy of a bitmap", async () => {
+    const { draws, made } = fakeCanvas();
+    await painted(800, 600, {}, { horizontal: 0, vertical: 15 });
+    const [copy] = draws;
+    expect(copy?.from).toMatchObject({ height: 600, width: 800 });
+    expect(copy?.operation).not.toBe("lighter");
+    const sources = new Set(meshOf(draws).map((draw) => draw.from));
+    expect(sources.size).toBe(1);
+    expect(made).toContain([...sources][0]);
+    expect(allFreed(made)).toBeTruthy();
+  });
+
+  it("draws from the bitmap when the copy cannot be read", async () => {
+    const { draws, made } = fakeCanvas({ blank: 400_000 });
+    await painted(
+      800,
+      600,
+      { maxSize: { height: 450, width: 600 } },
+      {
+        horizontal: 0,
+        vertical: 15,
+      }
+    );
+    const sources = new Set(meshOf(draws).map((draw) => draw.from));
+    expect(made).not.toContain([...sources][0]);
+  });
+
+  it("steps down when the canvas is lost during the mesh", async () => {
+    const pause = vi.spyOn(globalThis, "setTimeout");
+    const { made } = fakeCanvas({ loseAfterDraws: 100 });
+    const { result } = await painted(
+      8000,
+      6000,
+      {},
+      { horizontal: 0, vertical: 15 }
+    );
+    expect(result.scaled).toBeTruthy();
+    expect(pause).toHaveBeenCalledWith(expect.any(Function), 0);
+    expect(allFreed(made)).toBeTruthy();
+    pause.mockRestore();
   });
 });
 

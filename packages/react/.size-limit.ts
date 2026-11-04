@@ -89,7 +89,7 @@ export default [
   {
     ignore: ["react", "react-dom"],
     import: "{ Root, Viewport, Image, Mask, Area }",
-    limit: "24042 B",
+    limit: "24083 B",
     modifyRolldownConfig: production,
     name: "avatar total (with lazy chunks)",
     path: "dist/cropper.js",

@@ -64,6 +64,19 @@ const shown = async (
   return img;
 };
 
+const halves = async (width: number, height: number): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  context.fillStyle = "#f00";
+  context.fillRect(0, 0, width / 2, height);
+  context.fillStyle = "#00f";
+  context.fillRect(width / 2, 0, width / 2, height);
+  return await canvas.convertToBlob({ type: "image/png" });
+};
+
 describe("load and export", () => {
   it.each([1, 2, 3, 4, 5, 6, 7, 8])(
     "shows and exports EXIF orientation %i upright",
@@ -87,20 +100,8 @@ describe("load and export", () => {
   );
 
   it("exports a larger copy of the attached photo", async () => {
-    const paint = async (width: number, height: number): Promise<Blob> => {
-      const canvas = new OffscreenCanvas(width, height);
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("no 2d context");
-      }
-      context.fillStyle = "#f00";
-      context.fillRect(0, 0, width / 2, height);
-      context.fillStyle = "#00f";
-      context.fillRect(width / 2, 0, width / 2, height);
-      return await canvas.convertToBlob({ type: "image/png" });
-    };
-    const thumbnail = await loadImage(await paint(400, 300));
-    const original = await loadImage(await paint(1600, 1200));
+    const thumbnail = await loadImage(await halves(400, 300));
+    const original = await loadImage(await halves(1600, 1200));
     const cropper = createCropper();
     attachImage(cropper, thumbnail);
     const result = await exportImage(cropper, original, { type: "image/png" });
@@ -114,6 +115,43 @@ describe("load and export", () => {
     attachImage(cropper, null);
     original.preview.close();
   });
+
+  it.each([
+    ["image/jpeg", 4032, 3024],
+    ["image/png", 4032, 3024],
+    ["image/jpeg", 6000, 4500],
+  ] as const)(
+    "exports a %s mesh of a %i by %i photo at the size it reports",
+    async (type, width, height) => {
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("no 2d context");
+      }
+      context.fillStyle = "#f00";
+      context.fillRect(0, 0, width, height);
+      const image = await loadImage(await createImageBitmap(canvas));
+      canvas.width = 0;
+      const cropper = createCropper();
+      attachImage(cropper, image);
+      cropper.setValue({ perspective: { horizontal: 0, vertical: 30 } });
+      const result = await exportCrop(cropper, { type });
+      const written = await createImageBitmap(result.blob);
+      expect([written.width, written.height]).toStrictEqual([
+        result.width,
+        result.height,
+      ]);
+      written.close();
+      const [middle, corner] = await pixels(result.blob, [
+        [Math.floor(result.width / 2), Math.floor(result.height / 2)],
+        [1, 1],
+      ]);
+      expect(near(middle, [255, 0, 0])).toBeTruthy();
+      expect(near(corner, [255, 0, 0])).toBeTruthy();
+      expect(result.scaled).toBeFalsy();
+      attachImage(cropper, null);
+    }
+  );
 
   it("exports a straightened crop with no empty corners", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));

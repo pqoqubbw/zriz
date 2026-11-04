@@ -182,10 +182,11 @@ export const renderKernel = (): RenderKernel => {
       [width - 1, height - 1],
     ];
     return corners.some(([x, y]) => {
+      const kept = context.getImageData(x, y, 1, 1);
       context.fillStyle = "#010203";
       context.fillRect(x, y, 1, 1);
       const { data } = context.getImageData(x, y, 1, 1);
-      context.clearRect(x, y, 1, 1);
+      context.putImageData(kept, x, y);
       return data[3] === 0;
     });
   };
@@ -229,6 +230,15 @@ export const renderKernel = (): RenderKernel => {
       const fx = small.width / job.image.width;
       const fy = small.height / job.image.height;
       if (plan.homography) {
+        if (steps.length === 0) {
+          const copy = canvasFor(small.width, small.height);
+          steps.push(copy);
+          const held = contextOf(copy, job.colorSpace);
+          if (!dead(held)) {
+            held.drawImage(small.drawable, 0, 0);
+            small = { ...small, drawable: copy };
+          }
+        }
         const cx = job.image.width / 2;
         const cy = job.image.height / 2;
         mesh(
@@ -242,6 +252,9 @@ export const renderKernel = (): RenderKernel => {
             )
           )
         );
+        if (dead(context)) {
+          throw fail("blank", "the browser lost the canvas");
+        }
       } else {
         context.setTransform(a / fx, b / fx, c / fy, d / fy, e, f);
         context.drawImage(small.drawable, 0, 0);
@@ -326,6 +339,9 @@ export const renderKernel = (): RenderKernel => {
           } finally {
             free(canvas);
           }
+          await new Promise((resolve) => {
+            setTimeout(resolve, 0);
+          });
         }
         throw fail("blank", "nothing to render");
       } finally {
