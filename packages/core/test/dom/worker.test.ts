@@ -141,6 +141,74 @@ const dispatch = (type: string): void => {
   FakeWorker.made[0]?.dispatchEvent(new Event(type));
 };
 
+describe("bitmaps sent to the worker", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  class Sent {
+    closed = false;
+    fails = false;
+    close(): void {
+      this.closed = true;
+    }
+  }
+
+  const sending = async () => {
+    vi.resetModules();
+    FakeWorker.globals = { ImageBitmap: Sent };
+    vi.stubGlobal("Worker", FakeWorker);
+    vi.stubGlobal("OffscreenCanvas", Map);
+    return await import("../../src/dom/worker");
+  };
+
+  const fromWorker = async (arg: unknown): Promise<unknown> => {
+    const { lane } = await sending();
+    const target = lane(() => ({
+      job: async (sent: { fails?: boolean }): Promise<number> => {
+        await Promise.resolve();
+        if (sent.fails === true) {
+          throw new Error("no");
+        }
+        return 1;
+      },
+    }));
+    return await target.call("job", [arg]).catch(() => "failed");
+  };
+
+  it("closes a bitmap argument once the job ends", async () => {
+    const sent = new Sent();
+    await expect(fromWorker(sent)).resolves.toBe(1);
+    expect(sent.closed).toBeTruthy();
+  });
+
+  it("closes the bitmap source of a job", async () => {
+    const source = new Sent();
+    await expect(fromWorker({ source })).resolves.toBe(1);
+    expect(source.closed).toBeTruthy();
+  });
+
+  it("closes a bitmap argument when the job fails", async () => {
+    const sent = new Sent();
+    sent.fails = true;
+    await expect(fromWorker(sent)).resolves.toBe("failed");
+    expect(sent.closed).toBeTruthy();
+  });
+
+  it("leaves the arguments of the main thread fallback open", async () => {
+    vi.resetModules();
+    vi.stubGlobal("Worker", undefined);
+    const { lane, via } = await import("../../src/dom/worker");
+    const sent = new Sent();
+    const target = lane(() => ({
+      job: async (): Promise<number> => await Promise.resolve(1),
+    }));
+    await expect(via(target, "job", [sent])).resolves.toBe(1);
+    expect(sent.closed).toBeFalsy();
+  });
+});
+
 describe("lane failures", () => {
   afterEach(() => {
     FakeWorker.silent = false;
