@@ -115,7 +115,9 @@ export const Editor = ({ src, onSave }: Props) => {
         </Cropper.Area>
       </Cropper.Viewport>
       <Cropper.DialValue
-        format={(degrees) => `${Math.round(degrees)}°`}
+        format={(degrees) =>
+          `${Math.sign(degrees) * Math.round(Math.abs(degrees))}°`
+        }
       />
       <Cropper.Dial
         aria-label="Straighten"

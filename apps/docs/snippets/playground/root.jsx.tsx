@@ -20,7 +20,9 @@ export const example = (
       </Cropper.Area>
     </Cropper.Viewport>
     <Cropper.DialValue
-      format={(angle) => `${Math.round(angle)}°`}
+      format={(angle) =>
+        `${Math.sign(angle) * Math.round(Math.abs(angle))}°`
+      }
     />
     <Cropper.Dial aria-label="Straighten">
       <Cropper.DialTicks />

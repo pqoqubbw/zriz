@@ -147,7 +147,7 @@ const DIAL_PAGE = defineDoc({
       ),
       part(
         "DialValue",
-        "renders an `aria-hidden` `<span>` anywhere inside `Root`.",
+        "renders an `aria-hidden` `<span>` anywhere inside `Root`. zriz writes its text, so it takes no children, and neither does a `render` element.",
         props([
           {
             name: "format",

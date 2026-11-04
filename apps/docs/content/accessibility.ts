@@ -16,7 +16,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
       p("zriz ships no words. give each control a name in your language:"),
       code("accessibility/labels.jsx.tsx"),
       p(
-        "in development, `Area`, `Dial` and `Zoom` warn once each in the console when nothing names them. an `aria-label`, an `aria-labelledby` or text inside all count. nothing checks the group or the buttons, so name those yourself."
+        "in development, `Area`, `Dial` and `Zoom` warn once each in the console when nothing names them. an `aria-label`, an `aria-labelledby` or a `title` counts. text inside does not, because it never names a slider or a group. nothing checks the aspect group or the buttons, so name those yourself. buttons take their name from the text inside them."
       )
     ),
     section(
@@ -48,7 +48,14 @@ const ACCESSIBILITY_PAGE = defineDoc({
             "buttons. `Orientation` is disabled for a free, original or square crop",
           ],
           ["Flip", "a toggle button. `aria-pressed` follows `mirrored`"],
-          ["Reset", "a button that is `hidden` while nothing has changed"],
+          [
+            "Reset",
+            "a button that is `hidden` while nothing has changed. if it has focus when it hides, focus moves to `Area`, or to the next control in `Root` without an `Area`",
+          ],
+          [
+            "every control above",
+            "`aria-disabled` while `Root` is disabled. a press does nothing, and the control stays in the tab order",
+          ],
           ["Image", "an image named by its `alt`. without `alt`, nothing"],
           ["Handle, Grid, Mask", "hidden"],
         ],
@@ -59,7 +66,10 @@ const ACCESSIBILITY_PAGE = defineDoc({
       p(
         "`Area` points to `Instructions` with `aria-describedby`, so a screen reader reads its text when the crop gets focus:"
       ),
-      code("accessibility/instructions.jsx.tsx")
+      code("accessibility/instructions.jsx.tsx"),
+      p(
+        "render one `Instructions` and one `Announcer` per `Root`, outside any toolbar you duplicate. a second `Instructions` gets the same id, and `Area` only reads the first. a second `Announcer` calls `announce` again and speaks each message twice."
+      )
     ),
     section(
       "announce changes",

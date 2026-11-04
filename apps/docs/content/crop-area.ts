@@ -157,7 +157,7 @@ const CROP_AREA_PAGE = defineDoc({
       ),
       part(
         "Handle",
-        "renders an `aria-hidden` `<div>` inside `Area`. the stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
+        "renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. the stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
         props([
           {
             name: "position",

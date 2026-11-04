@@ -36,6 +36,12 @@ const ROOT_PAGE = defineDoc({
       code("root/dim.css")
     ),
     section(
+      "put it in a drawer",
+      p(
+        "`Root` carries `data-vaul-no-drag` and `data-base-ui-swipe-ignore`, so a swipe on the photo or a control moves the crop and leaves a vaul or base ui drawer where it is. give the drawer a handle or free space outside `Root`. to let the drawer drag from inside, set the attribute to `null` on `Root`, such as `data-vaul-no-drag={null}`."
+      )
+    ),
+    section(
       "api",
       part(
         "Root",

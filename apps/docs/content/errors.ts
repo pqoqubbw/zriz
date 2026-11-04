@@ -90,13 +90,18 @@ const ERRORS_PAGE = defineDoc({
     section(
       "console warnings",
       p(
-        "in development, `Area`, `Dial` and `Zoom` each warn once when nothing names them, with the part's name in the message. production builds print nothing."
+        "in development, `Area`, `Dial` and `Zoom` each warn once when nothing names them, and `Dial` and `Zoom` warn once for a `locale` or `format` the browser refuses. the message has the part's name. production builds print nothing."
       ),
       messages("message", [
         {
           fix: "name the part. [accessibility](accessibility) shows how to label each part",
           message:
-            "zriz: <Cropper.Area> needs aria-label, aria-labelledby or text. zriz ships no words, so screen readers get nothing otherwise.",
+            "zriz: <Cropper.Area> needs aria-label or aria-labelledby. zriz ships no words, so screen readers get nothing otherwise.",
+        },
+        {
+          fix: "pass a locale tag like `en-US` and options `Intl.NumberFormat` accepts. until then the slider speaks its default text",
+          message:
+            "zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.",
         },
       ])
     ),

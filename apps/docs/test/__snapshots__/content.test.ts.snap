@@ -221,7 +221,9 @@ export const PhotoCropper = () => {
     </Cropper.Area>
   </Cropper.Viewport>
   <Cropper.DialValue
-    format={(angle) => \`\${Math.round(angle)}°\`}
+    format={(angle) =>
+      \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
+    }
   />
   <Cropper.Dial aria-label="Straighten">
     <Cropper.DialTicks />
@@ -247,7 +249,9 @@ export const PhotoCropper = () => {
     <span class=p>&lt;/</span><span class=t>Cropper.Area</span><span class=p>&gt;</span>
   <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.DialValue</span>
-    <span class=a>format</span><span class=p>={(</span>angle<span class=p>) =&gt; </span><span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>angle<span class=p>)}</span><span class=s>°\`</span><span class=p>}</span>
+    <span class=a>format</span><span class=p>={(</span>angle<span class=p>) =&gt;</span>
+      <span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>sign</span><span class=p>(</span>angle<span class=p>) *</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>Math<span class=p>.</span><span class=t>abs</span><span class=p>(</span>angle<span class=p>))}</span><span class=s>°\`</span>
+    <span class=p>}</span>
   <span class=p>/&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.Dial </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
@@ -518,10 +522,14 @@ export const PhotoCropper = () => {
     "dial",
     "dial/degree.jsx.tsx",
     "<Cropper.DialValue
-  format={(angle) => \`\${Math.round(angle)}°\`}
+  format={(angle) =>
+    \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
+  }
 />",
     "<span class=p>&lt;</span><span class=t>Cropper.DialValue</span>
-  <span class=a>format</span><span class=p>={(</span>angle<span class=p>) =&gt; </span><span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>angle<span class=p>)}</span><span class=s>°\`</span><span class=p>}</span>
+  <span class=a>format</span><span class=p>={(</span>angle<span class=p>) =&gt;</span>
+    <span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>sign</span><span class=p>(</span>angle<span class=p>) *</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>Math<span class=p>.</span><span class=t>abs</span><span class=p>(</span>angle<span class=p>))}</span><span class=s>°\`</span>
+  <span class=p>}</span>
 <span class=p>/&gt;</span>",
   ],
   [
@@ -2648,6 +2656,8 @@ cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span>
     width: 200px;
     height: 24px;
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   "
 >
   <div
@@ -2674,6 +2684,8 @@ cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span>
 <span class=s>    width: 200px;</span>
 <span class=s>    height: 24px;</span>
 <span class=s>    touch-action: none;</span>
+<span class=s>    user-select: none;</span>
+<span class=s>    -webkit-user-select: none;</span>
   <span class=p>"</span>
 <span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>div</span>
@@ -3118,7 +3130,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
     "full-editor",
     "full-editor/editor.tsx",
     "<Cropper.DialValue
-  format={(degrees) => \`\${Math.round(degrees)}°\`}
+  format={(degrees) =>
+    \`\${Math.sign(degrees) * Math.round(Math.abs(degrees))}°\`
+  }
 />
 <Cropper.Dial
   aria-label="Straighten"
@@ -3127,7 +3141,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
   <Cropper.DialTicks />
 </Cropper.Dial>",
     "<span class=p>&lt;</span><span class=t>Cropper.DialValue</span>
-  <span class=a>format</span><span class=p>={(</span>degrees<span class=p>) =&gt; </span><span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>degrees<span class=p>)}</span><span class=s>°\`</span><span class=p>}</span>
+  <span class=a>format</span><span class=p>={(</span>degrees<span class=p>) =&gt;</span>
+    <span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>sign</span><span class=p>(</span>degrees<span class=p>) *</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>Math<span class=p>.</span><span class=t>abs</span><span class=p>(</span>degrees<span class=p>))}</span><span class=s>°\`</span>
+  <span class=p>}</span>
 <span class=p>/&gt;</span>
 <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
   <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
@@ -3482,7 +3498,9 @@ export const Editor = ({ src, onSave }: Props) => {
         </Cropper.Area>
       </Cropper.Viewport>
       <Cropper.DialValue
-        format={(degrees) => \`\${Math.round(degrees)}°\`}
+        format={(degrees) =>
+          \`\${Math.sign(degrees) * Math.round(Math.abs(degrees))}°\`
+        }
       />
       <Cropper.Dial
         aria-label="Straighten"
@@ -3638,7 +3656,9 @@ export const Editor = ({ src, onSave }: Props) => {
         <span class=p>&lt;/</span><span class=t>Cropper.Area</span><span class=p>&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.DialValue</span>
-        <span class=a>format</span><span class=p>={(</span>degrees<span class=p>) =&gt; </span><span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>degrees<span class=p>)}</span><span class=s>°\`</span><span class=p>}</span>
+        <span class=a>format</span><span class=p>={(</span>degrees<span class=p>) =&gt;</span>
+          <span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>sign</span><span class=p>(</span>degrees<span class=p>) *</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>Math<span class=p>.</span><span class=t>abs</span><span class=p>(</span>degrees<span class=p>))}</span><span class=s>°\`</span>
+        <span class=p>}</span>
       <span class=p>/&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
@@ -4640,7 +4660,7 @@ zriz ships no words. give each control a name in your language:
 </Cropper.Rotate>
 \`\`\`
 
-in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console when nothing names them. an \`aria-label\`, an \`aria-labelledby\` or text inside all count. nothing checks the group or the buttons, so name those yourself.
+in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console when nothing names them. an \`aria-label\`, an \`aria-labelledby\` or a \`title\` counts. text inside does not, because it never names a slider or a group. nothing checks the aspect group or the buttons, so name those yourself. buttons take their name from the text inside them.
 
 ## check what a screen reader hears
 
@@ -4652,7 +4672,8 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
 | \`AspectGroup\` | a \`radiogroup\` with one tab stop. each \`AspectItem\` is a radio. outside a group, an item is a button with \`aria-pressed\` |
 | \`Rotate, Orientation\` | buttons. \`Orientation\` is disabled for a free, original or square crop |
 | \`Flip\` | a toggle button. \`aria-pressed\` follows \`mirrored\` |
-| \`Reset\` | a button that is \`hidden\` while nothing has changed |
+| \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the next control in \`Root\` without an \`Area\` |
+| \`every control above\` | \`aria-disabled\` while \`Root\` is disabled. a press does nothing, and the control stays in the tab order |
 | \`Image\` | an image named by its \`alt\`. without \`alt\`, nothing |
 | \`Handle, Grid, Mask\` | hidden |
 
@@ -4665,6 +4686,8 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
   Arrows move the crop. Alt and arrows resize it.
 </Cropper.Instructions>
 \`\`\`
+
+render one \`Instructions\` and one \`Announcer\` per \`Root\`, outside any toolbar you duplicate. a second \`Instructions\` gets the same id, and \`Area\` only reads the first. a second \`Announcer\` calls \`announce\` again and speaks each message twice.
 
 ## announce changes
 
@@ -5222,7 +5245,7 @@ zriz ships them bare, with no paint and no icons. the demo above uses the icons 
 | \`Flip\` | mirrors the photo, left to right by default, with a spring |
 | \`Reset\` | springs back to where the crop started: \`defaultValue\` and the starting \`aspect\` and \`rotation\`, or the full photo |
 
-while \`Root\` is disabled, a press does nothing, and before the photo loads only \`Reset\` acts. the buttons stay enabled, so style them from \`data-disabled\` on \`Root\`, as [root](https://zriz.dev/docs/root.md) shows.
+while \`Root\` is disabled, a press does nothing, and before the photo loads only \`Reset\` acts. the buttons stay natively enabled and report \`aria-disabled\`, so style them from \`data-disabled\` on \`Root\`, as [root](https://zriz.dev/docs/root.md) shows.
 
 while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.
 
@@ -5334,6 +5357,8 @@ then pass it to a part:
 \`\`\`
 
 the element's own props win over zriz's, except \`className\` and \`style\`, which merge, and event handlers, which both run. a prop set to \`undefined\` keeps zriz's value.
+
+\`Handle\`, \`Grid\`, \`Mask\`, \`DialTicks\`, \`DialValue\` and \`ZoomThumb\` are \`aria-hidden\`, so render them as an element that can't take focus, such as a \`<span>\`. a \`<button>\` on \`Handle\` adds a tab stop that screen readers can't read.
 
 ## change the element by state
 
@@ -5500,7 +5525,7 @@ renders a \`<div role="group">\` with \`tabIndex={0}\` inside \`Viewport\`. zriz
 
 ### \`Handle\`
 
-renders an \`aria-hidden\` \`<div>\` inside \`Area\`. the stylesheet hides the corner handles on a circle only when they sit right inside \`Area\`. \`className\` and \`render\` get \`{ position, active }\`.
+renders an \`aria-hidden\` \`<div>\` inside \`Area\`, so a \`render\` element must not take focus. the stylesheet hides the corner handles on a circle only when they sit right inside \`Area\`. \`className\` and \`render\` get \`{ position, active }\`.
 
 - \`position\` \`HandleEdge\` required
 
@@ -5849,7 +5874,9 @@ drag the ruler 4 px to turn 1°. a quick flick keeps it gliding after you let go
 
 \`\`\`tsx
 <Cropper.DialValue
-  format={(angle) => \`\${Math.round(angle)}°\`}
+  format={(angle) =>
+    \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
+  }
 />
 \`\`\`
 
@@ -5932,7 +5959,7 @@ renders an \`aria-hidden\` \`<div>\` of \`<span>\` ticks inside \`Dial\`. \`clas
 
 ### \`DialValue\`
 
-renders an \`aria-hidden\` \`<span>\` anywhere inside \`Root\`.
+renders an \`aria-hidden\` \`<span>\` anywhere inside \`Root\`. zriz writes its text, so it takes no children, and neither does a \`render\` element.
 
 - \`format\` \`(angle: number) => string\`
 
@@ -6004,11 +6031,14 @@ these are plain \`Error\` objects that react shows in its error overlay. they me
 
 ## console warnings
 
-in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing names them, with the part's name in the message. production builds print nothing.
+in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing names them, and \`Dial\` and \`Zoom\` warn once for a \`locale\` or \`format\` the browser refuses. the message has the part's name. production builds print nothing.
 
-- \`zriz: <Cropper.Area> needs aria-label, aria-labelledby or text. zriz ships no words, so screen readers get nothing otherwise.\`
+- \`zriz: <Cropper.Area> needs aria-label or aria-labelledby. zriz ships no words, so screen readers get nothing otherwise.\`
 
   name the part. [accessibility](https://zriz.dev/docs/accessibility.md) shows how to label each part
+- \`zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.\`
+
+  pass a locale tag like \`en-US\` and options \`Intl.NumberFormat\` accepts. until then the slider speaks its default text
 "
 `;
 
@@ -6499,7 +6529,9 @@ the dial fills its parent unless you give it a width, see [dial](https://zriz.de
 
 \`\`\`tsx
 <Cropper.DialValue
-  format={(degrees) => \`\${Math.round(degrees)}°\`}
+  format={(degrees) =>
+    \`\${Math.sign(degrees) * Math.round(Math.abs(degrees))}°\`
+  }
 />
 <Cropper.Dial
   aria-label="Straighten"
@@ -6777,7 +6809,9 @@ export const Editor = ({ src, onSave }: Props) => {
         </Cropper.Area>
       </Cropper.Viewport>
       <Cropper.DialValue
-        format={(degrees) => \`\${Math.round(degrees)}°\`}
+        format={(degrees) =>
+          \`\${Math.sign(degrees) * Math.round(Math.abs(degrees))}°\`
+        }
       />
       <Cropper.Dial
         aria-label="Straighten"
@@ -7366,7 +7400,9 @@ the code builds the cropper in the demo, with only the props you changed from th
     </Cropper.Area>
   </Cropper.Viewport>
   <Cropper.DialValue
-    format={(angle) => \`\${Math.round(angle)}°\`}
+    format={(angle) =>
+      \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
+    }
   />
   <Cropper.Dial aria-label="Straighten">
     <Cropper.DialTicks />
@@ -7613,6 +7649,10 @@ grey out the buttons while it is set:
   opacity: 0.4;
 }
 \`\`\`
+
+## put it in a drawer
+
+\`Root\` carries \`data-vaul-no-drag\` and \`data-base-ui-swipe-ignore\`, so a swipe on the photo or a control moves the crop and leaves a vaul or base ui drawer where it is. give the drawer a handle or free space outside \`Root\`. to let the drawer drag from inside, set the attribute to \`null\` on \`Root\`, such as \`data-vaul-no-drag={null}\`.
 
 ## api
 
@@ -8717,7 +8757,7 @@ pass \`{ dir: "rtl" }\` as the third argument of \`bindDial\` to swap the arrows
 
 ## add a zoom slider
 
-zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`, an \`aria-label\`, a size, \`position: relative\` and \`touch-action: none\`, and draw the thumb yourself. the stylesheet paints nothing on zoom:
+zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`, an \`aria-label\`, a size, \`position: relative\`, \`touch-action: none\` and \`user-select: none\`, and draw the thumb yourself. the stylesheet paints nothing on zoom:
 
 \`\`\`html
 <div
@@ -8731,6 +8771,8 @@ zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`,
     width: 200px;
     height: 24px;
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   "
 >
   <div

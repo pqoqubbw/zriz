@@ -12,6 +12,9 @@ const COMPOSITION_PAGE = defineDoc({
       code("composition/element.jsx.tsx"),
       p(
         "the element's own props win over zriz's, except `className` and `style`, which merge, and event handlers, which both run. a prop set to `undefined` keeps zriz's value."
+      ),
+      p(
+        "`Handle`, `Grid`, `Mask`, `DialTicks`, `DialValue` and `ZoomThumb` are `aria-hidden`, so render them as an element that can't take focus, such as a `<span>`. a `<button>` on `Handle` adds a tab stop that screen readers can't read."
       )
     ),
     section(
