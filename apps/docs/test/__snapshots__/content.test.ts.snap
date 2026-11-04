@@ -8855,6 +8855,10 @@ zriz fits the crop inside the viewport's padding. without padding the crop touch
 
 the crop fits again whenever the viewport changes size.
 
+## put it in a dialog
+
+centre the dialog with \`inset: 0\` and \`margin: auto\`. a percent translate on an odd size puts everything inside on a half pixel, and at 1x chromium blurs the crop's outline.
+
 ## choose what the wheel does
 
 a plain wheel or two-finger scroll pans the photo. \`wheel="zoom"\` makes it zoom, and \`wheel="none"\` leaves it to the page. pinch and ctrl + wheel zoom in every mode:

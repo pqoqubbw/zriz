@@ -34,6 +34,12 @@ const VIEWPORT_PAGE = defineDoc({
       p("the crop fits again whenever the viewport changes size.")
     ),
     section(
+      "put it in a dialog",
+      p(
+        "centre the dialog with `inset: 0` and `margin: auto`. a percent translate on an odd size puts everything inside on a half pixel, and at 1x chromium blurs the crop's outline."
+      )
+    ),
+    section(
       "choose what the wheel does",
       p(
         'a plain wheel or two-finger scroll pans the photo. `wheel="zoom"` makes it zoom, and `wheel="none"` leaves it to the page. pinch and ctrl + wheel zoom in every mode:'
