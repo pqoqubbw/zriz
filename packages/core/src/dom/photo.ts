@@ -6,7 +6,7 @@ import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { whole } from "./media";
-import { TIMEOUT_MS, withTimeout } from "./turn";
+import { TIMEOUT_MS, noop, withTimeout } from "./turn";
 import { LAYER_BOX, cssMatrix, isAffine, viewOf } from "./view";
 import type { Layout, ViewFrame } from "./view";
 import { motionOff } from "./worker";
@@ -56,7 +56,7 @@ const dropFile = (image: LoadedImage): void => {
 
     if (file.users === 0) {
       files.delete(image);
-      file.url.then(URL.revokeObjectURL.bind(URL)).catch(() => null);
+      file.url.then(URL.revokeObjectURL.bind(URL)).catch(noop);
     }
   }
 };
@@ -252,7 +252,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
 
         drain();
       })
-      .catch(() => null);
+      .catch(noop);
   };
 
   const cancel = (): void => {
@@ -349,7 +349,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   const ensure = (): void => {
     if (image && boxed && held !== image) {
       held = image;
-      prepare(image, loading).catch(() => null);
+      prepare(image, loading).catch(noop);
     }
   };
 
