@@ -701,6 +701,146 @@ describe("photo layer", () => {
     expect(motion?.hasAttribute("src")).toBeFalsy();
   });
 
+  it("revokes the first file when a second photo arrives, and holds one url", async () => {
+    const create = vi.spyOn(URL, "createObjectURL");
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
+    cleanups.push(() => {
+      create.mockRestore();
+      revoke.mockRestore();
+    });
+    const { cropper, photo } = await mount(1024);
+    const motion = photo.querySelector("img");
+    await expect
+      .poll(() => motion?.getAttribute("src") ?? "", { timeout: 3000 })
+      .toMatch(/^blob:/u);
+    const first = motion?.getAttribute("src") ?? "";
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    await expect.poll(() => revoke.mock.calls.flat()).toContain(first);
+    await expect
+      .poll(() => motion?.getAttribute("src") ?? first, { timeout: 3000 })
+      .not.toBe(first);
+    const live = create.mock.results
+      .map(({ value }: { value: unknown }) => value)
+      .filter((url) => !revoke.mock.calls.some(([gone]) => gone === url));
+    expect(live).toContain(motion?.getAttribute("src"));
+  });
+
+  it("revokes the file and hides both layers when the photo is cleared", async () => {
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
+    cleanups.push(() => {
+      revoke.mockRestore();
+    });
+    const { cropper, photo } = await mount(1024);
+    const motion = photo.querySelector("img");
+    await sharp(photo);
+    const url = motion?.getAttribute("src");
+    attachImage(cropper, null);
+    await expect.poll(() => revoke.mock.calls.flat()).toContain(url);
+    expect({
+      canvas: photo.querySelector("canvas")?.style.visibility,
+      image: motion?.style.visibility,
+      sharp: Object.hasOwn(photo.dataset, "sharp"),
+    }).toStrictEqual({ canvas: "hidden", image: "hidden", sharp: false });
+  });
+
+  it("shows the moving image when its decode lands during a gesture", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    cropper.begin("pan");
+    const image = await visibleImage(photo);
+    expect(image.style.visibility).toBe("visible");
+    cropper.end();
+  });
+
+  it.each<[string, (cropper: Cropper) => Promise<void>]>([
+    [
+      "a gesture",
+      async (cropper) => {
+        cropper.begin("pan");
+        await nextFrame();
+      },
+    ],
+    [
+      "a swap",
+      async (cropper) => {
+        attachImage(
+          cropper,
+          await loadImage(await stripes(), { previewEdge: 1024 })
+        );
+      },
+    ],
+    [
+      "a clear",
+      async (cropper) => {
+        attachImage(cropper, null);
+        await nextFrame();
+      },
+    ],
+  ])("keeps data-sharp off when %s lands during a sharpen", async (_, act) => {
+    const errors = watchErrors();
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const jobs = stalled("resample");
+    cropper.setZoom(1.2);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+    await act(cropper);
+    await jobs.release();
+    const { interacting } = cropper.getState();
+    if (interacting !== null) {
+      expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+      cropper.end();
+    }
+    expect(errors).toStrictEqual([]);
+  });
+
+  it("starts no sharpen after unbind with the timer pending", async () => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const photo = document.createElement("div");
+    viewport.append(photo);
+    document.body.append(viewport);
+    const cropper = createCropper();
+    const offViewport = bindViewport(cropper, viewport);
+    const offPhoto = bindPhoto(cropper, photo);
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    await sharp(photo);
+    const ops = opsSent();
+    cropper.setZoom(1.2);
+    offPhoto();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 200);
+    });
+    expect(ops).not.toContain("resample");
+    offViewport();
+    attachImage(cropper, null);
+    cropper.destroy();
+    viewport.remove();
+  });
+
+  it("swallows a failed encode and paints the preview on the canvas", async () => {
+    const errors = watchErrors();
+    const jobs = failing("motion");
+    const { photo } = await mount(1024);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    await expect
+      .poll(() => photo.querySelector("canvas")?.style.visibility, {
+        timeout: 3000,
+      })
+      .toBe("visible");
+    expect(errors).toStrictEqual([]);
+  });
+
   it("clears the moving image when unbound", async () => {
     const viewport = document.createElement("div");
     viewport.style.cssText = "position:relative;width:400px;height:300px;";
