@@ -570,6 +570,48 @@ describe("video sources", () => {
 });
 
 describe("sharing and freeing a photo", () => {
+  it("frees a photo when its last cropper is destroyed", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    cropper.destroy();
+    expect(image.preview.width).toBe(0);
+    expect(imageOf(cropper)).toBeNull();
+    attachImage(cropper, null);
+    const other = createCropper();
+    expect(() => {
+      attachImage(other, image);
+    }).toThrow(ZrizError);
+  });
+
+  it("keeps a photo open when one of two croppers is destroyed", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const one = createCropper();
+    const two = createCropper();
+    attachImage(one, image);
+    attachImage(two, image);
+    one.destroy();
+    expect(image.preview.width).toBeGreaterThan(0);
+    await exportCrop(two, { type: "image/png" });
+    attachImage(two, null);
+    expect(image.preview.width).toBe(0);
+  });
+
+  it("counts a destroyed cropper's detached photo once", async () => {
+    const first = await loadImage(await fixture("orient-1.jpg"));
+    const second = await loadImage(await fixture("orient-2.jpg"));
+    const one = createCropper();
+    const two = createCropper();
+    attachImage(one, first);
+    attachImage(one, second);
+    attachImage(two, second);
+    attachImage(one, null);
+    one.destroy();
+    expect(second.preview.width).toBeGreaterThan(0);
+    attachImage(two, null);
+    expect(second.preview.width).toBe(0);
+  });
+
   it("refuses a freed photo and leaves the current one in place", async () => {
     const first = await loadImage(await fixture("orient-1.jpg"));
     const second = await loadImage(await fixture("orient-2.jpg"));

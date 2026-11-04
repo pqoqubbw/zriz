@@ -298,7 +298,7 @@ const CROPPER_PAGE = defineDoc({
           },
           {
             name: "destroy",
-            text: "runs each plugin's `destroy`, emits `destroy` and drops every listener. the cropper is finished, and every later write is ignored",
+            text: "runs each plugin's `destroy`, emits `destroy`, detaches the photo and drops every listener. the cropper is finished, and every later write is ignored",
             type: "() => void",
           },
         ],

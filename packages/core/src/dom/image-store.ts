@@ -12,6 +12,8 @@ const freed = new WeakSet<LoadedImage>();
 
 const imageListeners = new WeakMap<Cropper, Set<() => void>>();
 
+const watched = new WeakSet<Cropper>();
+
 let prefetched = false;
 
 export const onImage = (
@@ -24,6 +26,21 @@ export const onImage = (
   return () => {
     set.delete(listener);
   };
+};
+
+const release = (image: LoadedImage): void => {
+  const left = (holders.get(image) ?? 1) - 1;
+  holders.set(image, left);
+  if (left === 0) {
+    freed.add(image);
+    freeImage(image);
+  }
+};
+
+const notify = (cropper: Cropper): void => {
+  for (const listener of imageListeners.get(cropper) ?? []) {
+    listener();
+  }
 };
 
 export const attachImage = (
@@ -41,12 +58,7 @@ export const attachImage = (
     holders.set(image, (holders.get(image) ?? 0) + 1);
   }
   if (previous && previous !== image) {
-    const left = (holders.get(previous) ?? 1) - 1;
-    holders.set(previous, left);
-    if (left === 0) {
-      freed.add(previous);
-      freeImage(previous);
-    }
+    release(previous);
   }
   if (image) {
     attached.set(cropper, image);
@@ -55,8 +67,17 @@ export const attachImage = (
     attached.delete(cropper);
     cropper.setImage(null);
   }
-  for (const listener of imageListeners.get(cropper) ?? []) {
-    listener();
+  notify(cropper);
+  if (image && !watched.has(cropper)) {
+    watched.add(cropper);
+    cropper.on("destroy", () => {
+      const held = attached.get(cropper);
+      if (held) {
+        attached.delete(cropper);
+        release(held);
+        notify(cropper);
+      }
+    });
   }
   if (image && !prefetched) {
     prefetched = true;

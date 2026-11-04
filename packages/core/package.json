@@ -102,7 +102,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "17.7 kB",
+      "limit": "17719 B",
       "entry": [
         "index"
       ]
@@ -138,7 +138,7 @@
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "3.85 kB",
+      "limit": "3865 B",
       "entry": [
         "index"
       ]

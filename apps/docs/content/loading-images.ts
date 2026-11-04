@@ -123,7 +123,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`."
       ),
       p(
-        "`attachImage` frees a photo when it leaves its last cropper. a freed photo cannot be attached again, so load it again."
+        "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. a freed photo cannot be attached again, so load it again."
       )
     ),
     section(
