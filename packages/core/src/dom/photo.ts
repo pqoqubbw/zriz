@@ -147,13 +147,11 @@ export const bindPhoto = (
     size: { width: number; height: number }
   ): void => {
     const context = backing(frame);
-    blank =
-      !context ||
-      !isAffine(frame.matrix) ||
-      (context.isContextLost?.() ?? false);
-    if (blank || !context) {
+    if (!context || !isAffine(frame.matrix) || context.isContextLost?.()) {
+      blank = true;
       return;
     }
+    blank = false;
     const { dpr } = frame.layout;
     const [a, c, e, b, d, f] = frame.matrix;
     const sx = region.width / size.width;
