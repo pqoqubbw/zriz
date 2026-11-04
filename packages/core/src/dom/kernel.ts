@@ -142,11 +142,7 @@ export const imageKernel = (): Kernel => {
       }
     },
     async region(source, rect, width, height) {
-      const owned = source instanceof Blob ? await decodeFull(source) : null;
-      const full = owned ?? (source instanceof Blob ? null : source);
-      if (!full) {
-        throw fail("decode", "no bitmap");
-      }
+      const full = source instanceof Blob ? await decodeFull(source) : source;
       const canvas = canvasFor(width, height);
       try {
         const context = contextOf(canvas, "srgb");
@@ -166,7 +162,9 @@ export const imageKernel = (): Kernel => {
         return await createImageBitmap(canvas);
       } finally {
         free(canvas);
-        owned?.close();
+        if (full !== source) {
+          full.close();
+        }
       }
     },
     async release(id) {

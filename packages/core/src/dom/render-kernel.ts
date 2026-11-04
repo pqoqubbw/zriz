@@ -266,43 +266,31 @@ export const renderKernel = (): RenderKernel => {
 
   return {
     async render(job) {
-      const owned =
-        job.source instanceof Blob ? await decodeFull(job.source) : null;
-      let full: Drawable;
-      if (owned) {
-        full = { drawable: owned, height: owned.height, width: owned.width };
-      } else if (job.source instanceof Blob) {
-        throw fail("decode", "no bitmap");
-      } else if (job.source instanceof ImageBitmap) {
-        full = {
-          drawable: job.source,
-          height: job.source.height,
-          width: job.source.width,
-        };
-      } else {
-        full = job.source;
-      }
+      const opened =
+        job.source instanceof Blob ? await decodeFull(job.source) : job.source;
+      const full: Drawable =
+        opened instanceof ImageBitmap
+          ? { drawable: opened, height: opened.height, width: opened.width }
+          : opened;
       try {
         for (const [index, plan] of job.plans.entries()) {
           const { canvas, empty } = paint(full, job, plan);
-          if (!empty || index === job.plans.length - 1) {
-            try {
-              if (empty) {
-                throw fail("blank", "the browser drew a blank canvas");
-              }
+          try {
+            if (!empty) {
               return {
                 blob: await encode(canvas, job.type, job.quality),
                 index,
               };
-            } finally {
-              free(canvas);
             }
+          } finally {
+            free(canvas);
           }
-          free(canvas);
         }
-        throw fail("blank", "nothing to render");
+        throw fail("blank", "the browser drew a blank canvas");
       } finally {
-        owned?.close();
+        if (opened !== job.source && opened instanceof ImageBitmap) {
+          opened.close();
+        }
       }
     },
   };

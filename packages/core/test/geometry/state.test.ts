@@ -79,6 +79,19 @@ describe("state", () => {
     );
   });
 
+  it("gives exact values on every quarter turn and diagonal", () => {
+    for (let k = -16; k <= 16; k += 1) {
+      const { sin, cos } = sinCosDegrees(k * 45);
+      const quarter = k % 2 === 0;
+      expect(Math.abs(sin)).toBe(
+        quarter ? Math.abs((((k / 2) % 2) + 2) % 2) : Math.SQRT1_2
+      );
+      expect(Math.abs(cos)).toBe(
+        quarter ? 1 - Math.abs((((k / 2) % 2) + 2) % 2) : Math.SQRT1_2
+      );
+    }
+  });
+
   it("gives exact and symmetric degree trig at multiples of 45", () => {
     const exact = [
       sinCosDegrees(45).sin - sinCosDegrees(45).cos,

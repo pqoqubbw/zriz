@@ -28,14 +28,8 @@ export const sinCosDegrees = (
 ): { sin: number; cos: number } => {
   const turns = Math.round(degrees / 90);
   const rest = degrees - 90 * turns;
-  if (rest === 45) {
-    return rotateByQuarters(Math.SQRT1_2, Math.SQRT1_2, turns);
-  }
   if (rest === -45) {
     return rotateByQuarters(-Math.SQRT1_2, Math.SQRT1_2, turns);
-  }
-  if (rest === 0) {
-    return rotateByQuarters(0, 1, turns);
   }
   const radians = (rest * Math.PI) / 180;
   return rotateByQuarters(Math.sin(radians), Math.cos(radians), turns);
