@@ -21,6 +21,8 @@ const bitmapOf = (width = 8, height = 8): Bitmap => {
   return bitmap;
 };
 
+const RECT = { height: 8, width: 8, x: 0, y: 0 };
+
 const decoded: Bitmap[] = [];
 const canvases: FakeCanvas[] = [];
 let blind = false;
@@ -70,7 +72,7 @@ describe("image kernel", () => {
     await kernel.release(1);
     const released = "zriz:decode:the preview was released";
     await expect(kernel.motion(1, "image/png")).rejects.toThrow(released);
-    await expect(kernel.resample(1, 0.5)).rejects.toThrow(released);
+    await expect(kernel.resample(1, RECT, 8, 8)).rejects.toThrow(released);
     await expect(kernel.motion(2, "image/png")).rejects.toThrow(released);
   });
 
