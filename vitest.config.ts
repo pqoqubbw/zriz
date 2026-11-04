@@ -45,6 +45,8 @@ const browser = () => ({
   provider: playwright(),
 });
 
+const optimizeDeps = { include: ["react-dom/client", "react-dom/server"] };
+
 const docs = fileURLToPath(new URL("apps/docs/", import.meta.url));
 
 export default defineConfig({
@@ -70,6 +72,7 @@ export default defineConfig({
         },
       },
       {
+        optimizeDeps,
         plugins: [react()],
         resolve: { alias: [warn] },
         test: {
@@ -87,6 +90,7 @@ export default defineConfig({
         },
       },
       {
+        optimizeDeps,
         plugins: [react()],
         resolve: { alias },
         test: {
