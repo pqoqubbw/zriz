@@ -150,21 +150,6 @@ export const choose: BrowserCommand<[selector: string, file: string]> = async (
   await chooser.setFiles(nodePath.resolve(context.project.config.root, file));
 };
 
-export const emulate: BrowserCommand<
-  [
-    media: {
-      colorScheme?: "dark" | "light";
-      forcedColors?: "active" | "none";
-      reducedMotion?: "reduce" | "no-preference";
-    },
-  ]
-> = async (context, media) => {
-  if (!("page" in context)) {
-    throw new Error("playwright only");
-  }
-  await context.page.emulateMedia(media);
-};
-
 export const hold: BrowserCommand<
   [selector: string, x: number, y: number]
 > = async (context, selector, x, y) => {
@@ -183,29 +168,4 @@ export const release: BrowserCommand = async (context) => {
     throw new Error("playwright only");
   }
   await context.page.mouse.up();
-};
-
-export const wheelAt: BrowserCommand<
-  [
-    selector: string,
-    x: number,
-    y: number,
-    dx: number,
-    dy: number,
-    ctrl: boolean,
-  ]
-> = async (context, selector, x, y, dx, dy, ctrl) => {
-  if (!("page" in context)) {
-    throw new Error("playwright only");
-  }
-  const at = await origin(context, selector);
-  const { mouse, keyboard } = context.page;
-  await mouse.move(at.x + x, at.y + y);
-  if (ctrl) {
-    await keyboard.down("Control");
-  }
-  await mouse.wheel(dx, dy);
-  if (ctrl) {
-    await keyboard.up("Control");
-  }
 };

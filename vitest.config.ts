@@ -7,13 +7,11 @@ import { defineConfig } from "vitest/config";
 import {
   choose,
   drag,
-  emulate,
   forcedColors,
   hold,
   pinch,
   release,
   touch,
-  wheelAt,
 } from "./test/commands.ts";
 
 const react18 = fileURLToPath(
@@ -47,13 +45,11 @@ const browser = () => ({
   commands: {
     choose,
     drag,
-    emulate,
     forcedColors,
     hold,
     pinch,
     release,
     touch,
-    wheelAt,
   },
   enabled: true,
   headless: true,
