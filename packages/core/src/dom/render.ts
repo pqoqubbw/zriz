@@ -54,10 +54,8 @@ export const exportImage = async (
     homography: plan.homography,
     width: plan.width,
   }));
-  const wide =
-    options.colorSpace === "display-p3" && image.source instanceof Blob;
   const url =
-    wide && image.source instanceof Blob
+    options.colorSpace === "display-p3" && image.source instanceof Blob
       ? URL.createObjectURL(image.source)
       : null;
   let element: HTMLImageElement | null = null;

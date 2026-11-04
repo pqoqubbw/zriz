@@ -60,20 +60,15 @@ describe("exportImage size", () => {
       600,
       false,
     ]);
-    expect(via).toHaveBeenCalledWith(
-      expect.anything(),
-      "render",
-      [
-        expect.objectContaining({
-          plans: [
-            expect.objectContaining({ width: 900 }),
-            expect.objectContaining({ width: 450 }),
-            expect.objectContaining({ width: 225 }),
-          ],
-        }),
-      ],
-      expect.anything()
-    );
+    expect(via).toHaveBeenCalledWith(expect.anything(), "render", [
+      expect.objectContaining({
+        plans: [
+          expect.objectContaining({ width: 900 }),
+          expect.objectContaining({ width: 450 }),
+          expect.objectContaining({ width: 225 }),
+        ],
+      }),
+    ]);
   });
 
   it("keeps the one pixel floor for an empty box", async () => {
