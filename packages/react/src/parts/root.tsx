@@ -64,6 +64,13 @@ type RootProps = UseCropperOptions &
     onError?: ((error: ZrizError) => void) | undefined;
   };
 
+const IDLE: Chrome = {
+  active: false,
+  grid: "none",
+  overscroll: false,
+  transition: null,
+};
+
 const actionHolders = new WeakMap<object, () => unknown>();
 
 const holdActions = (
@@ -93,13 +100,6 @@ const holdActions = (
   }
 
   return release;
-};
-
-const IDLE: Chrome = {
-  active: false,
-  grid: "none",
-  overscroll: false,
-  transition: null,
 };
 
 const serverChrome = (): Chrome => IDLE;

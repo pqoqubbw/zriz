@@ -40,6 +40,22 @@ type HandleEdge =
   | "bottom-left"
   | "left";
 
+type AreaOptions = {
+  liveVariables?: boolean | undefined;
+  shape?: MaskShape | undefined;
+};
+
+type HandleHandlers = PointerHandlers & { release: () => void };
+
+type HandleDrag = {
+  handle: CropHandle;
+  id: number;
+  placement: Placement;
+  start: Rect;
+  grab: Point;
+  bounds: HalfPlane[];
+};
+
 const EDGES: Record<HandleEdge, CropHandle> = {
   bottom: "s",
   "bottom-left": "sw",
@@ -226,11 +242,6 @@ const bindMask = (
   };
 };
 
-type AreaOptions = {
-  liveVariables?: boolean | undefined;
-  shape?: MaskShape | undefined;
-};
-
 const placedBinds = new WeakMap<HTMLElement, number>();
 
 const countPlaced = (element: HTMLElement, by: number): void => {
@@ -345,17 +356,6 @@ const bindArea = (
       style.borderRadius = "";
     }
   };
-};
-
-type HandleHandlers = PointerHandlers & { release: () => void };
-
-type HandleDrag = {
-  handle: CropHandle;
-  id: number;
-  placement: Placement;
-  start: Rect;
-  grab: Point;
-  bounds: HalfPlane[];
 };
 
 const boxPlanes = (

@@ -23,6 +23,15 @@ const ROTATION_LIMIT = 45;
 const PERSPECTIVE_LIMIT = 30;
 const REACH = 1e6;
 const MIN_RATIO = 1e-6;
+const VALUE_FIELDS: readonly ValueField[] = [
+  "center",
+  "size",
+  "rotation",
+  "quarterTurns",
+  "mirrored",
+  "perspective",
+  "aspect",
+];
 
 const seal = <T extends object>(target: T): T => {
   for (const item of Object.values(target) as unknown[]) {
@@ -43,16 +52,6 @@ const DEFAULT_VALUE: CropValue = seal({
   rotation: 0,
   size: { height: 1, width: 1 },
 });
-
-const VALUE_FIELDS: readonly ValueField[] = [
-  "center",
-  "size",
-  "rotation",
-  "quarterTurns",
-  "mirrored",
-  "perspective",
-  "aspect",
-];
 
 const aspectRatio = (
   aspect: Aspect,

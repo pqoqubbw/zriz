@@ -10,10 +10,18 @@ type DragLimits = {
   aspect: number | null;
 };
 
+type XEdge = "x0" | "x1";
+
+type YEdge = "y0" | "y1";
+
 const SLOPE_EPSILON = 1e-9;
 
-type XEdge = "x0" | "x1";
-type YEdge = "y0" | "y1";
+const CORNER_EDGES: readonly (readonly [XEdge, YEdge])[] = [
+  ["x0", "y0"],
+  ["x1", "y0"],
+  ["x1", "y1"],
+  ["x0", "y1"],
+];
 
 const rectPoints = (rect: Rect): Point[] => [
   { x: rect.x0, y: rect.y0 },
@@ -160,13 +168,6 @@ const movingYEdge = (handle: CropHandle): YEdge | null => {
 
   return null;
 };
-
-const CORNER_EDGES: readonly (readonly [XEdge, YEdge])[] = [
-  ["x0", "y0"],
-  ["x1", "y0"],
-  ["x1", "y1"],
-  ["x0", "y1"],
-];
 
 const freePlanes = (
   start: Rect,

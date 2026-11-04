@@ -4,7 +4,22 @@ import { insidePlanes, panPlanes } from "../geometry/planes";
 import type { Crop, HalfPlane } from "../geometry/types";
 import { noop } from "./turn";
 
+type PointerHandlers = {
+  onPointerDown: (event: PointerEvent) => void;
+  onPointerMove: (event: PointerEvent) => void;
+  onPointerUp: (event: PointerEvent) => void;
+  onPointerCancel: (event: PointerEvent) => void;
+  onLostPointerCapture: (event: PointerEvent) => void;
+};
+
 const MIN_HANDLE_SPAN = 88;
+
+const TOUCH_STYLES = [
+  ["user-select", "none"],
+  ["-webkit-user-select", "none"],
+  ["-webkit-touch-callout", "none"],
+  ["-webkit-tap-highlight-color", "transparent"],
+] as const;
 
 const stopAtZoomCeiling = (
   planes: readonly HalfPlane[],
@@ -66,14 +81,6 @@ const stopAtZoomCeiling = (
   return missed(xFirst) < missed(yFirst) ? xFirst : yFirst;
 };
 
-type PointerHandlers = {
-  onPointerDown: (event: PointerEvent) => void;
-  onPointerMove: (event: PointerEvent) => void;
-  onPointerUp: (event: PointerEvent) => void;
-  onPointerCancel: (event: PointerEvent) => void;
-  onLostPointerCapture: (event: PointerEvent) => void;
-};
-
 const capture = (element: Element, id: number): void => {
   try {
     element.setPointerCapture(id);
@@ -87,13 +94,6 @@ const isElement = (node: EventTarget | null): node is Element =>
 
 const windowOf = (element?: Element | null): typeof globalThis =>
   element?.ownerDocument.defaultView ?? globalThis;
-
-const TOUCH_STYLES = [
-  ["user-select", "none"],
-  ["-webkit-user-select", "none"],
-  ["-webkit-touch-callout", "none"],
-  ["-webkit-tap-highlight-color", "transparent"],
-] as const;
 
 const claimTouch = ({ style }: HTMLElement, touch: string): (() => void) => {
   style.touchAction = touch;

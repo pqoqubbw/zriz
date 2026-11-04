@@ -53,6 +53,11 @@ type RootContextValue = {
   locale: string | undefined;
 };
 
+type ElementBox = {
+  get: () => Element | null;
+  set: (node: Element) => () => void;
+};
+
 const RootContext: Context<RootContextValue> = createContext<RootContextValue>({
   dir: "ltr",
   instructions: undefined,
@@ -103,11 +108,6 @@ const useKeptStyle = (
   keep: (node: HTMLElement | null) => undefined,
   ref: Ref<HTMLElement> | undefined
 ): Ref<HTMLElement> => useMemo(() => mergeRefs(keep, ref), [keep, ref]);
-
-type ElementBox = {
-  get: () => Element | null;
-  set: (node: Element) => () => void;
-};
 
 const createBox = (): ElementBox => {
   let node: Element | null = null;

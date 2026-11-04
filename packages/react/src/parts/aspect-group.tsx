@@ -19,6 +19,13 @@ type AspectGroupProps = PartProps<"div", AspectGroupState>;
 
 const ITEM_SELECTOR = '[data-zriz-item="aspect-item"]';
 
+const ARROW_STEPS: Partial<Record<string, number>> = {
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowRight: 1,
+  ArrowUp: -1,
+};
+
 const itemsOf = (group: Element): HTMLElement[] =>
   [...group.querySelectorAll<HTMLElement>(ITEM_SELECTOR)].filter(
     (item) =>
@@ -35,13 +42,6 @@ const syncStop = (group: Element): void => {
   for (const item of enabled) {
     item.tabIndex = item === (checked ?? enabled[0]) ? 0 : -1;
   }
-};
-
-const ARROW_STEPS: Partial<Record<string, number>> = {
-  ArrowDown: 1,
-  ArrowLeft: -1,
-  ArrowRight: 1,
-  ArrowUp: -1,
 };
 
 const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<

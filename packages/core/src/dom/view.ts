@@ -87,6 +87,16 @@ type View = {
   destroy: () => void;
 };
 
+type Pose = {
+  rect: Box;
+  centre: Point;
+  anchor: Point;
+  angle: number;
+  mirror: number;
+  sx: number;
+  sy: number;
+};
+
 const LAYER_BOX: Record<string, string> = {
   border: "0",
   left: "0",
@@ -98,6 +108,28 @@ const LAYER_BOX: Record<string, string> = {
   padding: "0",
   position: "absolute",
   top: "0",
+};
+
+const NO_SHIFT: Point = { x: 0, y: 0 };
+const OVERSCROLL_OMEGA = 42;
+const OVERSCROLL_ZETA = 1.4;
+const TEMPO = 1.35;
+const ZOOM_OMEGA = 17.3 * TEMPO;
+const RECENTRE_OMEGA = 16.1 * TEMPO;
+const RECENTRE_DELAY_MS = 500;
+const CHROME_HOLD_MS = 1380;
+const ROTATE_MS = 410 / TEMPO;
+const FLIP_OMEGA = 17.6 * TEMPO;
+const REDUCED_MS = 150;
+const REDUCED_OMEGA = 40;
+const SETTLED_PROGRESS = 0.9995;
+const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
+  aspect: "morph",
+  flip: "flip",
+  history: "morph",
+  orientation: "morph",
+  reset: "morph",
+  "rotate-90": "rotate",
 };
 
 const snap = (value: number, dpr: number): number =>
@@ -117,8 +149,6 @@ const fitPlacement = (layout: Layout, state: CropState): Placement => {
     scale,
   };
 };
-
-const NO_SHIFT: Point = { x: 0, y: 0 };
 
 const imageMatrix = (
   state: CropState,
@@ -194,38 +224,6 @@ const localOf = (
 };
 
 const views = new WeakMap<Cropper, View>();
-
-const OVERSCROLL_OMEGA = 42;
-const OVERSCROLL_ZETA = 1.4;
-const TEMPO = 1.35;
-const ZOOM_OMEGA = 17.3 * TEMPO;
-const RECENTRE_OMEGA = 16.1 * TEMPO;
-const RECENTRE_DELAY_MS = 500;
-const CHROME_HOLD_MS = 1380;
-const ROTATE_MS = 410 / TEMPO;
-const FLIP_OMEGA = 17.6 * TEMPO;
-const REDUCED_MS = 150;
-const REDUCED_OMEGA = 40;
-const SETTLED_PROGRESS = 0.9995;
-
-const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
-  aspect: "morph",
-  flip: "flip",
-  history: "morph",
-  orientation: "morph",
-  reset: "morph",
-  "rotate-90": "rotate",
-};
-
-type Pose = {
-  rect: Box;
-  centre: Point;
-  anchor: Point;
-  angle: number;
-  mirror: number;
-  sx: number;
-  sy: number;
-};
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 

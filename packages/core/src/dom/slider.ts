@@ -7,6 +7,8 @@ type KeyHandlers = {
   release: () => void;
 };
 
+const VALUES = ["min", "max", "now", "text"];
+
 const numberFormat = (
   locale: string | undefined,
   defaults: Intl.NumberFormatOptions & { maximumFractionDigits: number },
@@ -145,8 +147,6 @@ const sliderKey = (
 
   return moves[event.key];
 };
-
-const VALUES = ["min", "max", "now", "text"];
 
 const sliderAria = (
   cropper: Cropper,

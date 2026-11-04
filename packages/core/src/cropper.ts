@@ -179,9 +179,6 @@ type Cropper = {
   destroy: () => void;
 };
 
-const MAX_ZOOM = 15;
-const EPSILON = 1e-9;
-
 type Listeners = { [E in keyof CropperEvents]: Set<CropperEvents[E]> };
 
 type Gesture = {
@@ -192,6 +189,9 @@ type Gesture = {
   owner: unknown;
   coast?: (() => void) | undefined;
 };
+
+const MAX_ZOOM = 15;
+const EPSILON = 1e-9;
 
 const attempt = <T>(call: () => T): T | undefined => {
   try {

@@ -11,9 +11,9 @@ import {
 import { isFlatPerspective, perspectiveHomography } from "./perspective";
 import type { CropState, Matrix2, Point, QuarterTurns, Size } from "./types";
 
-const QUARTER_TURN_VALUES: ReadonlySet<unknown> = new Set([0, 1, 2, 3]);
-
 type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+const QUARTER_TURN_VALUES: ReadonlySet<unknown> = new Set([0, 1, 2, 3]);
 
 const EXIF_ORIENTATIONS: Readonly<
   Record<

@@ -9,6 +9,17 @@ type RenderProp<S> =
   | ReactElement
   | ((props: Record<string, unknown>, state: S) => ReactElement);
 
+type ClassName<S> = string | ((state: S) => string | undefined);
+
+type RenderOptions<S> = {
+  tag: keyof JSX.IntrinsicElements;
+  state: S;
+  props: object;
+  ref?: Ref<Element> | undefined;
+  render?: RenderProp<S> | undefined;
+  className?: ClassName<S> | undefined;
+};
+
 const isRef = (value: unknown): value is Ref<HTMLElement> =>
   typeof value === "function" ||
   (typeof value === "object" && value !== null && "current" in value);
@@ -21,17 +32,6 @@ const refOf = (element: ReactElement): Ref<HTMLElement> | undefined => {
       : undefined;
 
   return isRef(ref) ? ref : undefined;
-};
-
-type ClassName<S> = string | ((state: S) => string | undefined);
-
-type RenderOptions<S> = {
-  tag: keyof JSX.IntrinsicElements;
-  state: S;
-  props: object;
-  ref?: Ref<Element> | undefined;
-  render?: RenderProp<S> | undefined;
-  className?: ClassName<S> | undefined;
 };
 
 const usePart = <S>(

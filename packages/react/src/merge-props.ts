@@ -1,6 +1,10 @@
 import { version } from "react";
 import type { CSSProperties, Ref } from "react";
 
+type Handler = (...args: unknown[]) => void;
+
+type Step = (args: unknown[], vetoed: boolean) => void;
+
 const legacy: boolean = Number(version.slice(0, version.indexOf("."))) < 19;
 
 const vetoes = new WeakMap<object, () => void>();
@@ -8,10 +12,6 @@ const vetoes = new WeakMap<object, () => void>();
 const preventZrizHandler = (event: object): void => {
   vetoes.get(event)?.();
 };
-
-type Handler = (...args: unknown[]) => void;
-
-type Step = (args: unknown[], vetoed: boolean) => void;
 
 const steps = new WeakMap<Handler, Step>();
 
