@@ -465,12 +465,14 @@ export const viewOf = (cropper: Cropper): View => {
       for (const listener of listeners) {
         listener(last);
       }
-    } else if (!empty) {
+    }
+    const gone = !cropper.getCropState();
+    if (gone && !empty) {
       for (const listener of emptyListeners) {
         listener();
       }
     }
-    empty = !last;
+    empty = gone;
   };
 
   const recentre = (): void => {

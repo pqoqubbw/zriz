@@ -848,6 +848,24 @@ describe("a removed photo", () => {
     expect(mask.style.clipPath).not.toBe("");
   });
 
+  it("keeps the crop box and mask hole while a hidden viewport still has its photo", async () => {
+    const fixture = mount();
+    const { area, mask, viewport } = fixture;
+    await frames();
+    const { width } = area.style;
+    const { clipPath } = mask.style;
+    viewport.style.display = "none";
+    await expect.poll(() => viewOf(fixture.cropper).frame()).toBeNull();
+    await frames();
+    expect([area.style.width, mask.style.clipPath]).toStrictEqual([
+      width,
+      clipPath,
+    ]);
+    viewport.style.display = "block";
+    await frames();
+    expect(area.style.width).toBe(width);
+  });
+
   it("clears a box that went hidden before the photo left", async () => {
     const fixture = mount();
     await frames();
