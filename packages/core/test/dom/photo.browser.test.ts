@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { page } from "vitest/browser";
 
 import { createCropper } from "../../src";
 import type { CropValue, Cropper } from "../../src";
@@ -235,6 +236,43 @@ const failing = (op: string) => {
     spy.mockRestore();
   });
   return { total: () => total };
+};
+
+const lines = async (width: number): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(width, 100);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, width, 100);
+  context.fillStyle = "#000";
+  for (let x = 0; x < width; x += 2) {
+    context.fillRect(x, 0, 1, 100);
+  }
+  return await canvas.convertToBlob({ type: "image/png" });
+};
+
+const shotContrast = async (element: HTMLElement): Promise<number> => {
+  const shot = await page.screenshot({ element, save: false });
+  const bytes = Uint8Array.from(atob(shot), (c) => c.codePointAt(0) ?? 0);
+  const bitmap = await createImageBitmap(new Blob([bytes]));
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+  context.drawImage(bitmap, 0, 0);
+  const y = Math.floor(bitmap.height / 2);
+  const left = Math.floor(bitmap.width * 0.2);
+  const { data } = context.getImageData(left, y, 40, 1);
+  let low = 255;
+  let high = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    low = Math.min(low, data[i] ?? 0);
+    high = Math.max(high, data[i] ?? 0);
+  }
+  return high - low;
 };
 
 const pageRule = (css: string): void => {
@@ -721,6 +759,43 @@ describe("photo layer", () => {
     await sharp(photo);
   });
 
+  it("keeps the canvas one to one with device pixels on a fractional viewport", async () => {
+    const wrap = document.createElement("div");
+    wrap.style.cssText =
+      "position:absolute;left:0;top:0;width:400px;height:300px;";
+    const viewport = document.createElement("div");
+    viewport.style.cssText =
+      "position:absolute;left:0.5px;top:0;box-sizing:border-box;padding:16px;width:333.5px;height:300px;";
+    const photo = document.createElement("div");
+    viewport.append(photo);
+    wrap.append(viewport);
+    document.body.append(wrap);
+    const cropper = createCropper();
+    const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
+    const width = Math.round((viewport.clientWidth - 32) * devicePixelRatio);
+    attachImage(
+      cropper,
+      await loadImage(await lines(width), { previewEdge: 4096 })
+    );
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+      attachImage(cropper, null);
+      viewOf(cropper).destroy();
+      cropper.destroy();
+      wrap.remove();
+    });
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    if (!canvas) {
+      throw new Error("no canvas");
+    }
+    await expect(shotContrast(wrap)).resolves.toBeGreaterThan(200);
+    expect(canvas.style.width).toBe(`${canvas.width / devicePixelRatio}px`);
+    expect(canvas.style.height).toBe(`${canvas.height / devicePixelRatio}px`);
+  });
+
   it.each([
     ["img{max-height:100%}"],
     ["*{max-height:100%}"],
@@ -735,6 +810,17 @@ describe("photo layer", () => {
     expect([image.offsetWidth, image.offsetHeight]).toStrictEqual([1600, 1200]);
     expect([image.clientLeft, image.clientTop]).toStrictEqual([0, 0]);
     cropper.end();
+  });
+
+  it("keeps the canvas at its own size under a page max size", async () => {
+    pageRule("canvas{max-width:100%;max-height:100%}");
+    const { cropper, photo, viewport } = await mount(1024);
+    viewport.style.width = "333.5px";
+    await waitForLayout(cropper, viewport.clientWidth);
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    const { dpr } = viewOf(cropper).frame()?.layout ?? { dpr: 1 };
+    expect(canvas?.offsetWidth).toBe(Math.round((canvas?.width ?? 0) / dpr));
   });
 
   it("moves with the pointer under a global transition on the page", async () => {

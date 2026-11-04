@@ -77,13 +77,13 @@ export const bindPhoto = (
     visibility: "hidden",
   });
   Object.assign(rest.style, {
-    height: "100%",
     left: "0",
+    maxHeight: "none",
+    maxWidth: "none",
     position: "absolute",
     top: "0",
     transition: "none",
     visibility: "hidden",
-    width: "100%",
   });
   let image: LoadedImage | null = null;
   let url: string | null = null;
@@ -124,6 +124,8 @@ export const bindPhoto = (
       rest.width = w;
       rest.height = h;
     }
+    rest.style.width = `${w / dpr}px`;
+    rest.style.height = `${h / dpr}px`;
     return rest.getContext("2d");
   };
 
