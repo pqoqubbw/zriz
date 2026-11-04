@@ -186,8 +186,11 @@ const imageMatrix = (
   return multiplyMatrix3(affine, keystone);
 };
 
+const isAffine = (m: Matrix3): boolean =>
+  m[6] === 0 && m[7] === 0 && m[8] === 1;
+
 const cssMatrix = (m: Matrix3): string => {
-  if (m[6] === 0 && m[7] === 0 && m[8] === 1) {
+  if (isAffine(m)) {
     return `matrix(${m[0]},${m[3]},${m[1]},${m[4]},${m[2]},${m[5]})`;
   }
 
@@ -921,6 +924,7 @@ export type {
 export {
   LAYER_BOX,
   cssMatrix,
+  isAffine,
   fitPlacement,
   imageMatrix,
   isHtml,

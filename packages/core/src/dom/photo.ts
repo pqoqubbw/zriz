@@ -6,15 +6,13 @@ import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { TIMEOUT_MS, withTimeout } from "./turn";
-import { LAYER_BOX, cssMatrix, viewOf } from "./view";
-import type { ViewFrame } from "./view";
+import { LAYER_BOX, cssMatrix, isAffine, viewOf } from "./view";
+import type { Layout, ViewFrame } from "./view";
 import { motionOff } from "./worker";
 
 type Drawn = {
   matrix: Matrix3;
-  width: number;
-  height: number;
-  dpr: number;
+  layout: Layout;
 };
 
 type MotionFile = {
@@ -29,8 +27,8 @@ const LAYOUT_IDLE_MS = 120;
 const sameMatrix = (a: Matrix3, b: Matrix3): boolean =>
   a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < MATRIX_TOLERANCE);
 
-const isAffine = (m: Matrix3): boolean =>
-  m[6] === 0 && m[7] === 0 && m[8] === 1;
+const sameBox = (a: Layout, b: Layout): boolean =>
+  a.width === b.width && a.height === b.height && a.dpr === b.dpr;
 
 const motionType = (image: LoadedImage): string =>
   image.mime === "image/jpeg" ? "image/jpeg" : "image/png";
@@ -111,13 +109,12 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   let pending: ReturnType<typeof setTimeout> | null = null;
   let running = false;
   let waiting: { frame: ViewFrame; ticket: number } | null = null;
-  let seen: ViewFrame["layout"] | null = null;
+  let seen: Layout | null = null;
   let transform = "";
   let moving = false;
   let blank = false;
   let boxed = container.clientWidth > 0;
   let held: LoadedImage | null = null;
-
   let shown = "";
 
   const show = (canvas: boolean, fallback = canvas): void => {
@@ -231,12 +228,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
       return;
     }
 
-    drawn = {
-      dpr: frame.layout.dpr,
-      height: frame.layout.height,
-      matrix: frame.matrix,
-      width: frame.layout.width,
-    };
+    drawn = { layout: frame.layout, matrix: frame.matrix };
 
     reuse();
   };
@@ -292,9 +284,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   const isDrawn = (frame: ViewFrame): boolean =>
     drawn !== null &&
     sameMatrix(drawn.matrix, frame.matrix) &&
-    drawn.width === frame.layout.width &&
-    drawn.height === frame.layout.height &&
-    drawn.dpr === frame.layout.dpr;
+    sameBox(drawn.layout, frame.layout);
 
   const write = (frame: ViewFrame): void => {
     if (!image || !boxed) {
@@ -302,11 +292,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     }
 
     const { layout } = frame;
-    const resized =
-      seen !== null &&
-      (seen.width !== layout.width ||
-        seen.height !== layout.height ||
-        seen.dpr !== layout.dpr);
+    const resized = seen !== null && !sameBox(seen, layout);
 
     seen = layout;
     const next = cssMatrix(frame.matrix);
