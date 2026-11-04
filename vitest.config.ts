@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-import { drag, forcedColors, pinch, touch } from "./test/commands.ts";
+import { choose, drag, emulate, forcedColors, pinch, touch } from "./test/commands.ts";
 
 const react18 = fileURLToPath(
   new URL("test/react18/node_modules/", import.meta.url)
@@ -34,7 +34,7 @@ const unit = {
 };
 
 const browser = () => ({
-  commands: { drag, forcedColors, pinch, touch },
+  commands: { choose, drag, emulate, forcedColors, pinch, touch },
   enabled: true,
   headless: true,
   instances: [
@@ -48,6 +48,18 @@ const browser = () => ({
 const optimizeDeps = { include: ["react-dom/client", "react-dom/server"] };
 
 const docs = fileURLToPath(new URL("apps/docs/", import.meta.url));
+
+const coreFile = (file: string): string =>
+  fileURLToPath(new URL(`packages/core/dist/${file}`, import.meta.url));
+
+const core = [
+  { find: /^@zriz\/core$/u, replacement: coreFile("index.js") },
+  { find: /^@zriz\/core\/dom$/u, replacement: coreFile("dom/index.js") },
+  {
+    find: /^@zriz\/core\/styles\.css$/u,
+    replacement: coreFile("styles.css"),
+  },
+];
 
 export default defineConfig({
   test: {
@@ -74,10 +86,13 @@ export default defineConfig({
       {
         optimizeDeps,
         plugins: [react()],
-        resolve: { alias: [warn] },
+        resolve: { alias: [warn, ...core] },
         test: {
           browser: browser(),
-          include: ["packages/*/test/**/*.browser.test.{ts,tsx}"],
+          include: [
+            "apps/docs/test/**/*.browser.test.tsx",
+            "packages/*/test/**/*.browser.test.{ts,tsx}",
+          ],
           name: "browser",
         },
       },

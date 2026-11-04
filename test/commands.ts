@@ -1,3 +1,5 @@
+import nodePath from "node:path";
+
 import type { BrowserCommand } from "vitest/node";
 
 type Path = readonly (readonly [number, number, number?])[];
@@ -130,4 +132,29 @@ export const touch: BrowserCommand<[selector: string, path: Path]> = async (
     type: "touchEnd",
   });
   await session.detach();
+};
+
+export const emulate: BrowserCommand<
+  [forcedColors: "active" | "none"]
+> = async (context, forcedColors) => {
+  if (!("page" in context)) {
+    throw new Error("playwright only");
+  }
+  await context.page.emulateMedia({ forcedColors });
+};
+
+export const choose: BrowserCommand<[selector: string, file: string]> = async (
+  context,
+  selector,
+  file
+) => {
+  if (!("frame" in context)) {
+    throw new Error("playwright only");
+  }
+  const frame = await context.frame();
+  const [chooser] = await Promise.all([
+    context.page.waitForEvent("filechooser"),
+    frame.locator(selector).click(),
+  ]);
+  await chooser.setFiles(nodePath.resolve(context.project.config.root, file));
 };
