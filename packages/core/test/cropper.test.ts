@@ -225,7 +225,7 @@ describe("events", () => {
     cropper.destroy();
   });
 
-  it("notifies state subscribers on any snapshot change and never without one", () => {
+  it("notifies state subscribers when any one snapshot field changes and never without a change", () => {
     const time = fakeClock();
     const cropper = createCropper({
       clock: time.clock,
@@ -237,24 +237,88 @@ describe("events", () => {
     cropper.setOptions({ disabled: false });
     time.frames(2);
     expect(listener).not.toHaveBeenCalled();
-    const steps: (() => void)[] = [
-      () => {
-        cropper.setOptions({ disabled: true });
-      },
-      () => {
-        cropper.setOptions({ disabled: false });
-      },
-      () => {
-        cropper.flip("x");
-      },
-      () => {
-        cropper.setAspect(1);
-      },
+    const steps: [string, () => void][] = [
+      [
+        "disabled",
+        () => {
+          cropper.setOptions({ disabled: true });
+        },
+      ],
+      [
+        "disabled",
+        () => {
+          cropper.setOptions({ disabled: false });
+        },
+      ],
+      [
+        "interacting",
+        () => {
+          cropper.begin("pan");
+        },
+      ],
+      [
+        "settling",
+        () => {
+          cropper.run(() => false, false);
+        },
+      ],
+      [
+        "settling",
+        () => {
+          time.frame();
+        },
+      ],
+      [
+        "pristine",
+        () => {
+          cropper.setZoom(2);
+        },
+      ],
+      [
+        "mirrored",
+        () => {
+          cropper.flip("x");
+        },
+      ],
+      [
+        "quarterTurns",
+        () => {
+          cropper.rotate90();
+        },
+      ],
+      [
+        "aspect",
+        () => {
+          cropper.setAspect(1);
+        },
+      ],
+      [
+        "interacting",
+        () => {
+          cropper.end();
+        },
+      ],
+      [
+        "committed",
+        () => {
+          time.frame();
+        },
+      ],
+      [
+        "ready",
+        () => {
+          cropper.setImage(null);
+        },
+      ],
     ];
-    for (const step of steps) {
+    for (const [field, step] of steps) {
+      const before = Object.entries(cropper.getState());
       listener.mockClear();
       step();
-      time.frames(2);
+      const changed = Object.entries(cropper.getState()).flatMap(
+        ([key, part], index) => (part === before[index]?.[1] ? [] : [key])
+      );
+      expect(changed).toStrictEqual([field]);
       expect(listener.mock.calls.length).toBeGreaterThan(0);
     }
     off();
