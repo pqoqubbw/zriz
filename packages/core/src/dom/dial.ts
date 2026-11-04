@@ -231,18 +231,17 @@ export const dialHandlers = (
     releaseCursor = null;
     unwatch?.();
     unwatch = null;
-    if (!engaged) {
-      cropper.end(event, owner);
-      return;
-    }
+    const was = engaged;
     engaged = false;
-    if (event && velocity !== 0 && dial.overshoot() === 0) {
+    if (was && event && velocity !== 0 && dial.overshoot() === 0) {
       dial.set(0, false);
       fling(velocity, cropper.getValue().rotation, event);
       return;
     }
     cropper.end(event, owner);
-    settleOvershoot();
+    if (was) {
+      settleOvershoot();
+    }
   };
 
   const lost = (event?: Event): void => {

@@ -508,6 +508,12 @@ export const viewOf = (cropper: Cropper): View => {
     empty = gone;
   };
 
+  const finishTransition = (): false => {
+    stopTransition = null;
+    setChrome({ transition: null });
+    return false;
+  };
+
   const recentre = (): void => {
     recentreTimer = null;
     const from = pinned;
@@ -523,9 +529,7 @@ export const viewOf = (cropper: Cropper): View => {
       const t = settled(omega, elapsed);
       if (!layout || !state || t > 0.9995) {
         pinned = null;
-        stopTransition = null;
-        setChrome({ transition: null });
-        return false;
+        return finishTransition();
       }
       pinned = lerpBox(from, exactBox(state, fitPlacement(layout, state)), t);
       return true;
@@ -553,21 +557,13 @@ export const viewOf = (cropper: Cropper): View => {
     const quick = reduced();
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
-      let t = 1;
-      if (quick) {
-        t = easeOut(Math.min(elapsed / REDUCED_MS, 1));
-      } else if (kind === "rotate") {
-        t = easeOut(Math.min(elapsed / ROTATE_MS, 1));
-      } else if (kind === "flip") {
-        t = settled(FLIP_OMEGA, elapsed);
-      } else {
-        t = settled(RECENTRE_OMEGA, elapsed);
-      }
+      const t =
+        quick || kind === "rotate"
+          ? easeOut(Math.min(elapsed / (quick ? REDUCED_MS : ROTATE_MS), 1))
+          : settled(kind === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA, elapsed);
       if (t >= 0.9995 || !blend) {
         blend = null;
-        stopTransition = null;
-        setChrome({ transition: null });
-        return false;
+        return finishTransition();
       }
       blend.t = t;
       return true;
