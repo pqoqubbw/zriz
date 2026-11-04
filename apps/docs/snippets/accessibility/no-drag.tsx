@@ -1,10 +1,13 @@
 "use client";
 
+import { attachImage } from "@zriz/core/dom";
 import { useCropper } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
+import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+  useEffect(() => () => attachImage(cropper, null), [cropper]);
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",

@@ -6,7 +6,7 @@ const EXPORTING_PAGE = defineDoc({
     section(
       "save the crop as a file",
       p(
-        "`exportCrop` comes from `@zriz/core/dom`. `@zriz/react` depends on `@zriz/core` and re-exports `CropValue`, `Cropper`, `CropperSnapshot`, `Aspect`, `Size`, `ChangeDetails` and `CommitDetails`. functions and the other core types, such as `ChangeReason` and `ExportPlan`, come from `@zriz/core`, so add it to your own dependencies:"
+        "`exportCrop` comes from `@zriz/core/dom`. `@zriz/react` depends on `@zriz/core` and re-exports the types an editor needs, such as `CropValue`, `Cropper` and `ChangeReason`. functions and the other core types, such as `ExportPlan`, come from `@zriz/core`, so add it to your own dependencies:"
       ),
       code("exporting/install.sh"),
       p(

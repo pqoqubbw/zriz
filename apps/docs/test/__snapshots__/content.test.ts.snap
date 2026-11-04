@@ -2323,11 +2323,14 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     "accessibility/no-drag.tsx",
     ""use client";
 
+import { attachImage } from "@zriz/core/dom";
 import { useCropper } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
+import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+  useEffect(() => () => attachImage(cropper, null), [cropper]);
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",
@@ -2372,11 +2375,14 @@ export const Editor = ({ src }: { src: string }) => {
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
 
+<span class=k>import </span><span class=p>{</span> attachImage <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core/dom"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> useCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>useCropper</span><span class=p>();</span>
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt; </span><span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>null</span><span class=p>), [</span>cropper<span class=p>]);</span>
   <span class=k>const </span><span class=t>turn </span><span class=p>= (</span>by<span class=p>:</span> number<span class=p>) =&gt; {</span>
     cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span>cropper<span class=p>.</span><span class=t>getValue</span><span class=p>().</span>rotation <span class=p>+</span> by<span class=p>, {</span>
       reason<span class=p>: </span><span class=s>"keyboard"</span><span class=p>,</span>
@@ -3599,9 +3605,9 @@ const save = async () => {
     "full-editor/editor.tsx",
     ""use client";
 
-import type { ChangeReason } from "@zriz/core";
 import { exportCrop } from "@zriz/core/dom";
 import type {
+  ChangeReason,
   CommitDetails,
   Cropper as CropperApi,
   CropValue,
@@ -3775,9 +3781,9 @@ export const Editor = ({ src, onSave }: Props) => {
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
 
-<span class=k>import type </span><span class=p>{</span> ChangeReason <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> exportCrop <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core/dom"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span>
+  ChangeReason<span class=p>,</span>
   CommitDetails<span class=p>,</span>
   Cropper <span class=k>as</span> CropperApi<span class=p>,</span>
   CropValue<span class=p>,</span>
@@ -5156,11 +5162,14 @@ the dial, the handles and the photo pan need a drag, and keys do not replace tha
 \`\`\`tsx
 "use client";
 
+import { attachImage } from "@zriz/core/dom";
 import { useCropper } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
+import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+  useEffect(() => () => attachImage(cropper, null), [cropper]);
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",
@@ -6673,7 +6682,7 @@ the demo runs on the page at https\\://zriz.dev/docs/exporting.
 
 ## save the crop as a file
 
-\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` depends on \`@zriz/core\` and re-exports \`CropValue\`, \`Cropper\`, \`CropperSnapshot\`, \`Aspect\`, \`Size\`, \`ChangeDetails\` and \`CommitDetails\`. functions and the other core types, such as \`ChangeReason\` and \`ExportPlan\`, come from \`@zriz/core\`, so add it to your own dependencies:
+\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` depends on \`@zriz/core\` and re-exports the types an editor needs, such as \`CropValue\`, \`Cropper\` and \`ChangeReason\`. functions and the other core types, such as \`ExportPlan\`, come from \`@zriz/core\`, so add it to your own dependencies:
 
 \`\`\`sh
 pnpm add @zriz/core
@@ -7216,9 +7225,9 @@ const save = async () => {
 \`\`\`tsx
 "use client";
 
-import type { ChangeReason } from "@zriz/core";
 import { exportCrop } from "@zriz/core/dom";
 import type {
+  ChangeReason,
   CommitDetails,
   Cropper as CropperApi,
   CropValue,
@@ -8572,7 +8581,7 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 
 ## answer the request
 
-the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white. \`toSharp\` throws a \`RangeError\` on a plan that is not a plain turn and scale of the photo, and the route answers that with 422 too.
+the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white. \`toSharp\` throws a \`RangeError\` on a plan with no \`pixelRect\` that is not a plain turn and scale of the photo. it does not check a plan with a \`pixelRect\`, and a plan that is not an object throws a \`TypeError\`. the route's catch answers all of these with 422 too.
 
 the plan comes from the browser, so treat it as client input. a plan that passes \`toSharp\` can still need far more memory than the photo, so keep the route behind your own auth and a rate limit.
 
