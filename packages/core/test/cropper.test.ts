@@ -1960,6 +1960,17 @@ describe("anchored zoom", () => {
     expect(center.y).toBeCloseTo(0.375, 9);
   });
 
+  it("leaves the centre alone when a side at the minimum stops the zoom", () => {
+    const { cropper } = setup(square(300));
+    cropper.setValue({
+      center: { x: 0.5, y: 0.3 },
+      size: { height: 0.3, width: 0.8 },
+    });
+    cropper.setZoom(2, { anchor: { x: 0.5, y: 0.15 } });
+    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 800 });
+    expect(cropper.getValue().center.y).toBeCloseTo(0.3, 9);
+  });
+
   it("holds the anchor when the zoom is reached", () => {
     const { cropper } = setup();
     cropper.setZoom(2, { anchor: { x: 0.25, y: 0.75 } });
@@ -2025,6 +2036,38 @@ describe("minSize on a free crop", () => {
         }
       )
     );
+  });
+
+  it("keeps a long crop's shape when a zoom stops at the minimum", () => {
+    const { cropper } = setup(square(300));
+    cropper.setValue({ size: { height: 0.4, width: 0.8 } });
+    cropper.setZoom(2);
+    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
+    cropper.setZoom(4);
+    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
+    cropper.setZoom(1);
+    expect(pixels(cropper)).toStrictEqual({ height: 500, width: 1000 });
+  });
+
+  it.each(["size", "centre"] as const)(
+    "keeps a long crop's shape when a pinch holding %s stops at the minimum",
+    (keep) => {
+      const { cropper } = setup(square(300));
+      cropper.setValue({ size: { height: 0.4, width: 0.8 } });
+      const state = cropState(cropper.getCropState());
+      cropper.setCropState(
+        { ...state, crop: { ...state.crop, height: 200, width: 400 } },
+        { keep }
+      );
+      expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
+    }
+  );
+
+  it("takes a size given whole from setValue side by side at any shape", () => {
+    const { cropper } = setup(square(300));
+    cropper.setValue({ size: { height: 0.4, width: 0.8 } });
+    cropper.setValue({ size: { height: 0.1, width: 0.2 } });
+    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 300 });
   });
 
   it("reports the minimum it holds", () => {

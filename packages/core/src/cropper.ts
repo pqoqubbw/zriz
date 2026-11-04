@@ -294,6 +294,16 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     width: minSide(options.minSize?.width, size.width),
   });
 
+  const scaleToMin = (next: CropState): CropState => {
+    const { width, height } = next.crop;
+    const min = minSize(next.image);
+    const grow = Math.max(1, min.width / width, min.height / height);
+    return {
+      ...next,
+      crop: { ...next.crop, height: height * grow, width: width * grow },
+    };
+  };
+
   const rotationLimit = (): number => {
     if (!image) {
       return ROTATION_LIMIT;
@@ -818,14 +828,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       const turns = toQuarterTurns(next.turns);
+      const given = {
+        ...next,
+        aspect: aspectRatio(value.aspect, state.image, turns),
+        image: state.image,
+        perspective: { ...next.perspective, focal: state.perspective.focal },
+        turns,
+      };
+      const shape =
+        (next.crop.width * state.crop.height) /
+        (next.crop.height * state.crop.width);
       commitState(
-        {
-          ...next,
-          aspect: aspectRatio(value.aspect, state.image, turns),
-          image: state.image,
-          perspective: { ...next.perspective, focal: state.perspective.focal },
-          turns,
-        },
+        Math.abs(shape - 1) < EPSILON ? scaleToMin(given) : given,
         action.keep ?? "size",
         action,
         "imperative"
@@ -931,14 +945,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
           }
         : { x: state.crop.x, y: state.crop.y };
       const sized = constrain(
-        {
+        scaleToMin({
           ...state,
           crop: {
             ...state.crop,
             height: state.crop.height * k,
             width: state.crop.width * k,
           },
-        },
+        }),
         "size"
       ).crop;
       const reached = sized.width / state.crop.width;
