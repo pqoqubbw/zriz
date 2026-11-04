@@ -79,6 +79,7 @@ export interface View {
   overscroll: () => Point;
   overzoom: () => number;
   settleOverscroll: (quick?: boolean) => void;
+  settleZoom: () => void;
   onFrame: (listener: (frame: ViewFrame) => void) => () => void;
   onEmpty: (listener: () => void) => () => void;
   destroy: () => void;
@@ -600,7 +601,7 @@ export const viewOf = (cropper: Cropper): View => {
     }, false);
   };
 
-  const settleZoom = (quick: boolean): void => {
+  const settleZoom = (quick = false): void => {
     stopZoom?.();
     stopZoom = null;
     const from = Math.log(zoom);
@@ -787,10 +788,11 @@ export const viewOf = (cropper: Cropper): View => {
       markOverscroll();
       cropper.invalidate();
     },
-    settleOverscroll(quick = false) {
+    settleOverscroll(quick) {
       settleShift();
       settleZoom(quick);
     },
+    settleZoom,
   };
   views.set(cropper, view);
   cropper.on("destroy", () => {

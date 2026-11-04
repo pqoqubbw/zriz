@@ -587,6 +587,31 @@ describe("wheel and pinch on the photo", () => {
     fire(r.viewport, "pointerup", 351, 150, { pointerId: 1, ...touch });
   });
 
+  it("a second finger lifting past an edge starts no animation and fires no settle", () => {
+    const r = rig();
+    const log: string[] = [];
+    const touch = { pointerType: "touch" };
+    fire(r.viewport, "pointerdown", 50, 150, { pointerId: 1, ...touch });
+    fire(r.viewport, "pointermove", 350, 150, { pointerId: 1, ...touch });
+    r.time.frames(1);
+    r.cropper.on("settle", () => {
+      log.push("settle");
+    });
+    r.cropper.subscribe(() => {
+      if (r.cropper.getState().settling) {
+        log.push("settling");
+      }
+    });
+    fire(r.viewport, "pointerdown", 200, 150, { pointerId: 2, ...touch });
+    r.time.frames(1);
+    const shift = viewOf(r.cropper).overscroll().x;
+    fire(r.viewport, "pointerup", 200, 150, { pointerId: 2, ...touch });
+    r.time.frames(2);
+    expect(log).toStrictEqual([]);
+    expect(viewOf(r.cropper).overscroll().x).toBeCloseTo(shift, 3);
+    fire(r.viewport, "pointerup", 350, 150, { pointerId: 1, ...touch });
+  });
+
   it("a wheel zoom reports the wheel on change and on commit", () => {
     const r = rig();
     const reasons: string[] = [];

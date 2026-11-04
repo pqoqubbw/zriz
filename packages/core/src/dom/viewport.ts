@@ -436,16 +436,18 @@ export const viewportController = (
     }
     if (pointers.size > 0) {
       rebase();
+      if (!start) {
+        view.settleOverscroll();
+        return;
+      }
       const held = view.overscroll();
-      view.settleOverscroll();
-      if (start) {
-        const { excess } = pan(start, held, event);
-        const length = Math.hypot(excess.x, excess.y);
-        view.setOverscroll(excess);
-        rebase();
-        if (length > 0) {
-          backStart(excess, inverseRubberBand(length, PAN_BAND, 1) / length);
-        }
+      view.settleZoom();
+      const { excess } = pan(start, held, event);
+      const length = Math.hypot(excess.x, excess.y);
+      view.setOverscroll(excess);
+      rebase();
+      if (length > 0) {
+        backStart(excess, inverseRubberBand(length, PAN_BAND, 1) / length);
       }
       return;
     }
