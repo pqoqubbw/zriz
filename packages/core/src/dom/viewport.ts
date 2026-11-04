@@ -988,4 +988,4 @@ export type {
   ViewportOptions,
   WheelMode,
 };
-export { bindViewport, transformAround, viewportController };
+export { bindViewport, viewportController };

@@ -256,7 +256,6 @@ export type { ElementBox, Part, PartProps, RootContextValue };
 export {
   RootContext,
   keepStyle,
-  native,
   nativeProps,
   useElementBox,
   useHold,

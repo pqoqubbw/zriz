@@ -398,5 +398,5 @@ const renderKernel = (): RenderKernel => {
   };
 };
 
-export type { Drawable, KernelPlan, RenderJob, RenderKernel, RenderReply };
+export type { RenderJob, RenderKernel, RenderReply };
 export { renderKernel };

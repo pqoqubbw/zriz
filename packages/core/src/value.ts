@@ -312,7 +312,6 @@ const parse = (input: unknown): CropValue | null => {
 
 export type { Aspect, CropValue, ValueField };
 export {
-  PERSPECTIVE_LIMIT,
   ROTATION_LIMIT,
   aspectRatio,
   changedFields,
