@@ -2,7 +2,7 @@ import type { Cropper } from "../cropper";
 import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
-import type { HalfPlane, Point, Rect } from "../geometry/types";
+import type { Crop, HalfPlane, Point, Rect } from "../geometry/types";
 import { holdCursor } from "./cursor";
 import { setCropShape } from "./shape";
 import { capture, cssMatrix, viewOf } from "./view";
@@ -261,12 +261,7 @@ const boxPlanes = (
   ];
 };
 
-const toRect = (crop: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}): Rect => ({
+const toRect = (crop: Crop): Rect => ({
   x0: crop.x - crop.width / 2,
   x1: crop.x + crop.width / 2,
   y0: crop.y - crop.height / 2,

@@ -556,6 +556,17 @@ export const viewOf = (cropper: Cropper): View => {
     }, false);
   };
 
+  const clearTimers = (): void => {
+    if (recentreTimer !== null) {
+      clearTimeout(recentreTimer);
+      recentreTimer = null;
+    }
+    if (chromeTimer !== null) {
+      clearTimeout(chromeTimer);
+      chromeTimer = null;
+    }
+  };
+
   const offFrame = cropper.on("frame", publish);
   const offChange = cropper.on("change", (_, details) => {
     const kind = transitionFor[details.reason];
@@ -566,14 +577,7 @@ export const viewOf = (cropper: Cropper): View => {
     }
   });
   const offStart = cropper.on("gesturestart", (reason) => {
-    if (recentreTimer !== null) {
-      clearTimeout(recentreTimer);
-      recentreTimer = null;
-    }
-    if (chromeTimer !== null) {
-      clearTimeout(chromeTimer);
-      chromeTimer = null;
-    }
+    clearTimers();
     endTransition();
     const grids: Partial<Record<string, Grid>> = {
       dial: "fine",
@@ -590,14 +594,7 @@ export const viewOf = (cropper: Cropper): View => {
     shift = { x: 0, y: 0 };
     zoom = 1;
     markOverscroll();
-    if (recentreTimer !== null) {
-      clearTimeout(recentreTimer);
-      recentreTimer = null;
-    }
-    if (chromeTimer !== null) {
-      clearTimeout(chromeTimer);
-      chromeTimer = null;
-    }
+    clearTimers();
     setChrome({ active: false, grid: "none" });
   });
   const offEnd = cropper.on("gestureend", () => {
@@ -626,12 +623,7 @@ export const viewOf = (cropper: Cropper): View => {
       stopShift?.();
       stopZoom?.();
       endTransition();
-      if (recentreTimer !== null) {
-        clearTimeout(recentreTimer);
-      }
-      if (chromeTimer !== null) {
-        clearTimeout(chromeTimer);
-      }
+      clearTimers();
       listeners.clear();
       chromeListeners.clear();
       views.delete(cropper);

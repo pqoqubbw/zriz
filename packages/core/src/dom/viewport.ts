@@ -258,6 +258,14 @@ export const viewportController = (
     }
   };
 
+  const anchorTo = (target: HTMLElement): void => {
+    const box = target.getBoundingClientRect();
+    origin = {
+      x: box.left + target.clientLeft,
+      y: box.top + target.clientTop,
+    };
+  };
+
   const local = (event: { clientX: number; clientY: number }): Point => ({
     x: event.clientX - origin.x,
     y: event.clientY - origin.y,
@@ -409,11 +417,7 @@ export const viewportController = (
         return;
       }
       if (pointers.size === 0) {
-        const box = element.getBoundingClientRect();
-        origin = {
-          x: box.left + element.clientLeft,
-          y: box.top + element.clientTop,
-        };
+        anchorTo(element);
         if (!cropper.begin("pan", event, owner)) {
           return;
         }
@@ -490,14 +494,6 @@ export const viewportController = (
     (pinching && safari !== null) ||
     (!zoom && options.wheel === "none") ||
     cropper.getState().disabled;
-
-  const anchorTo = (target: HTMLElement): void => {
-    const box = target.getBoundingClientRect();
-    origin = {
-      x: box.left + target.clientLeft,
-      y: box.top + target.clientTop,
-    };
-  };
 
   const claimWheel = (event: WheelEvent): boolean => {
     if (!cropper.begin("wheel", event, owner)) {
@@ -590,11 +586,7 @@ export const viewportController = (
     if (!isGesture(event)) {
       return;
     }
-    const box = element.getBoundingClientRect();
-    origin = {
-      x: box.left + element.clientLeft,
-      y: box.top + element.clientTop,
-    };
+    anchorTo(element);
     if (!cropper.begin("pinch", event, owner)) {
       return;
     }

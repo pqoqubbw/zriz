@@ -162,7 +162,7 @@ export interface Cropper {
   destroy: () => void;
 }
 
-const MAX_ZOOM = 15;
+export const MAX_ZOOM = 15;
 const EPSILON = 1e-9;
 
 type Listeners = { [E in keyof CropperEvents]: Set<CropperEvents[E]> };

@@ -1,3 +1,4 @@
+import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
 import { capture } from "./view";
 
@@ -22,7 +23,6 @@ export interface ZoomOptions {
   format?: Intl.NumberFormatOptions | undefined;
 }
 
-const MAX_ZOOM = 15;
 const KEY_STEPS = 20;
 const ZOOM_KEY_FACTOR = 1.1;
 
