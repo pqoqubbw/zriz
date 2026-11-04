@@ -1,12 +1,7 @@
 import { assert, double, pre, property } from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import {
-  inverseRubberBand,
-  inverseRubberBandRange,
-  rubberBand,
-  rubberBandRange,
-} from "../../src/geometry";
+import { inverseRubberBand, rubberBand } from "../../src/geometry";
 
 const num = (min: number, max: number) => double({ max, min, noNaN: true });
 
@@ -26,23 +21,5 @@ describe("rubber band", () => {
       })
     );
     expect(rubberBand(1e-6, 100) / 1e-6).toBeCloseTo(0.55, 5);
-  });
-
-  it("is continuous at the limits and round-trips", () => {
-    assert(
-      property(
-        num(-1000, 1000),
-        num(-100, 0),
-        num(0, 100),
-        num(1, 500),
-        (v, min, max, d) => {
-          const shown = rubberBandRange(v, min, max, d);
-          expect(
-            Math.abs(inverseRubberBandRange(shown, min, max, d) - v)
-          ).toBeLessThan(1e-6 * Math.max(1, Math.abs(v)));
-        }
-      )
-    );
-    expect(rubberBandRange(100 + 1e-9, 0, 100, 50)).toBeCloseTo(100, 8);
   });
 });

@@ -20,38 +20,6 @@ export const inverseRubberBand = (
     ? shown / coefficient
     : (distance * shown) / (coefficient * (distance - shown));
 
-export const rubberBandRange = (
-  value: number,
-  min: number,
-  max: number,
-  distance: number,
-  coefficient: number = RUBBER_BAND_COEFFICIENT
-): number => {
-  if (value > max) {
-    return max + rubberBand(value - max, distance, coefficient);
-  }
-  if (value < min) {
-    return min - rubberBand(min - value, distance, coefficient);
-  }
-  return value;
-};
-
-export const inverseRubberBandRange = (
-  shown: number,
-  min: number,
-  max: number,
-  distance: number,
-  coefficient: number = RUBBER_BAND_COEFFICIENT
-): number => {
-  if (shown > max) {
-    return max + inverseRubberBand(shown - max, distance, coefficient);
-  }
-  if (shown < min) {
-    return min - inverseRubberBand(min - shown, distance, coefficient);
-  }
-  return shown;
-};
-
 export const rubberBandPoint = (
   raw: Point,
   clamped: Point,

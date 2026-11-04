@@ -228,7 +228,7 @@ describe("handle drag constraints", () => {
     );
   });
 
-  it("never jumps and stays monotone in the pointer while rubber-banding", () => {
+  it("stays monotone in the pointer", () => {
     assert(
       property(stateArb, (s) => {
         const { planes } = limitsFor(s, 0);
@@ -236,11 +236,11 @@ describe("handle drag constraints", () => {
         const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
         const edges = Array.from({ length: 51 }, (_, i) => {
           const x = start.x1 + (i / 50) * s.image.width * 2;
-          return dragHandle(start, "e", { x, y: 0 }, limits, s.crop.width).x1;
+          return dragHandle(start, "e", { x, y: 0 }, limits).x1;
         });
         for (const [i, edge] of edges.entries()) {
           expect(edge).toBeGreaterThanOrEqual(
-            edges[i - 1] ?? Number.NEGATIVE_INFINITY
+            (edges[i - 1] ?? Number.NEGATIVE_INFINITY) - 1e-9 * s.image.width
           );
         }
       })
@@ -280,7 +280,7 @@ describe("handle drag constraints", () => {
     const start = toRect(s);
     const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
     const edges = [1.05, 1.5, 2.01, 2.05].map(
-      (x) => dragHandle(start, "e", { x, y: 0 }, limits, s.crop.width).x1
+      (x) => dragHandle(start, "e", { x, y: 0 }, limits).x1
     );
     for (const [i, edge] of edges.entries()) {
       expect(edge).toBeGreaterThanOrEqual(

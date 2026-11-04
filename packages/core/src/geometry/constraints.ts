@@ -1,4 +1,3 @@
-import { rubberBandPoint, rubberBandRange } from "./band";
 import { projectOntoPlanes } from "./planes";
 import type { HalfPlane, Point, Rect, Size } from "./types";
 
@@ -191,8 +190,7 @@ export const dragHandle = (
   start: Rect,
   handle: CropHandle,
   pointer: Point,
-  limits: DragLimits,
-  bandDistance = 0
+  limits: DragLimits
 ): Rect => {
   if (limits.aspect !== null) {
     const { at, desired } = aspectFamily(start, handle, limits.aspect);
@@ -200,22 +198,15 @@ export const dragHandle = (
       ...limits,
       aspect: limits.aspect,
     });
-    const want = desired(pointer);
-    return at(
-      bandDistance > 0
-        ? rubberBandRange(want, min, max, bandDistance)
-        : Math.min(Math.max(want, min), Math.max(min, max))
-    );
+    return at(Math.min(Math.max(desired(pointer), min), Math.max(min, max)));
   }
   const movesX = movingXEdge(handle);
   const movesY = movingYEdge(handle);
   const want = { x: movesX ? pointer.x : 0, y: movesY ? pointer.y : 0 };
-  const clamped = projectOntoPlanes(
+  const shown = projectOntoPlanes(
     freePlanes(start, movesX, movesY, limits),
     want
   );
-  const shown =
-    bandDistance > 0 ? rubberBandPoint(want, clamped, bandDistance) : clamped;
   const out = { ...start };
   if (movesX) {
     out[movesX] = shown.x;
