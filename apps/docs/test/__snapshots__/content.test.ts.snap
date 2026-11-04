@@ -5157,7 +5157,7 @@ zriz adds no focus style and removes none, so the browser's default ring shows o
 
 ## work without a drag
 
-the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. \`Zoom\` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so \`Announcer\` speaks these writes too:
+the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. \`Zoom\` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so \`Announcer\` speaks these writes too. the effect frees the photo, see [hooks](https://zriz.dev/docs/hooks.md):
 
 \`\`\`tsx
 "use client";

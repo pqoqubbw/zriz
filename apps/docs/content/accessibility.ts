@@ -97,7 +97,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
     section(
       "work without a drag",
       p(
-        "the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. `Zoom` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so `Announcer` speaks these writes too:"
+        "the dial, the handles and the photo pan need a drag, and keys do not replace that for someone who only has a pointer. wcag 2.5.7 asks for a way with single taps. `Zoom` already jumps on a press, for the rest add plain buttons that write to the cropper. pass a reason, so `Announcer` speaks these writes too. the effect frees the photo, see [hooks](hooks):"
       ),
       code("accessibility/no-drag.tsx")
     ),
