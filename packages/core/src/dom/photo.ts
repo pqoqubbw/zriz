@@ -379,7 +379,9 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
       held = null;
     }
 
-    motion.removeAttribute("src");
+    if (motion.isConnected) {
+      motion.removeAttribute("src");
+    }
   };
 
   const load = (): void => {

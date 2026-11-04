@@ -15,8 +15,8 @@ import {
   useState,
 } from "react";
 import type { ComponentType, ReactNode, Ref } from "react";
-import { createPortal } from "react-dom";
-import { hydrateRoot } from "react-dom/client";
+import { createPortal, flushSync } from "react-dom";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
@@ -1411,9 +1411,70 @@ const HydrateShell = () => {
   );
 };
 
+const mountBare = (tree: ReactNode): (() => void) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+
+  document.body.append(container);
+  flushSync(() => {
+    root.render(tree);
+  });
+
+  return () => {
+    flushSync(() => {
+      root.unmount();
+    });
+    container.remove();
+  };
+};
+
+const mountedAvatar = async (
+  src: Blob,
+  strict: boolean
+): Promise<WeakRef<Element>> => {
+  const api = createRef<CropperApi>();
+  const unmount = mountBare(
+    strict ? (
+      <StrictMode>
+        <Avatar actionsRef={api} src={src} />
+      </StrictMode>
+    ) : (
+      <Avatar actionsRef={api} src={src} />
+    )
+  );
+
+  await ready(api);
+  const viewport = new WeakRef(
+    document.querySelector("#viewport") as Element
+  );
+
+  unmount();
+
+  return viewport;
+};
+
+const collected = async (ref: WeakRef<Element>): Promise<boolean> => {
+  for (let i = 0; i < 40 && ref.deref(); i += 1) {
+    mountBare(<Cropper.Root />)();
+    await frames(2);
+    await commands.gc();
+  }
+
+  return ref.deref() === undefined;
+};
+
 describe("lifetimes under StrictMode, Suspense and Activity", () => {
   afterEach(async () => {
     await cleanup();
+  });
+
+  it.each([
+    ["plain", false],
+    ["StrictMode", true],
+  ])("lets a %s unmount collect the viewport", async (_name, strict) => {
+    const ref = await mountedAvatar(await photo(), strict);
+
+    expect(await collected(ref)).toBe(true);
   });
 
   it("clears actionsRef after a parent's layout effect in the unmount commit", async () => {

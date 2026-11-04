@@ -8,6 +8,7 @@ declare module "vitest/browser" {
   interface BrowserCommands {
     drag: (selector: string, path: Path) => Promise<void>;
     forcedColors: (mode: "active" | "none") => Promise<void>;
+    gc: () => Promise<void>;
     hold: (selector: string, x: number, y: number) => Promise<void>;
     pinch: (
       selector: string,
@@ -55,6 +56,13 @@ export const forcedColors: BrowserCommand<[mode: "active" | "none"]> = async (
     throw new Error("playwright only");
   }
   await context.page.emulateMedia({ forcedColors: mode });
+};
+
+export const gc: BrowserCommand = async (context) => {
+  if (!("page" in context)) {
+    throw new Error("playwright only");
+  }
+  await context.page.requestGC();
 };
 
 export const drag: BrowserCommand<[selector: string, path: Path]> = async (
