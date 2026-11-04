@@ -1,5 +1,6 @@
 import "../../core/src/styles.css";
 import type { Cropper as CropperApi } from "@zriz/core";
+import { maskGradient } from "@zriz/core/dom";
 import { createRef } from "react";
 import { hydrateRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -194,6 +195,35 @@ describe("default styles", () => {
     );
     page.remove();
     expect(widths).toStrictEqual(new Set([1]));
+  });
+
+  it.runIf(
+    CSS.supports(
+      "clip-path",
+      "shape(evenodd from 0 0, hline to 10px, vline to 10px, close, move to 5px 0, arc by 0 10px of 5px 5px, close)"
+    )
+  )("cuts a round hole the engine accepts", async () => {
+    await render(
+      <Cropper.Root image={{ height: 300, width: 400 }} shape="circle">
+        <Cropper.Viewport
+          style={{ height: 300, position: "relative", width: 400 }}
+        >
+          <Cropper.Mask />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await frames(2);
+    const mask = pick('[data-zriz-item="mask"]');
+    expect(mask.style.clipPath).toContain("shape(");
+    mask.style.pointerEvents = "auto";
+    const { left, top } = mask.getBoundingClientRect();
+    expect(document.elementFromPoint(left + 200, top + 150)).not.toBe(mask);
+    expect(document.elementFromPoint(left + 55, top + 5)).toBe(mask);
+  });
+
+  it("writes a fallback gradient the engine accepts", () => {
+    const box = { height: 200, width: 200, x: 10, y: 10 };
+    expect(CSS.supports("mask-image", maskGradient(box, 2))).toBeTruthy();
   });
 
   it("lets a part pin its own scheme inside a themed page", async () => {

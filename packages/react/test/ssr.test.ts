@@ -58,6 +58,19 @@ describe("server rendering", () => {
     errors.mockRestore();
   });
 
+  it("renders the same html whatever motion the user asks for", () => {
+    const tree = createElement(
+      Cropper.Root,
+      { src: "/photo.jpg" },
+      createElement(Cropper.Viewport)
+    );
+    const plain = renderToString(tree);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    const reduced = renderToString(tree);
+    vi.unstubAllGlobals();
+    expect(reduced).toBe(plain);
+  });
+
   it("runs on the React major its project names", ({ task }) => {
     expect(version.split(".")[0]).toBe(
       task.file.projectName?.includes("react18") === true ? "18" : "19"

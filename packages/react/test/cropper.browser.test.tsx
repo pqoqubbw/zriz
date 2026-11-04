@@ -14,7 +14,7 @@ import {
   useLayoutEffect,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, Ref } from "react";
 import { createPortal } from "react-dom";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
@@ -1419,6 +1419,74 @@ const hydrated = async (tree: ReactNode, html: string, write?: () => void) => {
     },
   };
 };
+
+const HidingEditor = ({
+  api,
+  hidden,
+  Waiting,
+}: {
+  api: Ref<CropperApi>;
+  hidden: boolean;
+  Waiting: ComponentType;
+}) => (
+  <div style={{ paddingLeft: 200, paddingTop: 150 }}>
+    <Suspense fallback={null}>
+      {hidden ? <Waiting /> : null}
+      <Cropper.Root actionsRef={api} image={{ height: 600, width: 800 }}>
+        <Cropper.Viewport style={{ height: 320, width: 480 }}>
+          <Cropper.Area aria-label="crop">
+            <Cropper.Handle position="top-left" />
+          </Cropper.Area>
+        </Cropper.Viewport>
+        <Cropper.Zoom aria-label="zoom" style={{ height: 20, width: 200 }} />
+      </Cropper.Root>
+    </Suspense>
+  </div>
+);
+
+const pressAt = (target: Element, type: string, x: number, y: number): void => {
+  target.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      buttons: 1,
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      pointerType: "mouse",
+    })
+  );
+};
+
+describe("a part hidden by Suspense mid-drag", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it.each(["handle", "zoom"])("ignores moves on a %s", async (part) => {
+    const api = createRef<CropperApi>();
+    const { Sibling } = lazySibling();
+    const screen = await render(
+      <HidingEditor Waiting={Sibling} api={api} hidden={false} />
+    );
+    await frames(2);
+    const target = screen.container.querySelector(`[data-zriz-item="${part}"]`);
+    if (!target) {
+      throw new Error(`no ${part}`);
+    }
+    const box = target.getBoundingClientRect();
+    const x = box.left + box.width / 2;
+    const y = box.top + box.height / 2;
+    pressAt(target, "pointerdown", x, y);
+    pressAt(target, "pointermove", x + 20, y + 10);
+    const before = api.current?.getValue();
+    await screen.rerender(<HidingEditor Waiting={Sibling} api={api} hidden />);
+    await frames(2);
+    pressAt(target, "pointermove", x + 21, y + 10);
+    expect(api.current?.getValue()).toStrictEqual(before);
+    pressAt(target, "pointerup", x + 21, y + 10);
+  });
+});
 
 describe("hydrating a cropper that changed after the server render", () => {
   it("keeps a late Zoom on the server's value until it binds", async () => {

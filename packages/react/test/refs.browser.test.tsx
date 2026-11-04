@@ -34,7 +34,13 @@ const theirs = (node: HTMLDivElement | null): void => {
   log.push(node ? "theirs+" : "theirs-");
 };
 
-const Probe = ({ tag }: { tag: string }) => {
+const Probe = ({
+  tag,
+  held = theirs,
+}: {
+  tag: string;
+  held?: Ref<HTMLDivElement>;
+}) => {
   const own = useCallback(
     (node: HTMLDivElement) => {
       log.push(`bind ${tag} ${node.tagName}`);
@@ -44,7 +50,7 @@ const Probe = ({ tag }: { tag: string }) => {
     },
     [tag]
   );
-  return <div ref={useMergedRef(own, theirs)} />;
+  return <div ref={useMergedRef(own, held)} />;
 };
 
 const userRef = (node: HTMLElement | null) => {
@@ -375,6 +381,115 @@ describe("refs on React 18 and 19", () => {
     log.length = 0;
     await screen.rerender(<Host own={second} />);
     expect(log).toStrictEqual(["a-", "b+"]);
+  });
+
+  it("moves a forwarded ref that changes", async () => {
+    const api = createRef<CropperApi>();
+    const first = createRef<HTMLDivElement>();
+    const second = createRef<HTMLDivElement>();
+    const screen = await render(
+      <Shell api={api}>
+        <Cropper.Zoom aria-label="Zoom" max={4} ref={first} />
+      </Shell>
+    );
+    const zoom = screen.container.querySelector('[data-zriz-item="zoom"]');
+    await screen.rerender(
+      <Shell api={api}>
+        <Cropper.Zoom aria-label="Zoom" max={4} ref={second} />
+      </Shell>
+    );
+    expect(first.current).toBeNull();
+    expect(second.current).toBe(zoom);
+    await screen.rerender(
+      <Shell api={api}>
+        <Cropper.Zoom aria-label="Zoom" max={8} ref={second} />
+      </Shell>
+    );
+    expect(first.current).toBeNull();
+    expect(second.current).toBe(zoom);
+    await screen.unmount();
+    expect(second.current).toBeNull();
+  });
+
+  it("swaps a changed ref without rebinding the part", async () => {
+    const next = createRef<HTMLDivElement>();
+    const screen = await render(<Probe tag="a" />);
+    log.length = 0;
+    await screen.rerender(<Probe held={next} tag="a" />);
+    expect(log).toStrictEqual(["theirs-"]);
+    expect(next.current?.tagName).toBe("DIV");
+  });
+
+  it("hands a render function the part's props and state", async () => {
+    const api = createRef<CropperApi>();
+    const mine = createRef<HTMLButtonElement>();
+    const screen = await render(
+      <Shell api={api}>
+        <Cropper.Flip
+          className={(state) => (state.mirrored ? "on" : "off")}
+          ref={mine}
+          render={(props, state) => (
+            <button
+              {...props}
+              title={state.mirrored ? "mirrored" : "plain"}
+              type="button"
+            />
+          )}
+        />
+      </Shell>
+    );
+    const flip = screen.container.querySelector<HTMLButtonElement>(
+      '[data-zriz-item="flip"]'
+    );
+    expect(mine.current).toBe(flip);
+    expect(flip?.title).toBe("plain");
+    expect(flip?.className).toBe("off");
+    flip?.click();
+    await frames(2);
+    expect(flip?.title).toBe("mirrored");
+    expect(flip?.className).toBe("on");
+  });
+
+  it("runs the user's handlers first, then zriz's", async () => {
+    const api = createRef<CropperApi>();
+    const calls: string[] = [];
+    const note = (who: string) => () => {
+      calls.push(`${who} ${String(api.current?.getValue().mirrored)}`);
+    };
+    const screen = await render(
+      <Shell api={api}>
+        <Cropper.Flip
+          onClick={note("part")}
+          render={
+            <button aria-label="Flip" onClick={note("element")} type="button" />
+          }
+        />
+      </Shell>
+    );
+    const flip = screen.container.querySelector<HTMLButtonElement>(
+      '[data-zriz-item="flip"]'
+    );
+    flip?.click();
+    await frames(2);
+    expect(calls).toStrictEqual(["element false", "part false"]);
+    expect(api.current?.getValue().mirrored).toBeTruthy();
+  });
+
+  it("joins className with the class on a render element", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Shell api={api}>
+        <Cropper.Grid className="a" render={<section className="b" />} />
+      </Shell>
+    );
+    const grid = screen.container.querySelector('[data-zriz-item="grid"]');
+    expect(grid?.className).toBe("a b");
+    await screen.rerender(
+      <Shell api={api}>
+        <Cropper.Grid render={<section className="b" />} />
+      </Shell>
+    );
+    expect(grid?.className).toBe("b");
   });
 
   it("leaves no binding or ref behind in StrictMode", async () => {

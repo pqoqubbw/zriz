@@ -89,6 +89,11 @@ describe("accessibility", () => {
     expect(first.trim()).toBe("Saved");
     expect(second.trim()).toBe("Saved");
     expect(second).not.toBe(first);
+    api.current?.rotate90();
+    await frames(4);
+    const third = region();
+    expect(third.trim()).toBe("Saved");
+    expect(third).not.toBe(second);
   });
 
   it("exposes the zoom slider with keys and percent text", async () => {
@@ -159,6 +164,10 @@ describe("accessibility", () => {
     await userEvent.keyboard("{Home}");
     await frames(2);
     expect(api.current?.getValue().aspect).toBe("free");
+    await userEvent.keyboard("{End}");
+    await frames(2);
+    expect(document.activeElement).toBe(items[2]);
+    expect(api.current?.getValue().aspect).toBeCloseTo(16 / 9, 6);
   });
 
   it("keeps a tab stop when no aspect item is checked", async () => {
