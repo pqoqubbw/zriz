@@ -1,7 +1,6 @@
 import { applyHomography, invertMatrix3 } from "../geometry/matrix";
 import type { LoadedImage } from "./image";
 import type { Region } from "./kernel";
-import { whole } from "./media";
 import { TIMEOUT_MS } from "./turn";
 import type { ViewFrame } from "./view";
 import { decodeTurn, regionOff, resampleOff } from "./worker";
@@ -103,7 +102,7 @@ const refine = async (
 
   return {
     bitmap: null,
-    region: whole(image),
+    region: { height: image.height, width: image.width, x: 0, y: 0 },
   };
 };
 
