@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import type { CropperOptions } from "../../src";
 import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
-import { bindZoomThumb } from "../../src/dom/controls";
 import type { HandleEdge } from "../../src/dom";
+import { bindZoomThumb } from "../../src/dom/controls";
 import {
   cssMatrix,
   fitPlacement,
@@ -516,21 +516,20 @@ describe("zoom thumb", () => {
     time.frames(2);
     const writes: string[] = [];
     const style = {
-      position: "",
+      get insetInlineStart(): string {
+        return writes.at(-1) ?? "";
+      },
       set insetInlineStart(next: string) {
         writes.push(next);
       },
+      position: "",
     };
-    const off: () => void = Reflect.apply(bindZoomThumb, undefined, [
-      cropper,
-      { style },
-    ]);
+    Reflect.apply(bindZoomThumb, undefined, [cropper, { style }]);
     writes.length = 0;
     for (let step = 0; step < 100; step += 1) {
       cropper.panBy(Math.sin(step / 7) * 0.01, Math.cos(step / 11) * 0.01);
       time.frame();
     }
-    off();
     expect(writes).toStrictEqual([]);
   });
 });

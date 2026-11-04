@@ -9,7 +9,6 @@ import {
 } from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 
-import * as planesModule from "../../src/geometry/planes";
 import {
   aspectHeightRange,
   dragHandle,
@@ -27,6 +26,7 @@ import type {
   Rect,
   Size,
 } from "../../src/geometry";
+import * as planesModule from "../../src/geometry/planes";
 import { stateArb } from "./arbitraries";
 
 vi.mock(import("../../src/geometry/planes"), { spy: true });

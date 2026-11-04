@@ -25,7 +25,7 @@ const REACH = 1e6;
 const MIN_RATIO = 1e-6;
 
 export const seal = <T extends object>(target: T): T => {
-  for (const item of Object.values<unknown>(target)) {
+  for (const item of Object.values(target) as unknown[]) {
     if (typeof item === "object" && item !== null) {
       seal(item);
     }

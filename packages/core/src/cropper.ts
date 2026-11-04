@@ -368,11 +368,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         const open =
           1 /
           largestFit(
-            panPlanes(
-              planes,
-              narrow ? min.width : 0,
-              narrow ? 0 : min.height
-            ),
+            panPlanes(planes, narrow ? min.width : 0, narrow ? 0 : min.height),
             { height: narrow ? 1 : 0, width: narrow ? 0 : 1 }
           ).scale;
         width = narrow ? min.width : open;

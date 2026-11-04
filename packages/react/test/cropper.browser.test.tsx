@@ -25,6 +25,27 @@ declare module "vitest/browser" {
   }
 }
 
+const photoCropper = () =>
+  createCropper({ image: { height: 3000, width: 4000 } });
+
+const pointerOn = (id: string, type: string): void => {
+  document.querySelector(id)?.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+    })
+  );
+};
+
+const isActive = (id: string): boolean =>
+  Object.hasOwn(
+    document.querySelector<HTMLElement>(id)?.dataset ?? {},
+    "active"
+  );
+
 const photo = async (): Promise<Blob> => {
   const canvas = new OffscreenCanvas(400, 300);
   const context = canvas.getContext("2d");
@@ -580,9 +601,6 @@ describe("AspectItem", () => {
 describe("work a render does not need", () => {
   afterEach(cleanup);
 
-  const photoCropper = () =>
-    createCropper({ image: { height: 3000, width: 4000 } });
-
   it("keeps one subscription across parent renders", async () => {
     const cropper = photoCropper();
     const on = vi.spyOn(cropper, "on");
@@ -597,7 +615,7 @@ describe("work a render does not need", () => {
     const after = on.mock.calls.length;
     await rerender(<Probe tick={1} />);
     await rerender(<Probe tick={2} />);
-    expect(on.mock.calls.length).toBe(after);
+    expect(on).toHaveBeenCalledTimes(after);
   });
 
   it("does not set options again for an equal inline minSize", async () => {
@@ -610,7 +628,7 @@ describe("work a render does not need", () => {
     const { rerender } = await render(<Probe tick={0} />);
     const after = setOptions.mock.calls.length;
     await rerender(<Probe tick={1} />);
-    expect(setOptions.mock.calls.length).toBe(after);
+    expect(setOptions).toHaveBeenCalledTimes(after);
   });
 
   it("does not write back the value the cropper already holds", async () => {
@@ -671,38 +689,24 @@ describe("work a render does not need", () => {
     const cropper = photoCropper();
     await render(
       <Cropper.Root cropper={cropper}>
-        <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
+        <Cropper.Viewport
+          style={{ height: 300, position: "relative", width: 400 }}
+        >
           <Cropper.Handle id="right" position="right" />
           <Cropper.Handle id="left" position="left" />
         </Cropper.Viewport>
       </Cropper.Root>
     );
     await frames();
-    const pointer = (id: string, type: string): void => {
-      document.querySelector(id)?.dispatchEvent(
-        new PointerEvent(type, {
-          bubbles: true,
-          button: 0,
-          clientX: 100,
-          clientY: 100,
-          pointerId: 1,
-        })
-      );
-    };
-    const active = (id: string): boolean =>
-      Object.hasOwn(
-        document.querySelector<HTMLElement>(id)?.dataset ?? {},
-        "active"
-      );
-    pointer("#right", "pointerdown");
+    pointerOn("#right", "pointerdown");
     await frames();
-    expect(active("#right")).toBeTruthy();
-    pointer("#right", "pointerup");
+    expect(isActive("#right")).toBeTruthy();
+    pointerOn("#right", "pointerup");
     await frames();
-    pointer("#left", "pointerdown");
+    pointerOn("#left", "pointerdown");
     await frames();
-    expect(active("#left")).toBeTruthy();
-    expect(active("#right")).toBeFalsy();
-    pointer("#left", "pointerup");
+    expect(isActive("#left")).toBeTruthy();
+    expect(isActive("#right")).toBeFalsy();
+    pointerOn("#left", "pointerup");
   });
 });

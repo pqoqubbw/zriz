@@ -118,7 +118,7 @@ const pixels = (cropper: Cropper) => {
 
 const deepFrozen = (target: object): boolean =>
   Object.isFrozen(target) &&
-  Object.values<unknown>(target).every(
+  (Object.values(target) as unknown[]).every(
     (item) => typeof item !== "object" || item === null || deepFrozen(item)
   );
 

@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import type { Size } from "../../src";
 import { exportImage } from "../../src/dom/export";
-import { renderKernel } from "../../src/dom/render-kernel";
 import type { ExportResult, LoadedImage } from "../../src/dom/image";
+import { renderKernel } from "../../src/dom/render-kernel";
 import { via } from "../../src/dom/worker";
 import { fakeClock } from "../fake-clock";
 
@@ -90,18 +90,21 @@ describe("a canvas that cannot draw", () => {
     const drawImage = vi.fn<() => void>();
     const context = {
       canvas: { height: 10, width: 10 },
-      clearRect: () => undefined,
+      clearRect: vi.fn<() => void>(),
       drawImage,
-      fillRect: () => undefined,
+      fillRect: vi.fn<() => void>(),
       getImageData: () => ({ data: new Uint8ClampedArray(4) }),
-      setTransform: () => undefined,
+      setTransform: vi.fn<() => void>(),
     };
     vi.stubGlobal(
       "OffscreenCanvas",
       class {
-        getContext = (): object => context;
+        context = context;
         height = 10;
         width = 10;
+        getContext(): object {
+          return this.context;
+        }
       }
     );
     vi.stubGlobal("ImageBitmap", Object);
