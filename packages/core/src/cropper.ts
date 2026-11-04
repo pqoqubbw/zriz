@@ -507,8 +507,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       emitted = value;
       return;
     }
-    emitted = sent;
-    emittedState = sentState;
+    if (emitted === details.previous) {
+      emitted = sent;
+      emittedState = sentState;
+    }
     emit("accept", sent, details);
   };
 

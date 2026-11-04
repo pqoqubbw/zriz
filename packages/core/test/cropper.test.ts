@@ -1082,6 +1082,57 @@ describe("change and commit reporting", () => {
     ]);
   });
 
+  it("reports the next move after a silent write inside a change listener", () => {
+    const { change, cropper, time } = setup();
+    cropper.on("change", (value) => {
+      if (value.rotation > 10) {
+        cropper.setRotation(10, { emit: false });
+      }
+    });
+    cropper.setRotation(20);
+    time.frame();
+    expect(cropper.getValue().rotation).toBe(10);
+    change.mockClear();
+    cropper.setRotation(20);
+    time.frame();
+    expect(change.mock.calls[0]?.[0].rotation).toBe(20);
+    expect(change.mock.calls[0]?.[1].previous.rotation).toBe(10);
+    expect(change.mock.calls[0]?.[1].changed).toContain("rotation");
+  });
+
+  it("lists only what moved after a silent write inside a change listener", () => {
+    const { change, cropper, time } = setup();
+    const off = cropper.on("change", () => {
+      off();
+      cropper.setRotation(10, { emit: false });
+    });
+    cropper.setRotation(20);
+    time.frame();
+    change.mockClear();
+    cropper.setZoom(1.5);
+    time.frame();
+    expect(change.mock.calls[0]?.[1].previous.rotation).toBe(10);
+    expect(change.mock.calls[0]?.[1].changed).not.toContain("rotation");
+  });
+
+  it("cancels back to a silent write made inside a change listener", () => {
+    const { commit, cropper, time } = setup();
+    const offClamp = cropper.on("change", () => {
+      offClamp();
+      cropper.setRotation(10, { emit: false });
+    });
+    cropper.setRotation(20);
+    time.frame();
+    cropper.on("change", (_, details) => {
+      details.cancel();
+    });
+    cropper.setRotation(30);
+    time.frames(2);
+    expect(cropper.getValue().rotation).toBe(10);
+    expect(cropper.getState().committed.rotation).toBe(10);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
   it("reports a later photo's refit as a change with the old value as previous", () => {
     const { change, commit, cropper, time } = setup({
       image: { height: 750, width: 1000 },
