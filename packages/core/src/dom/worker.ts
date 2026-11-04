@@ -1,7 +1,6 @@
 import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
-import { gate } from "./turn";
-import type { Turn } from "./turn";
+import { MAX_DELAY, aborted, withTimeout } from "./turn";
 
 interface Waiting {
   resolve: (value: never) => void;
@@ -121,6 +120,56 @@ export const via = async <
     }
   }
   return await target.here()[op](...args);
+};
+
+const noop = (): void => undefined;
+
+export type Turn = <T>(
+  start: () => Promise<T>,
+  ms: number,
+  signal: AbortSignal | undefined
+) => Promise<T>;
+
+export const gate = (size: number): Turn => {
+  let free = size;
+  const turns: (() => void)[] = [];
+  const leave = (): void => {
+    const first = turns.shift();
+    if (first) {
+      first();
+    } else {
+      free += 1;
+    }
+  };
+  return async (start, ms, signal) => {
+    let enter = noop;
+    const turn = new Promise<void>((resolve) => {
+      enter = resolve;
+    });
+    if (free > 0) {
+      free -= 1;
+      enter();
+    } else {
+      turns.push(enter);
+    }
+    try {
+      await withTimeout(turn, MAX_DELAY, signal);
+      if (signal?.aborted === true) {
+        throw aborted();
+      }
+    } catch (error) {
+      const at = turns.indexOf(enter);
+      if (at === -1) {
+        leave();
+      } else {
+        turns.splice(at, 1);
+      }
+      throw error;
+    }
+    const job = start();
+    withTimeout(job, ms, undefined).finally(leave).catch(noop);
+    return await job;
+  };
 };
 
 export const decodeTurn: Turn = gate(3);

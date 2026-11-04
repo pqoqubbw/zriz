@@ -459,6 +459,15 @@ describe("export quality", () => {
     }
   );
 
+  it("exports raster bytes typed as svg on the display-p3 route", async () => {
+    const jpeg = await fixture("orient-1.jpg");
+    const image = await loadImage(new Blob([jpeg], { type: "image/svg+xml" }));
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    const { blob } = await exportCrop(cropper, { colorSpace: "display-p3" });
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
   it("keeps a wide webp whole and reports its real size", async () => {
     const canvas = new OffscreenCanvas(20_000, 100);
     const context = canvas.getContext("2d");

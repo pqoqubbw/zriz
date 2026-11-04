@@ -1,9 +1,11 @@
 import { once } from "node:events";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import type { LoadedImage } from "../../src/dom/image";
+import { deferred } from "./deferred";
 
 const failed = (): never => {
   throw new TypeError("Failed to fetch dynamically imported module");
@@ -62,6 +64,52 @@ describe("lazy chunk failures", () => {
     }).catch((error_: unknown) => error_);
     expect(error).toBeInstanceOf(await zrizError());
     expect(error).toHaveProperty("code", "aborted");
+  });
+
+  it("rejects on abort during a stalled render chunk", async () => {
+    vi.resetModules();
+    vi.doMock(import("../../src/dom/render"), pending);
+    const { exportImage } = await import("../../src/dom/export");
+    const controller = new AbortController();
+    const work = exportImage(createCropper(), loaded, {
+      signal: controller.signal,
+    });
+    controller.abort();
+    await expect(work).rejects.toHaveProperty("code", "aborted");
+  });
+
+  it("times out when the render chunk stalls", async () => {
+    vi.resetModules();
+    vi.doMock(import("../../src/dom/render"), pending);
+    const { exportImage } = await import("../../src/dom/export");
+    vi.useFakeTimers();
+    const work = exportImage(createCropper(), loaded).catch(
+      (error_: unknown) => error_
+    );
+    await vi.advanceTimersByTimeAsync(30_001);
+    vi.useRealTimers();
+    await expect(work).resolves.toHaveProperty("code", "timeout");
+  });
+
+  it("starts no render when the abort comes during the chunk download", async () => {
+    vi.resetModules();
+    const render = vi.fn<() => Promise<never>>();
+    const { promise, resolve } = deferred<undefined>();
+    vi.doMock(import("../../src/dom/render"), async () => {
+      await promise;
+      return { exportImage: render };
+    });
+    const { exportImage } = await import("../../src/dom/export");
+    const controller = new AbortController();
+    const work = exportImage(createCropper(), loaded, {
+      signal: controller.signal,
+    });
+    await delay(1);
+    controller.abort();
+    await expect(work).rejects.toHaveProperty("code", "aborted");
+    resolve(undefined);
+    await delay(10);
+    expect(render).not.toHaveBeenCalled();
   });
 
   it("rejects an svg load with a ZrizError when the svg chunk fails to load", async () => {

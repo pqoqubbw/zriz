@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
@@ -9,11 +11,21 @@ import { renderKernel } from "../../src/dom/render-kernel";
 import { via } from "../../src/dom/worker";
 import { sourceToOutputMatrix } from "../../src/geometry/export-plan";
 import { fakeClock } from "../fake-clock";
+import { deferred } from "./deferred";
 
 vi.mock(import("../../src/dom/worker"), { spy: true });
+vi.mock(import("../../src/dom/media"), { spy: true });
 
 const isBitmap = (value: unknown): value is ImageBitmap =>
   typeof value === "object" && value !== null && "width" in value;
+
+const bitmapOf = (width: number, height: number): ImageBitmap => {
+  const image = { height, width };
+  if (!isBitmap(image)) {
+    throw new Error("not a bitmap");
+  }
+  return image;
+};
 
 const run = async (
   width: number,
@@ -465,5 +477,247 @@ describe("a canvas that cannot draw", () => {
     await expect(painted(10, 10)).rejects.toThrow("blank");
     vi.unstubAllGlobals();
     expect(draws).toHaveLength(0);
+  });
+});
+
+const deferredReply = () => {
+  const replies: ((value?: unknown) => void)[] = [];
+  const answer = async (): Promise<unknown> => {
+    const { promise, resolve } = deferred<unknown>();
+    replies.push(resolve);
+    return await promise;
+  };
+  return { answer, replies };
+};
+
+const reply = { blob: new Blob(["x"], { type: "image/jpeg" }), index: 0 };
+
+const inTurn = async () => {
+  vi.resetModules();
+  const worker = await import("../../src/dom/worker");
+  const media = await import("../../src/dom/media");
+  const { exportImage: start } = await import("../../src/dom/export");
+  await import("../../src/dom/render");
+  const { answer, replies } = deferredReply();
+  vi.mocked(worker.via).mockReset();
+  vi.mocked(worker.via).mockImplementation(answer);
+  const image = bitmapOf(400, 300);
+  const cropper = createCropper({ clock: fakeClock().clock, image });
+  const loaded: LoadedImage = {
+    animated: false,
+    height: 300,
+    id: 1,
+    mime: "image/jpeg",
+    preview: image,
+    source: new Blob(["x"], { type: "image/svg+xml" }),
+    width: 400,
+  };
+  const go = async (
+    options: { signal?: AbortSignal; colorSpace?: "display-p3" } = {},
+    photo = loaded
+  ): Promise<ExportResult> => await start(cropper, photo, options);
+  return { go, loaded, media, replies, via: worker.via };
+};
+
+const flushed = async (): Promise<void> => {
+  await vi.advanceTimersByTimeAsync(0);
+};
+
+const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
+  await work.then(
+    () => "resolved",
+    (error: unknown) =>
+      error instanceof Error && "code" in error ? error.code : error
+  );
+
+describe("exports in turn", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("runs one export at a time, in order", async () => {
+    vi.useRealTimers();
+    const { go, replies } = await inTurn();
+    const all = [go(), go(), go()];
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(1);
+    });
+    replies[0]?.(reply);
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(2);
+    });
+    replies[1]?.(reply);
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(3);
+    });
+    replies[2]?.(reply);
+    await expect(Promise.all(all)).resolves.toHaveLength(3);
+  });
+
+  it("drops an aborted export from the line at once", async () => {
+    vi.useRealTimers();
+    const { go, replies, via: posted } = await inTurn();
+    const first = go();
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(1);
+    });
+    const controller = new AbortController();
+    const second = go({ signal: controller.signal });
+    const third = go();
+    controller.abort();
+    await expect(codeOf(second)).resolves.toBe("aborted");
+    replies[0]?.(reply);
+    await first;
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(2);
+    });
+    replies[1]?.(reply);
+    await third;
+    expect(posted).toHaveBeenCalledTimes(2);
+  });
+
+  it("holds the next export back until an aborted one has ended", async () => {
+    vi.useRealTimers();
+    const { go, replies } = await inTurn();
+    const controller = new AbortController();
+    const first = go({ signal: controller.signal });
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(1);
+    });
+    const second = go();
+    controller.abort();
+    await expect(codeOf(first)).resolves.toBe("aborted");
+    await delay(20);
+    expect(replies).toHaveLength(1);
+    replies[0]?.(reply);
+    await vi.waitFor(() => {
+      expect(replies).toHaveLength(2);
+    });
+    replies[1]?.(reply);
+    await second;
+  });
+
+  it("lets the next export run once a hung one times out", async () => {
+    const { go, replies } = await inTurn();
+    const first = codeOf(go());
+    const second = go();
+    await flushed();
+    await vi.advanceTimersByTimeAsync(30_001);
+    await expect(first).resolves.toBe("timeout");
+    expect(replies).toHaveLength(2);
+    replies[1]?.(reply);
+    await second;
+  });
+
+  it("does not count the wait in line against the time limit", async () => {
+    const { go, replies } = await inTurn();
+    const first = go();
+    const second = codeOf(go());
+    await flushed();
+    await vi.advanceTimersByTimeAsync(25_000);
+    replies[0]?.(reply);
+    await first;
+    await vi.advanceTimersByTimeAsync(25_000);
+    replies[1]?.(reply);
+    await expect(second).resolves.toBe("resolved");
+  });
+
+  it("rejects as aborted when another photo's plan is in the cropper", async () => {
+    vi.useRealTimers();
+    const { go, loaded, via: posted } = await inTurn();
+    await expect(codeOf(go({}, { ...loaded, width: 900 }))).resolves.toBe(
+      "aborted"
+    );
+    expect(posted).not.toHaveBeenCalled();
+  });
+
+  it("rejects as aborted when a bitmap source closed while it waited", async () => {
+    vi.useRealTimers();
+    const { go, loaded, via: posted } = await inTurn();
+    const source = bitmapOf(0, 0);
+    await expect(codeOf(go({}, { ...loaded, source }))).resolves.toBe(
+      "aborted"
+    );
+    expect(posted).not.toHaveBeenCalled();
+  });
+});
+
+const element = {
+  naturalHeight: 300,
+  naturalWidth: 400,
+  removeAttribute: noop,
+};
+
+const isElement = (value: unknown): value is HTMLImageElement =>
+  value === element;
+
+const shownBlobs = (): Blob[] => {
+  const blobs: Blob[] = [];
+  fakeCanvas();
+  vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+    if (blob instanceof Blob) {
+      blobs.push(blob);
+    }
+    return "blob:x";
+  });
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation(noop);
+  return blobs;
+};
+
+const opened = (): HTMLImageElement => {
+  if (!isElement(element)) {
+    throw new Error("not an element");
+  }
+  return element;
+};
+
+describe("a display-p3 export", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("hands the img the type read from the bytes", async () => {
+    const blobs = shownBlobs();
+    const { go, media } = await inTurn();
+    vi.mocked(media.loadElement).mockResolvedValue(opened());
+    await go({ colorSpace: "display-p3" });
+    expect(blobs.map((blob) => blob.type)).toStrictEqual(["image/jpeg"]);
+  });
+
+  it("rejects on abort during the decode and paints nothing after", async () => {
+    shownBlobs();
+    const { go, media } = await inTurn();
+    const { promise, resolve } = deferred<HTMLImageElement>();
+    vi.mocked(media.loadElement).mockReturnValue(promise);
+    const controller = new AbortController();
+    const job = go({ colorSpace: "display-p3", signal: controller.signal });
+    await vi.waitFor(() => {
+      expect(media.loadElement).toHaveBeenCalledOnce();
+    });
+    const { draws } = fakeCanvas();
+    controller.abort();
+    await expect(codeOf(job)).resolves.toBe("aborted");
+    resolve(opened());
+    await delay(10);
+    expect(draws).toHaveLength(0);
+  });
+
+  it("times out when the decode never ends", async () => {
+    shownBlobs();
+    const { go, media } = await inTurn();
+    vi.mocked(media.loadElement).mockReturnValue(
+      deferred<HTMLImageElement>().promise
+    );
+    vi.useFakeTimers();
+    const job = codeOf(go({ colorSpace: "display-p3" }));
+    await vi.advanceTimersByTimeAsync(30_001);
+    await expect(job).resolves.toBe("timeout");
   });
 });

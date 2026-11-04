@@ -102,7 +102,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "18702 B",
+      "limit": "18722 B",
       "entry": [
         "index"
       ]
@@ -117,7 +117,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "17101 B",
+      "limit": "17114 B",
       "entry": [
         "index"
       ]
@@ -132,13 +132,13 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "21219 B"
+      "limit": "21342 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "4105 B",
+      "limit": "4125 B",
       "entry": [
         "index"
       ]
@@ -147,7 +147,7 @@
       "name": "exportCrop",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "300 B",
+      "limit": "584 B",
       "entry": [
         "index"
       ]
@@ -156,7 +156,7 @@
       "name": "exportCrop total (with render chunk)",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "3458 B"
+      "limit": "3766 B"
     },
     {
       "name": "loadImage",
@@ -171,7 +171,7 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3256 B"
+      "limit": "3481 B"
     },
     {
       "name": "lazy chunk dom/svg",
@@ -189,7 +189,7 @@
       "name": "lazy chunk dom/sharpen",
       "path": "dist/dom/sharpen.js",
       "import": "*",
-      "limit": "2383 B"
+      "limit": "2391 B"
     }
   ]
 }

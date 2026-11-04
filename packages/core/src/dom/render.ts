@@ -6,11 +6,13 @@ import type { ExportOptions, ExportResult, LoadedImage } from "./image";
 import { loadElement } from "./media";
 import { renderKernel } from "./render-kernel";
 import type { RenderJob, RenderKernel, RenderReply } from "./render-kernel";
-import { TIMEOUT, withTimeout } from "./turn";
-import { lane, via } from "./worker";
+import { TIMEOUT, aborted, withTimeout } from "./turn";
+import { gate, lane, via } from "./worker";
 import type { Lane } from "./worker";
 
 const QUALITY = 0.9;
+
+const exportTurn = gate(1);
 
 let renderer: Lane<RenderKernel> | undefined;
 
@@ -55,6 +57,12 @@ export const exportImage = async (
   if (!state || !base) {
     throw new ZrizError("no-image", "zriz: nothing to export yet");
   }
+  if (
+    state.image.width !== image.width ||
+    state.image.height !== image.height
+  ) {
+    throw aborted();
+  }
   const type =
     options.type ?? (options.shape === "circle" ? "image/png" : "image/jpeg");
   const first = firstScale(base, options, type);
@@ -68,21 +76,29 @@ export const exportImage = async (
   }));
   const url =
     options.colorSpace === "display-p3" && image.source instanceof Blob
-      ? URL.createObjectURL(image.source)
+      ? URL.createObjectURL(
+          new Blob([image.source], { type: image.mime ?? "" })
+        )
       : null;
-  let element: HTMLImageElement | null = null;
-  try {
-    element = url === null ? null : await loadElement(url);
-    const source = element
-      ? {
-          drawable: element,
-          height: element.naturalHeight,
-          width: element.naturalWidth,
-        }
-      : image.source;
-    const render = element ? renderHere : renderOff;
-    const { blob, index } = await withTimeout(
-      render({
+  let over = false;
+  const work = async (): Promise<RenderReply> => {
+    if ("width" in image.source && image.source.width === 0) {
+      throw aborted();
+    }
+    const element = url === null ? null : await loadElement(url);
+    try {
+      if (over) {
+        throw aborted();
+      }
+      const source = element
+        ? {
+            drawable: element,
+            height: element.naturalHeight,
+            width: element.naturalWidth,
+          }
+        : image.source;
+      const render = element ? renderHere : renderOff;
+      return await render({
         circle: options.shape === "circle",
         colorSpace: options.colorSpace ?? "srgb",
         image: state.image,
@@ -90,8 +106,19 @@ export const exportImage = async (
         quality: options.quality ?? QUALITY,
         source,
         type,
-      }),
-      TIMEOUT * 2,
+      });
+    } finally {
+      element?.removeAttribute("src");
+    }
+  };
+  try {
+    const { blob, index } = await withTimeout(
+      exportTurn(
+        async () => await withTimeout(work(), TIMEOUT * 2, undefined),
+        TIMEOUT * 2,
+        options.signal
+      ),
+      Number.POSITIVE_INFINITY,
       options.signal
     );
     const crop = crops[index] ?? base;
@@ -106,9 +133,9 @@ export const exportImage = async (
   } catch (error) {
     throw toZriz(error, image.mime);
   } finally {
+    over = true;
     if (url !== null) {
       URL.revokeObjectURL(url);
     }
-    element?.removeAttribute("src");
   }
 };
