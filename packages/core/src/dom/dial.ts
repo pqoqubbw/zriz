@@ -1,8 +1,11 @@
 import type { Cropper } from "../cropper";
 import { rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
+import type { KeyHandlers } from "./controls";
 import { holdCursor } from "./cursor";
-import { capture, snap } from "./view";
+import { bindPointers, capture, targetOf } from "./input";
+import type { PointerHandlers } from "./input";
+import { snap } from "./view";
 
 export interface DialOptions {
   gain?: number | undefined;
@@ -13,16 +16,7 @@ export interface DialOptions {
   format?: Intl.NumberFormatOptions | undefined;
 }
 
-export interface DialHandlers {
-  onPointerDown: (event: PointerEvent) => void;
-  onPointerMove: (event: PointerEvent) => void;
-  onPointerUp: (event: PointerEvent) => void;
-  onPointerCancel: (event: PointerEvent) => void;
-  onLostPointerCapture: (event: PointerEvent) => void;
-  onKeyDown: (event: KeyboardEvent) => void;
-  onKeyUp: (event: KeyboardEvent) => void;
-  onBlur: (event: FocusEvent) => void;
-}
+export type DialHandlers = KeyHandlers & PointerHandlers;
 
 export interface DialState {
   overshoot: () => number;
@@ -90,17 +84,6 @@ export const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
 
 const clamp = (value: number, limit: number): number =>
   Math.min(Math.max(value, -limit), limit);
-
-const targetOf = (
-  event: Event,
-  element?: () => Element | null
-): Element | null => {
-  const own = element?.();
-  if (own) {
-    return own;
-  }
-  return event.currentTarget instanceof Element ? event.currentTarget : null;
-};
 
 export const dialHandlers = (
   cropper: Cropper,
@@ -291,11 +274,7 @@ export const dialHandlers = (
       finish(event, 0);
     },
     onPointerDown(event) {
-      if (
-        pointer !== null ||
-        (event.pointerType === "mouse" && event.button !== 0) ||
-        !cropper.getCropState()
-      ) {
+      if (pointer !== null || event.button !== 0 || !cropper.getCropState()) {
         return;
       }
       stopMotion?.();
@@ -398,16 +377,7 @@ export const bindDial = (
   element.setAttribute("role", "slider");
   element.setAttribute("aria-orientation", "horizontal");
   element.tabIndex = 0;
-  const events = [
-    ["pointerdown", handlers.onPointerDown],
-    ["pointermove", handlers.onPointerMove],
-    ["pointerup", handlers.onPointerUp],
-    ["pointercancel", handlers.onPointerCancel],
-    ["lostpointercapture", handlers.onLostPointerCapture],
-  ] as const;
-  for (const [type, handler] of events) {
-    element.addEventListener(type, handler);
-  }
+  const offPointers = bindPointers(element, handlers);
   element.addEventListener("keydown", handlers.onKeyDown);
   element.addEventListener("keyup", handlers.onKeyUp);
   element.addEventListener("blur", handlers.onBlur);
@@ -418,9 +388,7 @@ export const bindDial = (
   const offChange = dial.onChange(sync);
   const offAria = dialAria(cropper, element, options);
   return () => {
-    for (const [type, handler] of events) {
-      element.removeEventListener(type, handler);
-    }
+    offPointers();
     element.removeEventListener("keydown", handlers.onKeyDown);
     element.removeEventListener("keyup", handlers.onKeyUp);
     element.removeEventListener("blur", handlers.onBlur);

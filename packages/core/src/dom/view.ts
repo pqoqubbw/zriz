@@ -83,16 +83,6 @@ export interface View {
   destroy: () => void;
 }
 
-export const capture = (element: Element, id: number): void => {
-  try {
-    element.setPointerCapture(id);
-  } catch (error) {
-    if (!(error instanceof DOMException)) {
-      throw error;
-    }
-  }
-};
-
 export const snap = (value: number, dpr: number): number =>
   Math.round(value * dpr) / dpr;
 

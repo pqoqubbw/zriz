@@ -9,7 +9,11 @@ import {
   bindImage,
   bindMask,
   bindViewport,
+  dialHandlers,
+  handleHandlers,
   viewOf,
+  viewportController,
+  zoomHandlers,
 } from "../../src/dom";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
@@ -131,6 +135,85 @@ const wheel = (fixture: Fixture, init: WheelEventInit): boolean => {
     })
   );
 };
+
+const pressers: Record<
+  string,
+  (cropper: Cropper, element: HTMLElement) => (event: PointerEvent) => void
+> = {
+  dial: (cropper, element) =>
+    dialHandlers(cropper, {}, () => element).onPointerDown,
+  handle: (cropper, element) =>
+    handleHandlers(cropper, "top-left", () => element).onPointerDown,
+  viewport: (cropper, element) => {
+    const controller = viewportController(cropper);
+    controller.setElement(element);
+    cleanups.push(() => {
+      controller.destroy();
+    });
+    return controller.handlers.onPointerDown;
+  },
+  zoom: (cropper, element) =>
+    zoomHandlers(cropper, {}, () => element).onPointerDown,
+};
+
+const startsGesture = (part: string, init: PointerEventInit): boolean => {
+  const cropper = createCropper({ image: photo });
+  const element = document.createElement("div");
+  element.style.cssText = "width:400px;height:300px;";
+  document.body.append(element);
+  cleanups.push(() => {
+    cropper.destroy();
+    element.remove();
+  });
+  let started = false;
+  cropper.on("gesturestart", () => {
+    started = true;
+  });
+  pressers[part]?.(
+    cropper,
+    element
+  )(
+    new PointerEvent("pointerdown", {
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+      ...init,
+    })
+  );
+  return started;
+};
+
+describe("which presses start a gesture", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it.each(["dial", "handle", "viewport", "zoom"])(
+    "ignores every button but the main one on the %s",
+    (part) => {
+      for (const init of [
+        { button: 2, buttons: 2, pointerType: "mouse" },
+        { button: 2, buttons: 2, pointerType: "pen" },
+        { button: 5, buttons: 32, pointerType: "pen" },
+      ]) {
+        expect(startsGesture(part, init)).toBeFalsy();
+      }
+    }
+  );
+
+  it.each(["dial", "handle", "viewport", "zoom"])(
+    "takes the main button of any pointer on the %s",
+    (part) => {
+      for (const pointerType of ["mouse", "pen", "touch"]) {
+        expect(
+          startsGesture(part, { button: 0, buttons: 1, pointerType })
+        ).toBeTruthy();
+      }
+    }
+  );
+});
 
 describe("dom binders", () => {
   afterEach(() => {

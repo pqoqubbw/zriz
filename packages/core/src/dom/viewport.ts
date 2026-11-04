@@ -10,7 +10,9 @@ import { imagePlanes, insidePlanes, panPlanes } from "../geometry/planes";
 import { sourceToWorking, workingToSource } from "../geometry/state";
 import type { CropState, Point } from "../geometry/types";
 import { holdCursor } from "./cursor";
-import { capture, viewOf } from "./view";
+import { bindPointers, capture } from "./input";
+import type { PointerHandlers } from "./input";
+import { viewOf } from "./view";
 import type { Layout, View } from "./view";
 
 export type WheelMode = "pan" | "zoom" | "none";
@@ -20,13 +22,7 @@ export interface ViewportOptions {
   rotateGesture?: boolean | undefined;
 }
 
-export interface ViewportHandlers {
-  onPointerDown: (event: PointerEvent) => void;
-  onPointerMove: (event: PointerEvent) => void;
-  onPointerUp: (event: PointerEvent) => void;
-  onPointerCancel: (event: PointerEvent) => void;
-  onLostPointerCapture: (event: PointerEvent) => void;
-}
+export type ViewportHandlers = PointerHandlers;
 
 export interface ViewportController {
   handlers: ViewportHandlers;
@@ -408,8 +404,7 @@ export const viewportController = (
     onPointerDown(event) {
       if (
         view.claimed(event) ||
-        (event.pointerType === "mouse" && event.button !== 0) ||
-        Math.floor(event.buttons / 32) % 2 === 1 ||
+        event.button !== 0 ||
         pointers.size >= 2 ||
         !element ||
         !cropper.getCropState()
@@ -734,22 +729,10 @@ export const bindViewport = (
   options?: ViewportOptions
 ): (() => void) => {
   const controller = viewportController(cropper, options);
-  const { handlers } = controller;
-  element.addEventListener("pointerdown", handlers.onPointerDown);
-  element.addEventListener("pointermove", handlers.onPointerMove);
-  element.addEventListener("pointerup", handlers.onPointerUp);
-  element.addEventListener("pointercancel", handlers.onPointerCancel);
-  element.addEventListener("lostpointercapture", handlers.onLostPointerCapture);
+  const offPointers = bindPointers(element, controller.handlers);
   controller.setElement(element);
   return () => {
-    element.removeEventListener("pointerdown", handlers.onPointerDown);
-    element.removeEventListener("pointermove", handlers.onPointerMove);
-    element.removeEventListener("pointerup", handlers.onPointerUp);
-    element.removeEventListener("pointercancel", handlers.onPointerCancel);
-    element.removeEventListener(
-      "lostpointercapture",
-      handlers.onLostPointerCapture
-    );
+    offPointers();
     controller.destroy();
   };
 };

@@ -4,8 +4,10 @@ import type { CropHandle } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
 import type { Crop, HalfPlane, Point, Rect } from "../geometry/types";
 import { holdCursor } from "./cursor";
+import { bindPointers, capture, targetOf } from "./input";
+import type { PointerHandlers } from "./input";
 import { setCropShape } from "./shape";
-import { capture, cssMatrix, viewOf } from "./view";
+import { cssMatrix, viewOf } from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
 export type MaskShape = "rect" | "circle";
@@ -223,13 +225,7 @@ export const bindArea = (
   });
 };
 
-export interface HandleHandlers {
-  onPointerDown: (event: PointerEvent) => void;
-  onPointerMove: (event: PointerEvent) => void;
-  onPointerUp: (event: PointerEvent) => void;
-  onPointerCancel: (event: PointerEvent) => void;
-  onLostPointerCapture: (event: PointerEvent) => void;
-}
+export type HandleHandlers = PointerHandlers;
 
 interface HandleDrag {
   id: number;
@@ -338,7 +334,7 @@ export const handleHandlers = (
       if (
         drag ||
         !state ||
-        (event.pointerType === "mouse" && event.button !== 0) ||
+        event.button !== 0 ||
         !cropper.begin("resize", event, owner)
       ) {
         return;
@@ -359,9 +355,7 @@ export const handleHandlers = (
         start,
       };
       globalThis.addEventListener("keydown", onEscape, true);
-      const target =
-        element?.() ??
-        (event.currentTarget instanceof Element ? event.currentTarget : null);
+      const target = targetOf(event, element);
       if (target) {
         capture(target, event.pointerId);
         releaseCursor = holdCursor(target);
@@ -411,21 +405,7 @@ export const bindHandle = (
   element.style.touchAction = "none";
   element.style.setProperty("-webkit-tap-highlight-color", "transparent");
   element.dataset.edge = edge;
-  element.addEventListener("pointerdown", handlers.onPointerDown);
-  element.addEventListener("pointermove", handlers.onPointerMove);
-  element.addEventListener("pointerup", handlers.onPointerUp);
-  element.addEventListener("pointercancel", handlers.onPointerCancel);
-  element.addEventListener("lostpointercapture", handlers.onLostPointerCapture);
-  return () => {
-    element.removeEventListener("pointerdown", handlers.onPointerDown);
-    element.removeEventListener("pointermove", handlers.onPointerMove);
-    element.removeEventListener("pointerup", handlers.onPointerUp);
-    element.removeEventListener("pointercancel", handlers.onPointerCancel);
-    element.removeEventListener(
-      "lostpointercapture",
-      handlers.onLostPointerCapture
-    );
-  };
+  return bindPointers(element, handlers);
 };
 
 const reasonAttribute: Partial<Record<string, string>> = {

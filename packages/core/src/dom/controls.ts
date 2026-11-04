@@ -1,6 +1,7 @@
 import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
-import { capture } from "./view";
+import { capture, targetOf } from "./input";
+import type { PointerHandlers } from "./input";
 
 export interface KeyHandlers {
   onKeyDown: (event: KeyboardEvent) => void;
@@ -8,13 +9,7 @@ export interface KeyHandlers {
   onBlur: (event: FocusEvent) => void;
 }
 
-export interface ZoomHandlers extends KeyHandlers {
-  onPointerDown: (event: PointerEvent) => void;
-  onPointerMove: (event: PointerEvent) => void;
-  onPointerUp: (event: PointerEvent) => void;
-  onPointerCancel: (event: PointerEvent) => void;
-  onLostPointerCapture: (event: PointerEvent) => void;
-}
+export type ZoomHandlers = KeyHandlers & PointerHandlers;
 
 export interface ZoomOptions {
   max?: number | undefined;
@@ -137,11 +132,8 @@ export const zoomHandlers = (
   let pointer: number | null = null;
   const max = (): number => options.max ?? cropper.getMaxZoom();
   const sign = (): number => (options.dir === "rtl" ? -1 : 1);
-  const target = (event: Event): Element | null =>
-    element?.() ??
-    (event.currentTarget instanceof Element ? event.currentTarget : null);
   const fromPointer = (event: PointerEvent): void => {
-    const box = target(event)?.getBoundingClientRect();
+    const box = targetOf(event, element)?.getBoundingClientRect();
     if (!box || box.width === 0) {
       return;
     }
@@ -188,13 +180,13 @@ export const zoomHandlers = (
     onPointerDown(event) {
       if (
         pointer !== null ||
-        (event.pointerType === "mouse" && event.button !== 0) ||
+        event.button !== 0 ||
         !cropper.begin("zoom-control", event, owner)
       ) {
         return;
       }
       pointer = event.pointerId;
-      const own = target(event);
+      const own = targetOf(event, element);
       if (own) {
         capture(own, event.pointerId);
       }
