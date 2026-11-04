@@ -100,31 +100,6 @@ export const fitPlacement = (layout: Layout, state: CropState): Placement => {
   };
 };
 
-const inward = (low: number, high: number, dpr: number): [number, number] => [
-  Math.ceil(low * dpr - 1e-6) / dpr,
-  Math.max(Math.floor(high * dpr + 1e-6), Math.ceil(low * dpr - 1e-6)) / dpr,
-];
-
-export const cropBox = (
-  state: CropState,
-  placement: Placement,
-  dpr: number
-): Box => {
-  const { offset, scale } = placement;
-  const { crop } = state;
-  const [x0, x1] = inward(
-    offset.x + scale * (crop.x - crop.width / 2),
-    offset.x + scale * (crop.x + crop.width / 2),
-    dpr
-  );
-  const [y0, y1] = inward(
-    offset.y + scale * (crop.y - crop.height / 2),
-    offset.y + scale * (crop.y + crop.height / 2),
-    dpr
-  );
-  return { height: y1 - y0, width: x1 - x0, x: x0, y: y0 };
-};
-
 const NO_SHIFT: Point = { x: 0, y: 0 };
 
 export const imageMatrix = (

@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import { createCropper } from "../../src";
 import {
-  cropBox,
   cssMatrix,
   fitPlacement,
   imageMatrix,
   viewOf,
 } from "../../src/dom/view";
-import type { Layout } from "../../src/dom/view";
+import type { Box, Layout, Placement } from "../../src/dom/view";
+import type { CropState } from "../../src/geometry";
 import {
   applyHomography,
   cropCorners,
@@ -29,11 +29,18 @@ const layoutArb = record({
   width: double({ max: 2000, min: 100, noNaN: true }),
 }).map((l): Layout => ({ ...l, dpr: 1e9 }));
 
+const cropBox = (state: CropState, { offset, scale }: Placement): Box => ({
+  height: scale * state.crop.height,
+  width: scale * state.crop.width,
+  x: offset.x + scale * (state.crop.x - state.crop.width / 2),
+  y: offset.y + scale * (state.crop.y - state.crop.height / 2),
+});
+
 describe("view geometry", () => {
   it("fits the crop inside the inset box, centred", () => {
     fcAssert(
       property(stateArb, layoutArb, (state, layout) => {
-        const box = cropBox(state, fitPlacement(layout, state), layout.dpr);
+        const box = cropBox(state, fitPlacement(layout, state));
         const innerWidth =
           layout.width - layout.inset.left - layout.inset.right;
         const innerHeight =
@@ -68,7 +75,7 @@ describe("view geometry", () => {
             },
           };
           const placement = fitPlacement(layout, state);
-          const box = cropBox(state, placement, layout.dpr);
+          const box = cropBox(state, placement);
           const matrix = imageMatrix(state, placement);
           const expected = [
             { x: box.x, y: box.y },
@@ -91,49 +98,6 @@ describe("view geometry", () => {
     );
   });
 
-  it("snaps the crop box inward, so the hole never outgrows the photo", () => {
-    fcAssert(
-      property(
-        stateArb,
-        layoutArb,
-        double({ max: 4, min: 1, noNaN: true }),
-        (state, base, dpr) => {
-          const layout = { ...base, dpr };
-          const exact = cropBox(state, fitPlacement(layout, state), 1e9);
-          const box = cropBox(state, fitPlacement(layout, state), dpr);
-          expect(box.x).toBeGreaterThanOrEqual(exact.x - 1e-6);
-          expect(box.y).toBeGreaterThanOrEqual(exact.y - 1e-6);
-          expect(box.x + box.width).toBeLessThanOrEqual(
-            exact.x + exact.width + 1e-6
-          );
-          expect(box.y + box.height).toBeLessThanOrEqual(
-            exact.y + exact.height + 1e-6
-          );
-        }
-      )
-    );
-  });
-
-  it("snaps the crop box to device pixels", () => {
-    const state = createCropper({
-      clock: fakeClock().clock,
-      image: { height: 777, width: 1001 },
-    }).getCropState();
-    if (!state) {
-      throw new Error("no state");
-    }
-    const layout = {
-      dpr: 3,
-      height: 500.3,
-      inset: { bottom: 11.1, left: 13.7, right: 7.2, top: 9.9 },
-      width: 333.3,
-    };
-    const box = cropBox(state, fitPlacement(layout, state), 3);
-    for (const v of [box.x, box.y, box.x + box.width, box.y + box.height]) {
-      expect(Math.abs(v * 3 - Math.round(v * 3))).toBeLessThan(1e-9);
-    }
-  });
-
   it("writes a 2D matrix without perspective and a 3D one with it", () => {
     expect(cssMatrix([1, 0, 5, 0, 1, 6, 0, 0, 1])).toBe("matrix(1,0,0,1,5,6)");
     expect(cssMatrix([1, 0, 5, 0, 1, 6, 0.001, 0, 1])).toMatch(/^matrix3d\(/u);
@@ -141,6 +105,28 @@ describe("view geometry", () => {
 });
 
 describe("view", () => {
+  it("snaps the published crop box to device pixels", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 777, width: 1001 },
+    });
+    const view = viewOf(cropper);
+    view.setLayout({
+      dpr: 3,
+      height: 500.3,
+      inset: { bottom: 11.1, left: 13.7, right: 7.2, top: 9.9 },
+      width: 333.3,
+    });
+    const box = view.frame()?.rect;
+    if (!box) {
+      throw new Error("no frame");
+    }
+    for (const v of [box.x, box.y, box.x + box.width, box.y + box.height]) {
+      expect(Math.abs(v * 3 - Math.round(v * 3))).toBeLessThan(1e-9);
+    }
+  });
+
   it("publishes a frame when the layout arrives and settles overscroll", () => {
     const time = fakeClock();
     const cropper = createCropper({

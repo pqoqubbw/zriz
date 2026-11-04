@@ -51,14 +51,7 @@ export type {
   HandleHandlers,
   MaskShape,
 } from "./parts";
-export {
-  cssMatrix,
-  cropBox,
-  fitPlacement,
-  imageMatrix,
-  snap,
-  viewOf,
-} from "./view";
+export { cssMatrix, fitPlacement, imageMatrix, snap, viewOf } from "./view";
 export type {
   Box,
   Chrome,
