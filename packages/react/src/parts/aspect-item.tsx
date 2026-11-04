@@ -4,9 +4,9 @@ import { sameAspect } from "@zriz/core";
 import type { Aspect } from "@zriz/core";
 import { forwardRef, useContext } from "react";
 
-import { AspectGroupContext } from "../buttons-context";
+import { AspectGroupContext } from "../aspect-group-context";
 import { useCropperContext } from "../context";
-import { RootContextValue } from "../part";
+import { RootContext } from "../part";
 import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
@@ -27,7 +27,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
 >(function AspectItem({ value, disabled: off, ...props }, ref) {
   const cropper = useCropperContext();
   const inGroup = useContext(AspectGroupContext);
-  const { shape } = useContext(RootContextValue);
+  const { shape } = useContext(RootContext);
   const disabled = off === true || (shape === "circle" && value !== 1);
   const checked = useCropperState((s) => sameAspect(s.aspect, value));
   const rootDisabled = useAriaDisabled();

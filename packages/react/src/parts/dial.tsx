@@ -14,7 +14,7 @@ import {
 
 import { useCropperContext } from "../context";
 import {
-  RootContextValue,
+  RootContext,
   keepStyle,
   nativeProps,
   useElementBox,
@@ -50,7 +50,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   DialProps
 >(function Dial({ format, ...props }, ref) {
   const cropper = useCropperContext();
-  const { dir, locale } = useContext(RootContextValue);
+  const { dir, locale } = useContext(RootContext);
   const box = useElementBox();
   const handlers = useMemo(
     () => dialHandlers(cropper, { dir }, box.get),

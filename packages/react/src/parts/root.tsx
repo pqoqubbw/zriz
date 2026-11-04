@@ -24,13 +24,13 @@ import type { Ref, RefCallback } from "react";
 import { CropperContext } from "../context";
 import { attach, mergeRefs } from "../merge-props";
 import {
-  RootContextValue,
+  RootContext,
   useElementBox,
   useHold,
   useIsomorphicLayoutEffect,
   useLatest,
 } from "../part";
-import type { ElementBox, Part, PartProps, RootContext } from "../part";
+import type { ElementBox, Part, PartProps, RootContextValue } from "../part";
 import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { usePart } from "../use-render";
@@ -232,7 +232,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       }
     };
   }, [box, cropper, external]);
-  const context = useMemo<RootContext>(
+  const context = useMemo<RootContextValue>(
     () => ({ box, dir, instructions, locale, shape }),
     [box, dir, instructions, locale, shape]
   );
@@ -252,9 +252,9 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   );
   return (
     <CropperContext.Provider value={cropper}>
-      <RootContextValue.Provider value={context}>
+      <RootContext.Provider value={context}>
         {part}
-      </RootContextValue.Provider>
+      </RootContext.Provider>
     </CropperContext.Provider>
   );
 });

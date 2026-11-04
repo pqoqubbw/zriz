@@ -4,7 +4,7 @@ import { forwardRef, useContext } from "react";
 
 import { useCropperContext } from "../context";
 import {
-  RootContextValue,
+  RootContext,
   useElementBox,
   useIsomorphicLayoutEffect,
   useMergedRef,
@@ -26,7 +26,7 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
   const cropper = useCropperContext();
   const pristine = useCropperState((s) => s.pristine);
   const disabled = useAriaDisabled();
-  const { box: root } = useContext(RootContextValue);
+  const { box: root } = useContext(RootContext);
   const box = useElementBox();
   const focused = box.get()?.matches(":focus") === true;
   useIsomorphicLayoutEffect(() => {

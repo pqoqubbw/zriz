@@ -6,7 +6,7 @@ import { forwardRef, useContext, useCallback, useMemo } from "react";
 
 import { useCropperContext } from "../context";
 import {
-  RootContextValue,
+  RootContext,
   nativeProps,
   useMergedRef,
   useRelease,
@@ -33,7 +33,7 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   AreaProps
 >(function Area({ liveVariables = false, ...props }, ref) {
   const cropper = useCropperContext();
-  const { shape, instructions } = useContext(RootContextValue);
+  const { shape, instructions } = useContext(RootContext);
   const interacting = useCropperState((s) => s.interacting !== null);
   const keys = useMemo(() => areaKeyHandlers(cropper), [cropper]);
   useRelease(keys);

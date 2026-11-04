@@ -6,7 +6,7 @@ import { forwardRef, useContext, useCallback, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
 import {
-  RootContextValue,
+  RootContext,
   keepStyle,
   nativeProps,
   useElementBox,
@@ -45,7 +45,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   ZoomProps
 >(function Zoom({ max, format, ...props }, ref) {
   const cropper = useCropperContext();
-  const { dir, locale } = useContext(RootContextValue);
+  const { dir, locale } = useContext(RootContext);
   const box = useElementBox();
   const latest = useLatest({ dir, max });
   const handlers = useMemo(

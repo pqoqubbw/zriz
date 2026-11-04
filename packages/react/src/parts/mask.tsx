@@ -4,7 +4,7 @@ import { bindMask } from "@zriz/core/dom";
 import { forwardRef, useContext, useCallback } from "react";
 
 import { useCropperContext } from "../context";
-import { RootContextValue, useMergedRef } from "../part";
+import { RootContext, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
@@ -19,7 +19,7 @@ export const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
   MaskProps
 >(function Mask(props, ref) {
   const cropper = useCropperContext();
-  const { shape } = useContext(RootContextValue);
+  const { shape } = useContext(RootContext);
   const own = useCallback(
     (element: HTMLDivElement) => bindMask(cropper, element, shape),
     [cropper, shape]

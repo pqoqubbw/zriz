@@ -2,7 +2,7 @@
 
 import { forwardRef, useContext } from "react";
 
-import { RootContextValue } from "../part";
+import { RootContext } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
@@ -12,7 +12,7 @@ export const Instructions: Part<InstructionsProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
   InstructionsProps
 >(function Instructions(props, ref) {
-  const { instructions } = useContext(RootContextValue);
+  const { instructions } = useContext(RootContext);
   const own = { ...props, id: instructions };
   return usePart(
     "div",

@@ -42,7 +42,7 @@ export type Part<P, E> = ForwardRefExoticComponent<
   PropsWithoutRef<P> & RefAttributes<E>
 >;
 
-export interface RootContext {
+export interface RootContextValue {
   box?: ElementBox;
   shape: "rect" | "circle";
   instructions: string | undefined;
@@ -50,8 +50,8 @@ export interface RootContext {
   locale: string | undefined;
 }
 
-export const RootContextValue: React.Context<RootContext> =
-  createContext<RootContext>({
+export const RootContext: React.Context<RootContextValue> =
+  createContext<RootContextValue>({
     dir: "ltr",
     instructions: undefined,
     locale: undefined,
