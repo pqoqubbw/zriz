@@ -428,10 +428,15 @@ export const handleHandlers = (
       if (cropper.rebase(owner)) {
         view.release();
         const fresh = cropper.getCropState();
-        drag = fresh && grab(event, fresh, drag.handle);
+        const next = fresh && grab(event, fresh, drag.handle);
+        if (!next) {
+          lost(event);
+          return;
+        }
+        drag = next;
       }
       const state = cropper.getCropState();
-      if (!drag || !state) {
+      if (!state) {
         return;
       }
       const pointer = toWorking(event, drag.placement);

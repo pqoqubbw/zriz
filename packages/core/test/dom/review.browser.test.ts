@@ -756,4 +756,21 @@ describe("writes during a held gesture", () => {
     });
     expect(viewOf(r.cropper).chrome().transition).toBeNull();
   });
+
+  it("a photo removed under a held handle ends the drag and frees the page", () => {
+    const r = rig();
+    const sheets = document.adoptedStyleSheets.length;
+    fire(r.handle, "pointerdown", 10);
+    fire(r.handle, "pointermove", 0);
+    r.cropper.setImage(null);
+    fire(r.handle, "pointermove", 5);
+    expect(r.cropper.getState().interacting).toBeNull();
+    expect(document.adoptedStyleSheets).toHaveLength(sheets);
+    fire(r.handle, "pointerup", 5);
+    r.cropper.setImage({ height: 3000, width: 4000 });
+    r.time.frames(1);
+    fire(r.viewport, "pointerdown", 100);
+    expect(r.cropper.getState().interacting).toBe("pan");
+    fire(r.viewport, "pointerup", 100);
+  });
 });
