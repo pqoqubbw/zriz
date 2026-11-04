@@ -164,11 +164,11 @@ const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
   };
 
   sync();
-  const unsubscribe = cropper.subscribe(sync);
+  const offState = cropper.subscribe(sync);
 
   return () => {
     stop();
-    unsubscribe();
+    offState();
   };
 };
 

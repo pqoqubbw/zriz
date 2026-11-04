@@ -406,9 +406,9 @@ const viewOf = (cropper: Cropper): View => {
   let layout: Layout | null = null;
   let held: Placement | null = null;
   let pinned: Box | null = null;
-  let overscrollShift: Point = { x: 0, y: 0 };
+  let overscrollShift: Point = NO_SHIFT;
   let overscrollScale = 1;
-  let overscrollAnchor: Point = { x: 0, y: 0 };
+  let overscrollAnchor: Point = NO_SHIFT;
   let stopShift: (() => void) | null = null;
   let stopZoom: (() => void) | null = null;
   let stopTransition: (() => void) | null = null;
@@ -666,7 +666,7 @@ const viewOf = (cropper: Cropper): View => {
         Math.abs(x.velocity) < 1 &&
         Math.abs(y.velocity) < 1;
 
-      overscrollShift = done ? { x: 0, y: 0 } : { x: x.value, y: y.value };
+      overscrollShift = done ? NO_SHIFT : { x: x.value, y: y.value };
 
       if (done) {
         stopShift = null;
@@ -719,7 +719,7 @@ const viewOf = (cropper: Cropper): View => {
   };
 
   const offFrame = cropper.on("frame", publish);
-  const offChange = cropper.on("accept", (_, details) => {
+  const offAccept = cropper.on("accept", (_, details) => {
     const kind = TRANSITION_BY_REASON[details.reason];
     const from = last;
 
@@ -753,7 +753,7 @@ const viewOf = (cropper: Cropper): View => {
     stopShift = null;
     stopZoom?.();
     stopZoom = null;
-    overscrollShift = { x: 0, y: 0 };
+    overscrollShift = NO_SHIFT;
     overscrollScale = 1;
     markOverscroll();
     clearTimers();
@@ -777,7 +777,7 @@ const viewOf = (cropper: Cropper): View => {
     claim,
     destroy() {
       offFrame();
-      offChange();
+      offAccept();
       offStart();
       offEnd();
       offStop();
