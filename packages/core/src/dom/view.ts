@@ -8,9 +8,10 @@ import {
   isFlatPerspective,
   perspectiveHomography,
 } from "../geometry/perspective";
-import { linearTransform, sameFields } from "../geometry/state";
+import { linearTransform } from "../geometry/state";
 import type { CropState, Matrix3, Point, Size } from "../geometry/types";
 import { spring } from "../motion";
+import { sameFields } from "../same-fields";
 import type { Aspect } from "../value";
 import { claim, claimed } from "./input";
 

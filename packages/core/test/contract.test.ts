@@ -10,6 +10,7 @@ import {
 import type { Cropper, CropperEvents, CropperOptions } from "../src";
 import { areaKeyHandlers } from "../src/dom/controls";
 import { fitPlacement, viewOf } from "../src/dom/view";
+import * as geometry from "../src/geometry";
 import {
   applyHomography,
   dragHandle,
@@ -41,6 +42,12 @@ const stateOf = (cropper: Cropper) => {
   }
   return state;
 };
+
+describe("the geometry entry", () => {
+  it("keeps the shallow field compare to itself", () => {
+    expect(Object.keys(geometry)).not.toContain("sameFields");
+  });
+});
 
 describe("panBy", () => {
   it("moves by fractions of the photo's width and height", () => {

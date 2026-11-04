@@ -14,13 +14,13 @@ import {
   mirrorY,
   rotateLeft,
   rotateRight,
-  sameFields,
   setAngle,
   turnedSize,
 } from "./geometry/state";
 import type { CropState, HalfPlane, Point, Size } from "./geometry/types";
 import { frameClock } from "./motion";
 import type { Clock } from "./motion";
+import { sameFields } from "./same-fields";
 import {
   ROTATION_LIMIT,
   aspectRatio,
