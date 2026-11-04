@@ -5,6 +5,7 @@ import { imageOf, onImage } from "./image-store";
 import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
+import { whole } from "./media";
 import { TIMEOUT_MS, withTimeout } from "./turn";
 import { LAYER_BOX, cssMatrix, isAffine, viewOf } from "./view";
 import type { Layout, ViewFrame } from "./view";
@@ -32,13 +33,6 @@ const sameBox = (a: Layout, b: Layout): boolean =>
 
 const motionType = (image: LoadedImage): string =>
   image.mime === "image/jpeg" ? "image/jpeg" : "image/png";
-
-const whole = (image: LoadedImage): Region => ({
-  height: image.height,
-  width: image.width,
-  x: 0,
-  y: 0,
-});
 
 const takeFile = async (image: LoadedImage): Promise<string> => {
   const file = files.get(image) ?? {

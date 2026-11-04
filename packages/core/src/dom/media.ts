@@ -1,5 +1,13 @@
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
+import type { Region } from "./kernel";
+
+const whole = ({ height, width }: Size): Region => ({
+  height,
+  width,
+  x: 0,
+  y: 0,
+});
 
 const fitEdge = (size: Size, edge: number): Size => {
   const scale = Math.min(1, edge / Math.max(size.width, size.height));
@@ -94,4 +102,13 @@ const textOf = (bytes: Uint8Array): string => {
   return new TextDecoder(encoding).decode(bytes);
 };
 
-export { canvasFor, context2d, drawn, fitEdge, free, loadElement, textOf };
+export {
+  canvasFor,
+  context2d,
+  drawn,
+  fitEdge,
+  free,
+  loadElement,
+  textOf,
+  whole,
+};
