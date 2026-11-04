@@ -626,6 +626,19 @@ const streaming = async () => {
   return { buffer, bytes, init: fixtureOf.init, media, video };
 };
 
+const playable = async (
+  name: string,
+  event: string
+): Promise<HTMLVideoElement> => {
+  const video = document.createElement("video");
+  video.muted = true;
+  video.src = URL.createObjectURL(await fixture(name));
+  const ready = once(video, event);
+  document.body.append(video);
+  await ready;
+  return video;
+};
+
 describe("video sources", () => {
   it("opens a video once it has a frame", async () => {
     const { buffer, bytes, init, video } = await streaming();
@@ -641,6 +654,35 @@ describe("video sources", () => {
   it("refuses a video with no frame yet", async () => {
     const { video } = await streaming();
     await expect(codeOf(loadImage(video))).resolves.toBe("decode");
+    video.remove();
+  });
+
+  it("opens a plain file as its picture right after loadeddata", async () => {
+    const video = await playable("frames.webm", "loadeddata");
+    const { preview } = await loadImage(video);
+    expect(near(paint(preview), [255, 0, 0, 255], 72)).toBeTruthy();
+    preview.close();
+    video.remove();
+  });
+
+  it("never opens a plain file as a blank photo on loadedmetadata", async () => {
+    const video = await playable("frames.webm", "loadedmetadata");
+    const outcome = await loadImage(video).then(
+      ({ preview }) =>
+        near(paint(preview), [255, 0, 0, 255], 72) ? "picture" : "blank",
+      (error: unknown) => (error instanceof ZrizError ? error.code : error)
+    );
+    expect(["picture", "decode"]).toContain(outcome);
+    video.remove();
+  });
+
+  it("opens a video that is clear at its centre", async () => {
+    const video = await playable("ring.webm", "loadeddata");
+    const { preview, width, height } = await loadImage(video);
+    expect([width, height]).toStrictEqual([64, 64]);
+    expect(near(paint(preview, 0.05, 0.05), [200, 30, 30, 255])).toBeTruthy();
+    expect(paint(preview)[3]).toBe(server.browser === "webkit" ? 255 : 0);
+    preview.close();
     video.remove();
   });
 

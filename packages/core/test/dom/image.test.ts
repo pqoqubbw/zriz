@@ -8,7 +8,7 @@ import { raster, toZriz, withTimeout } from "../../src/dom/image";
 import { FakeWorker } from "./fake-worker";
 
 vi.mock(import("../../src/dom/source"), () => ({
-  assertReadable: () => 255,
+  assertReadable: () => true,
   fromElement: async (source) => {
     if (source instanceof ImageBitmap) {
       return await Promise.resolve(source);

@@ -1,16 +1,19 @@
 import { ZrizError } from "./error";
 import { canvasFor, context2d, drawn, free } from "./media";
 
+const PROBE = 16;
+const FRAME_TRIES = 180;
+const FRAME_POLL = 16;
 const UNSIZED_WIDTH = 300;
 const UNSIZED_HEIGHT = 150;
 
-export const assertReadable = (source: CanvasImageSource): number => {
-  const canvas = canvasFor({ height: 1, width: 1 });
+export const assertReadable = (source: CanvasImageSource): boolean => {
+  const canvas = canvasFor({ height: PROBE, width: PROBE });
   try {
     const context = context2d(canvas);
-    context.drawImage(source, 0, 0, 1, 1);
+    context.drawImage(source, 0, 0, PROBE, PROBE);
     try {
-      return context.getImageData(0, 0, 1, 1).data[3] ?? 0;
+      return context.getImageData(0, 0, PROBE, PROBE).data.some(Boolean);
     } catch {
       throw new ZrizError(
         "cross-origin",
@@ -20,6 +23,25 @@ export const assertReadable = (source: CanvasImageSource): number => {
   } finally {
     free(canvas);
   }
+};
+
+const showsFrame = async (
+  video: HTMLVideoElement,
+  tries = FRAME_TRIES
+): Promise<boolean> => {
+  if (video.readyState < 2 || video.seeking) {
+    return false;
+  }
+  if (assertReadable(video)) {
+    return true;
+  }
+  if (tries === 0) {
+    return false;
+  }
+  await new Promise((resolve) => {
+    setTimeout(resolve, FRAME_POLL);
+  });
+  return await showsFrame(video, tries - 1);
 };
 
 export const fromElement = async (
@@ -35,7 +57,7 @@ export const fromElement = async (
     typeof HTMLVideoElement !== "undefined" &&
     src instanceof HTMLVideoElement
   ) {
-    if (src.readyState < 2 || src.seeking || assertReadable(src) === 0) {
+    if (!(await showsFrame(src))) {
       throw new ZrizError(
         "decode",
         "zriz: the video has no current frame yet. Wait for loadeddata or seeked."
