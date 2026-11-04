@@ -248,15 +248,20 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   const box = useElementBox();
   const merged = useBoxRef(box, ref);
 
+  const current = useLatest(cropper);
+
   useEffect(() => {
     const node = box.get();
 
     return () => {
-      if (!external && node?.isConnected !== true) {
+      if (
+        !external &&
+        (node?.isConnected !== true || current.current !== cropper)
+      ) {
         attachImage(cropper, null);
       }
     };
-  }, [box, cropper, external]);
+  }, [box, cropper, current, external]);
 
   const context = useMemo<RootContextValue>(
     () => ({ box, dir, instructions, locale, shape }),

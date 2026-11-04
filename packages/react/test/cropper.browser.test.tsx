@@ -1,6 +1,6 @@
 import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
-import { ZrizError, imageOf, viewOf } from "@zriz/core/dom";
+import { ZrizError, attachImage, imageOf, viewOf } from "@zriz/core/dom";
 import type { LoadedImage } from "@zriz/core/dom";
 import * as React from "react";
 import {
@@ -1475,6 +1475,33 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
     const ref = await mountedAvatar(await photo(), strict);
 
     expect(await collected(ref)).toBe(true);
+  });
+
+  it("frees its own cropper's photo when an external cropper takes over", async () => {
+    const src = await photo();
+    const api = createRef<CropperApi>();
+    const external = createCropper();
+    const tree = (cropper?: CropperApi) => (
+      <Cropper.Root actionsRef={api} cropper={cropper} src={src}>
+        <Cropper.Viewport
+          style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+        >
+          <Cropper.Image alt="" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    const screen = await render(tree());
+
+    await ready(api);
+    const own = api.current;
+
+    expect(own && imageOf(own)).not.toBeNull();
+    await screen.rerender(tree(external));
+    await ready(api);
+    expect(own && imageOf(own)).toBeNull();
+    await screen.unmount();
+    attachImage(external, null);
+    external.destroy();
   });
 
   it("clears actionsRef after a parent's layout effect in the unmount commit", async () => {
