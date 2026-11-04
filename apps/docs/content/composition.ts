@@ -27,7 +27,7 @@ const COMPOSITION_PAGE = defineDoc({
     section(
       "stop zriz's own handler",
       p(
-        "your handler runs first. call `preventZrizHandler(event)` in it, and zriz skips its own handler for that event:"
+        "your handler runs first. call `preventZrizHandler(event)` in it, and zriz skips that part's own handler for that event. a press still bubbles to `Viewport`, so veto there to stop a pan, or call `event.stopPropagation()`:"
       ),
       code("composition/veto.jsx.tsx"),
       p(

@@ -1,10 +1,21 @@
 import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
-import { ZrizError, imageOf } from "@zriz/core/dom";
+import { ZrizError, imageOf, viewOf } from "@zriz/core/dom";
 import type { LoadedImage } from "@zriz/core/dom";
-import { Profiler, StrictMode, createRef, useState } from "react";
+import * as React from "react";
+import {
+  Profiler,
+  StrictMode,
+  Suspense,
+  createRef,
+  lazy,
+  useEffect,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, userEvent } from "vitest/browser";
@@ -753,5 +764,659 @@ describe("parts portaled into another document", () => {
     expect(body.querySelectorAll('[data-zero][style*="left"]')).toHaveLength(1);
     await cleanup();
     frame.remove();
+  });
+});
+
+const PHOTO = { height: 3000, width: 4000 };
+
+const events = () => {
+  const changes: string[] = [];
+  const commits: string[] = [];
+  return {
+    changes,
+    commits,
+    onValueChange: (_: CropValue, details: { reason: string }) => {
+      changes.push(details.reason);
+    },
+    onValueCommit: (_: CropValue, details: { reason: string }) => {
+      commits.push(details.reason);
+    },
+  };
+};
+
+describe("controlled props", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("returns disabled, maxZoom and minSize to their defaults when the prop goes away", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root
+        actionsRef={api}
+        disabled
+        image={{ height: 1200, width: 1200 }}
+        maxZoom={3}
+        minSize={{ height: 1100, width: 1100 }}
+      />
+    );
+    expect(api.current?.getState().disabled).toBeTruthy();
+    expect(api.current?.getMaxZoom()).toBe(3);
+    const limited = api.current?.getRotationLimit() ?? 45;
+    expect(limited).toBeLessThan(45);
+    await screen.rerender(
+      <Cropper.Root actionsRef={api} image={{ height: 1200, width: 1200 }} />
+    );
+    expect([
+      api.current?.getState().disabled,
+      api.current?.getMaxZoom(),
+      api.current?.getRotationLimit(),
+    ]).toStrictEqual([false, 15, 45]);
+  });
+
+  it("does not bring back an old prop when disabled toggles or the photo returns", async () => {
+    const api = createRef<CropperApi>();
+    const { commits, onValueCommit } = events();
+    const Host = ({ disabled }: { disabled: boolean }) => (
+      <Cropper.Root
+        actionsRef={api}
+        aspect={4 / 3}
+        disabled={disabled}
+        image={PHOTO}
+        onValueCommit={onValueCommit}
+        rotation={5}
+        zoom={1.5}
+      />
+    );
+    const screen = await render(<Host disabled={false} />);
+    await frames(2);
+    const cropper = api.current;
+    cropper?.rotate90();
+    cropper?.setRotation(12);
+    cropper?.setZoom(2.5);
+    await frames(3);
+    const held = cropper?.getValue();
+    commits.length = 0;
+    await screen.rerender(<Host disabled />);
+    await screen.rerender(<Host disabled={false} />);
+    await frames(3);
+    expect(cropper?.getValue()).toStrictEqual(held);
+    cropper?.setImage(null);
+    cropper?.setImage(PHOTO);
+    await frames(3);
+    expect(cropper?.getValue().aspect).toBe(held?.aspect);
+    expect(cropper?.getValue().rotation).toBe(12);
+    expect(commits).toStrictEqual([]);
+  });
+
+  it("applies props when the cropper is enabled from outside the hook", async () => {
+    const cropper = createCropper({ disabled: true, image: PHOTO });
+    await render(
+      <Cropper.Root aspect={1} cropper={cropper} rotation={5} zoom={2} />
+    );
+    await frames(2);
+    expect(cropper.getValue().aspect).toBe("free");
+    cropper.setOptions({ disabled: false });
+    await frames(2);
+    expect(cropper.getValue().aspect).toBe(1);
+    expect(cropper.getValue().rotation).toBe(5);
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+  });
+
+  it("applies props at load without events, and later ones with events", async () => {
+    const api = createRef<CropperApi>();
+    const { changes, commits, onValueChange, onValueCommit } = events();
+    const Host = ({ aspect, zoom }: { aspect: number; zoom: number }) => (
+      <Cropper.Root
+        actionsRef={api}
+        aspect={aspect}
+        onValueChange={onValueChange}
+        onValueCommit={onValueCommit}
+        rotation={aspect === 1 ? 0 : 5}
+        zoom={zoom}
+      />
+    );
+    const screen = await render(<Host aspect={1} zoom={2} />);
+    await screen.rerender(<Host aspect={16 / 9} zoom={2} />);
+    api.current?.setImage(PHOTO);
+    await frames(3);
+    expect([changes, commits]).toStrictEqual([[], []]);
+    expect(api.current?.getValue().aspect).toBeCloseTo(16 / 9, 6);
+    expect(api.current?.getValue().rotation).toBe(5);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+    await screen.rerender(<Host aspect={16 / 9} zoom={3} />);
+    await frames(3);
+    expect([changes, commits]).toStrictEqual([["controlled"], ["controlled"]]);
+  });
+
+  it("reports aspect for a preset that also changes rotation or zoom", async () => {
+    const api = createRef<CropperApi>();
+    const { changes, commits, onValueChange, onValueCommit } = events();
+    const Host = ({
+      aspect,
+      rotation,
+    }: {
+      aspect: number;
+      rotation: number;
+    }) => (
+      <Cropper.Root
+        actionsRef={api}
+        aspect={aspect}
+        image={PHOTO}
+        onValueChange={onValueChange}
+        onValueCommit={onValueCommit}
+        rotation={rotation}
+      />
+    );
+    const screen = await render(<Host aspect={1} rotation={0} />);
+    await frames(2);
+    await screen.rerender(<Host aspect={16 / 9} rotation={5} />);
+    await frames(3);
+    expect(changes).toStrictEqual(["aspect"]);
+    expect(commits).toStrictEqual(["aspect"]);
+    expect(api.current?.getValue().rotation).toBe(5);
+  });
+
+  it("holds a controlled zoom across a photo of another size only", async () => {
+    const api = createRef<CropperApi>();
+    const { commits, onValueCommit } = events();
+    await render(
+      <Cropper.Root
+        actionsRef={api}
+        aspect={1}
+        image={PHOTO}
+        onValueCommit={onValueCommit}
+        zoom={2}
+      />
+    );
+    await frames(2);
+    api.current?.setImage({ height: 3000, width: 1000 });
+    await frames(3);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+    expect(new Set(commits)).toStrictEqual(new Set(["coverage"]));
+    api.current?.setZoom(3);
+    await frames(3);
+    api.current?.setImage({ height: 3000, width: 1000 });
+    await frames(3);
+    expect(api.current?.getZoom()).toBeCloseTo(3, 6);
+  });
+
+  it("moves a capped prop up when its limit relaxes, never over an edit", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ maxZoom, min }: { maxZoom: number; min: number }) => (
+      <Cropper.Root
+        actionsRef={api}
+        image={PHOTO}
+        maxZoom={maxZoom}
+        minSize={{ height: min, width: min }}
+        rotation={40}
+        zoom={20}
+      />
+    );
+    const screen = await render(<Host maxZoom={15} min={2900} />);
+    await frames(2);
+    const limited = api.current?.getValue().rotation ?? 0;
+    expect(limited).toBeLessThan(40);
+    await screen.rerender(<Host maxZoom={30} min={1} />);
+    await frames(2);
+    expect(api.current?.getValue().rotation).toBe(40);
+    expect(api.current?.getZoom()).toBeCloseTo(20, 6);
+    await screen.rerender(<Host maxZoom={15} min={1} />);
+    await frames(2);
+    api.current?.setZoom(4);
+    await frames(2);
+    await screen.rerender(<Host maxZoom={30} min={1} />);
+    await frames(2);
+    expect(api.current?.getZoom()).toBeCloseTo(4, 6);
+  });
+
+  it("uses first render props as the reset target on a cropper it was given", async () => {
+    const cropper = createCropper({ image: PHOTO });
+    await render(
+      <Cropper.Root aspect={16 / 9} cropper={cropper} rotation={3} />
+    );
+    await frames(3);
+    cropper.setRotation(9);
+    cropper.setValue({ aspect: 1 });
+    await frames(2);
+    cropper.reset();
+    await frames(2);
+    expect(cropper.getValue().aspect).toBeCloseTo(16 / 9, 6);
+    expect(cropper.getValue().rotation).toBe(3);
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+
+  it("keeps a circle round through reset after a toggle, without marking it edited", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ shape }: { shape: "rect" | "circle" }) => (
+      <Cropper.Root actionsRef={api} image={PHOTO} shape={shape} />
+    );
+    const screen = await render(<Host shape="rect" />);
+    await frames(2);
+    await screen.rerender(<Host shape="circle" />);
+    await frames(3);
+    expect(api.current?.getValue().aspect).toBe(1);
+    expect(api.current?.getState().pristine).toBeTruthy();
+    api.current?.setRotation(4);
+    api.current?.reset();
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+  });
+});
+
+describe("callbacks on a shared cropper", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("stops calling a closed Root and gives the creator's callback back", async () => {
+    const mine = vi.fn<() => void>();
+    const cropper = createCropper({ image: PHOTO, onValueCommit: mine });
+    const save = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root cropper={cropper} onValueCommit={save} />
+    );
+    cropper.setRotation(2);
+    await frames(2);
+    expect(save).toHaveBeenCalledOnce();
+    expect(mine).toHaveBeenCalledOnce();
+    await screen.unmount();
+    cropper.setRotation(3);
+    await frames(2);
+    expect(save).toHaveBeenCalledOnce();
+    expect(mine).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a second Root's callback when the first closes", async () => {
+    const cropper = createCropper({ image: PHOTO });
+    const stays = vi.fn<() => void>();
+    const Host = ({ both }: { both: boolean }) => (
+      <>
+        {both ? <Cropper.Root cropper={cropper} /> : null}
+        <Cropper.Root cropper={cropper} onValueCommit={stays} />
+      </>
+    );
+    const screen = await render(<Host both />);
+    await screen.rerender(<Host both={false} />);
+    cropper.setRotation(2);
+    await frames(2);
+    expect(stays).toHaveBeenCalledOnce();
+  });
+
+  it("delivers the final commit of its own cropper on unmount", async () => {
+    const api = createRef<CropperApi>();
+    const save = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO} onValueCommit={save} />
+    );
+    api.current?.setRotation(2);
+    await screen.unmount();
+    expect(save).toHaveBeenCalledOnce();
+  });
+
+  it("follows the latest callback across renders", async () => {
+    const api = createRef<CropperApi>();
+    const first = vi.fn<() => void>();
+    const second = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO} onValueCommit={first} />
+    );
+    await screen.rerender(
+      <Cropper.Root actionsRef={api} image={PHOTO} onValueCommit={second} />
+    );
+    api.current?.setRotation(2);
+    await frames(2);
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledOnce();
+  });
+});
+
+const Nothing = () => null;
+
+const pass = (): void => undefined;
+
+const lazySibling = () => {
+  const gate = { open: pass };
+  const opened = new Promise<void>((resolve) => {
+    gate.open = resolve;
+  });
+  return {
+    Sibling: lazy(async () => {
+      await opened;
+      return { default: Nothing };
+    }),
+    release: () => {
+      gate.open();
+    },
+  };
+};
+
+const HydrateShell = () => {
+  const cropper = useCropper();
+  useEffect(() => {
+    cropper.setImage(PHOTO);
+  }, [cropper]);
+  return (
+    <Suspense fallback={null}>
+      <Cropper.Root cropper={cropper}>
+        <Cropper.Viewport id="hydrated">
+          <Cropper.Image alt="" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    </Suspense>
+  );
+};
+
+describe("lifetimes under StrictMode, Suspense and Activity", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("inits a plugin once on the live cropper and destroys what it started", async () => {
+    const api = createRef<CropperApi>();
+    const seen: unknown[] = [];
+    const destroy = vi.fn<() => void>();
+    const plugin = {
+      destroy,
+      init: (cropper: CropperApi) => {
+        seen.push(cropper);
+      },
+      name: "probe",
+    };
+    await render(
+      <StrictMode>
+        <Cropper.Root actionsRef={api} plugins={[plugin]} />
+      </StrictMode>
+    );
+    expect(seen).toStrictEqual([api.current]);
+    api.current?.destroy();
+    expect(destroy).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an image prop under StrictMode", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <StrictMode>
+        <Cropper.Root actionsRef={api} image={PHOTO}>
+          <Cropper.Viewport style={{ height: 300, width: 400 }} />
+        </Cropper.Root>
+      </StrictMode>
+    );
+    await frames(2);
+    expect(api.current?.getState().ready).toBeTruthy();
+    expect(api.current?.getPixelCrop()).not.toBeNull();
+    await screen.unmount();
+  });
+
+  const { Activity } = React;
+
+  it.runIf(Activity)("keeps a photo across Activity", async () => {
+    const api = createRef<CropperApi>();
+    const source = await photo();
+    const Host = ({ mode }: { mode: "hidden" | "visible" }) => (
+      <Activity mode={mode}>
+        <Cropper.Root actionsRef={api} src={source}>
+          <Cropper.Viewport style={{ height: 300, width: 400 }} />
+        </Cropper.Root>
+      </Activity>
+    );
+    const screen = await render(<Host mode="visible" />);
+    await ready(api);
+    const cropper = api.current;
+    const before = cropper && imageOf(cropper);
+    expect(before).not.toBeNull();
+    await screen.rerender(<Host mode="hidden" />);
+    await frames(2);
+    expect(cropper && imageOf(cropper)).toBe(before);
+    await screen.rerender(<Host mode="visible" />);
+    await ready(api);
+    expect(api.current?.getState().ready).toBeTruthy();
+  });
+
+  it("keeps actionsRef and callbacks while a sibling suspends", async () => {
+    const api = createRef<CropperApi>();
+    const { Sibling, release } = lazySibling();
+    const save = vi.fn<(held: CropperApi | null) => void>();
+    const Host = ({ wait }: { wait: boolean }) => (
+      <Suspense fallback={null}>
+        <Cropper.Root
+          actionsRef={api}
+          image={PHOTO}
+          onValueCommit={() => {
+            save(api.current);
+          }}
+        />
+        {wait ? <Sibling /> : null}
+      </Suspense>
+    );
+    const screen = await render(<Host wait={false} />);
+    const cropper = api.current;
+    await screen.rerender(<Host wait />);
+    await frames(2);
+    expect(api.current).toBe(cropper);
+    cropper?.setRotation(2);
+    await frames(2);
+    expect(save).toHaveBeenCalledWith(cropper);
+    release();
+    await frames(2);
+    expect(api.current).toBe(cropper);
+    await screen.unmount();
+    expect(api.current).toBeNull();
+  });
+
+  it("hydrates a boundary from what the server rendered after the shell gets a photo", async () => {
+    const html = renderToString(<HydrateShell />);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const errors = vi.spyOn(console, "error");
+    const recoverable = vi.fn<() => void>();
+    const root = hydrateRoot(container, <HydrateShell />, {
+      onRecoverableError: recoverable,
+    });
+    for (
+      let i = 0;
+      i < 100 && !container.querySelector("[data-ready]");
+      i += 1
+    ) {
+      await frames(1);
+    }
+    expect(container.querySelector("[data-ready]")).not.toBeNull();
+    expect(errors).not.toHaveBeenCalled();
+    expect(recoverable).not.toHaveBeenCalled();
+    errors.mockRestore();
+    root.unmount();
+    container.remove();
+  });
+});
+
+const reduced = (container: Element): boolean =>
+  container.querySelector("[data-reduced-motion]") !== null;
+
+const ReducedHost = ({ motion }: { motion: "reduce" | "always" }) => (
+  <Cropper.Root image={PHOTO} motion={motion} />
+);
+
+describe("reduced motion attribute", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("follows the motion prop from the first paint", async () => {
+    const screen = await render(<ReducedHost motion="reduce" />);
+    expect(reduced(screen.container)).toBeTruthy();
+    await screen.rerender(<ReducedHost motion="always" />);
+    expect(reduced(screen.container)).toBeFalsy();
+    await screen.rerender(<ReducedHost motion="reduce" />);
+    expect(reduced(screen.container)).toBeTruthy();
+  });
+
+  it("follows the system setting under auto", async () => {
+    const listeners = new Set<() => void>();
+    let matches = false;
+    vi.stubGlobal("matchMedia", () => ({
+      addEventListener: (_: string, listener: () => void) => {
+        listeners.add(listener);
+      },
+      get matches() {
+        return matches;
+      },
+      removeEventListener: (_: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+    }));
+    const screen = await render(<Cropper.Root image={PHOTO} />);
+    expect(reduced(screen.container)).toBeFalsy();
+    matches = true;
+    for (const listener of listeners) {
+      listener();
+    }
+    await frames(2);
+    expect(reduced(screen.container)).toBeTruthy();
+    await screen.unmount();
+    expect(listeners.size).toBe(0);
+    vi.unstubAllGlobals();
+  });
+
+  it("renders the attribute on the server for motion reduce", () => {
+    expect(renderToString(<Cropper.Root motion="reduce" />)).toContain(
+      "data-reduced-motion"
+    );
+  });
+});
+
+const SwapHost = ({ cropper }: { cropper: CropperApi }) => (
+  <Cropper.Root cropper={cropper}>
+    <Cropper.Viewport style={{ height: 300, width: 400 }}>
+      <Cropper.Area aria-label="Crop" id="swap-area" />
+    </Cropper.Viewport>
+    <Cropper.Dial aria-label="Dial" id="swap-dial" />
+  </Cropper.Root>
+);
+
+const tapKey = (id: string, name: string): void => {
+  for (const type of ["keydown", "keyup"]) {
+    document
+      .querySelector(id)
+      ?.dispatchEvent(new KeyboardEvent(type, { bubbles: true, key: name }));
+  }
+};
+
+describe("swapping the cropper prop", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("moves Viewport, Area and Dial to the new cropper", async () => {
+    const a = photoCropper();
+    const b = photoCropper();
+    const screen = await render(<SwapHost cropper={a} />);
+    await screen.rerender(<SwapHost cropper={b} />);
+    await frames(2);
+    a.setZoom(3);
+    b.setZoom(3);
+    await frames(2);
+    const before = a.getValue();
+    const centre = b.getCropState()?.crop.x;
+    tapKey("#swap-area", "ArrowLeft");
+    tapKey("#swap-dial", "ArrowRight");
+    await frames(2);
+    expect(a.getValue()).toStrictEqual(before);
+    expect(b.getValue().rotation).toBe(1);
+    expect(b.getCropState()?.crop.x).not.toBe(centre);
+    expect(viewOf(b).frame()).not.toBeNull();
+  });
+});
+
+const Slider = ({
+  cropper,
+  onValue,
+}: {
+  cropper: CropperApi;
+  onValue: (zoom: ReturnType<typeof useZoom>) => void;
+}) => {
+  const zoom = useZoom({ cropper });
+  useEffect(() => {
+    onValue(zoom);
+  });
+  return null;
+};
+
+const idle = async (cropper: CropperApi): Promise<void> => {
+  for (let i = 0; i < 100 && cropper.getState().interacting; i += 1) {
+    await frames(1);
+  }
+};
+
+const firePointer = (type: string, pointerId: number): void => {
+  globalThis.dispatchEvent(new PointerEvent(type, { pointerId }));
+};
+
+describe("useZoom gesture", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("closes a change that no press opened", async () => {
+    const cropper = photoCropper();
+    const commit = vi.fn<() => void>();
+    cropper.on("commit", commit);
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    zoom?.onValueChange(2);
+    expect(cropper.getState().interacting).toBe("zoom-control");
+    await idle(cropper);
+    expect(cropper.getState().interacting).toBeNull();
+    await frames(2);
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a motionless held drag open until the release", async () => {
+    const cropper = photoCropper();
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    firePointer("pointerdown", 1);
+    zoom?.onValueChange(2);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
+    expect(cropper.getState().interacting).toBe("zoom-control");
+    firePointer("pointerdown", 2);
+    firePointer("pointerup", 2);
+    expect(cropper.getState().interacting).toBe("zoom-control");
+    firePointer("pointerup", 1);
+    expect(cropper.getState().interacting).toBeNull();
+  });
+
+  it("ends the gesture when the slider unmounts", async () => {
+    const cropper = photoCropper();
+    let zoom: ReturnType<typeof useZoom> | undefined;
+    const screen = await render(
+      <Slider
+        cropper={cropper}
+        onValue={(next) => {
+          zoom = next;
+        }}
+      />
+    );
+    firePointer("pointerdown", 1);
+    zoom?.onValueChange(2);
+    await screen.unmount();
+    expect(cropper.getState().interacting).toBeNull();
+    firePointer("pointerup", 1);
   });
 });

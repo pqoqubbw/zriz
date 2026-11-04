@@ -22,7 +22,7 @@ const HOOKS_PAGE = defineDoc({
     section(
       "call methods from your own buttons",
       p(
-        "each `Root` runs one cropper. pass a ref to `actionsRef` to reach it once `Root` has mounted. [cropper](cropper) lists its methods."
+        "each `Root` runs one cropper. pass a ref to `actionsRef` to reach it once `Root` has mounted. the ref stays set while a suspense boundary shows its fallback, and is `null` while `<Activity>` hides `Root`. [cropper](cropper) lists its methods."
       ),
       code("hooks/actions-ref.tsx")
     ),
@@ -40,6 +40,12 @@ const HOOKS_PAGE = defineDoc({
         ),
         p(
           "`Root` frees the photo only for a cropper it made. free a `useCropper` cropper's photo yourself when the component unmounts, with `attachImage(cropper, null)` from `@zriz/core/dom`, as the snippet does. add `@zriz/core` as in [exporting](exporting)."
+        ),
+        p(
+          "`Root` keeps its photo while `<Activity>` hides it. react runs no cleanup when it removes a tree that is hidden, so `Root` cannot free the photo then. if you remove a hidden `Root`, call `attachImage(cropper, null)` yourself first."
+        ),
+        p(
+          "pass one cropper to one `Root`. `shape`, `motion` and `recentreDelay` belong to the cropper, so a second `Root` overwrites them, even with its defaults. keep `Instructions` in the `Root` that holds `Area`. your own parts and hooks can reach the cropper through `CropperContext` or the `cropper` argument."
         )
       ),
       part(

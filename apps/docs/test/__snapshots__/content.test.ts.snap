@@ -5355,7 +5355,7 @@ each part's state is in the api table on its page. \`className\` takes the same 
 
 ## stop zriz's own handler
 
-your handler runs first. call \`preventZrizHandler(event)\` in it, and zriz skips its own handler for that event:
+your handler runs first. call \`preventZrizHandler(event)\` in it, and zriz skips that part's own handler for that event. a press still bubbles to \`Viewport\`, so veto there to stop a pan, or call \`event.stopPropagation()\`:
 
 \`\`\`tsx
 <Cropper.Reset
@@ -5774,7 +5774,7 @@ console.log(commits);
 
 ## add a plugin and clean it up
 
-a plugin is an object with a \`name\`, an \`init\` and an optional \`destroy\`. \`init\` runs right after \`createCropper\` makes the cropper. \`Root\` takes \`plugins\` too and reads them once.
+a plugin is an object with a \`name\`, an \`init\` and an optional \`destroy\`. \`init\` runs right after \`createCropper\` makes the cropper. \`Root\` and \`useCropper\` take \`plugins\` too, read them once and run \`init\` once on the client, after mount, never during a render.
 
 \`\`\`ts
 import { createCropper } from "@zriz/core";
@@ -6844,7 +6844,7 @@ outside \`Root\`, pass the cropper yourself. it goes last in \`useCropperState\`
 
 ## call methods from your own buttons
 
-each \`Root\` runs one cropper. pass a ref to \`actionsRef\` to reach it once \`Root\` has mounted. [cropper](https://zriz.dev/docs/cropper.md) lists its methods.
+each \`Root\` runs one cropper. pass a ref to \`actionsRef\` to reach it once \`Root\` has mounted. the ref stays set while a suspense boundary shows its fallback, and is \`null\` while \`<Activity>\` hides \`Root\`. [cropper](https://zriz.dev/docs/cropper.md) lists its methods.
 
 \`\`\`tsx
 "use client";
@@ -6910,6 +6910,10 @@ it takes the \`createCropper\` options on [cropper](https://zriz.dev/docs/croppe
 when \`Root\` gets \`cropper\`, it ignores its own \`defaultValue\`, \`image\`, \`focalLength\` and \`plugins\`, because the cropper already exists. give each option to \`useCropper\` or to \`Root\`, never to both.
 
 \`Root\` frees the photo only for a cropper it made. free a \`useCropper\` cropper's photo yourself when the component unmounts, with \`attachImage(cropper, null)\` from \`@zriz/core/dom\`, as the snippet does. add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md).
+
+\`Root\` keeps its photo while \`<Activity>\` hides it. react runs no cleanup when it removes a tree that is hidden, so \`Root\` cannot free the photo then. if you remove a hidden \`Root\`, call \`attachImage(cropper, null)\` yourself first.
+
+pass one cropper to one \`Root\`. \`shape\`, \`motion\` and \`recentreDelay\` belong to the cropper, so a second \`Root\` overwrites them, even with its defaults. keep \`Instructions\` in the \`Root\` that holds \`Area\`. your own parts and hooks can reach the cropper through \`CropperContext\` or the \`cropper\` argument.
 
 ### \`useCropperState\`
 
@@ -8498,11 +8502,11 @@ export const Editor = ({ src }: { src: string }) => {
 };
 \`\`\`
 
-\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and calls \`onValueChange\` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to \`maxZoom\`. the move also commits, so \`onValueCommit\` runs too.
+\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and calls \`onValueChange\` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to \`maxZoom\`. the move also commits, so \`onValueCommit\` runs too. a prop applied as the photo arrives is silent, and a prop moves the crop only when it changes: it is not applied again after a gesture or another prop moves the crop.
 
 \`value\` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
 
-during a gesture, zriz ignores a new \`value\`, \`rotation\` or \`zoom\`, so a slow render cannot fight the finger. a new \`aspect\` applies at once. the \`aspect\` and \`rotation\` from the first render become the reset target.
+during a gesture and until it commits, zriz ignores a new \`value\`, \`rotation\` or \`zoom\`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in \`onValueCommit\`. a new \`aspect\` applies at once. the \`aspect\` and \`rotation\` from the first render become the reset target.
 
 ## turn it into text and back
 

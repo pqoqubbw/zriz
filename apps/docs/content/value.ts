@@ -103,13 +103,13 @@ const VALUE_PAGE = defineDoc({
       p("pass `rotation` and update it in `onValueChange`:"),
       code("value/controlled.tsx"),
       p(
-        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and calls `onValueChange` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to `maxZoom`. the move also commits, so `onValueCommit` runs too."
+        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and calls `onValueChange` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to `maxZoom`. the move also commits, so `onValueCommit` runs too. a prop applied as the photo arrives is silent, and a prop moves the crop only when it changes: it is not applied again after a gesture or another prop moves the crop."
       ),
       p(
         "`value` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from `onValueChange`. `Reset` still goes to `defaultValue`, not to the last `value`."
       ),
       p(
-        "during a gesture, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. a new `aspect` applies at once. the `aspect` and `rotation` from the first render become the reset target."
+        "during a gesture and until it commits, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in `onValueCommit`. a new `aspect` applies at once. the `aspect` and `rotation` from the first render become the reset target."
       )
     ),
     section(

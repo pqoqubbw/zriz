@@ -84,7 +84,7 @@ export const useRender = <S>({
   const resolved =
     typeof className === "function" ? className(state) : className;
   const joined = mergeProps({ className: base }, { className: resolved });
-  const outer = ref as Ref<HTMLElement> | undefined;
+  const outer = isRef(ref) ? ref : undefined;
   const merged = useMemo(() => {
     if (!isRef(inner)) {
       return outer;
@@ -94,7 +94,11 @@ export const useRender = <S>({
   return usePart(
     tag,
     rest,
-    { className: joined.className as string | undefined, render },
+    {
+      className:
+        typeof joined.className === "string" ? joined.className : undefined,
+      render,
+    },
     merged,
     state
   );

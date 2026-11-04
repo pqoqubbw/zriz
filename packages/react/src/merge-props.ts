@@ -17,17 +17,17 @@ type Step = (args: unknown[], vetoed: boolean) => void;
 const steps = new WeakMap<Handler, Step>();
 
 const chain = (own: Handler, theirs: Handler): Handler => {
-  const next = steps.get(own);
+  const inner = steps.get(own);
   const step: Step = (args, vetoed) => {
-    const event: object = Object(args[0]);
+    const event = new Object(args[0]);
     let prevented = vetoed;
     vetoes.set(event, () => {
       prevented = true;
     });
     theirs(...args);
     vetoes.delete(event);
-    if (next) {
-      next(args, prevented);
+    if (inner) {
+      inner(args, prevented);
     } else if (!prevented) {
       own(...args);
     }

@@ -2,7 +2,7 @@
 
 import { areaKeyHandlers, bindArea } from "@zriz/core/dom";
 import { warnUnlabelled } from "@zriz/react/warn";
-import { forwardRef, useContext, useCallback, useState } from "react";
+import { forwardRef, useContext, useCallback, useMemo } from "react";
 
 import { useCropperContext } from "../context";
 import {
@@ -32,7 +32,7 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const { shape, instructions } = useContext(RootContextValue);
   const interacting = useCropperState((s) => s.interacting !== null);
-  const [keys] = useState(() => areaKeyHandlers(cropper));
+  const keys = useMemo(() => areaKeyHandlers(cropper), [cropper]);
   useRelease(keys);
   const own = useCallback(
     (element: HTMLDivElement) => {

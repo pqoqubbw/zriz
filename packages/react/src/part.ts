@@ -87,6 +87,26 @@ const createBox = (): ElementBox => {
 
 export const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
 
+export const useHold = (hold: () => (() => unknown) | null): void => {
+  const held = useRef<{
+    from: typeof hold;
+    release: (() => unknown) | null;
+  } | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (held.current?.from !== hold) {
+      held.current?.release?.();
+      held.current = { from: hold, release: hold() };
+    }
+  }, [hold]);
+  useEffect(
+    () => () => {
+      held.current?.release?.();
+      held.current = null;
+    },
+    []
+  );
+};
+
 export const useMergedRef = <T>(
   own: (node: T) => (() => void) | undefined,
   theirs: Ref<T> | undefined

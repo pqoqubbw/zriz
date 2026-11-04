@@ -2,7 +2,7 @@
 
 import { viewportController } from "@zriz/core/dom";
 import type { WheelMode } from "@zriz/core/dom";
-import { forwardRef, useCallback, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo } from "react";
 
 import { useCropperContext } from "../context";
 import { nativeProps, useMergedRef } from "../part";
@@ -26,9 +26,7 @@ export const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
   ViewportProps
 >(function Viewport({ wheel = "pan", rotateGesture = true, ...props }, ref) {
   const cropper = useCropperContext();
-  const [controller] = useState(() =>
-    viewportController(cropper, { rotateGesture, wheel })
-  );
+  const controller = useMemo(() => viewportController(cropper), [cropper]);
   useEffect(() => {
     controller.setOptions({ rotateGesture, wheel });
   }, [controller, rotateGesture, wheel]);

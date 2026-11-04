@@ -46,12 +46,17 @@ const Probe = ({ tag }: { tag: string }) => {
   return <div ref={useMergedRef(own, theirs)} />;
 };
 
-const userRef = (node: HTMLDivElement | null) => {
+const userRef = (node: HTMLElement | null) => {
   log.push(node ? "attach" : "null");
   return () => {
     log.push("cleanup");
   };
 };
+
+const isCallback = (
+  value: unknown
+): value is (node: HTMLDivElement | null) => void =>
+  typeof value === "function";
 
 const pointer = (selector: string, type: string): void => {
   document.querySelector(selector)?.dispatchEvent(
@@ -206,7 +211,9 @@ describe("refs on React 18 and 19", () => {
         </Cropper.Zoom>
         <Cropper.ZoomStep factor={2}>in</Cropper.ZoomStep>
         <Cropper.Rotate ref={rotate}>rotate</Cropper.Rotate>
-        <Cropper.Flip render={<button ref={flip} type="button" />}>
+        <Cropper.Flip
+          render={<button aria-label="flip" ref={flip} type="button" />}
+        >
           flip
         </Cropper.Flip>
         <Cropper.Reset ref={userRef}>reset</Cropper.Reset>
@@ -220,9 +227,9 @@ describe("refs on React 18 and 19", () => {
     );
     await frames(2);
     expect(area.current?.tagName).toBe("SECTION");
-    expect(rotate.current?.tagName).toBe("BUTTON");
-    expect(flip.current?.tagName).toBe("BUTTON");
-    expect(plain.current?.tagName).toBe("DIV");
+    expect(
+      [rotate, flip, plain].map((held) => held.current?.tagName)
+    ).toStrictEqual(["BUTTON", "BUTTON", "DIV"]);
     rotate.current?.click();
     await frames(2);
     await screen.unmount();
@@ -268,6 +275,26 @@ describe("refs on React 18 and 19", () => {
     expect(log.filter((entry) => entry === "attach")).toHaveLength(1);
   });
 
+  it("keeps the node when a part gains a render element of the same tag", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ own }: { own: boolean }) => (
+      <Shell api={api}>
+        {own ? (
+          <Cropper.Rotate
+            id="kept"
+            render={<button aria-label="turn" type="button" />}
+          />
+        ) : (
+          <Cropper.Rotate id="kept" />
+        )}
+      </Shell>
+    );
+    const screen = await render(<Host own={false} />);
+    const before = document.querySelector("#kept");
+    await screen.rerender(<Host own />);
+    expect(document.querySelector("#kept")).toBe(before);
+  });
+
   it("keeps a drag going when a render element's ref changes", async () => {
     const api = createRef<CropperApi>();
     const Host = ({ tick }: { tick: number }) => (
@@ -305,7 +332,7 @@ describe("refs on React 18 and 19", () => {
             <div
               {...own}
               data-tick={tick}
-              ref={mergeRefs(own.ref as Ref<HTMLDivElement>)}
+              ref={mergeRefs(isCallback(own.ref) ? own.ref : undefined)}
             />
           )}
           style={{ height: 300, position: "relative", width: 400 }}

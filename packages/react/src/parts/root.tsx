@@ -12,17 +12,24 @@ import {
 import type { Chrome, LoadedImage } from "@zriz/core/dom";
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useId,
-  useImperativeHandle,
   useMemo,
   useSyncExternalStore,
 } from "react";
 import type { Ref } from "react";
 
 import { CropperContext } from "../context";
-import { RootContextValue, useLatest } from "../part";
-import type { Part, PartProps, RootContext } from "../part";
+import { attach, mergeRefs } from "../merge-props";
+import {
+  RootContextValue,
+  useElementBox,
+  useHold,
+  useIsomorphicLayoutEffect,
+  useLatest,
+} from "../part";
+import type { ElementBox, Part, PartProps, RootContext } from "../part";
 import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { usePart } from "../use-render";
@@ -57,6 +64,28 @@ export interface RootProps
   /** Called with a typed ZrizError when the photo cannot load. */
   onError?: (error: ZrizError) => void;
 }
+
+const IDLE: Chrome = {
+  active: false,
+  grid: "none",
+  overscroll: false,
+  transition: null,
+};
+
+const serverChrome = (): Chrome => IDLE;
+
+const useBoxRef = (
+  box: ElementBox,
+  theirs: Ref<HTMLDivElement>
+): ReturnType<typeof mergeRefs<HTMLDivElement>> =>
+  useMemo(
+    () =>
+      mergeRefs<HTMLDivElement>(
+        (node) => (node ? box.set(node) : undefined),
+        theirs
+      ),
+    [box, theirs]
+  );
 
 const orientationOf = (aspect: CropperSnapshot["aspect"]): string => {
   if (typeof aspect !== "number" || aspect === 1) {
@@ -114,16 +143,24 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     value,
     zoom,
   });
-  useImperativeHandle(actionsRef, () => cropper, [cropper]);
+  useHold(
+    useCallback(() => attach(actionsRef, cropper), [actionsRef, cropper])
+  );
   const view = viewOf(cropper);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setCropShape(cropper, shape);
+    return shape === "circle" ? cropper.retarget({ aspect: 1 }) : undefined;
   }, [cropper, shape]);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     view.setOptions({ motion, recentreDelay });
   }, [view, motion, recentreDelay]);
+  const reducedMotion = useSyncExternalStore(
+    view.onChrome,
+    view.reducedMotion,
+    () => motion === "reduce"
+  );
   const snapshot = useCropperState((s) => s, cropper);
-  const chrome = useSyncExternalStore(view.onChrome, view.chrome, view.chrome);
+  const chrome = useSyncExternalStore(view.onChrome, view.chrome, serverChrome);
   const instructions = useId();
   const latestLoad = useLatest(onLoad);
   const latestError = useLatest(onError);
@@ -163,20 +200,22 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       controller.abort();
     };
   }, [cropper, crossOrigin, latestError, latestLoad, src]);
-  useEffect(
-    () => () => {
-      if (!external) {
+  const box = useElementBox();
+  const merged = useBoxRef(box, ref);
+  useEffect(() => {
+    const node = box.get();
+    return () => {
+      if (!external && node?.isConnected !== true) {
         attachImage(cropper, null);
       }
-    },
-    [cropper, external]
-  );
+    };
+  }, [box, cropper, external]);
   const context = useMemo<RootContext>(
     () => ({ dir, instructions, locale, shape }),
     [dir, instructions, locale, shape]
   );
   const gesture = snapshot.interacting;
-  const element = usePart(
+  const part = usePart(
     "div",
     {
       "data-base-ui-swipe-ignore": "",
@@ -189,7 +228,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       "data-overscroll": chrome.overscroll ? "" : undefined,
       "data-panning": gesture === "pan" ? "" : undefined,
       "data-pinching": gesture === "pinch" ? "" : undefined,
-      "data-reduced-motion": view.reducedMotion() ? "" : undefined,
+      "data-reduced-motion": reducedMotion ? "" : undefined,
       "data-resizing": gesture === "resize" ? "" : undefined,
       "data-rotating": gesture === "dial" ? "" : undefined,
       "data-settling": snapshot.settling ? "" : undefined,
@@ -201,13 +240,13 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       dir,
     },
     html,
-    ref,
+    merged,
     { chrome, snapshot }
   );
   return (
     <CropperContext.Provider value={cropper}>
       <RootContextValue.Provider value={context}>
-        {element}
+        {part}
       </RootContextValue.Provider>
     </CropperContext.Provider>
   );

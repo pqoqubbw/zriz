@@ -280,7 +280,7 @@ const CROPPER_PAGE = defineDoc({
     section(
       "add a plugin and clean it up",
       p(
-        "a plugin is an object with a `name`, an `init` and an optional `destroy`. `init` runs right after `createCropper` makes the cropper. `Root` takes `plugins` too and reads them once."
+        "a plugin is an object with a `name`, an `init` and an optional `destroy`. `init` runs right after `createCropper` makes the cropper. `Root` and `useCropper` take `plugins` too, read them once and run `init` once on the client, after mount, never during a render."
       ),
       code("cropper/plugin.ts"),
       p(

@@ -7,7 +7,7 @@ import {
   useContext,
   useCallback,
   useEffect,
-  useState,
+  useMemo,
   useSyncExternalStore,
 } from "react";
 
@@ -38,7 +38,10 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
-  const [handlers] = useState(() => dialHandlers(cropper, { dir }, box.get));
+  const handlers = useMemo(
+    () => dialHandlers(cropper, { dir }, box.get),
+    [box, cropper, dir]
+  );
   useRelease(handlers);
   const state = dialState(cropper);
   useEffect(() => {

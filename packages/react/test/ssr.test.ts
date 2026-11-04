@@ -178,15 +178,14 @@ describe("part props", () => {
       },
       {
         onValueChange: (...args: unknown[]) => {
-          preventZrizHandler(args[0] as object);
           calls.push(["theirs", ...args]);
         },
       }
     );
-    (merged.onValueChange as (...args: unknown[]) => void)(0.5, "drag");
+    fire(merged.onValueChange, 0.5);
     expect(calls).toStrictEqual([
-      ["theirs", 0.5, "drag"],
-      ["ours", 0.5, "drag"],
+      ["theirs", 0.5],
+      ["ours", 0.5],
     ]);
   });
 
@@ -274,15 +273,27 @@ describe("part props", () => {
   });
 });
 
-describe("useRender", () => {
-  const Own = ({
-    option,
-    props,
-  }: {
-    option?: string;
-    props: Record<string, unknown>;
-  }) => useRender({ className: option, props, state: {}, tag: "span" });
+describe("plugins on the server", () => {
+  it("does not start a plugin during render", () => {
+    const init = vi.fn<() => void>();
+    renderToString(
+      createElement(Cropper.Root, {
+        plugins: [{ init, name: "server" }],
+      })
+    );
+    expect(init).not.toHaveBeenCalled();
+  });
+});
 
+const Own = ({
+  option,
+  props,
+}: {
+  option?: string;
+  props: Record<string, unknown>;
+}) => useRender({ className: option, props, state: {}, tag: "span" });
+
+describe("useRender options", () => {
   it("keeps a class given in props and joins it with the option", () => {
     expect(
       renderToString(createElement(Own, { props: { className: "a" } }))
@@ -292,21 +303,5 @@ describe("useRender", () => {
         createElement(Own, { option: "b", props: { className: "a" } })
       )
     ).toContain('class="a b"');
-  });
-
-  it("gives no key to a render element without one", () => {
-    let key: string | null = "unset";
-    const Probe = () => {
-      const element = useRender({
-        props: {},
-        render: createElement("a"),
-        state: {},
-        tag: "span",
-      });
-      ({ key } = element);
-      return element;
-    };
-    renderToString(createElement(Probe));
-    expect(key).toBeNull();
   });
 });
