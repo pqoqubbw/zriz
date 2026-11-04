@@ -115,7 +115,8 @@ export const aspectHeightRange = (
       }
     }
   }
-  return { max, min: Math.min(min, start.y1 - start.y0) };
+  const height = start.y1 - start.y0;
+  return { max: Math.max(max, height), min: Math.min(min, height) };
 };
 
 const movingXEdge = (handle: CropHandle): XEdge | null => {

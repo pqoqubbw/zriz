@@ -251,7 +251,31 @@ describe("handle drag constraints", () => {
           expect(r.x1 - r.x0).toBeGreaterThanOrEqual(s.crop.width - tolerance);
           expect(r.y1 - r.y0).toBeGreaterThanOrEqual(s.crop.height - tolerance);
         }
-      )
+      ),
+      {
+        examples: [
+          [
+            {
+              angle: 5.729609925614628e-7,
+              aspect: null,
+              crop: {
+                height: 2265.9999977339835,
+                width: 226.5999997733984,
+                x: 0,
+                y: 0,
+              },
+              flip: false,
+              image: { height: 227, width: 2266 },
+              perspective: { focal: 1, horizontal: 0, vertical: 0 },
+              turns: 3,
+            },
+            "se",
+            [0, 0],
+            1.01,
+            "shape",
+          ],
+        ],
+      }
     );
   });
 
