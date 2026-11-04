@@ -3,7 +3,12 @@ import { straightenLimit } from "./geometry/constraints";
 import { largestFit, minScaleAt } from "./geometry/coverage";
 import { exportPlan } from "./geometry/export-plan";
 import type { ExportPlan } from "./geometry/export-plan";
-import { imagePlanes, panPlanes, projectOntoPlanes } from "./geometry/planes";
+import {
+  imagePlanes,
+  insidePlanes,
+  panPlanes,
+  projectOntoPlanes,
+} from "./geometry/planes";
 import {
   mirrorX,
   mirrorY,
@@ -173,11 +178,6 @@ interface Gesture {
 const zoomOf = (planes: readonly HalfPlane[], size: Size): number =>
   1 / largestFit(planes, size).scale;
 
-const hasRoom = (planes: readonly HalfPlane[], centre: Point): boolean =>
-  planes.every(
-    (plane) => plane.d - plane.nx * centre.x - plane.ny * centre.y > EPSILON
-  );
-
 export const createCropper = (initial: CropperOptions = {}): Cropper => {
   let options: CropperOptions = initial;
   const clock = initial.clock ?? frameClock();
@@ -267,7 +267,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     );
     width *= grow;
     height *= grow;
-    if (keep === "centre" && hasRoom(planes, { x, y })) {
+    if (keep === "centre" && insidePlanes(planes, { x, y }, -EPSILON)) {
       const over = Math.min(
         minScaleAt(planes, { height, width }, { x, y }),
         maxZoom / zoomOf(planes, { height, width }),
@@ -495,6 +495,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
 
+  const applyValue = (
+    next: CropValue,
+    action: ActionOptions,
+    reason: ChangeReason
+  ): void => {
+    if (!image) {
+      accept(null, next, action, reason);
+      return;
+    }
+    commitState(fromValue(next, image), "centre", action, reason, next.aspect);
+  };
+
   const cropper: Cropper = {
     begin(reason, event, owner) {
       if (disabled() || (gesture !== null && gesture.owner !== owner)) {
@@ -603,17 +615,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (disabled()) {
         return;
       }
-      if (!image) {
-        accept(null, resetValue, action, "reset");
-        return;
-      }
-      commitState(
-        fromValue(resetValue, image),
-        "centre",
-        action,
-        "reset",
-        resetValue.aspect
-      );
+      applyValue(resetValue, action, "reset");
     },
     rotate90(direction = "ccw", action = {}) {
       if (!state || disabled()) {
@@ -644,7 +646,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         const planes = imagePlanes(state);
         const unit = { height: 1, width: ratio };
         const centre = { x: state.crop.x, y: state.crop.y };
-        const height = hasRoom(planes, centre)
+        const height = insidePlanes(planes, centre, -EPSILON)
           ? 1 / minScaleAt(planes, unit, centre)
           : zoomOf(planes, unit);
         next = {
@@ -734,18 +736,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return;
       }
-      const merged: CropValue = { ...value, ...partial };
-      if (!image) {
-        accept(null, merged, action, "imperative");
-        return;
-      }
-      commitState(
-        fromValue(merged, image),
-        "centre",
-        action,
-        "imperative",
-        merged.aspect
-      );
+      applyValue({ ...value, ...partial }, action, "imperative");
     },
     setZoom(zoom, action = {}) {
       if (!state || disabled()) {

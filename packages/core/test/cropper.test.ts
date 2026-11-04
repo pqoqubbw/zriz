@@ -208,6 +208,23 @@ describe("events", () => {
     cropper.destroy();
   });
 
+  it("takes a value and a reset before any image, with their own change reasons", () => {
+    const time = fakeClock();
+    const cropper = createCropper({ clock: time.clock });
+    const reasons: string[] = [];
+    cropper.on("change", (_, details) => {
+      reasons.push(details.reason);
+    });
+    cropper.setValue({ rotation: 12 });
+    time.frames(2);
+    expect(cropper.getValue().rotation).toBe(12);
+    cropper.reset();
+    time.frames(2);
+    expect(cropper.getValue().rotation).toBe(0);
+    expect(reasons).toStrictEqual(["imperative", "reset"]);
+    cropper.destroy();
+  });
+
   it("keeps a locked square crop square in source pixels", () => {
     fcAssert(
       property(
