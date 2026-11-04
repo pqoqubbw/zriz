@@ -1801,6 +1801,42 @@ describe("maxZoom changes", () => {
   });
 });
 
+describe("handle marks", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("leaves a refused second press off and clears it after both lift", async () => {
+    const cropper = photoCropper();
+    await render(
+      <Cropper.Root cropper={cropper}>
+        <Cropper.Viewport
+          style={{ height: 300, position: "relative", width: 400 }}
+        >
+          <Cropper.Handle id="right" position="right" />
+          <Cropper.Handle id="left" position="left" />
+          <Cropper.Handle id="top" position="top" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await frames();
+    press("#right", "pointerdown", 1);
+    press("#left", "pointerdown", 2);
+    await frames();
+    expect(isActive("#right")).toBeTruthy();
+    expect(isActive("#left")).toBeFalsy();
+    press("#left", "pointerup", 2);
+    press("#right", "pointerup", 1);
+    await frames();
+    press("#top", "pointerdown", 3);
+    await frames();
+    expect(isActive("#top")).toBeTruthy();
+    expect(isActive("#left")).toBeFalsy();
+    expect(isActive("#right")).toBeFalsy();
+    press("#top", "pointerup", 3);
+  });
+});
+
 describe("text selection on the sliders", () => {
   afterEach(async () => {
     await cleanup();
