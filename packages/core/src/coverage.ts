@@ -44,5 +44,4 @@ const covers = (
   return true;
 };
 
-export type { Size } from "./geometry/types";
 export { coverScale, covers };

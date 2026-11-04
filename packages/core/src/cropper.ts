@@ -282,6 +282,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   const firstReset = readValue(initial.defaultValue ?? {}, defaultValue);
   const targets = new Set<Record<string, unknown>>();
   let resetValue = firstReset;
+  let resetFit = firstReset;
   let locked: Aspect | undefined;
   let image: Size | null = initial.image ?? null;
   let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
@@ -302,7 +303,6 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   let handle: number | null = null;
   let lastTime: number | null = null;
   let destroyed = false;
-  let snapshot: CropperSnapshot;
 
   const emit = <E extends keyof CropperEvents>(
     type: E,
@@ -450,7 +450,6 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     });
   };
 
-  let resetFit: CropValue = resetValue;
   const isPristine = (): boolean =>
     valuesEqual(value, resetValue) || valuesEqual(value, resetFit);
 
@@ -466,7 +465,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     settling: tasks.size > 0,
   });
 
-  snapshot = makeSnapshot();
+  let snapshot = makeSnapshot();
 
   const refresh = (always = false): void => {
     const next = makeSnapshot();

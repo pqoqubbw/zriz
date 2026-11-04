@@ -1,6 +1,5 @@
 export { coverScale, covers } from "./coverage";
-export type { Size } from "./coverage";
-export type { Crop, CropState, Perspective, Point } from "./geometry/types";
+export type { Crop, CropState, Perspective, Point, Size } from "./geometry/types";
 export type { ExportPlan } from "./geometry/export-plan";
 export { toSharp } from "./to-sharp";
 export type {
