@@ -492,6 +492,35 @@ describe("sliders across parent renders", () => {
   });
 });
 
+describe("DialValue text", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("paints a new format in its commit and writes nothing for equal text", async () => {
+    const screen = await render(<UnitHost unit="deg" />);
+    const node = screen.container.querySelector(
+      '[data-zriz-item="dial-value"]'
+    );
+    expect(node?.textContent).toBe("0deg");
+    await screen.rerender(<UnitHost unit="grad" />);
+    expect(node?.textContent).toBe("0grad");
+    const first = node?.firstChild;
+    await screen.rerender(<UnitHost unit="grad" />);
+    expect(node?.firstChild).toBe(first);
+  });
+
+  it("shows the angle over children and survives removing them", async () => {
+    const screen = await render(<ChildHost on />);
+    await screen.rerender(<ChildHost on={false} />);
+    await frames();
+    expect(
+      screen.container.querySelector('[data-zriz-item="dial-value"]')
+        ?.textContent
+    ).toBe("0");
+  });
+});
+
 describe("Mask and Area rebinding", () => {
   afterEach(async () => {
     await cleanup();

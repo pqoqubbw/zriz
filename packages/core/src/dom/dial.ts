@@ -567,17 +567,20 @@ export const bindDialTicks = (
 export const bindDialValue = (
   cropper: Cropper,
   element: HTMLElement,
-  format: (rotation: number) => string = (rotation) =>
-    String(Math.round(rotation))
+  format?: (rotation: number) => string | undefined
 ): (() => void) => {
-  let last = "";
   const write = (): void => {
-    const next = format(cropper.getValue().rotation);
-    if (next !== last) {
-      last = next;
+    const { rotation } = cropper.getValue();
+    const next =
+      format?.(rotation) ??
+      String(Math.trunc(rotation + Math.sign(rotation) / 2));
+    if (next !== element.textContent) {
       element.textContent = next;
     }
   };
+  if (!element.hasAttribute("aria-hidden")) {
+    element.setAttribute("aria-hidden", "true");
+  }
   write();
   return cropper.on("frame", write);
 };

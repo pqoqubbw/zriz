@@ -89,6 +89,7 @@ export const bindPhoto = (
   container.style.inset = "0";
   container.style.pointerEvents = "none";
   container.style.overflow = "hidden";
+  rest.setAttribute("aria-hidden", "true");
   motion.alt = "";
   motion.draggable = false;
   motion.decoding = "async";

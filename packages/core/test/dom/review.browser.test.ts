@@ -1271,3 +1271,43 @@ describe("slider attributes", () => {
     cropper.destroy();
   });
 });
+
+describe("the angle label", () => {
+  it("keeps its size when flip changes the sign", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const label = document.createElement("span");
+    const off = bindDialValue(cropper, label);
+    const read = (rotation: number): string | null => {
+      cropper.setRotation(rotation);
+      cropper.stop();
+      return label.textContent;
+    };
+    expect(read(7.5)).toBe("8");
+    expect(read(-7.5)).toBe("-8");
+    expect(read(-0.25)).toBe("0");
+    off();
+    cropper.destroy();
+  });
+
+  it("binders hide what screen readers have no use for", () => {
+    const cropper = createCropper();
+    const label = document.createElement("span");
+    const named = document.createElement("span");
+    named.setAttribute("aria-hidden", "false");
+    const box = document.createElement("div");
+    const off = [
+      bindDialValue(cropper, label),
+      bindDialValue(cropper, named),
+      bindPhoto(cropper, box),
+    ];
+    expect(label.getAttribute("aria-hidden")).toBe("true");
+    expect(named.getAttribute("aria-hidden")).toBe("false");
+    expect(box.querySelector("canvas")?.getAttribute("aria-hidden")).toBe(
+      "true"
+    );
+    for (const stop of off) {
+      stop();
+    }
+    cropper.destroy();
+  });
+});

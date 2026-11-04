@@ -1,14 +1,17 @@
 "use client";
 
 import { bindDialValue } from "@zriz/core/dom";
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useRef, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { useLatest, useMergedRef } from "../part";
+import { useIsomorphicLayoutEffect, useLatest, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface DialValueProps extends PartProps<"span", object> {
+export interface DialValueProps extends Omit<
+  PartProps<"span", object>,
+  "children" | "dangerouslySetInnerHTML"
+> {
   /** Text for an angle in degrees. @default the rounded number */
   format?: ((rotation: number) => string) | undefined;
 }
@@ -19,17 +22,33 @@ export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
 >(function DialValue({ format, ...props }, ref) {
   const cropper = useCropperContext();
   const latest = useLatest(format);
-  const own = useCallback(
-    (node: HTMLSpanElement) =>
-      bindDialValue(cropper, node, (rotation) =>
-        latest.current ? latest.current(rotation) : String(Math.round(rotation))
-      ),
-    [cropper, latest]
+  const node = useRef<HTMLElement | null>(null);
+  const [text] = useState(
+    () =>
+      (rotation: number): string | undefined =>
+        latest.current?.(rotation)
   );
+  const own = useCallback(
+    (span: HTMLSpanElement) => {
+      node.current = span;
+      return bindDialValue(cropper, span, text);
+    },
+    [cropper, text]
+  );
+  useIsomorphicLayoutEffect(() => {
+    if (node.current) {
+      bindDialValue(cropper, node.current, text)();
+    }
+  });
+  const bare = {
+    ...props,
+    children: undefined,
+    dangerouslySetInnerHTML: undefined,
+  };
   return usePart(
     "span",
     { "aria-hidden": true, "data-zriz-item": "dial-value" },
-    props,
+    bare,
     useMergedRef(own, ref),
     {}
   );
