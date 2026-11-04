@@ -1175,6 +1175,21 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
     await cleanup();
   });
 
+  it("clears actionsRef after a parent's layout effect in the unmount commit", async () => {
+    const api = createRef<CropperApi>();
+    const seen: boolean[] = [];
+    const Parent = ({ on }: { on: boolean }) => {
+      useLayoutEffect(() => {
+        seen.push(api.current !== null);
+      });
+      return on ? <Cropper.Root actionsRef={api} image={PHOTO} /> : null;
+    };
+    const screen = await render(<Parent on />);
+    await screen.rerender(<Parent on={false} />);
+    expect(seen).toStrictEqual([true, true]);
+    await expect.poll(() => api.current).toBeNull();
+  });
+
   it("inits a plugin once on the live cropper and destroys what it started", async () => {
     const api = createRef<CropperApi>();
     const seen: unknown[] = [];

@@ -6844,7 +6844,7 @@ outside \`Root\`, pass the cropper yourself. it goes last in \`useCropperState\`
 
 ## call methods from your own buttons
 
-each \`Root\` runs one cropper. pass a ref to \`actionsRef\` to reach it once \`Root\` has mounted. the ref stays set while a suspense boundary shows its fallback, and is \`null\` while \`<Activity>\` hides \`Root\`. [cropper](https://zriz.dev/docs/cropper.md) lists its methods.
+each \`Root\` runs one cropper. pass a ref to \`actionsRef\` to reach it once \`Root\` has mounted. the ref stays set while a suspense boundary shows its fallback, and is \`null\` while \`<Activity>\` hides \`Root\`. when \`Root\` unmounts, the ref clears with the passive effects, so a parent's \`useLayoutEffect\` in that commit still reads the cropper. [cropper](https://zriz.dev/docs/cropper.md) lists its methods.
 
 \`\`\`tsx
 "use client";
@@ -6951,7 +6951,7 @@ return one field or a primitive. a selector that builds a new object or array on
 
 ### \`useCropperValue\`
 
-\`useCropperValue(cropper?)\` returns the last committed value and renders once per commit. a new \`value\` prop and writes with \`emit: false\` change it without a commit, so the hook does not render for them. the first fit when a photo loads does not commit either. the fields are on [value](https://zriz.dev/docs/value.md).
+\`useCropperValue(cropper?)\` returns the last committed value and renders once per commit. a new \`value\` prop and writes with \`emit: false\` change it without a commit, so the hook does not render for them. the first fit when a photo loads does not commit either, but the hook renders when a photo arrives or leaves, so it shows that fit. the fields are on [value](https://zriz.dev/docs/value.md).
 
 \`\`\`tsx
 "use client";
