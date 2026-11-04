@@ -2,6 +2,7 @@ import type { Cropper } from "../cropper";
 import { largestFit } from "../geometry/coverage";
 import { insidePlanes, panPlanes } from "../geometry/planes";
 import type { Crop, HalfPlane } from "../geometry/types";
+import { noop } from "./turn";
 
 export const MIN_HANDLE_SPAN = 88;
 
@@ -64,12 +65,11 @@ export interface PointerHandlers {
   onLostPointerCapture: (event: PointerEvent) => void;
 }
 
-export const capture = (element: Element, id: number): boolean => {
+export const capture = (element: Element, id: number): void => {
   try {
     element.setPointerCapture(id);
-    return true;
   } catch {
-    return false;
+    noop();
   }
 };
 
