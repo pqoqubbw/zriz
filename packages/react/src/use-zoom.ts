@@ -19,8 +19,12 @@ export const useZoom = (
 ): UseZoom => {
   const cropper = useTarget(options.cropper);
   const max = options.max ?? cropper.getMaxZoom();
+  const subscribe = useCallback(
+    (listener: () => void) => cropper.on("frame", listener),
+    [cropper]
+  );
   const value = useSyncExternalStore(
-    (listener) => cropper.on("frame", listener),
+    subscribe,
     () => Math.round(cropper.getZoom() * 1000) / 1000,
     () => 1
   );

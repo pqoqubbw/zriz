@@ -194,6 +194,9 @@ export const renderKernel = (): RenderKernel => {
     try {
       const context = contextOf(canvas, job.colorSpace);
       const empty = dead(context);
+      if (empty) {
+        return { canvas, empty };
+      }
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
       if (job.circle) {

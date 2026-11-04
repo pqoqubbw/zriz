@@ -77,7 +77,13 @@ export const bindPhoto = (
   let transform = "";
   let moving = false;
 
+  let shown = "";
   const show = (canvas: boolean): void => {
+    const next = `${canvas}${motionReady}`;
+    if (next === shown) {
+      return;
+    }
+    shown = next;
     rest.style.visibility = canvas ? "visible" : "hidden";
     motion.style.visibility = canvas || !motionReady ? "hidden" : "visible";
     container.toggleAttribute("data-sharp", canvas);
@@ -193,6 +199,7 @@ export const bindPhoto = (
         image.preview
       );
       drawn = null;
+      shown = "";
       rest.style.visibility = "visible";
     }
     if (settled()) {

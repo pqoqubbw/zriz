@@ -19,6 +19,7 @@ import {
   insidePlanes,
   isCropCovered,
   largestCropAt,
+  isFlatPerspective,
   largestFit,
   minScaleAt,
   panBox,
@@ -253,5 +254,49 @@ describe("coverage with pan", () => {
     const { center } = largestFit(imagePlanes(state), state.crop);
     expect(Object.is(center.x, -0)).toBeFalsy();
     expect(Object.is(center.y, -0)).toBeFalsy();
+  });
+});
+
+describe("largestFit on level planes", () => {
+  it("agrees with the general solver", () => {
+    assert(
+      property(
+        stateArb,
+        double({ max: 4, min: 0.1, noNaN: true }),
+        double({ max: 4, min: 0.1, noNaN: true }),
+        (state, width, height) => {
+          pre(isFlatPerspective(state.perspective));
+          const planes = imagePlanes(state);
+          const view = { height, width };
+          const [first] = planes;
+          const level = largestFit(planes, view);
+          const solved = largestFit(
+            [...planes, { ...(first ?? { d: 0, nx: 1, ny: 0 }) }],
+            view
+          );
+          expect(level.scale).toBeCloseTo(solved.scale, 6);
+        }
+      )
+    );
+  });
+
+  it("takes a view with no width on planes it can only touch", () => {
+    const planes = panPlanes(
+      imagePlanes({
+        angle: 0,
+        aspect: null,
+        crop: { height: 10, width: 10, x: 0, y: 0 },
+        flip: false,
+        image: { height: 10, width: 10 },
+        perspective: { focal: 10, horizontal: 0, vertical: 0 },
+        turns: 0,
+      }),
+      10,
+      0
+    );
+    expect(largestFit(planes, { height: 1, width: 0 }).scale).toBeCloseTo(
+      0.1,
+      9
+    );
   });
 });

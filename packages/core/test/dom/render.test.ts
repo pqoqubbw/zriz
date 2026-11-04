@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import type { Size } from "../../src";
 import { exportImage } from "../../src/dom/export";
+import { renderKernel } from "../../src/dom/render-kernel";
 import type { ExportResult, LoadedImage } from "../../src/dom/image";
 import { via } from "../../src/dom/worker";
 import { fakeClock } from "../fake-clock";
@@ -81,5 +82,50 @@ describe("exportImage size", () => {
       600,
       false,
     ]);
+  });
+});
+
+describe("a canvas that cannot draw", () => {
+  it("skips the drawing and fails as blank", async () => {
+    const drawImage = vi.fn<() => void>();
+    const context = {
+      canvas: { height: 10, width: 10 },
+      clearRect: () => undefined,
+      drawImage,
+      fillRect: () => undefined,
+      getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+      setTransform: () => undefined,
+    };
+    vi.stubGlobal(
+      "OffscreenCanvas",
+      class {
+        getContext = (): object => context;
+        height = 10;
+        width = 10;
+      }
+    );
+    vi.stubGlobal("ImageBitmap", Object);
+    const plan = {
+      forward: [1, 0, 0, 1, 0, 0],
+      height: 10,
+      homography: null,
+      width: 10,
+    };
+    const kernel = renderKernel();
+    await expect(
+      Reflect.apply(kernel.render, kernel, [
+        {
+          circle: false,
+          colorSpace: "srgb",
+          image: { height: 10, width: 10 },
+          plans: [plan, plan],
+          quality: 0.9,
+          source: { drawable: {}, height: 10, width: 10 },
+          type: "image/png",
+        },
+      ])
+    ).rejects.toThrow("blank");
+    vi.unstubAllGlobals();
+    expect(drawImage).not.toHaveBeenCalled();
   });
 });

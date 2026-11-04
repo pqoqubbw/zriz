@@ -61,9 +61,11 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
     () => handleHandlers(cropper, position, box.get),
     [box, cropper, position]
   );
-  const resizing = useCropperState((s) => s.interacting === "resize");
   const [mine, setMine] = useState(false);
-  const active = resizing && mine;
+  const active = useCropperState((s) => mine && s.interacting === "resize");
+  if (mine && !active) {
+    setMine(false);
+  }
   const onPointerDown = (event: React.PointerEvent): void => {
     handlers.onPointerDown(event.nativeEvent);
     setMine(cropper.getState().interacting === "resize");

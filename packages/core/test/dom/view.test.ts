@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCropper } from "../../src";
 import type { CropperOptions } from "../../src";
 import { dialAria, dialHandlers, handleHandlers } from "../../src/dom";
+import { bindZoomThumb } from "../../src/dom/controls";
 import type { HandleEdge } from "../../src/dom";
 import {
   cssMatrix,
@@ -346,50 +347,60 @@ describe("view lifetime", () => {
   });
 });
 
+const pressKey = (
+  press: (event: KeyboardEvent) => void,
+  name: string
+): void => {
+  Reflect.apply(press, undefined, [
+    { key: name, preventDefault: () => {}, shiftKey: false },
+  ]);
+};
+
+const photoCropper = (options: CropperOptions = {}) => {
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    image: { height: 3000, width: 4000 },
+    ...options,
+  });
+  return { cropper, time };
+};
+
+const limitAngle = (
+  value: { rotation: number },
+  details: { cancel: () => void }
+): void => {
+  if (value.rotation > 10) {
+    details.cancel();
+  }
+};
+
 describe("a rejected change", () => {
-  const key = (name: string) =>
-    ({
-      key: name,
-      preventDefault: () => undefined,
-      shiftKey: false,
-    }) as unknown as KeyboardEvent;
-
-  const setup = (options: CropperOptions = {}) => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 3000, width: 4000 },
-      ...options,
-    });
-    return { cropper, time };
-  };
-
   it.each([true, false])(
     "leaves the dial's aria at the value that stayed, canceller first: %s",
     (first) => {
-      const limit = (
-        value: { rotation: number },
-        details: { cancel: () => void }
-      ): void => {
-        if (value.rotation > 10) {
-          details.cancel();
-        }
-      };
-      const { cropper, time } = setup(first ? { onValueChange: limit } : {});
+      const { cropper, time } = photoCropper(
+        first ? { onValueChange: limitAngle } : {}
+      );
       const attrs = new Map<string, string>();
-      dialAria(cropper, {
-        setAttribute: (name: string, next: string) => attrs.set(name, next),
-        toggleAttribute: () => undefined,
-      } as unknown as HTMLElement);
+      Reflect.apply(dialAria, undefined, [
+        cropper,
+        {
+          setAttribute: (name: string, next: string) => {
+            attrs.set(name, next);
+          },
+          toggleAttribute: () => {},
+        },
+      ]);
       if (!first) {
-        cropper.on("change", limit);
+        cropper.on("change", limitAngle);
       }
       const dial = dialHandlers(cropper);
       cropper.setRotation(10);
       time.frames(3);
-      dial.onKeyDown(key("ArrowRight"));
+      pressKey(dial.onKeyDown, "ArrowRight");
       time.frames(2);
-      dial.onKeyUp(key("ArrowRight"));
+      pressKey(dial.onKeyUp, "ArrowRight");
       time.frames(5);
       expect(cropper.getValue().rotation).toBe(10);
       expect(attrs.get("aria-valuenow")).toBe("10");
@@ -397,7 +408,7 @@ describe("a rejected change", () => {
   );
 
   it("runs no transition and never settles", () => {
-    const { cropper, time } = setup({
+    const { cropper, time } = photoCropper({
       onValueChange: (_, details) => {
         details.cancel();
       },
@@ -411,87 +422,115 @@ describe("a rejected change", () => {
       width: 400,
     });
     time.frames(3);
-    const settle = vi.fn();
+    const settle = vi.fn<() => void>();
     const settling: boolean[] = [];
     cropper.on("settle", settle);
-    cropper.subscribe(() => settling.push(cropper.getState().settling));
+    cropper.subscribe(() => {
+      settling.push(cropper.getState().settling);
+    });
     cropper.flip();
     time.frames(30);
-    expect(cropper.getValue().mirrored).toBe(false);
+    expect(cropper.getValue().mirrored).toBeFalsy();
     expect(settle).not.toHaveBeenCalled();
     expect(settling).not.toContain(true);
     view.destroy();
   });
 });
 
+const minCropper = (min: number, viewport = 1000) => {
+  vi.stubGlobal("addEventListener", () => {});
+  vi.stubGlobal("removeEventListener", () => {});
+  vi.stubGlobal("Element", Object);
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    image: { height: 1000, width: 1000 },
+    minSize: { height: min, width: min },
+  });
+  viewOf(cropper).setLayout({
+    dpr: 1,
+    height: viewport,
+    inset: { bottom: 0, left: 0, right: 0, top: 0 },
+    width: viewport,
+  });
+  return { cropper, time };
+};
+
+const dragEdge = (
+  { cropper, time }: ReturnType<typeof minCropper>,
+  edge: HandleEdge,
+  dx: number
+): void => {
+  const rect = viewOf(cropper).frame()?.rect;
+  const x = (rect?.x ?? 0) + (rect?.width ?? 0);
+  const y = (rect?.y ?? 0) + (rect?.height ?? 0) / 2;
+  const handlers = handleHandlers(cropper, edge);
+  const at = (clientX: number) => [
+    {
+      button: 0,
+      clientX,
+      clientY: y,
+      currentTarget: null,
+      pointerId: 1,
+      pointerType: "mouse",
+    },
+  ];
+  Reflect.apply(handlers.onPointerDown, undefined, at(x));
+  Reflect.apply(handlers.onPointerMove, undefined, at(x + dx));
+  time.frame();
+  Reflect.apply(handlers.onPointerUp, undefined, at(x + dx));
+  time.frame();
+};
+
 describe("a handle at minSize", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  const setup = (min: number, viewport = 1000) => {
-    vi.stubGlobal("addEventListener", () => undefined);
-    vi.stubGlobal("removeEventListener", () => undefined);
-    vi.stubGlobal("Element", class {});
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 1000, width: 1000 },
-      minSize: { height: min, width: min },
-    });
-    viewOf(cropper).setLayout({
-      dpr: 1,
-      height: viewport,
-      inset: { bottom: 0, left: 0, right: 0, top: 0 },
-      width: viewport,
-    });
-    return { cropper, time };
-  };
-
-  const pointer = (clientX: number, clientY: number) =>
-    ({
-      button: 0,
-      clientX,
-      clientY,
-      currentTarget: null,
-      pointerId: 1,
-      pointerType: "mouse",
-    }) as unknown as PointerEvent;
-
-  const drag = (
-    { cropper, time }: ReturnType<typeof setup>,
-    edge: HandleEdge,
-    dx: number
-  ): void => {
-    const rect = viewOf(cropper).frame()?.rect;
-    const x = (rect?.x ?? 0) + (rect?.width ?? 0);
-    const y = (rect?.y ?? 0) + (rect?.height ?? 0) / 2;
-    const handlers = handleHandlers(cropper, edge);
-    handlers.onPointerDown(pointer(x, y));
-    handlers.onPointerMove(pointer(x + dx, y));
-    time.frame();
-    handlers.onPointerUp(pointer(x + dx, y));
-    time.frame();
-  };
-
   it.each([
     [800, 1000],
     [512, 500],
   ])("stops at a minimum of %s in a %s px viewport", (min, viewport) => {
-    const context = setup(min, viewport);
-    drag(context, "right", -viewport);
+    const context = minCropper(min, viewport);
+    dragEdge(context, "right", -viewport);
     expect(context.cropper.getPixelCrop()?.pixelRect?.width).toBe(min);
   });
 
   it("keeps the other side and the opposite edge where they were", () => {
-    const context = setup(200);
+    const context = minCropper(200);
     context.cropper.setValue({ size: { height: 0.3, width: 0.6 } });
-    drag(context, "right", -2000);
+    dragEdge(context, "right", -2000);
     expect(context.cropper.getPixelCrop()?.pixelRect).toStrictEqual({
       height: 300,
       left: 200,
       top: 350,
       width: 200,
     });
+  });
+});
+
+describe("zoom thumb", () => {
+  it("does not write the style while the zoom stands still", () => {
+    const { cropper, time } = photoCropper();
+    cropper.setZoom(2);
+    time.frames(2);
+    const writes: string[] = [];
+    const style = {
+      position: "",
+      set insetInlineStart(next: string) {
+        writes.push(next);
+      },
+    };
+    const off: () => void = Reflect.apply(bindZoomThumb, undefined, [
+      cropper,
+      { style },
+    ]);
+    writes.length = 0;
+    for (let step = 0; step < 100; step += 1) {
+      cropper.panBy(Math.sin(step / 7) * 0.01, Math.cos(step / 11) * 0.01);
+      time.frame();
+    }
+    off();
+    expect(writes).toStrictEqual([]);
   });
 });

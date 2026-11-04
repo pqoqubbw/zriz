@@ -4,11 +4,16 @@ import { ZrizError, imageOf } from "@zriz/core/dom";
 import type { LoadedImage } from "@zriz/core/dom";
 import { Profiler, StrictMode, createRef, useState } from "react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, userEvent } from "vitest/browser";
 
-import { preventZrizHandler, useCropperValue } from "../src";
+import {
+  preventZrizHandler,
+  useCropper,
+  useCropperValue,
+  useZoom,
+} from "../src";
 import * as Cropper from "../src/cropper";
 
 declare module "vitest/browser" {
@@ -488,7 +493,7 @@ describe("Root load results", () => {
   });
 });
 
-describe("useCropperValue", () => {
+describe(useCropperValue, () => {
   afterEach(cleanup);
 
   it("renders once for every commit with the committed value", async () => {
@@ -518,11 +523,17 @@ describe("useCropperValue", () => {
       }
     };
     let renders = 0;
-    const Angle = () => {
-      renders += 1;
-      return <p id="angle">{useCropperValue(cropper).rotation}</p>;
-    };
-    await render(<Angle />);
+    const Angle = () => <p id="angle">{useCropperValue(cropper).rotation}</p>;
+    await render(
+      <Profiler
+        id="angle"
+        onRender={() => {
+          renders += 1;
+        }}
+      >
+        <Angle />
+      </Profiler>
+    );
     for (const rotation of [5, 9, 13, 17, 21]) {
       renders = 0;
       cropper.setRotation(rotation);
@@ -552,16 +563,146 @@ describe("AspectItem", () => {
         <Cropper.AspectItem id="item" value={1.85} />
       </Cropper.Root>
     );
-    const item = document.querySelector("#item");
-    expect(item?.hasAttribute("data-checked")).toBe(true);
+    const item = document.querySelector<HTMLElement>("#item");
+    expect(item?.dataset.checked).toBe("");
     cropper.rotate90();
     cropper.rotate90();
     await frames();
     expect(cropper.getValue().aspect).not.toBe(1.85);
-    expect(item?.hasAttribute("data-checked")).toBe(true);
+    expect(item?.dataset.checked).toBe("");
     cropper.rotate90();
     cropper.rotate90();
     await frames();
-    expect(cropper.getState().pristine).toBe(true);
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+});
+
+describe("work a render does not need", () => {
+  afterEach(cleanup);
+
+  const photoCropper = () =>
+    createCropper({ image: { height: 3000, width: 4000 } });
+
+  it("keeps one subscription across parent renders", async () => {
+    const cropper = photoCropper();
+    const on = vi.spyOn(cropper, "on");
+    const Probe = ({ tick }: { tick: number }) => (
+      <p>
+        {tick}
+        {useZoom({ cropper }).value}
+        {useCropperValue(cropper).rotation}
+      </p>
+    );
+    const { rerender } = await render(<Probe tick={0} />);
+    const after = on.mock.calls.length;
+    await rerender(<Probe tick={1} />);
+    await rerender(<Probe tick={2} />);
+    expect(on.mock.calls.length).toBe(after);
+  });
+
+  it("does not set options again for an equal inline minSize", async () => {
+    const cropper = photoCropper();
+    const setOptions = vi.spyOn(cropper, "setOptions");
+    const Probe = ({ tick }: { tick: number }) => {
+      useCropper({ cropper, minSize: { height: 100, width: 100 } });
+      return <p>{tick}</p>;
+    };
+    const { rerender } = await render(<Probe tick={0} />);
+    const after = setOptions.mock.calls.length;
+    await rerender(<Probe tick={1} />);
+    expect(setOptions.mock.calls.length).toBe(after);
+  });
+
+  it("does not write back the value the cropper already holds", async () => {
+    const cropper = photoCropper();
+    const setValue = vi.spyOn(cropper, "setValue");
+    const Probe = ({ value }: { value: CropValue }) => {
+      useCropper({ cropper, value });
+      return null;
+    };
+    await render(<Probe value={cropper.getValue()} />);
+    expect(setValue).not.toHaveBeenCalled();
+  });
+
+  it("keeps the dial ticks across parent renders", async () => {
+    const cropper = photoCropper();
+    const seen: unknown[] = [];
+    const Probe = ({ tick }: { tick: number }) => (
+      <Cropper.Root cropper={cropper} data-tick={tick}>
+        <Cropper.DialTicks
+          render={(props) => {
+            seen.push(props.children);
+            return <div {...props} />;
+          }}
+        />
+      </Cropper.Root>
+    );
+    const { rerender } = await render(<Probe tick={0} />);
+    await rerender(<Probe tick={1} />);
+    expect(seen.length).toBeGreaterThan(1);
+    expect(seen.at(-1)).toBe(seen[0]);
+  });
+
+  it("does not render an idle handle on a resize elsewhere", async () => {
+    const cropper = photoCropper();
+    let renders = 0;
+    await render(
+      <Cropper.Root cropper={cropper}>
+        <Profiler
+          id="handle"
+          onRender={() => {
+            renders += 1;
+          }}
+        >
+          <Cropper.Handle position="right" />
+        </Profiler>
+      </Cropper.Root>
+    );
+    await frames();
+    renders = 0;
+    cropper.begin("resize");
+    await frames();
+    cropper.end();
+    await frames();
+    expect(renders).toBe(0);
+  });
+
+  it("clears a handle's active mark when its drag ends", async () => {
+    const cropper = photoCropper();
+    await render(
+      <Cropper.Root cropper={cropper}>
+        <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
+          <Cropper.Handle id="right" position="right" />
+          <Cropper.Handle id="left" position="left" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    await frames();
+    const pointer = (id: string, type: string): void => {
+      document.querySelector(id)?.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          clientX: 100,
+          clientY: 100,
+          pointerId: 1,
+        })
+      );
+    };
+    const active = (id: string): boolean =>
+      Object.hasOwn(
+        document.querySelector<HTMLElement>(id)?.dataset ?? {},
+        "active"
+      );
+    pointer("#right", "pointerdown");
+    await frames();
+    expect(active("#right")).toBeTruthy();
+    pointer("#right", "pointerup");
+    await frames();
+    pointer("#left", "pointerdown");
+    await frames();
+    expect(active("#left")).toBeTruthy();
+    expect(active("#right")).toBeFalsy();
+    pointer("#left", "pointerup");
   });
 });

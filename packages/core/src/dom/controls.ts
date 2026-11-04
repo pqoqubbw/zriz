@@ -192,7 +192,7 @@ export const bindZoomThumb = (
       cropper.getZoom(),
       options.max ?? cropper.getMaxZoom()
     );
-    const next = `${progress * 100}%`;
+    const next = `${Math.round(progress * 1e5) / 1e3}%`;
     if (next !== last) {
       last = next;
       element.style.insetInlineStart = next;

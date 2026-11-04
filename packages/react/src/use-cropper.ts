@@ -9,7 +9,13 @@ import type {
   CropperSnapshot,
   CropValue,
 } from "@zriz/core";
-import { useContext, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { CropperContext } from "./context";
 import { useIsomorphicLayoutEffect, useLatest } from "./part";
@@ -83,15 +89,19 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     latest,
     rest.disabled,
     rest.maxZoom,
-    rest.minSize,
+    rest.minSize?.width,
+    rest.minSize?.height,
   ]);
   useIsomorphicLayoutEffect(() => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== cropper.getValue()) {
       cropper.setValue(value, { emit: false, reason: "controlled" });
     }
   }, [cropper, value]);
   useIsomorphicLayoutEffect(() => {
-    if (aspect !== undefined && !sameAspect(cropper.getValue().aspect, aspect)) {
+    if (
+      aspect !== undefined &&
+      !sameAspect(cropper.getValue().aspect, aspect)
+    ) {
       cropper.setAspect(aspect, { reason: "aspect" });
     }
   }, [cropper, aspect, ready, rest.disabled]);
@@ -137,8 +147,12 @@ export const useCropperState = <T>(
 
 export const useCropperValue = (cropper?: Cropper): CropValue => {
   const target = useTarget(cropper);
+  const subscribe = useCallback(
+    (listener: () => void) => target.on("commit", listener),
+    [target]
+  );
   return useSyncExternalStore(
-    (listener) => target.on("commit", listener),
+    subscribe,
     () => target.getState().committed,
     () => target.getState().committed
   );

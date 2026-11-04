@@ -1,7 +1,7 @@
 "use client";
 
 import { DIAL_TICKS, bindDialTicks, tickData } from "@zriz/core/dom";
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useMemo } from "react";
 
 import { useCropperContext } from "../context";
 import { useMergedRef } from "../part";
@@ -26,17 +26,21 @@ export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
     (node: HTMLDivElement) => bindDialTicks(cropper, node, count),
     [cropper, count]
   );
-  const ticks = Array.from({ length: count }, (_, i) => {
-    const data = tickData(i, count);
-    return (
-      <span
-        data-fade={data.fade ?? undefined}
-        data-major={data.major ? "" : undefined}
-        data-zero={data.zero ? "" : undefined}
-        key={i}
-      />
-    );
-  });
+  const ticks = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        const data = tickData(i, count);
+        return (
+          <span
+            data-fade={data.fade ?? undefined}
+            data-major={data.major ? "" : undefined}
+            data-zero={data.zero ? "" : undefined}
+            key={i}
+          />
+        );
+      }),
+    [count]
+  );
   return usePart(
     "div",
     { "aria-hidden": true, children: ticks, "data-zriz-item": "dial-ticks" },

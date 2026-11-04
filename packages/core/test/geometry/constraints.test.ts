@@ -7,8 +7,9 @@ import {
   property,
   tuple,
 } from "fast-check";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import * as planesModule from "../../src/geometry/planes";
 import {
   aspectHeightRange,
   dragHandle,
@@ -27,6 +28,8 @@ import type {
   Size,
 } from "../../src/geometry";
 import { stateArb } from "./arbitraries";
+
+vi.mock(import("../../src/geometry/planes"), { spy: true });
 
 const handleArb = constantFrom<CropHandle>(
   "n",
@@ -346,5 +349,42 @@ describe("handle drag constraints", () => {
     );
     expect(straightenLimit({ height: 10_000, width: 1 }, 1, 1)).toBe(0);
     expect(straightenLimit({ height: 3000, width: 4000 }, 1, 1)).toBe(45);
+  });
+});
+
+describe("handle limits", () => {
+  it("hands the solver each limit once", () => {
+    const image = imagePlanes({
+      angle: 9,
+      aspect: null,
+      crop: { height: 1000, width: 1000, x: 0, y: 0 },
+      flip: false,
+      image: { height: 3000, width: 4000 },
+      perspective: { focal: 2889, horizontal: 0, vertical: 0 },
+      turns: 0,
+    });
+    const project = vi.mocked(planesModule.projectOntoPlanes);
+    project.mockClear();
+    dragHandle(
+      { x0: -500, x1: 500, y0: -500, y1: 500 },
+      "se",
+      { x: 99_999, y: 99_999 },
+      {
+        aspect: null,
+        minHeight: 10,
+        minWidth: 10,
+        planes: [
+          ...image,
+          { d: 2000, nx: 1, ny: 0 },
+          { d: 2000, nx: -1, ny: 0 },
+          { d: 2000, nx: 0, ny: 1 },
+          { d: 2000, nx: 0, ny: -1 },
+        ],
+      }
+    );
+    const planes = project.mock.calls[0]?.[0] ?? [];
+    const keys = planes.map(({ d, nx, ny }) => `${d} ${nx} ${ny}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.length).toBeLessThan(22);
   });
 });

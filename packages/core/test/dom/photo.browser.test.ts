@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import {
@@ -174,5 +174,24 @@ describe("photo layer", () => {
     attachImage(cropper, null);
     cropper.destroy();
     viewport.remove();
+  });
+
+  it("leaves the layers alone on the moving frames of a gesture", async () => {
+    const { cropper, photo } = await mount(512);
+    await sharp(photo);
+    cropper.begin("dial");
+    cropper.setRotation(1);
+    await expect
+      .poll(() => Object.hasOwn(photo.dataset, "sharp"), { timeout: 3000 })
+      .toBeFalsy();
+    const toggle = vi.spyOn(photo, "toggleAttribute");
+    for (let step = 2; step < 12; step += 1) {
+      cropper.setRotation(step, { reason: "dial" });
+      await new Promise((resolve) => {
+        requestAnimationFrame(resolve);
+      });
+    }
+    cropper.end();
+    expect(toggle).not.toHaveBeenCalled();
   });
 });
