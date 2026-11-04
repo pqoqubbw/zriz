@@ -111,7 +111,11 @@ describe("a source from another document", () => {
     const blob = await fixture("orient-1.jpg");
     const url = URL.createObjectURL(blob);
     const img = frame.contentDocument?.createElement("img") ?? new Image();
-    img.src = url;
+    const decode = img.decode.bind(img);
+    img.decode = async () => {
+      img.src = url;
+      await decode();
+    };
     const image = await loadImage(img);
     expect(image.width).toBeGreaterThan(0);
     URL.revokeObjectURL(url);

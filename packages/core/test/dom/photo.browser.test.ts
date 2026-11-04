@@ -219,6 +219,34 @@ describe("photo layer", () => {
     }
   });
 
+  it("makes its layers from the document it sits in", async () => {
+    const frame = document.createElement("iframe");
+    frame.srcdoc = "<!doctype html><body></body>";
+    await new Promise((resolve) => {
+      frame.addEventListener("load", resolve, { once: true });
+      document.body.append(frame);
+    });
+    const doc = frame.contentDocument;
+    if (!doc) {
+      throw new Error("no document");
+    }
+    const created = vi.spyOn(doc, "createElement");
+    const container = doc.createElement("div");
+    doc.body.append(container);
+    const cropper = createCropper();
+    const off = bindPhoto(cropper, container);
+    cleanups.push(() => {
+      off();
+      cropper.destroy();
+      frame.remove();
+    });
+    expect(created.mock.calls.map(([tag]) => tag)).toStrictEqual([
+      "div",
+      "img",
+      "canvas",
+    ]);
+  });
+
   it("turns sharp after the first settle when the image arrives with the binder", async () => {
     const image = await loadImage(await stripes(), { previewEdge: 1024 });
     const viewport = document.createElement("div");

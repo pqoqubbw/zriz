@@ -970,6 +970,31 @@ describe("the ruler under an ancestor or a border", () => {
   });
 });
 
+declare global {
+  interface Window {
+    ResizeObserver: typeof ResizeObserver;
+  }
+}
+
+const inFrame = async (): Promise<{
+  frame: HTMLIFrameElement;
+  doc: Document;
+  win: Window;
+}> => {
+  const frame = document.createElement("iframe");
+  frame.srcdoc = "<!doctype html><body></body>";
+  await new Promise((resolve) => {
+    frame.addEventListener("load", resolve, { once: true });
+    document.body.append(frame);
+  });
+  const doc = frame.contentDocument;
+  const win = frame.contentWindow;
+  if (!doc || !win) {
+    throw new Error("no document");
+  }
+  return { doc, frame, win };
+};
+
 describe("the ruler in another document", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
@@ -977,17 +1002,28 @@ describe("the ruler in another document", () => {
     }
   });
 
-  it("lays out ticks made by that document", async () => {
-    const frame = document.createElement("iframe");
-    frame.srcdoc = "<!doctype html><body></body>";
-    await new Promise((resolve) => {
-      frame.addEventListener("load", resolve, { once: true });
-      document.body.append(frame);
+  it("makes missing ticks and its observer from that document", async () => {
+    const { doc, frame, win } = await inFrame();
+    const host = doc.createElement("div");
+    const strip = doc.createElement("div");
+    host.append(strip);
+    doc.body.append(host);
+    const created = vi.spyOn(doc, "createElement");
+    const observer = vi.spyOn(win, "ResizeObserver");
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const off = bindDialTicks(cropper, strip);
+    cleanups.push(() => {
+      off();
+      cropper.destroy();
+      frame.remove();
     });
-    const doc = frame.contentDocument;
-    if (!doc) {
-      throw new Error("no document");
-    }
+    expect(strip.children.length).toBeGreaterThan(0);
+    expect(created).toHaveBeenCalledTimes(strip.children.length);
+    expect(observer).toHaveBeenCalledOnce();
+  });
+
+  it("lays out ticks made by that document", async () => {
+    const { doc, frame } = await inFrame();
     const host = doc.createElement("div");
     host.style.cssText = "position:relative;width:200px;height:40px;";
     const strip = doc.createElement("div");
