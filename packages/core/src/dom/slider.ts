@@ -81,7 +81,7 @@ export const sliderAria = (
   };
   aria();
   const offCommit = cropper.on("commit", aria);
-  const offKeys = cropper.on("change", (_, details) => {
+  const offKeys = cropper.on("accept", (_, details) => {
     if (details.reason === "keyboard" || details.reason === reason) {
       aria();
     }

@@ -13,7 +13,13 @@ import {
 } from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createCropper, parse, serialize, valuesEqual } from "../src";
+import {
+  createCropper,
+  defaultValue,
+  parse,
+  serialize,
+  valuesEqual,
+} from "../src";
 import type {
   CropValue,
   CropState,
@@ -981,5 +987,187 @@ describe("event order", () => {
     cropper.run(() => true);
     cropper.stop();
     expect(seen).toStrictEqual(["pan", null, false]);
+  });
+});
+
+describe("change and commit reporting", () => {
+  it("reports a write made inside a change listener", () => {
+    const { change, commit, cropper, time } = setup();
+    cropper.on("change", (value) => {
+      if (value.rotation > 10) {
+        cropper.setValue({ rotation: 10 });
+      }
+    });
+    cropper.setValue({ rotation: 20 });
+    time.frames(3);
+    expect(change.mock.calls.map(([value]) => value.rotation)).toStrictEqual([
+      20, 10,
+    ]);
+    expect(change.mock.calls[1]?.[1].previous.rotation).toBe(20);
+    expect(commit.mock.calls.map(([value]) => value.rotation)).toStrictEqual([
+      10,
+    ]);
+  });
+
+  it("reports a later photo's refit as a change with the old value as previous", () => {
+    const { change, commit, cropper, time } = setup({
+      image: { height: 750, width: 1000 },
+      value: {
+        ...defaultValue,
+        aspect: 1,
+        size: { height: 1, width: 0.75 },
+      },
+    });
+    cropper.setImage({ height: 2000, width: 1000 });
+    time.frames(2);
+    expect(cropper.getValue().size).toStrictEqual({ height: 0.5, width: 1 });
+    expect(change).toHaveBeenCalledOnce();
+    expect(change.mock.calls[0]?.[1].reason).toBe("coverage");
+    expect(change.mock.calls[0]?.[1].previous.size).toStrictEqual({
+      height: 1,
+      width: 0.75,
+    });
+    expect(commit.mock.calls[0]?.[1].reason).toBe("coverage");
+  });
+
+  it("stays quiet on a later photo that needs no refit", () => {
+    const { change, commit, cropper, time } = setup();
+    cropper.setImage({ height: 1500, width: 2000 });
+    time.frames(2);
+    expect(change).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("lands a canceled refit on the new photo's fit and commits it", () => {
+    const { commit, cropper, time } = setup({
+      image: { height: 750, width: 1000 },
+      value: {
+        ...defaultValue,
+        aspect: 1,
+        size: { height: 1, width: 0.75 },
+      },
+    });
+    cropper.on("change", (_, details) => {
+      details.cancel();
+    });
+    cropper.setImage({ height: 2000, width: 1000 });
+    time.frames(2);
+    expect(cropper.getValue().size).toStrictEqual({ height: 0.5, width: 1 });
+    expect(cropState(cropper.getCropState()).image.height).toBe(2000);
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a canceled crop inside limits set after it was saved", () => {
+    const { commit, cropper, time } = setup();
+    cropper.setZoom(15);
+    time.frames(2);
+    commit.mockClear();
+    cropper.on("change", (_, details) => {
+      details.cancel();
+    });
+    cropper.setOptions({ maxZoom: 2 });
+    time.frames(2);
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+    expect(commit).toHaveBeenCalledOnce();
+    expect(commit.mock.calls[0]?.[0].size.width).toBeCloseTo(0.5, 6);
+  });
+
+  it("cancels a gesture into limits set during it", () => {
+    const { cropper, time } = setup();
+    cropper.setZoom(10);
+    time.frames(2);
+    cropper.begin("pan");
+    cropper.setOptions({ minSize: { height: 1500, width: 2000 } });
+    time.frame();
+    cropper.cancel();
+    time.frames(2);
+    expect(cropper.getPixelCrop()?.width).toBe(2000);
+    expect(cropper.getPixelCrop()?.height).toBe(1500);
+  });
+
+  it("restores the exact value when nothing about the limits changed", () => {
+    const { cropper, time } = setup();
+    cropper.setZoom(3);
+    time.frames(2);
+    const before = cropper.getValue();
+    cropper.begin("pan");
+    cropper.panBy(0.05, 0);
+    time.frame();
+    cropper.cancel();
+    expect(cropper.getValue()).toBe(before);
+  });
+
+  it("drops a waiting change on a silent write of the same value", () => {
+    const { change, commit, cropper, time } = setup();
+    cropper.setRotation(5);
+    cropper.setRotation(5, { emit: false });
+    time.frames(3);
+    expect(change).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(cropper.getState().committed.rotation).toBe(5);
+  });
+
+  it("keeps the change and commit on a controlled echo of a waiting write", () => {
+    const { change, commit, cropper, time } = setup();
+    cropper.setRotation(5);
+    cropper.setValue(cropper.getValue(), {
+      emit: false,
+      reason: "controlled",
+    });
+    time.frames(2);
+    expect(change).toHaveBeenCalledOnce();
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the commit on a silent echo inside the change listener", () => {
+    const { commit, cropper, time } = setup();
+    cropper.on("change", (value) => {
+      cropper.setValue(value, { emit: false });
+    });
+    const before = cropper.getValue();
+    cropper.setRotation(5);
+    time.frames(2);
+    expect(commit).toHaveBeenCalledOnce();
+    expect(commit.mock.calls[0]?.[1].previous).toBe(before);
+  });
+
+  it("takes a new lens on the next write of an equal value and redraws", () => {
+    const tilted = { perspective: { horizontal: 0, vertical: 10 } };
+    const { cropper, time } = setup({ defaultValue: tilted });
+    const lens = (): number | undefined =>
+      cropper.getCropState()?.perspective.focal;
+    const before = lens();
+    cropper.setOptions({ focalLength: 50 });
+    expect(lens()).toBe(before);
+    time.frames(2);
+    const frame = vi.fn<CropperEvents["frame"]>();
+    cropper.on("frame", frame);
+    cropper.setValue({});
+    time.frames(2);
+    const wanted = (50 / 36) * 4000;
+    expect(lens()).toBeCloseTo(wanted, 6);
+    expect(frame.mock.calls.at(-1)?.[0].state?.perspective.focal).toBeCloseTo(
+      wanted,
+      6
+    );
+    cropper.setOptions({ focalLength: 26 });
+    cropper.reset();
+    expect(lens()).toBeCloseTo(before ?? 0, 6);
+  });
+
+  it("does not bring an old lens back through a canceled change", () => {
+    const { cropper, time } = setup();
+    cropper.setOptions({ focalLength: 50 });
+    cropper.setValue({});
+    time.frame();
+    cropper.on("change", (_, details) => {
+      details.cancel();
+    });
+    cropper.setRotation(5);
+    time.frame();
+    expect(cropper.getCropState()?.perspective.focal).toBeCloseTo(
+      (50 / 36) * 4000,
+      6
+    );
   });
 });

@@ -56,11 +56,13 @@ describe("review regressions", () => {
     cropper.setOptions({ minSize: { height: 200, width: 200 } });
     cropper.setZoom(4);
     time.frame();
-    cropper.on("change", (_, details) => {
+    const canceller = vi.fn<CropperEvents["change"]>((_, details) => {
       details.cancel();
     });
+    cropper.on("change", canceller);
     cropper.setImage({ height: 400, width: 400 });
     time.frame();
+    expect(canceller).toHaveBeenCalledOnce();
     expect(cropper.getCropState()?.image.width).toBe(400);
   });
 

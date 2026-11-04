@@ -2,6 +2,8 @@ import { double, assert as fcAssert, property, record } from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
+import type { CropperOptions } from "../../src";
+import { dialAria, dialHandlers } from "../../src/dom";
 import {
   cssMatrix,
   fitPlacement,
@@ -340,5 +342,83 @@ describe("view lifetime", () => {
     cropper.destroy();
     expect(vi.getTimerCount()).toBe(0);
     expect(viewOf(cropper)).not.toBe(view);
+  });
+});
+
+describe("a rejected change", () => {
+  const key = (name: string) =>
+    ({
+      key: name,
+      preventDefault: () => undefined,
+      shiftKey: false,
+    }) as unknown as KeyboardEvent;
+
+  const setup = (options: CropperOptions = {}) => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+      ...options,
+    });
+    return { cropper, time };
+  };
+
+  it.each([true, false])(
+    "leaves the dial's aria at the value that stayed, canceller first: %s",
+    (first) => {
+      const limit = (
+        value: { rotation: number },
+        details: { cancel: () => void }
+      ): void => {
+        if (value.rotation > 10) {
+          details.cancel();
+        }
+      };
+      const { cropper, time } = setup(first ? { onValueChange: limit } : {});
+      const attrs = new Map<string, string>();
+      dialAria(cropper, {
+        setAttribute: (name: string, next: string) => attrs.set(name, next),
+        toggleAttribute: () => undefined,
+      } as unknown as HTMLElement);
+      if (!first) {
+        cropper.on("change", limit);
+      }
+      const dial = dialHandlers(cropper);
+      cropper.setRotation(10);
+      time.frames(3);
+      dial.onKeyDown(key("ArrowRight"));
+      time.frames(2);
+      dial.onKeyUp(key("ArrowRight"));
+      time.frames(5);
+      expect(cropper.getValue().rotation).toBe(10);
+      expect(attrs.get("aria-valuenow")).toBe("10");
+    }
+  );
+
+  it("runs no transition and never settles", () => {
+    const { cropper, time } = setup({
+      onValueChange: (_, details) => {
+        details.cancel();
+      },
+    });
+    const view = viewOf(cropper);
+    view.setOptions({ motion: "always" });
+    view.setLayout({
+      dpr: 2,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+    time.frames(3);
+    const settle = vi.fn();
+    const settling: boolean[] = [];
+    cropper.on("settle", settle);
+    cropper.subscribe(() => settling.push(cropper.getState().settling));
+    cropper.flip();
+    time.frames(30);
+    expect(cropper.getValue().mirrored).toBe(false);
+    expect(settle).not.toHaveBeenCalled();
+    expect(settling).not.toContain(true);
+    view.destroy();
   });
 });

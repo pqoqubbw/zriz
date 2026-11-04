@@ -533,7 +533,7 @@ export const viewOf = (cropper: Cropper): View => {
   };
 
   const offFrame = cropper.on("frame", publish);
-  const offChange = cropper.on("change", (_, details) => {
+  const offChange = cropper.on("accept", (_, details) => {
     const kind = transitionFor[details.reason];
     const from = last;
     if (kind && from) {

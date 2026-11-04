@@ -89,6 +89,7 @@ export interface CropperFrame {
 
 export interface CropperEvents {
   change: (value: CropValue, details: ChangeDetails) => void;
+  accept: (value: CropValue, details: ChangeDetails) => void;
   commit: (value: CropValue, details: CommitDetails) => void;
   gesturestart: (reason: ChangeReason, event: Event | undefined) => void;
   gestureend: (reason: ChangeReason, event: Event | undefined) => void;
@@ -204,6 +205,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   let options: CropperOptions = initial;
   const clock = initial.clock ?? frameClock();
   const listeners: Listeners = {
+    accept: new Set(),
     change: new Set(),
     commit: new Set(),
     destroy: new Set(),
@@ -351,7 +353,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const settleCommit = (): void => {
-    if (gesture || blocking() || !commitPending) {
+    if (gesture || blocking() || dirty || !commitPending) {
       return;
     }
     const pending = commitPending;
@@ -369,6 +371,20 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       previous,
       reason: pending.reason,
     });
+  };
+
+  const refit = (
+    saved: CropState | null,
+    savedValue: CropValue
+  ): [CropState | null, CropValue] => {
+    if (!saved) {
+      return [saved, savedValue];
+    }
+    const fixed = constrain(saved, "centre");
+    const fixedValue = stateToValue(fixed, savedValue.aspect);
+    return valuesEqual(fixedValue, savedValue)
+      ? [saved, savedValue]
+      : [fixed, fixedValue];
   };
 
   const flush = (): void => {
@@ -403,14 +419,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     if (details.changed.length === 0) {
       return;
     }
-    emit("change", value, details);
+    const sent = value;
+    const sentState = state;
+    emit("change", sent, details);
     if (canceled) {
-      value = emitted;
-      state = emittedState;
+      [state, value] = refit(emittedState, emitted);
+      emittedState = state;
+      emitted = value;
       return;
     }
-    emitted = value;
-    emittedState = state;
+    emitted = sent;
+    emittedState = sentState;
+    emit("accept", sent, details);
   };
 
   const tick = (time: number): void => {
@@ -455,11 +475,24 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     action: ActionOptions,
     fallback: ChangeReason
   ): void => {
-    if (
-      destroyed ||
-      valuesEqual(value, nextValue) ||
-      (action.reason === "controlled" && gesture !== null)
-    ) {
+    if (destroyed || (action.reason === "controlled" && gesture !== null)) {
+      return;
+    }
+    if (valuesEqual(value, nextValue)) {
+      if (next && next.perspective.focal !== state?.perspective.focal) {
+        state = next;
+        if (!dirty) {
+          emittedState = next;
+        }
+        frameDirty = true;
+        schedule();
+      }
+      if (action.emit === false && action.reason !== "controlled" && dirty) {
+        emitted = value;
+        emittedState = state;
+        committed = value;
+        refresh();
+      }
       return;
     }
     state = next;
@@ -552,7 +585,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       }
       const { start, startValue, reason } = gesture;
       dropHolding();
-      accept(start, startValue, { event, reason }, reason);
+      const [fitted, fittedValue] = refit(start, startValue);
+      accept(fitted, fittedValue, { event, reason }, reason);
       cropper.end(event, owner);
     },
     destroy() {
@@ -731,7 +765,6 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       emittedState = constrain(fromValue(emitted, next), "centre");
-      emitted = stateToValue(emittedState, emitted.aspect);
       state = fixed;
       frameDirty = true;
       accept(fixed, fixedValue, {}, "coverage");
