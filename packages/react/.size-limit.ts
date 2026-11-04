@@ -45,7 +45,7 @@ export default [
     entry: ["index"],
     ignore: ["react", "react-dom"],
     import: "{ Dial, DialTicks, DialValue }",
-    limit: "5473 B",
+    limit: "5475 B",
     modifyRolldownConfig: production,
     name: "dial",
     path: "dist/cropper.js",

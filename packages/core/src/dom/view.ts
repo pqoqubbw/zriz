@@ -8,7 +8,7 @@ import {
   isFlatPerspective,
   perspectiveHomography,
 } from "../geometry/perspective";
-import { linearTransform } from "../geometry/state";
+import { linearTransform, sameFields } from "../geometry/state";
 import type { CropState, Matrix3, Point, Size } from "../geometry/types";
 import { spring } from "../motion";
 import type { Aspect } from "../value";
@@ -420,12 +420,7 @@ export const viewOf = (cropper: Cropper): View => {
 
   const setChrome = (next: Partial<Chrome>): void => {
     const merged = { ...chrome, ...next };
-    if (
-      merged.active === chrome.active &&
-      merged.grid === chrome.grid &&
-      merged.overscroll === chrome.overscroll &&
-      merged.transition === chrome.transition
-    ) {
+    if (sameFields(merged, chrome)) {
       return;
     }
     chrome = merged;
@@ -450,11 +445,7 @@ export const viewOf = (cropper: Cropper): View => {
 
   const followPhoto = (): void => {
     const size = cropper.getCropState()?.image;
-    if (
-      photo &&
-      size &&
-      (photo.width !== size.width || photo.height !== size.height)
-    ) {
+    if (photo && size && !sameFields(photo, size)) {
       held = null;
       pinned = null;
       last = null;
@@ -488,23 +479,14 @@ export const viewOf = (cropper: Cropper): View => {
       shift
     );
     const exact = exactBox(state, placement);
-    if (blend) {
-      const to = pose(exact, matrix);
-      if (to) {
-        shown = blendPose(blend.from, to, blend.t);
-        return {
-          layout,
-          matrix: poseMatrix(shown),
-          rect: snapBox(shown.rect, layout.dpr),
-          scale: placement.scale,
-          state,
-        };
-      }
+    const to = blend && pose(exact, matrix);
+    if (blend && to) {
+      shown = blendPose(blend.from, to, blend.t);
     }
     return {
       layout,
-      matrix,
-      rect: snapBox(exact, layout.dpr),
+      matrix: to && shown ? poseMatrix(shown) : matrix,
+      rect: snapBox(to && shown ? shown.rect : exact, layout.dpr),
       scale: placement.scale,
       state,
     };
@@ -538,21 +520,14 @@ export const viewOf = (cropper: Cropper): View => {
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
       const state = cropper.getCropState();
-      if (!layout || !state) {
-        pinned = null;
-        stopTransition = null;
-        setChrome({ transition: null });
-        return false;
-      }
-      const fit = exactBox(state, fitPlacement(layout, state));
       const t = settled(omega, elapsed);
-      if (t > 0.9995) {
+      if (!layout || !state || t > 0.9995) {
         pinned = null;
         stopTransition = null;
         setChrome({ transition: null });
         return false;
       }
-      pinned = lerpBox(from, fit, t);
+      pinned = lerpBox(from, exactBox(state, fitPlacement(layout, state)), t);
       return true;
     }, false);
   };

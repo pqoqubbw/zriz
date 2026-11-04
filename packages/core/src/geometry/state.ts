@@ -31,6 +31,15 @@ export const exifOrientations: Readonly<
   8: { flip: false, turns: 3 },
 };
 
+export const sameFields = <T extends object>(a: T, b: T): boolean => {
+  for (const key in a) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export const linearTransform = (
   state: Pick<CropState, "turns" | "flip" | "angle">
 ): Matrix2 =>

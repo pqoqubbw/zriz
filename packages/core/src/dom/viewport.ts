@@ -669,6 +669,14 @@ export const viewportController = (
   const inert = (): boolean =>
     safari === null && (!cropper.getCropState() || cropper.getState().disabled);
 
+  const endSafari = (event?: Event): void => {
+    if (safari) {
+      safari = null;
+      view.settleOverscroll(true);
+      cropper.end(event, owner);
+    }
+  };
+
   const safariStart = (
     event: SafariGestureEvent,
     scale: number
@@ -733,23 +741,14 @@ export const viewportController = (
       return;
     }
     event.preventDefault();
-    if (!safari) {
-      return;
-    }
-    safari = null;
-    view.settleOverscroll(true);
-    cropper.end(event, owner);
+    endSafari(event);
   };
 
   const releaseAll = (event?: Event): void => {
     for (const id of pointers.keys()) {
       finish(id, event);
     }
-    if (safari) {
-      safari = null;
-      view.settleOverscroll(true);
-      cropper.end(event, owner);
-    }
+    endSafari(event);
     endWheel();
   };
 
@@ -829,12 +828,7 @@ export const viewportController = (
       next.addEventListener("gestureend", onGestureEnd);
       win.document.addEventListener("transitionend", onAncestorSettle, true);
       win.document.addEventListener("animationend", onAncestorSettle, true);
-      unwatch = watchLoss(
-        cropper,
-        onLoss,
-        (event) => pointers.has(event.pointerId) && outside(element, event),
-        next
-      );
+      unwatch = watchLoss(cropper, onLoss, (id) => pointers.has(id), next);
       win.addEventListener("keydown", onEscape, true);
       observers = (["content-box", "border-box"] as const).map((box) => {
         const observer = new win.ResizeObserver(measure);

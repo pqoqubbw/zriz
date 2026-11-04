@@ -8,7 +8,6 @@ import {
   capture,
   claim,
   claimTouch,
-  outside,
   pressLost,
   presses,
   targetOf,
@@ -320,12 +319,7 @@ export const dialHandlers = (
       const target = targetOf(event, element);
       scale = target ? visualScale(target).x : 1;
       width = Math.max((target?.getBoundingClientRect().width ?? 0) / scale, 1);
-      unwatch = watchLoss(
-        cropper,
-        lost,
-        (next) => next.pointerId === pointer && outside(target, next),
-        target
-      );
+      unwatch = watchLoss(cropper, lost, (id) => id === pointer, target);
       if (event.pointerType !== "touch" && target) {
         capture(target, event.pointerId);
         releaseCursor = holdCursor(target);

@@ -14,6 +14,7 @@ import {
   mirrorY,
   rotateLeft,
   rotateRight,
+  sameFields,
   setAngle,
   turnedSize,
 } from "./geometry/state";
@@ -191,15 +192,6 @@ interface Gesture {
   owner: unknown;
   coast?: (() => void) | undefined;
 }
-
-const sameFields = <T extends object>(a: T, b: T): boolean => {
-  for (const key in a) {
-    if (a[key] !== b[key]) {
-      return false;
-    }
-  }
-  return true;
-};
 
 const attempt = <T>(call: () => T): T | undefined => {
   try {
@@ -933,12 +925,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       commitState(next, "centre", action, "aspect", aspect);
     },
     setCropState(next, action = {}) {
-      if (
-        !state ||
-        disabled() ||
-        next.image.width !== state.image.width ||
-        next.image.height !== state.image.height
-      ) {
+      if (!state || disabled() || !sameFields(state.image, next.image)) {
         return;
       }
       const turns = toQuarterTurns(next.turns);

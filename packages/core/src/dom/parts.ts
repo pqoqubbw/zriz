@@ -15,7 +15,6 @@ import {
   bindPointers,
   capture,
   claimTouch,
-  outside,
   pressLost,
   presses,
   stopAtZoomCeiling,
@@ -461,12 +460,7 @@ export const handleHandlers = (
       const target = targetOf(event, element);
       const win = windowOf(target);
       win.addEventListener("keydown", onEscape, true);
-      const offLoss = watchLoss(
-        cropper,
-        lost,
-        (next) => next.pointerId === drag?.id && outside(target, next),
-        target
-      );
+      const offLoss = watchLoss(cropper, lost, (id) => id === drag?.id, target);
       unwatch = () => {
         offLoss();
         win.removeEventListener("keydown", onEscape, true);

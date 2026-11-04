@@ -141,8 +141,8 @@ export const outside = (element: Element | null, event: Event): boolean =>
 export const watchLoss = (
   cropper: Cropper,
   lost: (event?: Event) => void,
-  stolen: (event: PointerEvent) => boolean,
-  element?: Element | null
+  held: (id: number) => boolean,
+  element: Element | null
 ): (() => void) => {
   const win = windowOf(element);
   const doc = win.document;
@@ -152,7 +152,7 @@ export const watchLoss = (
     }
   };
   const onPointer = (event: PointerEvent): void => {
-    if (stolen(event)) {
+    if (held(event.pointerId) && outside(element, event)) {
       lost(event);
     }
   };

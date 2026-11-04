@@ -7,7 +7,6 @@ import {
   MIN_HANDLE_SPAN,
   capture,
   claim,
-  outside,
   pressLost,
   presses,
   stopAtZoomCeiling,
@@ -210,12 +209,7 @@ export const zoomHandlers = (
       }
       pointer = event.pointerId;
       const own = targetOf(event, element);
-      unwatch = watchLoss(
-        cropper,
-        lost,
-        (next) => next.pointerId === pointer && outside(own, next),
-        own
-      );
+      unwatch = watchLoss(cropper, lost, (id) => id === pointer, own);
       if (own) {
         capture(own, event.pointerId);
         releaseCursor = holdCursor(own);
