@@ -1159,6 +1159,22 @@ describe("callbacks on a shared cropper", () => {
     expect(api.current).toBeNull();
   });
 
+  it("keeps an object actionsRef across a keyed remount on a shared cropper", async () => {
+    const api = createRef<CropperApi>();
+    const shared = createCropper({ image: PHOTO });
+    const screen = await render(
+      <Cropper.Root key="a" actionsRef={api} cropper={shared} />
+    );
+    await screen.rerender(
+      <Cropper.Root key="b" actionsRef={api} cropper={shared} />
+    );
+    await frames(2);
+    expect(api.current).toBe(shared);
+    await screen.unmount();
+    expect(api.current).toBeNull();
+    shared.destroy();
+  });
+
   it("keeps a function actionsRef on the new cropper across a keyed remount", async () => {
     const seen: (CropperApi | null)[] = [];
     const remember = (next: CropperApi | null): void => {

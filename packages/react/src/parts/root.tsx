@@ -65,7 +65,7 @@ export interface RootProps
   onError?: ((error: ZrizError) => void) | undefined;
 }
 
-const actionHolders = new WeakMap<object, Cropper>();
+const actionHolders = new WeakMap<object, () => unknown>();
 
 const holdActions = (
   ref: Ref<Cropper> | undefined,
@@ -74,20 +74,21 @@ const holdActions = (
   if (!ref) {
     return null;
   }
-  actionHolders.set(ref, cropper);
   let cleanup: ReturnType<RefCallback<Cropper>>;
+  const release = (): void => {
+    if (typeof cleanup === "function") {
+      cleanup();
+    } else if (actionHolders.get(ref) === release) {
+      attach(ref, null);
+    }
+  };
+  actionHolders.set(ref, release);
   if (typeof ref === "function") {
     cleanup = ref(cropper);
   } else {
     ref.current = cropper;
   }
-  return () => {
-    if (typeof cleanup === "function") {
-      cleanup();
-    } else if (actionHolders.get(ref) === cropper) {
-      attach(ref, null);
-    }
-  };
+  return release;
 };
 
 const IDLE: Chrome = {

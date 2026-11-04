@@ -22,7 +22,7 @@ const HOOKS_PAGE = defineDoc({
     section(
       "call methods from your own buttons",
       p(
-        "each `Root` runs one cropper. pass a ref to `actionsRef` to reach it once `Root` has mounted. the ref stays set while a suspense boundary shows its fallback, and is `null` while `<Activity>` hides `Root`. when `Root` unmounts, the ref clears with the passive effects, so a parent's `useLayoutEffect` in that commit still reads the cropper. [cropper](cropper) lists its methods."
+        "each `Root` runs one cropper. pass a ref to `actionsRef` to reach it once `Root` has mounted. the ref stays set while a suspense boundary shows its fallback, and is `null` while `<Activity>` hides `Root`. when `Root` unmounts, the ref clears with the passive effects, so a parent's `useLayoutEffect` in that commit still reads the cropper. on a keyed remount, the old `Root` lets go after the new one takes the ref. a ref object or a stable callback with no cleanup keeps the new cropper. an inline callback gets `null` last, and a cleanup your callback returns runs last, so neither suits a keyed `Root`. [cropper](cropper) lists its methods."
       ),
       code("hooks/actions-ref.tsx")
     ),
