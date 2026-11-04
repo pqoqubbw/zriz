@@ -142,9 +142,8 @@ export const bindPhoto = (
 
   const paint = (
     frame: ViewFrame,
-    bitmap: CanvasImageSource,
-    region: Region,
-    size: { width: number; height: number }
+    bitmap: ImageBitmap,
+    region: Region
   ): void => {
     const context = backing(frame);
     if (!context || !isAffine(frame.matrix) || context.isContextLost?.()) {
@@ -154,8 +153,8 @@ export const bindPhoto = (
     blank = false;
     const { dpr } = frame.layout;
     const [a, c, e, b, d, f] = frame.matrix;
-    const sx = region.width / size.width;
-    const sy = region.height / size.height;
+    const sx = region.width / bitmap.width;
+    const sy = region.height / bitmap.height;
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, rest.width, rest.height);
     context.imageSmoothingEnabled = true;
@@ -194,7 +193,7 @@ export const bindPhoto = (
       return;
     }
     const source = bitmap ?? current.preview;
-    paint(frame, source, fine?.region ?? whole(current), source);
+    paint(frame, source, fine?.region ?? whole(current));
     bitmap?.close();
     if (blank || !fine) {
       drawn = null;
@@ -282,7 +281,7 @@ export const bindPhoto = (
     if (motionReady) {
       show(false);
     } else {
-      paint(frame, image.preview, whole(image), image.preview);
+      paint(frame, image.preview, whole(image));
       drawn = null;
       show(false, !blank);
     }
