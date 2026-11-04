@@ -3,7 +3,7 @@
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -15,28 +15,48 @@ export const CropUpload = () => {
   const [error, setError] = useState<string | null>(null);
   const [picks, setPicks] = useState(0);
   const actions = useRef<CropperApi>(null);
+  const last = useRef<AbortController | null>(null);
+
+  useEffect(() => () => last.current?.abort(), []);
+  useEffect(
+    () => () => {
+      if (result) URL.revokeObjectURL(result);
+    },
+    [result]
+  );
 
   const upload = async () => {
     const plan = actions.current?.getPixelCrop();
     if (!file || !plan) return;
+    last.current?.abort();
+    const controller = new AbortController();
+    const { signal } = controller;
+    last.current = controller;
+    setError(null);
+    setResult(null);
     const form = new FormData();
     form.append("file", file);
     form.append("plan", JSON.stringify(plan));
-    const response = await fetch("/api/crop", {
-      method: "POST",
-      body: form,
-    }).catch(() => null);
-    if (!response) {
-      setError("the upload did not reach the server.");
-      return;
+    try {
+      const response = await fetch("/api/crop", {
+        method: "POST",
+        body: form,
+        signal,
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (!signal.aborted) {
+          setResult(URL.createObjectURL(blob));
+        }
+      } else {
+        const message = await response.text();
+        if (!signal.aborted) setError(message);
+      }
+    } catch {
+      if (!signal.aborted) {
+        setError("the upload did not reach the server.");
+      }
     }
-    if (!response.ok) {
-      setError(await response.text());
-      return;
-    }
-    if (result) URL.revokeObjectURL(result);
-    setError(null);
-    setResult(URL.createObjectURL(await response.blob()));
   };
 
   return (
@@ -44,10 +64,13 @@ export const CropUpload = () => {
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
+          last.current?.abort();
           setReady(false);
           setError(null);
-          if (result) URL.revokeObjectURL(result);
           setResult(null);
           setPicks((count) => count + 1);
           setFile(event.target.files?.[0] ?? null);

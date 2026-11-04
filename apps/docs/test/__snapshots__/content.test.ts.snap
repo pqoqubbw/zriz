@@ -3900,36 +3900,59 @@ export const Editor = ({ src, onSave }: Props) => {
 
 const [picks, setPicks] = useState(0);
 
+const last = useRef<AbortController | null>(null);
+
+useEffect(() => () => last.current?.abort(), []);
+useEffect(
+  () => () => {
+    if (result) URL.revokeObjectURL(result);
+  },
+  [result]
+
 const upload = async () => {
   const plan = actions.current?.getPixelCrop();
   if (!file || !plan) return;
+  last.current?.abort();
+  const controller = new AbortController();
+  const { signal } = controller;
+  last.current = controller;
+  setError(null);
+  setResult(null);
   const form = new FormData();
   form.append("file", file);
   form.append("plan", JSON.stringify(plan));
-  const response = await fetch("/api/crop", {
-    method: "POST",
-    body: form,
-  }).catch(() => null);
-  if (!response) {
-    setError("the upload did not reach the server.");
-    return;
+  try {
+    const response = await fetch("/api/crop", {
+      method: "POST",
+      body: form,
+      signal,
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      if (!signal.aborted) {
+        setResult(URL.createObjectURL(blob));
+      }
+    } else {
+      const message = await response.text();
+      if (!signal.aborted) setError(message);
+    }
+  } catch {
+    if (!signal.aborted) {
+      setError("the upload did not reach the server.");
+    }
   }
-  if (!response.ok) {
-    setError(await response.text());
-    return;
-  }
-  if (result) URL.revokeObjectURL(result);
-  setError(null);
-  setResult(URL.createObjectURL(await response.blob()));
 };
 
 <input
   type="file"
   accept="image/jpeg,image/png,image/webp,image/avif"
+  onClick={(event) => {
+    event.currentTarget.value = "";
+  }}
   onChange={(event) => {
+    last.current?.abort();
     setReady(false);
     setError(null);
-    if (result) URL.revokeObjectURL(result);
     setResult(null);
     setPicks((count) => count + 1);
     setFile(event.target.files?.[0] ?? null);
@@ -3952,36 +3975,59 @@ const upload = async () => {
 
 <span class=k>const </span><span class=p>[</span>picks<span class=p>,</span> setPicks<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>0</span><span class=p>);</span>
 
-<span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
+<span class=k>const</span> last <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
+<span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
+<span class=t>useEffect</span><span class=p>(</span>
+  <span class=p>() =&gt; () =&gt; {</span>
+    <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
+  <span class=p>},</span>
+  <span class=p>[</span>result<span class=p>]</span>
+
+const <span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>const</span> plan <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getPixelCrop</span><span class=p>();</span>
   <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>plan<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
+  <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+  <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+  last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+  <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
+  <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
   form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
   form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"plan"</span><span class=p>,</span> JSON<span class=p>.</span><span class=t>stringify</span><span class=p>(</span>plan<span class=p>));</span>
-  <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
-    method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
-    body<span class=p>:</span> form<span class=p>,</span>
-  <span class=p>}).</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!</span>response<span class=p>) {</span>
-    <span class=t>setError</span><span class=p>(</span><span class=s>"the upload did not reach the server."</span><span class=p>);</span>
-    <span class=k>return</span><span class=p>;</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
+      method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
+      body<span class=p>:</span> form<span class=p>,</span>
+      signal<span class=p>,</span>
+    <span class=p>});</span>
+    <span class=k>if </span><span class=p>(</span>response<span class=p>.</span>ok<span class=p>) {</span>
+      <span class=k>const</span> blob <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>();</span>
+      <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
+        <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>));</span>
+      <span class=p>}</span>
+    <span class=p>} </span><span class=k>else </span><span class=p>{</span>
+      <span class=k>const</span> message <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>();</span>
+      <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) </span><span class=t>setError</span><span class=p>(</span>message<span class=p>);</span>
+    <span class=p>}</span>
+  <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
+    <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
+      <span class=t>setError</span><span class=p>(</span><span class=s>"the upload did not reach the server."</span><span class=p>);</span>
+    <span class=p>}</span>
   <span class=p>}</span>
-  <span class=k>if </span><span class=p>(!</span>response<span class=p>.</span>ok<span class=p>) {</span>
-    <span class=t>setError</span><span class=p>(</span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>());</span>
-    <span class=k>return</span><span class=p>;</span>
-  <span class=p>}</span>
-  <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
-  <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
-  <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>()));</span>
-<span class=p>};</span>
+<span class=p>}</span>;
 
 <span class=p>&lt;</span><span class=t>input</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
   <span class=a>accept</span><span class=p>="</span><span class=s>image/jpeg,image/png,image/webp,image/avif</span><span class=p>"</span>
+  <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+    event<span class=p>.</span>currentTarget<span class=p>.</span>value <span class=p>= </span><span class=s>""</span><span class=p>;</span>
+  <span class=p>}}</span>
   <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+    last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
     <span class=t>setReady</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
-    <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
     <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
     <span class=t>setPicks</span><span class=p>((</span>count<span class=p>) =&gt;</span> count <span class=p>+ </span><span class=n>1</span><span class=p>);</span>
     <span class=t>setFile</span><span class=p>(</span>event<span class=p>.</span>target<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>] ?? </span><span class=k>null</span><span class=p>);</span>
@@ -4138,7 +4184,7 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -4150,28 +4196,48 @@ export const CropUpload = () => {
   const [error, setError] = useState<string | null>(null);
   const [picks, setPicks] = useState(0);
   const actions = useRef<CropperApi>(null);
+  const last = useRef<AbortController | null>(null);
+
+  useEffect(() => () => last.current?.abort(), []);
+  useEffect(
+    () => () => {
+      if (result) URL.revokeObjectURL(result);
+    },
+    [result]
+  );
 
   const upload = async () => {
     const plan = actions.current?.getPixelCrop();
     if (!file || !plan) return;
+    last.current?.abort();
+    const controller = new AbortController();
+    const { signal } = controller;
+    last.current = controller;
+    setError(null);
+    setResult(null);
     const form = new FormData();
     form.append("file", file);
     form.append("plan", JSON.stringify(plan));
-    const response = await fetch("/api/crop", {
-      method: "POST",
-      body: form,
-    }).catch(() => null);
-    if (!response) {
-      setError("the upload did not reach the server.");
-      return;
+    try {
+      const response = await fetch("/api/crop", {
+        method: "POST",
+        body: form,
+        signal,
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (!signal.aborted) {
+          setResult(URL.createObjectURL(blob));
+        }
+      } else {
+        const message = await response.text();
+        if (!signal.aborted) setError(message);
+      }
+    } catch {
+      if (!signal.aborted) {
+        setError("the upload did not reach the server.");
+      }
     }
-    if (!response.ok) {
-      setError(await response.text());
-      return;
-    }
-    if (result) URL.revokeObjectURL(result);
-    setError(null);
-    setResult(URL.createObjectURL(await response.blob()));
   };
 
   return (
@@ -4179,10 +4245,13 @@ export const CropUpload = () => {
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
+          last.current?.abort();
           setReady(false);
           setError(null);
-          if (result) URL.revokeObjectURL(result);
           setResult(null);
           setPicks((count) => count + 1);
           setFile(event.target.files?.[0] ?? null);
@@ -4222,7 +4291,7 @@ export const CropUpload = () => {
 <span class=k>import type </span><span class=p>{</span> Cropper <span class=k>as</span> CropperApi <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
 <span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>
-<span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 
 <span class=k>const</span> unreadable <span class=p>=</span>
   <span class=s>"this photo does not open. pick a jpeg, png, webp or avif."</span><span class=p>;</span>
@@ -4234,28 +4303,48 @@ export const CropUpload = () => {
   <span class=k>const </span><span class=p>[</span>error<span class=p>,</span> setError<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>string <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>picks<span class=p>,</span> setPicks<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>0</span><span class=p>);</span>
   <span class=k>const</span> actions <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const</span> last <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
+  <span class=t>useEffect</span><span class=p>(</span>
+    <span class=p>() =&gt; () =&gt; {</span>
+      <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
+    <span class=p>},</span>
+    <span class=p>[</span>result<span class=p>]</span>
+  <span class=p>);</span>
 
   <span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
     <span class=k>const</span> plan <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getPixelCrop</span><span class=p>();</span>
     <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>plan<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
+    <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+    <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+    last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+    <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
+    <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
     <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
     form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
     form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"plan"</span><span class=p>,</span> JSON<span class=p>.</span><span class=t>stringify</span><span class=p>(</span>plan<span class=p>));</span>
-    <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
-      method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
-      body<span class=p>:</span> form<span class=p>,</span>
-    <span class=p>}).</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
-    <span class=k>if </span><span class=p>(!</span>response<span class=p>) {</span>
-      <span class=t>setError</span><span class=p>(</span><span class=s>"the upload did not reach the server."</span><span class=p>);</span>
-      <span class=k>return</span><span class=p>;</span>
+    <span class=k>try </span><span class=p>{</span>
+      <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
+        method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
+        body<span class=p>:</span> form<span class=p>,</span>
+        signal<span class=p>,</span>
+      <span class=p>});</span>
+      <span class=k>if </span><span class=p>(</span>response<span class=p>.</span>ok<span class=p>) {</span>
+        <span class=k>const</span> blob <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>();</span>
+        <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
+          <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>));</span>
+        <span class=p>}</span>
+      <span class=p>} </span><span class=k>else </span><span class=p>{</span>
+        <span class=k>const</span> message <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>();</span>
+        <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) </span><span class=t>setError</span><span class=p>(</span>message<span class=p>);</span>
+      <span class=p>}</span>
+    <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
+      <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
+        <span class=t>setError</span><span class=p>(</span><span class=s>"the upload did not reach the server."</span><span class=p>);</span>
+      <span class=p>}</span>
     <span class=p>}</span>
-    <span class=k>if </span><span class=p>(!</span>response<span class=p>.</span>ok<span class=p>) {</span>
-      <span class=t>setError</span><span class=p>(</span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>());</span>
-      <span class=k>return</span><span class=p>;</span>
-    <span class=p>}</span>
-    <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
-    <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
-    <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>()));</span>
   <span class=p>};</span>
 
   <span class=k>return </span><span class=p>(</span>
@@ -4263,10 +4352,13 @@ export const CropUpload = () => {
       <span class=p>&lt;</span><span class=t>input</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/jpeg,image/png,image/webp,image/avif</span><span class=p>"</span>
+        <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+          event<span class=p>.</span>currentTarget<span class=p>.</span>value <span class=p>= </span><span class=s>""</span><span class=p>;</span>
+        <span class=p>}}</span>
         <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+          last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
           <span class=t>setReady</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
           <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
-          <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
           <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
           <span class=t>setPicks</span><span class=p>((</span>count<span class=p>) =&gt;</span> count <span class=p>+ </span><span class=n>1</span><span class=p>);</span>
           <span class=t>setFile</span><span class=p>(</span>event<span class=p>.</span>target<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>] ?? </span><span class=k>null</span><span class=p>);</span>
@@ -8251,7 +8343,9 @@ pnpm add sharp @zriz/core
 
 a bad request comes back as text, and the alert shows it. a photo the browser cannot open shows the same alert.
 
-each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo starts from the full frame. [loading images](https://zriz.dev/docs/loading-images.md) explains why.
+each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo starts from the full frame. [loading images](https://zriz.dev/docs/loading-images.md) explains why. safari fires no \`change\` for the same file twice, so \`onClick\` clears the input first.
+
+\`last\` holds the upload in flight. a new upload, a new pick or an unmount aborts it, so an answer for an old photo never shows under a new one. starting an upload clears the old result and error, and the effect on \`result\` revokes each url it leaves behind.
 
 \`\`\`tsx
 const unreadable =
@@ -8259,36 +8353,59 @@ const unreadable =
 
 const [picks, setPicks] = useState(0);
 
+const last = useRef<AbortController | null>(null);
+
+useEffect(() => () => last.current?.abort(), []);
+useEffect(
+  () => () => {
+    if (result) URL.revokeObjectURL(result);
+  },
+  [result]
+
 const upload = async () => {
   const plan = actions.current?.getPixelCrop();
   if (!file || !plan) return;
+  last.current?.abort();
+  const controller = new AbortController();
+  const { signal } = controller;
+  last.current = controller;
+  setError(null);
+  setResult(null);
   const form = new FormData();
   form.append("file", file);
   form.append("plan", JSON.stringify(plan));
-  const response = await fetch("/api/crop", {
-    method: "POST",
-    body: form,
-  }).catch(() => null);
-  if (!response) {
-    setError("the upload did not reach the server.");
-    return;
+  try {
+    const response = await fetch("/api/crop", {
+      method: "POST",
+      body: form,
+      signal,
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      if (!signal.aborted) {
+        setResult(URL.createObjectURL(blob));
+      }
+    } else {
+      const message = await response.text();
+      if (!signal.aborted) setError(message);
+    }
+  } catch {
+    if (!signal.aborted) {
+      setError("the upload did not reach the server.");
+    }
   }
-  if (!response.ok) {
-    setError(await response.text());
-    return;
-  }
-  if (result) URL.revokeObjectURL(result);
-  setError(null);
-  setResult(URL.createObjectURL(await response.blob()));
 };
 
 <input
   type="file"
   accept="image/jpeg,image/png,image/webp,image/avif"
+  onClick={(event) => {
+    event.currentTarget.value = "";
+  }}
   onChange={(event) => {
+    last.current?.abort();
     setReady(false);
     setError(null);
-    if (result) URL.revokeObjectURL(result);
     setResult(null);
     setPicks((count) => count + 1);
     setFile(event.target.files?.[0] ?? null);
@@ -8401,7 +8518,7 @@ export const POST = async (request: Request) => {
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -8413,28 +8530,48 @@ export const CropUpload = () => {
   const [error, setError] = useState<string | null>(null);
   const [picks, setPicks] = useState(0);
   const actions = useRef<CropperApi>(null);
+  const last = useRef<AbortController | null>(null);
+
+  useEffect(() => () => last.current?.abort(), []);
+  useEffect(
+    () => () => {
+      if (result) URL.revokeObjectURL(result);
+    },
+    [result]
+  );
 
   const upload = async () => {
     const plan = actions.current?.getPixelCrop();
     if (!file || !plan) return;
+    last.current?.abort();
+    const controller = new AbortController();
+    const { signal } = controller;
+    last.current = controller;
+    setError(null);
+    setResult(null);
     const form = new FormData();
     form.append("file", file);
     form.append("plan", JSON.stringify(plan));
-    const response = await fetch("/api/crop", {
-      method: "POST",
-      body: form,
-    }).catch(() => null);
-    if (!response) {
-      setError("the upload did not reach the server.");
-      return;
+    try {
+      const response = await fetch("/api/crop", {
+        method: "POST",
+        body: form,
+        signal,
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (!signal.aborted) {
+          setResult(URL.createObjectURL(blob));
+        }
+      } else {
+        const message = await response.text();
+        if (!signal.aborted) setError(message);
+      }
+    } catch {
+      if (!signal.aborted) {
+        setError("the upload did not reach the server.");
+      }
     }
-    if (!response.ok) {
-      setError(await response.text());
-      return;
-    }
-    if (result) URL.revokeObjectURL(result);
-    setError(null);
-    setResult(URL.createObjectURL(await response.blob()));
   };
 
   return (
@@ -8442,10 +8579,13 @@ export const CropUpload = () => {
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
+          last.current?.abort();
           setReady(false);
           setError(null);
-          if (result) URL.revokeObjectURL(result);
           setResult(null);
           setPicks((count) => count + 1);
           setFile(event.target.files?.[0] ?? null);

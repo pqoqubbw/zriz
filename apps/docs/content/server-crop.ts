@@ -22,12 +22,17 @@ const SERVER_CROP_PAGE = defineDoc({
         "a bad request comes back as text, and the alert shows it. a photo the browser cannot open shows the same alert."
       ),
       p(
-        "each pick bumps a counter that `Root` takes as its `key`, so every photo starts from the full frame. [loading images](loading-images) explains why."
+        "each pick bumps a counter that `Root` takes as its `key`, so every photo starts from the full frame. [loading images](loading-images) explains why. safari fires no `change` for the same file twice, so `onClick` clears the input first."
+      ),
+      p(
+        "`last` holds the upload in flight. a new upload, a new pick or an unmount aborts it, so an answer for an old photo never shows under a new one. starting an upload clears the old result and error, and the effect on `result` revokes each url it leaves behind."
       ),
       excerpt(
         "server-crop/crop-upload.tsx",
         ["const unreadable", '"this photo'],
         ["const [picks", null],
+        ["const last", null],
+        ["useEffect(() => () => last", "[result]"],
         ["const upload", "};"],
         ["<input", "/>"],
         ["<Cropper.Root", ">"],
