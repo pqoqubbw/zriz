@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 
 const skipped = new Set(["history", "coverage"]);
 
-export const UndoEditor = ({ src }: { src: string }) => {
+const Editor = ({ src }: { src: string }) => {
   const actions = useRef<CropperApi>(null);
   const [history, setHistory] = useState<CropValue[]>([]);
 
@@ -24,7 +24,9 @@ export const UndoEditor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
-    if (!previous) return;
+    if (!previous || actions.current?.getState().interacting) {
+      return;
+    }
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };
@@ -33,7 +35,6 @@ export const UndoEditor = ({ src }: { src: string }) => {
     <Cropper.Root
       actionsRef={actions}
       src={src}
-      onLoad={() => setHistory([])}
       onValueCommit={remember}
     >
       <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -49,7 +50,7 @@ export const UndoEditor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
-        disabled={history.length === 0}
+        aria-disabled={history.length === 0}
         onClick={undo}
       >
         undo
@@ -57,3 +58,7 @@ export const UndoEditor = ({ src }: { src: string }) => {
     </Cropper.Root>
   );
 };
+
+export const UndoEditor = ({ src }: { src: string }) => (
+  <Editor key={src} src={src} />
+);

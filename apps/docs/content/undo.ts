@@ -9,7 +9,7 @@ const UNDO_PAGE = defineDoc({
         "`details.previous` holds the crop from before the gesture. one gesture is one commit, however many frames it took. the stack keeps the last 50."
       ),
       p(
-        "`remember` skips commits with two reasons. `history` is the undo itself, and `coverage` is zriz fitting the crop to a new photo or new limits."
+        "`remember` skips commits with two reasons. `history` is the undo itself, and `coverage` is zriz fitting the crop to new limits."
       ),
       excerpt(
         "undo/undo-editor.tsx",
@@ -21,7 +21,7 @@ const UNDO_PAGE = defineDoc({
     section(
       "step back",
       p(
-        "`setValue()` commits like any other change, with the reason you give it. the button stays off while the stack is empty."
+        "`setValue()` commits like any other change, with the reason you give it. a press during a gesture does nothing, because the gesture would overwrite the step and the stack would lose it. the button reads as off while the stack is empty, with `aria-disabled`, so it keeps focus when the last step goes."
       ),
       p(
         "for redo, keep a second stack. `undo` pushes `actions.current.getValue()` onto it before it steps back. a `redo` function pops it, pushes the current crop onto the undo stack and calls `setValue()` with `history` too. `remember` clears the redo stack after the reason check, so a new gesture drops it."
@@ -35,13 +35,17 @@ const UNDO_PAGE = defineDoc({
     section(
       "wire it to the cropper",
       p(
-        "`onValueCommit` hands every commit to `remember`. crops from the last photo make no sense on the next one, so `onLoad` clears the stack."
+        "`onValueCommit` hands every commit to `remember`. crops from the last photo make no sense on the next one, so `UndoEditor` keys `Editor` by `src`. each photo gets a fresh cropper at the full frame and an empty stack, and a late commit from the old cropper has no stack to reach. the old photo leaves the screen at once."
       ),
-      excerpt("undo/undo-editor.tsx", ["<Cropper.Root", ">"])
+      excerpt(
+        "undo/undo-editor.tsx",
+        ["<Cropper.Root", ">"],
+        ["export const UndoEditor", ");"]
+      )
     ),
     section(
       "the whole file",
-      p("`UndoEditor` adds the button under the dial:"),
+      p("`Editor` adds the button under the dial:"),
       code("undo/undo-editor.tsx")
     ),
   ],

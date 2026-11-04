@@ -4413,28 +4413,32 @@ const remember = (_: CropValue, details: CommitDetails) => {
     "undo/undo-editor.tsx",
     "const undo = () => {
   const previous = history.at(-1);
-  if (!previous) return;
+  if (!previous || actions.current?.getState().interacting) {
+    return;
+  }
   setHistory(history.slice(0, -1));
   actions.current?.setValue(previous, { reason: "history" });
 };
 
 <button
   type="button"
-  disabled={history.length === 0}
+  aria-disabled={history.length === 0}
   onClick={undo}
 >
   undo
 </button>",
     "<span class=k>const </span><span class=t>undo </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> previous <span class=p>=</span> history<span class=p>.</span><span class=t>at</span><span class=p>(-</span><span class=n>1</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!</span>previous<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>if </span><span class=p>(!</span>previous <span class=p>||</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getState</span><span class=p>().</span>interacting<span class=p>) {</span>
+    <span class=k>return</span><span class=p>;</span>
+  <span class=p>}</span>
   <span class=t>setHistory</span><span class=p>(</span>history<span class=p>.</span><span class=t>slice</span><span class=p>(</span><span class=n>0</span><span class=p>, -</span><span class=n>1</span><span class=p>));</span>
   actions<span class=p>.</span>current<span class=p>?.</span><span class=t>setValue</span><span class=p>(</span>previous<span class=p>, {</span> reason<span class=p>: </span><span class=s>"history" </span><span class=p>});</span>
 <span class=p>};</span>
 
 <span class=p>&lt;</span><span class=t>button</span>
   <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
-  <span class=a>disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
+  <span class=a>aria-disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
   <span class=a>onClick</span><span class=p>={</span>undo<span class=p>}</span>
 <span class=p>&gt;</span>
   undo
@@ -4446,15 +4450,21 @@ const remember = (_: CropValue, details: CommitDetails) => {
     "<Cropper.Root
   actionsRef={actions}
   src={src}
-  onLoad={() => setHistory([])}
   onValueCommit={remember}
->",
+>
+
+export const UndoEditor = ({ src }: { src: string }) => (
+  <Editor key={src} src={src} />
+);",
     "<span class=p>&lt;</span><span class=t>Cropper.Root</span>
   <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
   <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
-  <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setHistory</span><span class=p>([])}</span>
   <span class=a>onValueCommit</span><span class=p>={</span>remember<span class=p>}</span>
-<span class=p>&gt;</span>",
+<span class=p>&gt;</span>
+
+export const UndoEditor = (<span class=p>{</span> src <span class=p>}</span>: <span class=p>{</span> src: string <span class=p>}</span>) =&gt; (
+  <span class=p>&lt;</span><span class=t>Editor </span><span class=a>key</span><span class=p>={</span>src<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>} /&gt;</span>
+);",
   ],
   [
     "undo",
@@ -4472,7 +4482,7 @@ import { useRef, useState } from "react";
 
 const skipped = new Set(["history", "coverage"]);
 
-export const UndoEditor = ({ src }: { src: string }) => {
+const Editor = ({ src }: { src: string }) => {
   const actions = useRef<CropperApi>(null);
   const [history, setHistory] = useState<CropValue[]>([]);
 
@@ -4485,7 +4495,9 @@ export const UndoEditor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
-    if (!previous) return;
+    if (!previous || actions.current?.getState().interacting) {
+      return;
+    }
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };
@@ -4494,7 +4506,6 @@ export const UndoEditor = ({ src }: { src: string }) => {
     <Cropper.Root
       actionsRef={actions}
       src={src}
-      onLoad={() => setHistory([])}
       onValueCommit={remember}
     >
       <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -4510,14 +4521,18 @@ export const UndoEditor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
-        disabled={history.length === 0}
+        aria-disabled={history.length === 0}
         onClick={undo}
       >
         undo
       </button>
     </Cropper.Root>
   );
-};",
+};
+
+export const UndoEditor = ({ src }: { src: string }) => (
+  <Editor key={src} src={src} />
+);",
     "<span class=s>"use client"</span><span class=p>;</span>
 
 <span class=k>import type </span><span class=p>{</span>
@@ -4531,7 +4546,7 @@ export const UndoEditor = ({ src }: { src: string }) => {
 
 <span class=k>const</span> skipped <span class=p>= </span><span class=k>new </span><span class=t>Set</span><span class=p>([</span><span class=s>"history"</span><span class=p>, </span><span class=s>"coverage"</span><span class=p>]);</span>
 
-<span class=k>export const </span><span class=t>UndoEditor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
+<span class=k>const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const</span> actions <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>history<span class=p>,</span> setHistory<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>CropValue<span class=p>[]&gt;([]);</span>
 
@@ -4544,7 +4559,9 @@ export const UndoEditor = ({ src }: { src: string }) => {
 
   <span class=k>const </span><span class=t>undo </span><span class=p>= () =&gt; {</span>
     <span class=k>const</span> previous <span class=p>=</span> history<span class=p>.</span><span class=t>at</span><span class=p>(-</span><span class=n>1</span><span class=p>);</span>
-    <span class=k>if </span><span class=p>(!</span>previous<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>if </span><span class=p>(!</span>previous <span class=p>||</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getState</span><span class=p>().</span>interacting<span class=p>) {</span>
+      <span class=k>return</span><span class=p>;</span>
+    <span class=p>}</span>
     <span class=t>setHistory</span><span class=p>(</span>history<span class=p>.</span><span class=t>slice</span><span class=p>(</span><span class=n>0</span><span class=p>, -</span><span class=n>1</span><span class=p>));</span>
     actions<span class=p>.</span>current<span class=p>?.</span><span class=t>setValue</span><span class=p>(</span>previous<span class=p>, {</span> reason<span class=p>: </span><span class=s>"history" </span><span class=p>});</span>
   <span class=p>};</span>
@@ -4553,7 +4570,6 @@ export const UndoEditor = ({ src }: { src: string }) => {
     <span class=p>&lt;</span><span class=t>Cropper.Root</span>
       <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
       <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
-      <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setHistory</span><span class=p>([])}</span>
       <span class=a>onValueCommit</span><span class=p>={</span>remember<span class=p>}</span>
     <span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
@@ -4569,14 +4585,18 @@ export const UndoEditor = ({ src }: { src: string }) => {
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>button</span>
         <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
-        <span class=a>disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>history<span class=p>.</span>length <span class=p>=== </span><span class=n>0</span><span class=p>}</span>
         <span class=a>onClick</span><span class=p>={</span>undo<span class=p>}</span>
       <span class=p>&gt;</span>
         undo
       <span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
     <span class=p>&lt;/</span><span class=t>Cropper.Root</span><span class=p>&gt;</span>
   <span class=p>);</span>
-<span class=p>};</span>",
+<span class=p>};</span>
+
+<span class=k>export const </span><span class=t>UndoEditor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; (</span>
+  <span class=p>&lt;</span><span class=t>Editor </span><span class=a>key</span><span class=p>={</span>src<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>} /&gt;</span>
+<span class=p>);</span>",
   ],
   [
     "faq",
@@ -8316,7 +8336,7 @@ the demo runs on the page at https\\://zriz.dev/docs/undo.
 
 \`details.previous\` holds the crop from before the gesture. one gesture is one commit, however many frames it took. the stack keeps the last 50.
 
-\`remember\` skips commits with two reasons. \`history\` is the undo itself, and \`coverage\` is zriz fitting the crop to a new photo or new limits.
+\`remember\` skips commits with two reasons. \`history\` is the undo itself, and \`coverage\` is zriz fitting the crop to new limits.
 
 \`\`\`tsx
 const skipped = new Set(["history", "coverage"]);
@@ -8333,21 +8353,23 @@ const remember = (_: CropValue, details: CommitDetails) => {
 
 ## step back
 
-\`setValue()\` commits like any other change, with the reason you give it. the button stays off while the stack is empty.
+\`setValue()\` commits like any other change, with the reason you give it. a press during a gesture does nothing, because the gesture would overwrite the step and the stack would lose it. the button reads as off while the stack is empty, with \`aria-disabled\`, so it keeps focus when the last step goes.
 
 for redo, keep a second stack. \`undo\` pushes \`actions.current.getValue()\` onto it before it steps back. a \`redo\` function pops it, pushes the current crop onto the undo stack and calls \`setValue()\` with \`history\` too. \`remember\` clears the redo stack after the reason check, so a new gesture drops it.
 
 \`\`\`tsx
 const undo = () => {
   const previous = history.at(-1);
-  if (!previous) return;
+  if (!previous || actions.current?.getState().interacting) {
+    return;
+  }
   setHistory(history.slice(0, -1));
   actions.current?.setValue(previous, { reason: "history" });
 };
 
 <button
   type="button"
-  disabled={history.length === 0}
+  aria-disabled={history.length === 0}
   onClick={undo}
 >
   undo
@@ -8356,20 +8378,23 @@ const undo = () => {
 
 ## wire it to the cropper
 
-\`onValueCommit\` hands every commit to \`remember\`. crops from the last photo make no sense on the next one, so \`onLoad\` clears the stack.
+\`onValueCommit\` hands every commit to \`remember\`. crops from the last photo make no sense on the next one, so \`UndoEditor\` keys \`Editor\` by \`src\`. each photo gets a fresh cropper at the full frame and an empty stack, and a late commit from the old cropper has no stack to reach. the old photo leaves the screen at once.
 
 \`\`\`tsx
 <Cropper.Root
   actionsRef={actions}
   src={src}
-  onLoad={() => setHistory([])}
   onValueCommit={remember}
 >
+
+export const UndoEditor = ({ src }: { src: string }) => (
+  <Editor key={src} src={src} />
+);
 \`\`\`
 
 ## the whole file
 
-\`UndoEditor\` adds the button under the dial:
+\`Editor\` adds the button under the dial:
 
 \`\`\`tsx
 "use client";
@@ -8385,7 +8410,7 @@ import { useRef, useState } from "react";
 
 const skipped = new Set(["history", "coverage"]);
 
-export const UndoEditor = ({ src }: { src: string }) => {
+const Editor = ({ src }: { src: string }) => {
   const actions = useRef<CropperApi>(null);
   const [history, setHistory] = useState<CropValue[]>([]);
 
@@ -8398,7 +8423,9 @@ export const UndoEditor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
-    if (!previous) return;
+    if (!previous || actions.current?.getState().interacting) {
+      return;
+    }
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };
@@ -8407,7 +8434,6 @@ export const UndoEditor = ({ src }: { src: string }) => {
     <Cropper.Root
       actionsRef={actions}
       src={src}
-      onLoad={() => setHistory([])}
       onValueCommit={remember}
     >
       <Cropper.Viewport style={{ width: 640, height: 480 }}>
@@ -8423,7 +8449,7 @@ export const UndoEditor = ({ src }: { src: string }) => {
       </Cropper.Dial>
       <button
         type="button"
-        disabled={history.length === 0}
+        aria-disabled={history.length === 0}
         onClick={undo}
       >
         undo
@@ -8431,6 +8457,10 @@ export const UndoEditor = ({ src }: { src: string }) => {
     </Cropper.Root>
   );
 };
+
+export const UndoEditor = ({ src }: { src: string }) => (
+  <Editor key={src} src={src} />
+);
 \`\`\`
 "
 `;
