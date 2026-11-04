@@ -67,14 +67,14 @@ describe("server rendering", () => {
 
 type Captured = Record<string, unknown>;
 
-const isHandler = (value: unknown): value is (event: unknown) => void =>
+const isHandler = (value: unknown): value is (...args: unknown[]) => void =>
   typeof value === "function";
 
-const fire = (handler: unknown, event: unknown): void => {
+const fire = (handler: unknown, ...args: unknown[]): void => {
   if (!isHandler(handler)) {
     throw new Error("no handler");
   }
-  handler(event);
+  handler(...args);
 };
 
 const propsOf = (
@@ -182,10 +182,11 @@ describe("part props", () => {
         },
       }
     );
-    fire(merged.onValueChange, 0.5);
+    const details = { reason: "keyboard" };
+    fire(merged.onValueChange, 0.5, details);
     expect(calls).toStrictEqual([
-      ["theirs", 0.5],
-      ["ours", 0.5],
+      ["theirs", 0.5, details],
+      ["ours", 0.5, details],
     ]);
   });
 
