@@ -948,3 +948,38 @@ describe("destroy", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 });
+
+describe("event order", () => {
+  it("shows a commit listener the new committed value", () => {
+    const { cropper, time } = setup();
+    const seen: number[] = [];
+    cropper.on("commit", () => {
+      seen.push(cropper.getState().committed.rotation);
+    });
+    cropper.setRotation(5);
+    time.frame();
+    cropper.setRotation(9);
+    time.frame();
+    expect(seen).toStrictEqual([5, 9]);
+  });
+
+  it("shows gesture and stop listeners a fresh snapshot", () => {
+    const { cropper, time } = setup();
+    const seen: unknown[] = [];
+    cropper.on("gesturestart", () => {
+      seen.push(cropper.getState().interacting);
+    });
+    cropper.on("gestureend", () => {
+      seen.push(cropper.getState().interacting);
+    });
+    cropper.on("stop", () => {
+      seen.push(cropper.getState().settling);
+    });
+    cropper.begin("pan");
+    cropper.end();
+    time.frame();
+    cropper.run(() => true);
+    cropper.stop();
+    expect(seen).toStrictEqual(["pan", null, false]);
+  });
+});

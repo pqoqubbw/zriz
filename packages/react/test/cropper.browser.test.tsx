@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, userEvent } from "vitest/browser";
 
-import { preventZrizHandler } from "../src";
+import { preventZrizHandler, useCropperValue } from "../src";
 import * as Cropper from "../src/cropper";
 
 declare module "vitest/browser" {
@@ -485,5 +485,56 @@ describe("Root load results", () => {
       capture: true,
     });
     expect(errors).toStrictEqual([]);
+  });
+});
+
+describe("useCropperValue", () => {
+  afterEach(cleanup);
+
+  it("renders once for every commit with the committed value", async () => {
+    let time = 0;
+    const queue = new Map<number, (now: number) => void>();
+    let id = 0;
+    const cropper = createCropper({
+      clock: {
+        cancel: (handle) => {
+          queue.delete(handle);
+        },
+        now: () => time,
+        request: (step) => {
+          id += 1;
+          queue.set(id, step);
+          return id;
+        },
+      },
+      image: { height: 3000, width: 4000 },
+    });
+    const frame = (): void => {
+      time += 16;
+      const steps = [...queue.values()];
+      queue.clear();
+      for (const step of steps) {
+        step(time);
+      }
+    };
+    let renders = 0;
+    const Angle = () => {
+      renders += 1;
+      return <p id="angle">{useCropperValue(cropper).rotation}</p>;
+    };
+    await render(<Angle />);
+    for (const rotation of [5, 9, 13, 17, 21]) {
+      renders = 0;
+      cropper.setRotation(rotation);
+      frame();
+      await frames();
+      expect(document.querySelector("#angle")?.textContent).toBe(`${rotation}`);
+      expect(renders).toBe(1);
+    }
+    renders = 0;
+    cropper.setValue({ rotation: 3 }, { emit: false });
+    frame();
+    await frames();
+    expect(renders).toBe(0);
   });
 });

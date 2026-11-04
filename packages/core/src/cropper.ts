@@ -362,6 +362,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
     const previous = committed;
     committed = value;
+    refresh();
     emit("commit", value, {
       event: pending.event,
       pixelCrop: state ? exportPlan(state) : null,
@@ -539,10 +540,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         start: gesture?.start ?? state,
         startValue: gesture?.startValue ?? value,
       };
+      refresh();
       if (!restart) {
         emit("gesturestart", reason, event);
       }
-      refresh();
       return true;
     },
     cancel(event, owner) {
@@ -585,9 +586,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       gesture = null;
       afterGesture = true;
       commitPending = { event, reason };
+      refresh();
       emit("gestureend", reason, event);
       schedule();
-      refresh();
     },
     flip(axis = "x", action = {}) {
       if (!state || disabled()) {
@@ -815,8 +816,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       flush();
       settleCommit();
       lastTime = null;
-      emit("stop");
       refresh();
+      emit("stop");
     },
     subscribe(listener) {
       if (destroyed) {
