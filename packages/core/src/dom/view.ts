@@ -151,22 +151,22 @@ const share = (seen: number, own: number): number =>
 export const isHtml = (element: Element): element is HTMLElement =>
   "offsetWidth" in element;
 
-export const visualScale = (element: Element): Point => {
-  if (!isHtml(element)) {
-    return { x: 1, y: 1 };
-  }
-  const box = element.getBoundingClientRect();
-  return {
-    x: share(box.width, element.offsetWidth),
-    y: share(box.height, element.offsetHeight),
-  };
-};
+const scaleOf = (element: Element, box: DOMRect): Point =>
+  isHtml(element)
+    ? {
+        x: share(box.width, element.offsetWidth),
+        y: share(box.height, element.offsetHeight),
+      }
+    : { x: 1, y: 1 };
+
+export const visualScale = (element: Element): Point =>
+  scaleOf(element, element.getBoundingClientRect());
 
 export const localOf = (
   element: Element
 ): ((event: { clientX: number; clientY: number }) => Point) => {
   const box = element.getBoundingClientRect();
-  const scale = visualScale(element);
+  const scale = scaleOf(element, box);
   return (event) => ({
     x: (event.clientX - box.left) / scale.x - element.clientLeft,
     y: (event.clientY - box.top) / scale.y - element.clientTop,

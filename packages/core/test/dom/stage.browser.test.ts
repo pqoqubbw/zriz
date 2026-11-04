@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands, server } from "vitest/browser";
 
 import { createCropper } from "../../src";
@@ -820,6 +820,27 @@ describe("two viewports on one cropper", () => {
       x: 60,
       y: 70,
     });
+  });
+});
+
+describe("pointer position inside the viewport", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("reads the viewport rect once for each lookup", async () => {
+    const { cropper, viewport } = mount();
+    await frames();
+    const box = viewport.getBoundingClientRect();
+    const read = vi.spyOn(viewport, "getBoundingClientRect");
+    const point = viewOf(cropper).local({
+      clientX: box.left + 30,
+      clientY: box.top + 40,
+    });
+    expect(read).toHaveBeenCalledOnce();
+    expect(point).toStrictEqual({ x: 30, y: 40 });
   });
 });
 
