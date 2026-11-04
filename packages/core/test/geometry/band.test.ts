@@ -22,4 +22,9 @@ describe("rubber band", () => {
     );
     expect(rubberBand(1e-6, 100) / 1e-6).toBeCloseTo(0.55, 5);
   });
+
+  it("has no inverse at or past the distance", () => {
+    expect(inverseRubberBand(10, 10)).toBe(Number.POSITIVE_INFINITY);
+    expect(inverseRubberBand(12, 10)).toBe(Number.POSITIVE_INFINITY);
+  });
 });

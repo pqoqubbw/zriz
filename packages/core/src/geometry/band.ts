@@ -15,10 +15,14 @@ export const inverseRubberBand = (
   shown: number,
   distance: number,
   coefficient: number = RUBBER_BAND_COEFFICIENT
-): number =>
-  shown <= 0
-    ? shown / coefficient
-    : (distance * shown) / (coefficient * (distance - shown));
+): number => {
+  if (shown <= 0) {
+    return shown / coefficient;
+  }
+  return shown < distance
+    ? (distance * shown) / (coefficient * (distance - shown))
+    : Number.POSITIVE_INFINITY;
+};
 
 export const rubberBandPoint = (
   raw: Point,
