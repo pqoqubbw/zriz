@@ -18,6 +18,8 @@ export type ValueField = keyof CropValue;
 
 export const ROTATION_LIMIT = 45;
 export const PERSPECTIVE_LIMIT = 30;
+const REACH = 1e6;
+const MIN_RATIO = 1e-6;
 
 export const defaultValue: CropValue = {
   aspect: "free",
@@ -56,6 +58,8 @@ export const aspectRatio = (
 
 export const clean = (value: number): number =>
   positiveZero(Math.round(value * 1e12) / 1e12);
+
+const cleanSide = (value: number): number => clean(value) || value;
 
 export const focalLength = (image: Size, millimetres = 26): number =>
   (millimetres / 36) * Math.max(image.width, image.height);
@@ -103,8 +107,8 @@ export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
     quarterTurns: state.turns,
     rotation: clean(state.angle),
     size: {
-      height: clean(state.crop.height / turned.height),
-      width: clean(state.crop.width / turned.width),
+      height: cleanSide(state.crop.height / turned.height),
+      width: cleanSide(state.crop.width / turned.width),
     },
   };
 };
@@ -155,12 +159,67 @@ export const positive = (value: unknown, fallback: number): number =>
     ? value
     : fallback;
 
-const parseAspect = (value: unknown): Aspect => {
+export const toAspect = (value: unknown): Aspect => {
   if (value === "free" || value === "original") {
     return value;
   }
-  return positive(value, 0) || "free";
+  return typeof value === "number" && value >= MIN_RATIO && value <= 1 / MIN_RATIO
+    ? value
+    : "free";
 };
+
+const bound = (value: unknown, fallback: number): number =>
+  clamp(finite(value, fallback), REACH);
+
+const side = (value: unknown, fallback: number): number =>
+  Math.min(Math.max(positive(value, fallback), 1e-100), REACH);
+
+export const readValue = (
+  raw: Partial<CropValue> | Record<string, unknown>,
+  base: CropValue
+): CropValue => {
+  const center = isRecord(raw.center) ? raw.center : {};
+  const size = isRecord(raw.size) ? raw.size : {};
+  const perspective = isRecord(raw.perspective) ? raw.perspective : {};
+  return {
+    aspect: raw.aspect === undefined ? base.aspect : toAspect(raw.aspect),
+    center: {
+      x: bound(center.x, base.center.x),
+      y: bound(center.y, base.center.y),
+    },
+    mirrored: typeof raw.mirrored === "boolean" ? raw.mirrored : base.mirrored,
+    perspective: {
+      horizontal: bound(perspective.horizontal, base.perspective.horizontal),
+      vertical: bound(perspective.vertical, base.perspective.vertical),
+    },
+    quarterTurns: toQuarterTurns(
+      Math.round(finite(raw.quarterTurns, base.quarterTurns))
+    ),
+    rotation: bound(raw.rotation, base.rotation),
+    size: {
+      height: side(size.height, base.size.height),
+      width: side(size.width, base.size.width),
+    },
+  };
+};
+
+export const isSound = ({
+  center,
+  perspective,
+  rotation,
+  size,
+}: CropValue): boolean =>
+  [
+    center.x,
+    center.y,
+    perspective.horizontal,
+    perspective.vertical,
+    rotation,
+    size.height,
+    size.width,
+  ].every(Number.isFinite) &&
+  size.width > 0 &&
+  size.height > 0;
 
 export const serialize = (value: CropValue): string =>
   JSON.stringify({ v: 1, ...value });
@@ -177,26 +236,13 @@ export const parse = (input: unknown): CropValue | null => {
   if (!isRecord(raw)) {
     return null;
   }
-  const center = isRecord(raw.center) ? raw.center : {};
-  const size = isRecord(raw.size) ? raw.size : {};
-  const perspective = isRecord(raw.perspective) ? raw.perspective : {};
-  const turns = finite(raw.quarterTurns, 0);
+  const read = readValue(raw, defaultValue);
   return {
-    aspect: parseAspect(raw.aspect),
-    center: {
-      x: positiveZero(finite(center.x, 0.5)),
-      y: positiveZero(finite(center.y, 0.5)),
-    },
-    mirrored: raw.mirrored === true,
+    ...read,
     perspective: {
-      horizontal: clamp(finite(perspective.horizontal, 0), PERSPECTIVE_LIMIT),
-      vertical: clamp(finite(perspective.vertical, 0), PERSPECTIVE_LIMIT),
+      horizontal: clamp(read.perspective.horizontal, PERSPECTIVE_LIMIT),
+      vertical: clamp(read.perspective.vertical, PERSPECTIVE_LIMIT),
     },
-    quarterTurns: toQuarterTurns(Math.round(turns)),
-    rotation: clamp(finite(raw.rotation, 0), ROTATION_LIMIT),
-    size: {
-      height: positive(size.height, 1),
-      width: positive(size.width, 1),
-    },
+    rotation: clamp(read.rotation, ROTATION_LIMIT),
   };
 };

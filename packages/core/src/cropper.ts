@@ -26,7 +26,11 @@ import {
   clean,
   defaultValue,
   focalLength,
+  isSound,
+  positive,
+  readValue,
   stateToValue,
+  toAspect,
   valueToState,
   valuesEqual,
 } from "./value";
@@ -219,9 +223,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const tasks = new Map<FrameTask, boolean>();
   const blocking = (): boolean => [...tasks.values()].includes(true);
 
-  const resetValue: CropValue = { ...defaultValue, ...initial.defaultValue };
+  const resetValue = readValue(initial.defaultValue ?? {}, defaultValue);
   let image: Size | null = initial.image ?? null;
-  let value: CropValue = initial.value ?? resetValue;
+  let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
   let state: CropState | null = null;
   let emitted = value;
   let emittedState: CropState | null = null;
@@ -251,11 +255,18 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
   };
 
-  const focal = (size: Size): number => focalLength(size, options.focalLength);
+  const focal = (size: Size): number =>
+    focalLength(size, positive(options.focalLength, 26));
+
+  const zoomCap = (): number =>
+    Math.max(options.maxZoom ?? MAX_ZOOM, 1) || MAX_ZOOM;
+
+  const minSide = (given: number | undefined, limit: number): number =>
+    Math.min(given && given > 0 ? given : 1, limit);
 
   const minSize = (size: Size): Size => ({
-    height: Math.min(options.minSize?.height ?? 1, size.height),
-    width: Math.min(options.minSize?.width ?? 1, size.width),
+    height: minSide(options.minSize?.height, size.height),
+    width: minSide(options.minSize?.width, size.width),
   });
 
   const rotationLimit = (): number => {
@@ -269,13 +280,19 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     );
   };
 
-  const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
+  const limitAngle = (angle: number): number => {
     const limit = rotationLimit();
-    const angle = clean(Math.min(Math.max(next.angle, -limit), limit));
+    return clean(Math.min(Math.max(angle, -limit), limit));
+  };
+
+  const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
+    const angle = limitAngle(next.angle);
     const shaped = angle === next.angle ? next : setAngle(next, angle);
     const planes = imagePlanes(shaped);
     const { x, y } = shaped.crop;
-    let { width, height } = shaped.crop;
+    const reach = 1e6 * Math.max(shaped.image.width, shaped.image.height);
+    let width = Math.min(shaped.crop.width, reach);
+    let height = Math.min(shaped.crop.height, reach);
     if (
       shaped.aspect !== null &&
       Math.abs(width / height - shaped.aspect) > EPSILON
@@ -285,7 +302,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       width = height * shaped.aspect;
     }
     const min = minSize(shaped.image);
-    const maxZoom = options.maxZoom ?? MAX_ZOOM;
+    const maxZoom = zoomCap();
     const grow = Math.max(
       1,
       min.width / width,
@@ -522,11 +539,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     aspect: Aspect = value.aspect
   ): void => {
     const fixed = constrain(next, keep);
-    accept(fixed, stateToValue(fixed, aspect), action, fallback);
+    const fixedValue = stateToValue(fixed, aspect);
+    if (isSound(fixedValue)) {
+      accept(fixed, fixedValue, action, fallback);
+    }
   };
 
   const fromValue = (next: CropValue, size: Size): CropState =>
-    valueToState(next, size, focal(size));
+    valueToState({ ...next, rotation: limitAngle(next.rotation) }, size, focal(size));
 
   const fitReset = (): void => {
     resetFit = image
@@ -632,7 +652,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       commitState(next, "size", action, "flip");
     },
     getCropState: () => state,
-    getMaxZoom: () => options.maxZoom ?? MAX_ZOOM,
+    getMaxZoom: zoomCap,
     getPixelCrop: (scale) => (state ? exportPlan(state, scale) : null),
     getRotationLimit: rotationLimit,
     getState: () => snapshot,
@@ -699,10 +719,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         }
       };
     },
-    setAspect(aspect, action = {}) {
+    setAspect(given, action = {}) {
       if (!state || disabled()) {
         return;
       }
+      const aspect = toAspect(given);
       const ratio = aspectRatio(aspect, state.image, state.turns);
       let next: CropState = { ...state, aspect: ratio };
       if (ratio !== null) {
@@ -786,14 +807,15 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (!state || disabled()) {
         return;
       }
+      const angle = limitAngle(degrees);
       const start = gesture?.start;
-      let next = setAngle(state, degrees);
+      let next = setAngle(state, angle);
       if (start && start.turns === state.turns) {
         next = {
           ...next,
           crop: {
             ...(gesture?.reason === "dial" && start.flip === state.flip
-              ? setAngle(start, degrees)
+              ? setAngle(start, angle)
               : next
             ).crop,
             height: start.crop.height,
@@ -807,14 +829,14 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return;
       }
-      applyValue({ ...value, ...partial }, action, "imperative");
+      applyValue(readValue(partial, value), action, "imperative");
     },
     setZoom(zoom, action = {}) {
       if (!state || disabled()) {
         return;
       }
       const current = zoomOf(imagePlanes(state), state.crop);
-      const target = Math.min(Math.max(zoom, 1), options.maxZoom ?? MAX_ZOOM);
+      const target = Math.min(Math.max(zoom, 1), zoomCap());
       const k = current / target;
       const turned = turnedSize(state.image, state.turns);
       const anchor = action.anchor

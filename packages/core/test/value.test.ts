@@ -67,4 +67,30 @@ describe("value and state", () => {
       ).toStrictEqual(value);
     }
   });
+
+  it("clamps a saved number past the range a crop can use", () => {
+    const value = parse('{"center":{"x":1e308,"y":-1e308},"size":{"width":1e308,"height":1e-320}}');
+    expect(value?.center).toStrictEqual({ x: 1e6, y: -1e6 });
+    expect(value?.size).toStrictEqual({ height: 1e-100, width: 1e6 });
+  });
+
+  it("keeps a centre outside 0 to 1, a rotated panorama needs it", () => {
+    expect(parse('{"center":{"x":0.5,"y":14.29}}')?.center.y).toBe(14.29);
+  });
+
+  it("turns an aspect out of range into free", () => {
+    for (const aspect of ["1e308", "5e-324", "1e14", "1e-14", "0", "-1"]) {
+      expect(parse(`{"aspect":${aspect}}`)?.aspect).toBe("free");
+    }
+    expect(parse('{"aspect":1e6}')?.aspect).toBe(1e6);
+  });
+
+  it("keeps a thin side above 0 in a state read back as a value", () => {
+    const state = valueToState(defaultValue, { height: 1, width: 1e12 });
+    const value = stateToValue(
+      { ...state, crop: { ...state.crop, width: 0.2 } },
+      "free"
+    );
+    expect(value.size.width).toBeGreaterThan(0);
+  });
 });

@@ -89,6 +89,9 @@ const VALUE_PAGE = defineDoc({
       ),
       code("value/clamp.ts"),
       p(
+        "a field that is not a usable number keeps the value it had, and a write with a usable field that still cannot make a crop, such as `setRotation(NaN)`, is ignored. an `aspect` that is not a number from 0.000001 to 1000000 counts as `\"free\"`. an option that is not a positive number falls back to its default, and a `maxZoom` below 1 counts as 1."
+      ),
+      p(
         "before a photo loads, zriz stores a value as you set it and fixes it when the photo arrives."
       )
     ),
