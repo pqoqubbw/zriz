@@ -643,14 +643,14 @@ export const ZoomSteps = () => {
       <Cropper.ZoomStep
         factor={0.8}
         aria-label="Zoom out"
-        aria-disabled={zoom.value <= zoom.min}
+        aria-disabled={zoom.value <= zoom.min || undefined}
       >
         −
       </Cropper.ZoomStep>
       <Cropper.ZoomStep
         factor={1.25}
         aria-label="Zoom in"
-        aria-disabled={zoom.value >= zoom.max}
+        aria-disabled={zoom.value >= zoom.max || undefined}
       >
         +
       </Cropper.ZoomStep>
@@ -669,14 +669,14 @@ export const ZoomSteps = () => {
       <span class=p>&lt;</span><span class=t>Cropper.ZoomStep</span>
         <span class=a>factor</span><span class=p>={</span><span class=n>0.8</span><span class=p>}</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Zoom out</span><span class=p>"</span>
-        <span class=a>aria-disabled</span><span class=p>={</span>zoom<span class=p>.</span>value <span class=p>&lt;=</span> zoom<span class=p>.</span>min<span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>zoom<span class=p>.</span>value <span class=p>&lt;=</span> zoom<span class=p>.</span>min <span class=p>|| </span><span class=k>undefined</span><span class=p>}</span>
       <span class=p>&gt;</span>
         −
       <span class=p>&lt;/</span><span class=t>Cropper.ZoomStep</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.ZoomStep</span>
         <span class=a>factor</span><span class=p>={</span><span class=n>1.25</span><span class=p>}</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Zoom in</span><span class=p>"</span>
-        <span class=a>aria-disabled</span><span class=p>={</span>zoom<span class=p>.</span>value <span class=p>&gt;=</span> zoom<span class=p>.</span>max<span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>zoom<span class=p>.</span>value <span class=p>&gt;=</span> zoom<span class=p>.</span>max <span class=p>|| </span><span class=k>undefined</span><span class=p>}</span>
       <span class=p>&gt;</span>
         +
       <span class=p>&lt;/</span><span class=t>Cropper.ZoomStep</span><span class=p>&gt;</span>
@@ -9730,14 +9730,14 @@ export const ZoomSteps = () => {
       <Cropper.ZoomStep
         factor={0.8}
         aria-label="Zoom out"
-        aria-disabled={zoom.value <= zoom.min}
+        aria-disabled={zoom.value <= zoom.min || undefined}
       >
         −
       </Cropper.ZoomStep>
       <Cropper.ZoomStep
         factor={1.25}
         aria-label="Zoom in"
-        aria-disabled={zoom.value >= zoom.max}
+        aria-disabled={zoom.value >= zoom.max || undefined}
       >
         +
       </Cropper.ZoomStep>

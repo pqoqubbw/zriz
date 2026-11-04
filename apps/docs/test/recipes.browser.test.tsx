@@ -656,6 +656,19 @@ describe("docs recipes", () => {
     });
   });
 
+  describe("zoom steps under a disabled root", () => {
+    it("reports both steps as off", async () => {
+      await render(
+        <Cropper.Root disabled image={{ height: 300, width: 400 }}>
+          <ZoomSteps />
+        </Cropper.Root>
+      );
+
+      expect(button("\u2212").getAttribute("aria-disabled")).toBe("true");
+      expect(button("+").getAttribute("aria-disabled")).toBe("true");
+    });
+  });
+
   describe("zoom sliders in forced colours", () => {
     it("paints the thumb of the stylesheet recipe", async () => {
       const style = document.createElement("style");
