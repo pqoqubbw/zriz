@@ -7206,7 +7206,7 @@ a content security policy needs these sources:
 | directive | what it enables |
 | - | - |
 | \`worker-src blob:\` | decoding and exporting off the main thread. without it zriz does both on the main thread, and the page can stutter while a large photo opens |
-| \`img-src blob:\` | the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, and a display-p3 export fails with \`decode\` |
+| \`img-src blob:\` | the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, a crop with perspective stays empty, and a display-p3 export fails with \`decode\` |
 | \`img-src data:\` | svg files. without it an svg fails with \`decode\` |
 | \`connect-src\` | each host you load photos from, plus \`blob:\` and \`data:\` if you pass those urls as \`src\`. without it the load fails with \`cross-origin\` |
 

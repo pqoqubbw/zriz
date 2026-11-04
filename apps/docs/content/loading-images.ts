@@ -93,7 +93,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "`img-src blob:`",
-            "the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, and a display-p3 export fails with `decode`",
+            "the moving layer during gestures and display-p3 export. without it the photo paints on the canvas during gestures, a crop with perspective stays empty, and a display-p3 export fails with `decode`",
           ],
           [
             "`img-src data:`",

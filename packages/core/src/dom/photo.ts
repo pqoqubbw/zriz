@@ -2,6 +2,7 @@ import type { Cropper } from "../cropper";
 import type { Matrix3 } from "../geometry/types";
 import type { LoadedImage } from "./image";
 import { imageOf, onImage } from "./image-store";
+import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { TIMEOUT, withTimeout } from "./turn";
 import { cssMatrix, viewOf } from "./view";
@@ -26,6 +27,13 @@ const isAffine = (m: Matrix3): boolean =>
 
 const motionType = (image: LoadedImage): string =>
   image.mime === "image/jpeg" ? "image/jpeg" : "image/png";
+
+const whole = (image: LoadedImage): Region => ({
+  height: image.height,
+  width: image.width,
+  x: 0,
+  y: 0,
+});
 
 const childOf = <K extends "img" | "canvas">(
   container: HTMLElement,
@@ -89,16 +97,17 @@ export const bindPhoto = (
   let seen: ViewFrame["layout"] | null = null;
   let transform = "";
   let moving = false;
+  let blank = false;
 
   let shown = "";
-  const show = (canvas: boolean): void => {
-    const next = `${canvas}${motionReady}`;
+  const show = (canvas: boolean, fallback = canvas): void => {
+    const next = `${canvas}${fallback}${motionReady}`;
     if (next === shown) {
       return;
     }
     shown = next;
-    rest.style.visibility = canvas ? "visible" : "hidden";
-    motion.style.visibility = canvas || !motionReady ? "hidden" : "visible";
+    rest.style.visibility = fallback ? "visible" : "hidden";
+    motion.style.visibility = fallback || !motionReady ? "hidden" : "visible";
     container.toggleAttribute("data-sharp", canvas);
   };
 
@@ -121,11 +130,15 @@ export const bindPhoto = (
   const paint = (
     frame: ViewFrame,
     bitmap: CanvasImageSource,
-    region: { x: number; y: number; width: number; height: number },
+    region: Region,
     size: { width: number; height: number }
   ): void => {
     const context = backing(frame);
-    if (!context) {
+    blank =
+      !context ||
+      !isAffine(frame.matrix) ||
+      (context.isContextLost?.() ?? false);
+    if (blank || !context) {
       return;
     }
     const { dpr } = frame.layout;
@@ -173,6 +186,10 @@ export const bindPhoto = (
     const source = bitmap ?? current.preview;
     paint(frame, source, region, source);
     bitmap?.close();
+    if (blank) {
+      show(false);
+      return;
+    }
     drawn = {
       dpr: frame.layout.dpr,
       height: frame.layout.height,
@@ -251,18 +268,19 @@ export const bindPhoto = (
     if (motionReady) {
       show(false);
     } else {
-      paint(
-        frame,
-        image.preview,
-        { height: image.height, width: image.width, x: 0, y: 0 },
-        image.preview
-      );
+      paint(frame, image.preview, whole(image), image.preview);
       drawn = null;
-      shown = "";
-      rest.style.visibility = "visible";
+      show(false, !blank);
     }
     if (settled()) {
       schedule(frame, resized ? LAYOUT_IDLE : 0);
+    }
+  };
+
+  const refresh = (): void => {
+    const frame = view.frame();
+    if (frame) {
+      write(frame);
     }
   };
 
@@ -276,7 +294,7 @@ export const bindPhoto = (
     await motion.decode();
     if (ticket === loading) {
       motionReady = true;
-      if (drawn === null && !settled()) {
+      if (drawn === null && (blank || !settled())) {
         show(false);
       }
     }
@@ -310,10 +328,7 @@ export const bindPhoto = (
     motion.style.width = `${next.width}px`;
     motion.style.height = `${next.height}px`;
     prepare(next, loading).catch(() => null);
-    const frame = view.frame();
-    if (frame) {
-      write(frame);
-    }
+    refresh();
   };
 
   const sync = (): void => {
@@ -338,7 +353,16 @@ export const bindPhoto = (
     }
   };
 
+  const lost = (): void => {
+    blank = true;
+    drawn = null;
+    cancel();
+    show(false);
+  };
+
   afterPaint(async () => await import("./sharpen"));
+  rest.addEventListener("contextlost", lost);
+  rest.addEventListener("contextrestored", refresh);
   load();
   const offImage = onImage(cropper, load);
   const offFrame = view.onFrame(write);
@@ -347,6 +371,8 @@ export const bindPhoto = (
     offImage();
     offFrame();
     offState();
+    rest.removeEventListener("contextlost", lost);
+    rest.removeEventListener("contextrestored", refresh);
     cancel();
     loading += 1;
     clearMotion();

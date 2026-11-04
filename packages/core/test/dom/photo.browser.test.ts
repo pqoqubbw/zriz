@@ -28,13 +28,17 @@ const stripes = async (): Promise<Blob> => {
   return await canvas.convertToBlob({ type: "image/png" });
 };
 
-const mount = async (previewEdge: number, blob?: Blob) => {
+const mount = async (
+  previewEdge: number,
+  blob?: Blob,
+  defaultValue?: Partial<CropValue>
+) => {
   const viewport = document.createElement("div");
   viewport.style.cssText = "position:relative;width:400px;height:300px;";
   const photo = document.createElement("div");
   viewport.append(photo);
   document.body.append(viewport);
-  const cropper = createCropper();
+  const cropper = createCropper({ defaultValue });
   const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
   attachImage(
     cropper,
@@ -222,6 +226,8 @@ const visibleImage = async (photo: HTMLElement): Promise<HTMLImageElement> => {
     .toBe("visible");
   return image;
 };
+
+const TILT = { perspective: { horizontal: 0, vertical: 20 } };
 
 const waitForLayout = async (
   cropper: Cropper,
@@ -629,6 +635,62 @@ describe("photo layer", () => {
     expect(toggle).not.toHaveBeenCalled();
   });
 
+  it("shows a saved perspective on the moving image once it is ready, not flat on the canvas", async () => {
+    const { photo } = await mount(1024, undefined, TILT);
+    const image = await visibleImage(photo);
+    expect(image.style.transform).toContain("matrix3d");
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("hidden");
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+  });
+
+  it("never paints perspective on the canvas while the moving image is missing", async () => {
+    const decode = vi
+      .spyOn(HTMLImageElement.prototype, "decode")
+      .mockRejectedValue(new Error("blocked"));
+    cleanups.push(() => {
+      decode.mockRestore();
+    });
+    const { cropper, photo } = await mount(1024, undefined, TILT);
+    await expect.poll(() => decode.mock.calls.length).toBe(1);
+    cropper.invalidate();
+    await nextFrame();
+    await nextFrame();
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("hidden");
+    expect(photo.querySelector("img")?.style.visibility).toBe("hidden");
+  });
+
+  it("keeps painting a level photo on the canvas when the moving image cannot decode", async () => {
+    const decode = vi
+      .spyOn(HTMLImageElement.prototype, "decode")
+      .mockRejectedValue(new Error("blocked"));
+    cleanups.push(() => {
+      decode.mockRestore();
+    });
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    cropper.begin("pan");
+    cropper.setZoom(2);
+    await nextFrame();
+    await nextFrame();
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("visible");
+    cropper.end();
+    await sharp(photo);
+  });
+
+  it("takes data-sharp off while the canvas falls back to the preview", async () => {
+    stalled("motion");
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    cropper.begin("pan");
+    cropper.setZoom(2);
+    await nextFrame();
+    await nextFrame();
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+    expect(photo.querySelector("canvas")?.style.visibility).toBe("visible");
+    cropper.end();
+    await sharp(photo);
+  });
+
   it.each([
     ["img{max-height:100%}"],
     ["*{max-height:100%}"],
@@ -666,5 +728,64 @@ describe("photo layer", () => {
       expect(Math.abs(wanted.e - drawn.e)).toBeLessThan(0.5);
     }
     cropper.end();
+  });
+
+  it("shows the moving image, not an empty canvas, when the canvas has no 2d context", async () => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    const photo = document.createElement("div");
+    const own = document.createElement("canvas");
+    own.getContext("bitmaprenderer");
+    photo.append(own);
+    viewport.append(photo);
+    document.body.append(viewport);
+    const cropper = createCropper();
+    const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+      attachImage(cropper, null);
+      viewOf(cropper).destroy();
+      cropper.destroy();
+      viewport.remove();
+    });
+    const image = await visibleImage(photo);
+    expect(own.style.visibility).toBe("hidden");
+    cropper.begin("pan");
+    cropper.end();
+    const seen = vi.spyOn(own, "getContext");
+    cleanups.push(() => {
+      seen.mockRestore();
+    });
+    await expect
+      .poll(() => seen.mock.calls.length, { timeout: 3000 })
+      .toBeGreaterThan(0);
+    await nextFrame();
+    expect(image.style.visibility).toBe("visible");
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+  });
+
+  it("falls back to the moving image when the canvas context is lost and redraws when it returns", async () => {
+    const { photo } = await mount(1024);
+    await sharp(photo);
+    const canvas = photo.querySelector("canvas");
+    if (!canvas) {
+      throw new Error("no canvas");
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+    canvas.dispatchEvent(new Event("contextlost"));
+    await visibleImage(photo);
+    expect(canvas.style.visibility).toBe("hidden");
+    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+    canvas.dispatchEvent(new Event("contextrestored"));
+    await sharp(photo);
+    expect(canvas.style.visibility).toBe("visible");
   });
 });
