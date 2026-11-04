@@ -63,11 +63,9 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
               { height: held.height ? 0 : 1, width: held.width ? 0 : 1 },
               crop
             );
-          const floor = Math.max(
-            cropper.getMinSize()[side],
+          const floor =
             MIN_HANDLE_SPAN /
-              (viewOf(cropper).frame()?.scale ?? Number.POSITIVE_INFINITY)
-          );
+            (viewOf(cropper).frame()?.scale ?? Number.POSITIVE_INFINITY);
           next = stopAtZoomCeiling(
             planes,
             crop,

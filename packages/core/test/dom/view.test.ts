@@ -964,6 +964,18 @@ describe("alt arrows on a free crop", () => {
     expect(keyboard(context)("ArrowUp", 60, true).height).toBeCloseTo(512, 6);
   });
 
+  it("leaves a crop already under the 88 px floor alone on a shrink key", () => {
+    const context = thinCropper({ height: 2000, width: 2000 }, 400);
+    context.cropper.setValue({ size: { height: 0.1, width: 0.5 } });
+    context.time.frames(2);
+    const before = context.cropper.getCropState()?.crop;
+    const scale = viewOf(context.cropper).frame()?.scale ?? 1;
+    expect((before?.height ?? 0) * scale).toBeLessThan(88);
+    const crop = keyboard(context)("ArrowUp", 3, true);
+    expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
+    expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+  });
+
   it("stops at the 88 px floor", () => {
     const context = thinCropper(photo, 800);
     const crop = keyboard(context)("ArrowLeft", 60, true);
