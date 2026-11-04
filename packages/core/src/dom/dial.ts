@@ -69,7 +69,7 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
   const state: SharedDial = {
     binders: 0,
     dragging: () => dragging,
-    onChange(listener: () => void) {
+    onChange(listener) {
       listeners.add(listener);
 
       return () => {
@@ -78,7 +78,7 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
     },
     options: () => options,
     overshoot: () => overshoot,
-    set(nextOvershoot: number, nextDragging: boolean) {
+    set(nextOvershoot, nextDragging) {
       const changed = nextDragging !== dragging;
 
       overshoot = nextOvershoot;
@@ -91,7 +91,7 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
         }
       }
     },
-    setOptions(next: DialOptions) {
+    setOptions(next) {
       const moved =
         (next.dir === "rtl") !== (options.dir === "rtl") ||
         next.gain !== options.gain;
