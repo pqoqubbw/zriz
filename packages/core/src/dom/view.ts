@@ -346,6 +346,13 @@ export const viewOf = (cropper: Cropper): View => {
       : fitPlacement(current, state);
   };
 
+  const endTransition = (): void => {
+    stopTransition?.();
+    stopTransition = null;
+    blend = null;
+    setChrome({ transition: null });
+  };
+
   const followPhoto = (): void => {
     const size = cropper.getCropState()?.image;
     if (
@@ -356,7 +363,7 @@ export const viewOf = (cropper: Cropper): View => {
       held = null;
       pinned = null;
       last = null;
-      blend = null;
+      endTransition();
       if (recentreTimer !== null) {
         clearTimeout(recentreTimer);
         recentreTimer = null;
@@ -415,13 +422,6 @@ export const viewOf = (cropper: Cropper): View => {
         listener(last);
       }
     }
-  };
-
-  const endTransition = (): void => {
-    stopTransition?.();
-    stopTransition = null;
-    blend = null;
-    setChrome({ transition: null });
   };
 
   const recentre = (): void => {

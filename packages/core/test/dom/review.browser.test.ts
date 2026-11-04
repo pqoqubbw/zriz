@@ -871,4 +871,22 @@ describe("writes during a held gesture", () => {
     safari(r.viewport, "gestureend", { scale: 1.2 });
     expect(r.cropper.getState().interacting).toBeNull();
   });
+
+  it("a new photo during the recentre stops the spring and fits the photo", async () => {
+    const r = rig();
+    const view = viewOf(r.cropper);
+    view.setOptions({ recentreDelay: 0 });
+    fire(r.handle, "pointerdown", 10);
+    fire(r.handle, "pointermove", -120, -80);
+    fire(r.handle, "pointerup", -120, -80);
+    r.time.frames(2);
+    await expect.poll(() => view.chrome().transition).toBe("recentre");
+    r.time.frames(2);
+    r.cropper.setImage({ height: 3000, width: 1000 });
+    r.time.frames(2);
+    expect(view.chrome().transition).toBeNull();
+    const rect = view.frame()?.rect;
+    expect(rect?.height).toBeLessThanOrEqual(300);
+    expect(rect?.y).toBeGreaterThanOrEqual(0);
+  });
 });
