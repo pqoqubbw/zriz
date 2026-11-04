@@ -2,8 +2,6 @@ import { windowOf } from "./input";
 
 const isShadow = (node: Node): node is ShadowRoot => "host" in node;
 
-const HELD_CURSORS: Record<string, string> = { grab: "grabbing" };
-
 export const holdCursor = (element: Element | null): (() => void) | null => {
   const win = windowOf(element);
   if (
@@ -19,7 +17,7 @@ export const holdCursor = (element: Element | null): (() => void) | null => {
   }
   const sheet = new win.CSSStyleSheet();
   sheet.replaceSync(
-    `*{cursor:${HELD_CURSORS[computed] ?? computed}!important}`
+    `*{cursor:${computed === "grab" ? "grabbing" : computed}!important}`
   );
   const holders: DocumentOrShadowRoot[] = [win.document];
   let root = element.getRootNode();

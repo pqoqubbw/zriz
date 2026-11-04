@@ -132,31 +132,26 @@ export const sameAspect = (a: Aspect, b: Aspect): boolean =>
     Math.abs(a - b) <= 1e-12 * Math.max(a, b));
 
 const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
-  switch (field) {
-    case "center": {
-      return a.center.x === b.center.x && a.center.y === b.center.y;
-    }
-    case "size": {
-      return a.size.width === b.size.width && a.size.height === b.size.height;
-    }
-    case "perspective": {
-      return (
-        a.perspective.vertical === b.perspective.vertical &&
-        a.perspective.horizontal === b.perspective.horizontal
-      );
-    }
-    case "aspect": {
-      return sameAspect(a.aspect, b.aspect);
-    }
-    case "mirrored":
-    case "quarterTurns":
-    case "rotation": {
-      return a[field] === b[field];
-    }
-    default: {
-      return false;
-    }
+  if (field === "center") {
+    return a.center.x === b.center.x && a.center.y === b.center.y;
   }
+
+  if (field === "size") {
+    return a.size.width === b.size.width && a.size.height === b.size.height;
+  }
+
+  if (field === "perspective") {
+    return (
+      a.perspective.vertical === b.perspective.vertical &&
+      a.perspective.horizontal === b.perspective.horizontal
+    );
+  }
+
+  if (field === "aspect") {
+    return sameAspect(a.aspect, b.aspect);
+  }
+
+  return a[field] === b[field];
 };
 
 export const changedFields = (a: CropValue, b: CropValue): ValueField[] =>

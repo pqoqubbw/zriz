@@ -29,6 +29,12 @@ export interface ZoomOptions {
 
 const KEY_STEPS = 20;
 const ZOOM_KEY_FACTOR = 1.1;
+const ARROWS: Partial<Record<string, readonly [number, number]>> = {
+  ArrowDown: [0, 1],
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+};
 
 export const zoomProgress = (zoom: number, max: number = MAX_ZOOM): number =>
   max <= 1 ? 0 : Math.min(Math.max(Math.log(zoom) / Math.log(max), 0), 1);
@@ -45,13 +51,7 @@ export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
     const step = event.shiftKey ? 0.1 : 0.01;
     const { size } = cropper.getValue();
     const action = { event, reason: "keyboard" as const };
-    const arrows: Partial<Record<string, [number, number]>> = {
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-      ArrowUp: [0, -1],
-    };
-    const arrow = arrows[event.key];
+    const arrow = ARROWS[event.key];
     if (arrow && event.altKey) {
       const grow = (1 + step) ** (arrow[0] + arrow[1]);
       return () => {

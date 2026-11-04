@@ -202,6 +202,16 @@ const ROTATE_MS = 410 / TEMPO;
 const FLIP_OMEGA = 17.6 * TEMPO;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
+const SETTLED_PROGRESS = 0.9995;
+
+const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
+  aspect: "morph",
+  flip: "flip",
+  history: "morph",
+  orientation: "morph",
+  reset: "morph",
+  "rotate-90": "rotate",
+};
 
 interface Pose {
   rect: Box;
@@ -532,7 +542,7 @@ export const viewOf = (cropper: Cropper): View => {
       elapsed += delta;
       const state = cropper.getCropState();
       const t = springProgress(omega, elapsed);
-      if (!layout || !state || t > 0.9995) {
+      if (!layout || !state || t > SETTLED_PROGRESS) {
         pinned = null;
         return finishTransition();
       }
@@ -569,22 +579,13 @@ export const viewOf = (cropper: Cropper): View => {
               kind === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA,
               elapsed
             );
-      if (t >= 0.9995 || !blend) {
+      if (t >= SETTLED_PROGRESS || !blend) {
         blend = null;
         return finishTransition();
       }
       blend.t = t;
       return true;
     }, false);
-  };
-
-  const transitionFor: Partial<Record<string, Transition>> = {
-    aspect: "morph",
-    flip: "flip",
-    history: "morph",
-    orientation: "morph",
-    reset: "morph",
-    "rotate-90": "rotate",
   };
 
   const markOverscroll = (): void => {
@@ -658,7 +659,7 @@ export const viewOf = (cropper: Cropper): View => {
 
   const offFrame = cropper.on("frame", publish);
   const offChange = cropper.on("accept", (_, details) => {
-    const kind = transitionFor[details.reason];
+    const kind = TRANSITION_BY_REASON[details.reason];
     const from = last;
     if (kind && from) {
       pinned = null;

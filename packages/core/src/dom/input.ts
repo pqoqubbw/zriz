@@ -84,19 +84,19 @@ const TOUCH_STYLES = [
   ["-webkit-user-select", "none"],
   ["-webkit-touch-callout", "none"],
   ["-webkit-tap-highlight-color", "transparent"],
-];
+] as const;
 
 export const claimTouch = (
   { style }: HTMLElement,
   touch: string
 ): (() => void) => {
   style.touchAction = touch;
-  for (const [name = "", value = ""] of TOUCH_STYLES) {
+  for (const [name, value] of TOUCH_STYLES) {
     style.setProperty(name, value);
   }
   return () => {
     style.touchAction = "";
-    for (const [name = ""] of TOUCH_STYLES) {
+    for (const [name] of TOUCH_STYLES) {
       style.removeProperty(name);
     }
   };
