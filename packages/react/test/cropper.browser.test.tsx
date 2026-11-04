@@ -1345,11 +1345,13 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
   });
 });
 
-const hydrated = async (tree: ReactNode, html: string, write: () => void) => {
+const LateZoom = () => <Cropper.Zoom aria-label="Zoom" id="late-zoom" />;
+
+const hydrated = async (tree: ReactNode, html: string, write?: () => void) => {
   const container = document.createElement("div");
   container.innerHTML = html;
   document.body.append(container);
-  write();
+  write?.();
   await frames(2);
   const errors = vi.spyOn(console, "error");
   const recoverable = vi.fn<() => void>();
@@ -1370,6 +1372,48 @@ const hydrated = async (tree: ReactNode, html: string, write: () => void) => {
 };
 
 describe("hydrating a cropper that changed after the server render", () => {
+  it("keeps a late Zoom on the server's value until it binds", async () => {
+    const html = renderToString(
+      <Cropper.Root cropper={photoCropper()}>
+        <Suspense fallback={null}>
+          <LateZoom />
+        </Suspense>
+      </Cropper.Root>
+    );
+    let open: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
+    const Late = lazy(async () => {
+      await gate;
+      return { default: LateZoom };
+    });
+    const cropper = photoCropper();
+    const tree = (
+      <Cropper.Root cropper={cropper}>
+        <Suspense fallback={null}>
+          <Late />
+        </Suspense>
+      </Cropper.Root>
+    );
+    const { container, logged, remove } = await hydrated(tree, html);
+    const errors = vi.spyOn(console, "error");
+    cropper.setZoom(2);
+    await frames(2);
+    open?.();
+    await vi.waitFor(() => {
+      expect(
+        container.querySelector("#late-zoom")?.getAttribute("aria-valuetext")
+      ).toBe("200%");
+    });
+    expect(
+      container.querySelector("#late-zoom")?.getAttribute("aria-valuenow")
+    ).toBe("2");
+    expect(logged + errors.mock.calls.length).toBe(0);
+    errors.mockRestore();
+    remove();
+  });
+
   it("patches a Dial that was disabled in between", async () => {
     const cropper = photoCropper();
     const tree = (

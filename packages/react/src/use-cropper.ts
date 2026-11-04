@@ -204,12 +204,29 @@ const startPlugins = (
   }
 };
 
-const firstSnapshots = new WeakMap<Cropper, CropperSnapshot>();
+const firstSnapshots = new WeakMap<
+  Cropper,
+  readonly [CropperSnapshot, number, number]
+>();
 
-const firstSnapshot = (cropper: Cropper): CropperSnapshot => {
-  const known = firstSnapshots.get(cropper) ?? cropper.getState();
+const firstValues = (
+  cropper: Cropper
+): readonly [CropperSnapshot, number, number] => {
+  const known = firstSnapshots.get(cropper) ?? [
+    cropper.getState(),
+    cropper.getZoom(),
+    cropper.getMaxZoom(),
+  ];
   firstSnapshots.set(cropper, known);
   return known;
+};
+
+const firstSnapshot = (cropper: Cropper): CropperSnapshot =>
+  firstValues(cropper)[0];
+
+export const firstZoom = (cropper: Cropper, max?: number): number => {
+  const [, zoom, top] = firstValues(cropper);
+  return Math.round(Math.min(zoom, max ?? top) * 100) / 100;
 };
 
 export const useCropper = (options: UseCropperOptions = {}): Cropper => {

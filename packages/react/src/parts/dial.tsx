@@ -76,7 +76,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     {
       "aria-disabled": disabled,
       "aria-orientation": "horizontal",
-      "aria-valuenow": first,
+      "aria-valuenow": Math.round(first * 10) / 10 || 0,
       "data-dragging": dragging ? "" : undefined,
       "data-snapped": first === 0 ? "" : undefined,
       "data-zriz-item": "dial",

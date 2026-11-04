@@ -15,7 +15,7 @@ import {
   useSameJson,
 } from "../part";
 import type { Part, PartProps } from "../part";
-import { useAriaDisabled, useCropperState } from "../use-cropper";
+import { firstZoom, useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface ZoomState {
@@ -44,7 +44,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   useRelease(handlers);
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
   const disabled = useAriaDisabled();
-  const [first] = useState(cropper.getZoom);
+  const [first] = useState(() => firstZoom(cropper, max));
   const spoken = useSameJson(format);
   const own = useCallback(
     (node: HTMLDivElement) => {

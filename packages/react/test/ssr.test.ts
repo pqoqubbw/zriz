@@ -363,4 +363,74 @@ describe("sliders on the server", () => {
     expect(level).toContain('aria-valuenow="0"');
     expect(level).toContain("data-snapped");
   });
+
+  it("round the value and keep zoom under the slider's end", () => {
+    const html = renderToString(
+      createElement(
+        Cropper.Root,
+        {
+          defaultValue: {
+            rotation: 7.16,
+            size: { height: 0.3, width: 0.3 },
+          },
+          image: { height: 300, width: 400 },
+        },
+        createElement(Cropper.Dial, { "aria-label": "Dial" }),
+        createElement(Cropper.Zoom, { "aria-label": "Zoom", max: 2 })
+      )
+    );
+    expect(html).toContain('aria-valuenow="7.2"');
+    expect(html).toContain('aria-valuenow="2"');
+    const free = renderToString(
+      createElement(
+        Cropper.Root,
+        {
+          defaultValue: {
+            rotation: 7.16,
+            size: { height: 0.3, width: 0.3 },
+          },
+          image: { height: 300, width: 400 },
+        },
+        createElement(Cropper.Zoom, { "aria-label": "Zoom" })
+      )
+    );
+    expect(free).toContain('aria-valuenow="2.88"');
+    const nearly = renderToString(
+      createElement(
+        Cropper.Root,
+        {
+          defaultValue: { rotation: 0.04 },
+          image: { height: 300, width: 400 },
+        },
+        createElement(Cropper.Dial, { "aria-label": "Dial" })
+      )
+    );
+    expect(nearly).toContain('aria-valuenow="0"');
+    expect(nearly).not.toContain("data-snapped");
+  });
+
+  it("leave inner html out of DialValue", () => {
+    const loose: Record<string, unknown> = {
+      dangerouslySetInnerHTML: { __html: "<b>x</b>" },
+    };
+    const html = renderToString(
+      createElement(
+        Cropper.Root,
+        { image: { height: 300, width: 400 } },
+        createElement(Cropper.DialValue, loose)
+      )
+    );
+    expect(html).not.toContain("<b>");
+  });
+
+  it("report aria-disabled on Area before hydration", () => {
+    const html = renderToString(
+      createElement(
+        Cropper.Root,
+        { disabled: true, image: { height: 300, width: 400 } },
+        createElement(Cropper.Area, { "aria-label": "Crop" })
+      )
+    );
+    expect(html).toContain('aria-disabled="true"');
+  });
 });
