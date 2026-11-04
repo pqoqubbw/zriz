@@ -2266,6 +2266,34 @@ describe("minSize on a free crop", () => {
     expect(pixels(cropper)).toStrictEqual({ height: 200, width: 100 });
   });
 
+  it("keeps both sides when the photo cannot hold the minimum at a quarter turn", () => {
+    const { cropper } = setup({
+      image: { height: 200, width: 2000 },
+      minSize: { height: 300, width: 300 },
+      value: { ...defaultValue, quarterTurns: 1 },
+    });
+    const state = cropState(cropper.getCropState());
+    const crop = { ...state.crop, height: 740 };
+    cropper.setCropState({ ...state, crop });
+    expect(cropState(cropper.getCropState()).crop.height).toBeCloseTo(740);
+    expect(cropState(cropper.getCropState()).crop.width).toBeCloseTo(200);
+  });
+
+  it("holds a minimum that only just fits at the straighten limit", () => {
+    const { cropper } = setup({
+      image: { height: 365, width: 6122 },
+      minSize: { height: 300, width: 300 },
+      value: {
+        ...defaultValue,
+        rotation: 30,
+        size: { height: 0.83, width: 0.056 },
+      },
+    });
+    const { crop } = cropState(cropper.getCropState());
+    expect(crop.height).toBeGreaterThanOrEqual(300 - 1e-9);
+    expect(crop.width).toBeGreaterThanOrEqual(300 - 1e-9);
+  });
+
   it("holds it from setCropState and defaultValue too", () => {
     const { cropper } = setup(square(100));
     const state = cropState(cropper.getCropState());

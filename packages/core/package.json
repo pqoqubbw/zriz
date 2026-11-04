@@ -84,7 +84,7 @@
       "name": "createCropper",
       "path": "dist/index.js",
       "import": "{ createCropper }",
-      "limit": "6392 B"
+      "limit": "6414 B"
     },
     {
       "name": "value",
@@ -117,7 +117,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "17114 B",
+      "limit": "17164 B",
       "entry": [
         "index"
       ]
@@ -132,7 +132,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "21342 B"
+      "limit": "21392 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",

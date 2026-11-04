@@ -346,7 +346,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       height = Math.sqrt(area / shaped.aspect);
       width = height * shaped.aspect;
     }
-    const min = minSize(shaped.image);
+    const asked = minSize(shaped.image);
+    const short = Math.max(1, largestFit(planes, asked).scale);
+    const min = { height: asked.height / short, width: asked.width / short };
     const free = shaped.aspect === null;
     if (free) {
       width = Math.max(width, min.width);
@@ -380,8 +382,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       const narrow = width / fit < min.width;
       if (
         free &&
-        narrow !== height / fit < min.height &&
-        largestFit(planes, min).scale <= 1 + EPSILON
+        short <= 1 + EPSILON &&
+        narrow !== height / fit < min.height
       ) {
         const open = Math.max(
           narrow ? min.height : min.width,
