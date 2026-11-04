@@ -139,6 +139,17 @@ describe("photo layer", () => {
     expect([canvas?.width, canvas?.height]).toStrictEqual([0, 0]);
   });
 
+  it("hides the canvas when a photo leaves before its moving image is ready", async () => {
+    const { cropper, photo } = await mount(1024);
+    const next = await loadImage(await stripes(), { previewEdge: 1024 });
+    attachImage(cropper, null);
+    attachImage(cropper, next);
+    const canvas = photo.querySelector("canvas");
+    expect(canvas?.style.visibility).toBe("visible");
+    attachImage(cropper, null);
+    expect(canvas?.style.visibility).toBe("hidden");
+  });
+
   it("sets no moving image for a photo that left while it encoded", async () => {
     const { cropper, photo } = await mount(1024);
     const motion = photo.querySelector("img");

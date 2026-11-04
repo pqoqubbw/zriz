@@ -122,6 +122,16 @@ const deepFrozen = (target: object): boolean =>
     (item) => typeof item !== "object" || item === null || deepFrozen(item)
   );
 
+const expectTilted = (cropper: Cropper): void => {
+  expect(cropper.getValue().perspective).toStrictEqual({
+    horizontal: 10,
+    vertical: 10,
+  });
+  expect(cropState(cropper.getCropState()).perspective.focal).toBeGreaterThan(
+    0
+  );
+};
+
 const expectValid = (cropper: Cropper): void => {
   const value = cropper.getValue();
   const plan = cropper.getPixelCrop();
@@ -891,6 +901,18 @@ describe("listener isolation", () => {
     expect(errors).toHaveLength(1);
   });
 
+  it("finishes a write past a throwing subscriber and runs the next one", () => {
+    const errors = reported();
+    const { cropper } = setup();
+    const next = vi.fn<() => void>();
+    cropper.subscribe(boom);
+    cropper.subscribe(next);
+    cropper.flip();
+    expect(cropper.getValue().mirrored).toBeTruthy();
+    expect(next).toHaveBeenCalledOnce();
+    expect(errors).toHaveLength(1);
+  });
+
   it("returns from a listener that removes and adds itself during an emit", () => {
     const { cropper } = setup();
     const spy = vi.fn<() => void>();
@@ -937,6 +959,36 @@ describe("listener isolation", () => {
 });
 
 describe("destroy", () => {
+  it("holds nothing added after it ran", () => {
+    const { cropper } = setup();
+    cropper.destroy();
+    const listener = vi.fn<() => void>();
+    const offs = [
+      cropper.on("stop", listener),
+      cropper.on("stop", listener),
+      cropper.subscribe(listener),
+      cropper.subscribe(listener),
+    ];
+    expect(new Set(offs).size).toBe(1);
+    expect(offs[0]).toBeTypeOf("function");
+    cropper.stop();
+    cropper.flip();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("ignores a stop made while it runs", () => {
+    const { cropper } = setup();
+    const heard = vi.fn<() => void>();
+    cropper.on("stop", heard);
+    cropper.on("gestureend", heard);
+    cropper.on("destroy", () => {
+      cropper.stop();
+    });
+    cropper.begin("pan");
+    cropper.destroy();
+    expect(heard).not.toHaveBeenCalled();
+  });
+
   it("fires once when a listener or plugin destroys again", () => {
     const spy = vi.fn<() => void>();
     const { cropper } = setup({
@@ -1066,7 +1118,12 @@ describe("event order", () => {
 describe("change and commit reporting", () => {
   it("reports a write made inside a change listener", () => {
     const { change, commit, cropper, time } = setup();
+    const order: string[] = [];
+    cropper.on("commit", (value) => {
+      order.push(`commit ${value.rotation}`);
+    });
     cropper.on("change", (value) => {
+      order.push(`change ${value.rotation}`);
       if (value.rotation > 10) {
         cropper.setValue({ rotation: 10 });
       }
@@ -1080,6 +1137,7 @@ describe("change and commit reporting", () => {
     expect(commit.mock.calls.map(([value]) => value.rotation)).toStrictEqual([
       10,
     ]);
+    expect(order).toStrictEqual(["change 20", "change 10", "commit 10"]);
   });
 
   it("reports the next move after a silent write inside a change listener", () => {
@@ -1736,13 +1794,16 @@ describe("input validation", () => {
     time.frame();
     expectValid(cropper);
     expect(cropper.getValue().rotation).toBe(5);
+    expectTilted(cropper);
     expect(cropper.getMaxZoom()).toBeGreaterThanOrEqual(1);
     cropper.reset();
     expectValid(cropper);
     const { cropper: later } = setup();
     later.setOptions(options);
     later.setRotation(5);
+    later.setValue({ perspective: { horizontal: 10, vertical: 10 } });
     expect(later.getValue().rotation).toBe(5);
+    expectTilted(later);
     expectValid(later);
   });
 
