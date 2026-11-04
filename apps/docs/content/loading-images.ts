@@ -51,7 +51,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "animated gif, png, webp, avif",
-            "open on their first frame. `animated` on the loaded image is `true`, and always for a gif",
+            "open on their first frame. `animated` on the loaded image is `true`, and always for a gif. an `img` already playing opens on the frame it shows in safari, so pass a `Blob` for the first frame",
           ],
         ],
       }),

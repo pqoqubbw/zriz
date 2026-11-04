@@ -1,6 +1,9 @@
 import { ZrizError } from "./error";
 import { canvasFor, context2d, drawn, free } from "./media";
 
+const UNSIZED_WIDTH = 300;
+const UNSIZED_HEIGHT = 150;
+
 export const assertReadable = (source: CanvasImageSource): number => {
   const canvas = canvasFor({ height: 1, width: 1 });
   try {
@@ -25,7 +28,8 @@ export const fromElement = async (
     | HTMLVideoElement
     | HTMLCanvasElement
     | OffscreenCanvas
-    | ImageBitmap
+    | ImageBitmap,
+  areaLimit: number
 ): Promise<ImageBitmap> => {
   if (
     typeof HTMLVideoElement !== "undefined" &&
@@ -50,10 +54,21 @@ export const fromElement = async (
       await src.decode();
     }
     assertReadable(src);
-    return await drawn(src, {
-      height: src.naturalHeight,
-      width: src.naturalWidth,
-    });
+    const { naturalHeight: height, naturalWidth: width } = src;
+    if (width * height > areaLimit) {
+      return await createImageBitmap(src);
+    }
+    const bitmap = await createImageBitmap(src).catch(() => null);
+    if (
+      bitmap &&
+      (bitmap.width !== UNSIZED_WIDTH ||
+        bitmap.height !== UNSIZED_HEIGHT ||
+        width * UNSIZED_HEIGHT === height * UNSIZED_WIDTH)
+    ) {
+      return bitmap;
+    }
+    bitmap?.close();
+    return await drawn(src, { height, width });
   }
   assertReadable(src);
   return src instanceof ImageBitmap ? src : await createImageBitmap(src);

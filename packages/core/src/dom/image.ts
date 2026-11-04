@@ -181,6 +181,9 @@ export const withTimeout = async <T>(
 const isMobile = (): boolean =>
   typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
 
+export const outputLimit = (): number =>
+  isMobile() ? MOBILE_AREA : DESKTOP_AREA;
+
 export const defaultPreviewEdge = (): number => {
   const dpr = typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
   const viewport =
@@ -359,7 +362,7 @@ export const loadImage = async (
       );
     }
     const { fromElement } = await import("./source");
-    const source = own(await fromElement(src));
+    const source = own(await fromElement(src, outputLimit()));
     const preview = own(await resizeBitmap(source, edge));
     await keepOff(id, preview);
     return loaded(preview, source, source);
@@ -387,6 +390,3 @@ export const loadImage = async (
     throw inHook ? error : toZriz(error);
   }
 };
-
-export const outputLimit = (): number =>
-  isMobile() ? MOBILE_AREA : DESKTOP_AREA;

@@ -52,6 +52,18 @@ const near = (
 
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
+const shown = async (
+  blob: Blob,
+  imageOrientation = "from-image"
+): Promise<HTMLImageElement> => {
+  const img = new Image();
+  img.style.imageOrientation = imageOrientation;
+  img.src = URL.createObjectURL(blob);
+  document.body.append(img);
+  await img.decode();
+  return img;
+};
+
 describe("load and export", () => {
   it.each([1, 2, 3, 4, 5, 6, 7, 8])(
     "shows and exports EXIF orientation %i upright",
@@ -268,10 +280,15 @@ describe("load and export", () => {
     expect(checked).toBeGreaterThan(10);
   });
 
-  it.runIf(
-    server.browser === "chromium" ||
-      (server.browser === "webkit" && server.platform === "darwin")
-  )("keeps a P3 source in P3", async () => {
+  it
+    .runIf(
+      server.browser === "chromium" ||
+        (server.browser === "webkit" && server.platform === "darwin")
+    )
+    .each([
+      ["a file", async (blob: Blob) => await loadImage(blob)],
+      ["an img", async (blob: Blob) => await loadImage(await shown(blob))],
+    ])("keeps a P3 source in P3 through %s", async (_name, load) => {
     const source = new OffscreenCanvas(16, 16);
     const paint = source.getContext("2d", { colorSpace: "display-p3" });
     if (!paint) {
@@ -279,9 +296,7 @@ describe("load and export", () => {
     }
     paint.fillStyle = "color(display-p3 1 0 0)";
     paint.fillRect(0, 0, 16, 16);
-    const image = await loadImage(
-      await source.convertToBlob({ type: "image/png" })
-    );
+    const image = await load(await source.convertToBlob({ type: "image/png" }));
     const cropper = createCropper();
     attachImage(cropper, image);
     const result = await exportCrop(cropper, {
@@ -327,14 +342,6 @@ const paint = (bitmap: ImageBitmap, x = 0.5, y = 0.5): number[] => {
       1
     ).data,
   ];
-};
-
-const shown = async (blob: Blob): Promise<HTMLImageElement> => {
-  const img = new Image();
-  img.src = URL.createObjectURL(blob);
-  document.body.append(img);
-  await img.decode();
-  return img;
 };
 
 const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
@@ -454,14 +461,98 @@ describe("element sources", () => {
     }
   );
 
+  it.each([
+    ["a width", "400w", "100px"],
+    ["a density", "2x", ""],
+    ["a density that rounds", "3x", ""],
+  ])("keeps the file's pixels for a srcset with %s", async (_, rule, sizes) => {
+    const canvas = new OffscreenCanvas(400, 200);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("no 2d context");
+    }
+    context.fillStyle = "#c33";
+    context.fillRect(0, 0, 400, 200);
+    const url = URL.createObjectURL(
+      await canvas.convertToBlob({ type: "image/png" })
+    );
+    const img = new Image();
+    img.sizes = sizes;
+    img.srcset = `${url} ${rule}`;
+    document.body.append(img);
+    await img.decode();
+    const image = await loadImage(img);
+    expect([image.width, image.height]).toStrictEqual([400, 200]);
+    const cropper = createCropper();
+    attachImage(cropper, image);
+    const result = await exportCrop(cropper, { type: "image/png" });
+    expect([result.width, result.height, result.scaled]).toStrictEqual([
+      400,
+      200,
+      false,
+    ]);
+    attachImage(cropper, null);
+    img.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  it.runIf(server.browser !== "firefox")(
+    "opens an img wider than a canvas can be",
+    async () => {
+      const img = await shown(await fixture("wide.png"));
+      const { preview, width, height } = await loadImage(img);
+      expect([width, height]).toStrictEqual([70_000, 10]);
+      preview.close();
+      img.remove();
+    }
+  );
+
+  it("stays off the canvas when the browser refuses an img past the area limit", async () => {
+    const img = await shown(
+      new Blob([solid('width="20000" height="20000"')], {
+        type: "image/svg+xml",
+      })
+    );
+    const refuse = vi
+      .spyOn(globalThis, "createImageBitmap")
+      .mockRejectedValue(new Error("too big"));
+    try {
+      await expect(codeOf(loadImage(img))).resolves.toBe("decode");
+      expect(refuse).toHaveBeenCalledOnce();
+    } finally {
+      refuse.mockRestore();
+      img.remove();
+    }
+  });
+
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    "keeps EXIF orientation %i upright when the page turns it off",
+    async (orientation) => {
+      const want = expected[String(orientation)];
+      const img = await shown(
+        await fixture(`orient-${orientation}.jpg`),
+        "none"
+      );
+      const { preview, width, height } = await loadImage(img);
+      expect([width, height]).toStrictEqual([want?.width, want?.height]);
+      expect(near(paint(preview, 0.02, 0.02), want?.topLeft)).toBeTruthy();
+      preview.close();
+      img.remove();
+    }
+  );
+
   it.each(["animated.gif", "animated.webp", "animated.png"])(
-    "opens a playing %s on its first frame",
+    "opens a playing %s on its first frame, or the one showing in webkit",
     async (name) => {
       const img = await shown(await fixture(name));
-      const first = [220, 40, 40, 255];
+      const frames = [
+        [220, 40, 40, 255],
+        ...(server.browser === "webkit" ? [[230, 220, 40, 255]] : []),
+      ];
       for (let round = 0; round < 8; round += 1) {
         const { preview } = await loadImage(img);
-        expect(near(paint(preview, 0.25, 0.25), first)).toBeTruthy();
+        const shownFrame = paint(preview, 0.25, 0.25);
+        expect(frames.some((frame) => near(shownFrame, frame))).toBeTruthy();
         preview.close();
         await new Promise((resolve) => {
           setTimeout(resolve, 37);
