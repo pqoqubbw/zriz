@@ -9,7 +9,7 @@ import { fitEdge } from "../../src/dom/media";
 import { refine } from "../../src/dom/sharpen";
 import type { ViewFrame } from "../../src/dom/view";
 import { regionOff, resampleOff } from "../../src/dom/worker";
-import type { Matrix3 } from "../../src/geometry";
+import type { Matrix3, Point } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
 import { deferred } from "./deferred";
 
@@ -30,8 +30,9 @@ const refined = async (
   height: number,
   device: number,
   shown?: Size,
-  live?: () => boolean
-): Promise<void> => {
+  live?: () => boolean,
+  from?: Point
+): Promise<Awaited<ReturnType<typeof refine>>> => {
   const stage = shown ?? { height: height * device, width: width * device };
   const size = { height, width };
   const image: LoadedImage = {
@@ -49,7 +50,17 @@ const refined = async (
   if (!state) {
     throw new Error("no state");
   }
-  const matrix: Matrix3 = [device, 0, 0, 0, device, 0, 0, 0, 1];
+  const matrix: Matrix3 = [
+    device,
+    0,
+    -device * (from?.x ?? 0),
+    0,
+    device,
+    -device * (from?.y ?? 0),
+    0,
+    0,
+    1,
+  ];
   const frame: ViewFrame = {
     layout: {
       dpr: 1,
@@ -62,7 +73,7 @@ const refined = async (
     scale: device,
     state,
   };
-  await refine(frame, image, live);
+  return await refine(frame, image, live);
 };
 
 describe(refine, () => {
@@ -98,6 +109,24 @@ describe(refine, () => {
       200,
       100
     );
+  });
+
+  it("cuts the resample on the left and top of a panned stage", async () => {
+    const { region } = await refined(
+      4096,
+      3072,
+      0.25,
+      { height: 100, width: 200 },
+      undefined,
+      { x: 800, y: 400 }
+    );
+    expect(resampleOff).toHaveBeenCalledWith(
+      1,
+      { height: 200, width: 400, x: 400, y: 200 },
+      200,
+      100
+    );
+    expect(region).toStrictEqual({ height: 400, width: 800, x: 800, y: 400 });
   });
 
   it("skips the original when the frame went stale in the line", async () => {

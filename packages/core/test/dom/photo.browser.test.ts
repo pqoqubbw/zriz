@@ -203,7 +203,10 @@ const stalled = (op: string) => {
   };
 };
 
-const waitForLayout = async (cropper: Cropper, width: number): Promise<void> => {
+const waitForLayout = async (
+  cropper: Cropper,
+  width: number
+): Promise<void> => {
   await expect
     .poll(() => viewOf(cropper).frame()?.layout.width, { timeout: 2000 })
     .toBe(width);
@@ -422,7 +425,10 @@ describe("photo layer", () => {
     });
     cropper.setZoom(1.2);
     await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
-    attachImage(cropper, await loadImage(await stripes(), { previewEdge: 1024 }));
+    attachImage(
+      cropper,
+      await loadImage(await stripes(), { previewEdge: 1024 })
+    );
     vi.advanceTimersByTime(TIMEOUT);
     await sharp(photo);
   });

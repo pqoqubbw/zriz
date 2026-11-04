@@ -7,6 +7,7 @@ import type { BuildOptions } from "esbuild";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DecodeReply, Kernel } from "../../src/dom/kernel";
+import { deferred } from "./deferred";
 import { FakeWorker } from "./fake-worker";
 
 type Origin = "main" | "worker";
@@ -254,5 +255,63 @@ describe("lane failures", () => {
     await expect(reply).rejects.toThrow("zriz:worker:failed");
     expect(FakeWorker.made[0]?.terminated).toBeTruthy();
     expect(revoke).toHaveBeenCalledOnce();
+  });
+});
+
+const job = () => {
+  const held = deferred<string>();
+  const start = vi.fn<() => Promise<string>>(async () => await held.promise);
+  return { held, start };
+};
+
+describe("gate", () => {
+  it("keeps the slot of a running job when a queued job aborts", async () => {
+    const { gate } = await import("../../src/dom/worker");
+    const turn = gate(1);
+    const first = job();
+    const second = job();
+    const third = job();
+    const fourth = job();
+    const controller = new AbortController();
+    const running = turn(first.start, 60_000, undefined);
+    const waiting = turn(second.start, 60_000, undefined);
+    const dropped = turn(third.start, 60_000, controller.signal);
+    const last = turn(fourth.start, 60_000, undefined);
+    controller.abort();
+    await expect(dropped).rejects.toHaveProperty("code", "aborted");
+    await delay(5);
+    expect(second.start).not.toHaveBeenCalled();
+    first.held.resolve("first");
+    await running;
+    await vi.waitFor(() => {
+      expect(second.start).toHaveBeenCalledOnce();
+    });
+    expect(fourth.start).not.toHaveBeenCalled();
+    second.held.resolve("second");
+    await waiting;
+    await vi.waitFor(() => {
+      expect(fourth.start).toHaveBeenCalledOnce();
+    });
+    expect(third.start).not.toHaveBeenCalled();
+    fourth.held.resolve("fourth");
+    await last;
+  });
+
+  it("starts nothing and frees the slot on an abort in the tick the turn is granted", async () => {
+    const { gate } = await import("../../src/dom/worker");
+    const turn = gate(1);
+    const first = job();
+    const next = job();
+    const controller = new AbortController();
+    const granted = turn(first.start, 60_000, controller.signal);
+    controller.abort();
+    await expect(granted).rejects.toHaveProperty("code", "aborted");
+    expect(first.start).not.toHaveBeenCalled();
+    const after = turn(next.start, 60_000, undefined);
+    await vi.waitFor(() => {
+      expect(next.start).toHaveBeenCalledOnce();
+    });
+    next.held.resolve("next");
+    await expect(after).resolves.toBe("next");
   });
 });
