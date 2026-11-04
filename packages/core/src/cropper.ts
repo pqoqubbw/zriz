@@ -256,8 +256,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     stop: new Set(),
   };
   const subscribers = new Set<() => void>();
-  const tasks = new Map<FrameTask, boolean>();
-  const blocking = (): boolean => [...tasks.values()].includes(true);
+  const tasks = new Map<FrameTask, { holds: boolean }>();
+  const blocking = (): boolean =>
+    [...tasks.values()].some((entry) => entry.holds);
 
   const resetValue = readValue(initial.defaultValue ?? {}, defaultValue);
   let image: Size | null = initial.image ?? null;
@@ -577,8 +578,8 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const dropHolding = (): void => {
-    for (const [task, holds] of tasks) {
-      if (holds) {
+    for (const [task, entry] of tasks) {
+      if (entry.holds) {
         tasks.delete(task);
         settlePending = true;
       }
@@ -851,12 +852,13 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return noop;
       }
-      const entry: FrameTask = (time, delta) => task(time, delta);
-      tasks.set(entry, holds);
+      const entry = { holds };
+      tasks.set(task, entry);
       schedule();
       refresh();
       return () => {
-        if (tasks.delete(entry)) {
+        if (tasks.get(task) === entry) {
+          tasks.delete(task);
           schedule();
         }
       };

@@ -246,4 +246,24 @@ describe("gesture and commit edges", () => {
     expect(cropper.getState().ready).toBeTruthy();
     expect(cropper.getCropState()?.image.width).toBe(2000);
   });
+
+  it("the same task run twice runs once a frame, and only the last cancel stops it", () => {
+    const { cropper, time } = setup();
+    let calls = 0;
+    const task = (): boolean => {
+      calls += 1;
+      return true;
+    };
+    const first = cropper.run(task);
+    const second = cropper.run(task);
+    time.frame();
+    expect(calls).toBe(1);
+    first();
+    time.frame();
+    expect(calls).toBe(2);
+    second();
+    time.frame();
+    expect(calls).toBe(2);
+    expect(cropper.getState().settling).toBeFalsy();
+  });
 });
