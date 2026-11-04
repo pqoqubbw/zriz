@@ -1,5 +1,7 @@
 import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
+import { gate } from "./turn";
+import type { Turn } from "./turn";
 
 interface Waiting {
   resolve: (value: never) => void;
@@ -121,6 +123,8 @@ export const via = async <
   return await target.here()[op](...args);
 };
 
+export const decodeTurn: Turn = gate(3);
+
 let decoder: Lane<Kernel> | undefined;
 
 const decoding = (): Lane<Kernel> => {
@@ -146,8 +150,11 @@ export const motionOff = async (id: number, type: string): Promise<Blob> =>
 
 export const resampleOff = async (
   id: number,
-  scale: number
-): Promise<ImageBitmap> => await via(decoding(), "resample", [id, scale]);
+  rect: Region,
+  width: number,
+  height: number
+): Promise<ImageBitmap> =>
+  await via(decoding(), "resample", [id, rect, width, height]);
 
 export const regionOff = async (
   source: Blob | ImageBitmap,

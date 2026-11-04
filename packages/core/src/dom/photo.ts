@@ -14,6 +14,7 @@ interface Drawn {
 }
 
 const SAME = 1e-6;
+const LAYOUT_IDLE = 120;
 
 const sameMatrix = (a: Matrix3, b: Matrix3): boolean =>
   a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < SAME);
@@ -74,6 +75,9 @@ export const bindPhoto = (
   let token = 0;
   let loading = 0;
   let pending: ReturnType<typeof setTimeout> | null = null;
+  let running = false;
+  let waiting: { frame: ViewFrame; ticket: number } | null = null;
+  let seen: ViewFrame["layout"] | null = null;
   let transform = "";
   let moving = false;
 
@@ -134,6 +138,11 @@ export const bindPhoto = (
     context.drawImage(bitmap, 0, 0);
   };
 
+  const reuse = (): void => {
+    show(true);
+    motion.style.willChange = "";
+  };
+
   const sharpen = async (frame: ViewFrame, ticket: number): Promise<void> => {
     if (!image || !isAffine(frame.matrix)) {
       return;
@@ -143,7 +152,11 @@ export const bindPhoto = (
     if (ticket !== token) {
       return;
     }
-    const { bitmap, region } = await refine(frame, current);
+    const { bitmap, region } = await refine(
+      frame,
+      current,
+      () => ticket === token
+    );
     if (ticket !== token || !settled()) {
       bitmap?.close();
       return;
@@ -156,11 +169,28 @@ export const bindPhoto = (
       matrix: frame.matrix,
       width: frame.layout.width,
     };
-    show(true);
-    motion.style.willChange = "";
+    reuse();
   };
 
-  const schedule = (frame: ViewFrame): void => {
+  const drain = (): void => {
+    if (running || !waiting) {
+      return;
+    }
+    const { frame, ticket } = waiting;
+    waiting = null;
+    if (ticket !== token) {
+      return;
+    }
+    running = true;
+    sharpen(frame, ticket)
+      .finally(() => {
+        running = false;
+        drain();
+      })
+      .catch(() => null);
+  };
+
+  const schedule = (frame: ViewFrame, delay = 0): void => {
     token += 1;
     const ticket = token;
     if (pending !== null) {
@@ -168,25 +198,37 @@ export const bindPhoto = (
     }
     pending = setTimeout(() => {
       pending = null;
-      sharpen(frame, ticket).catch(() => null);
-    }, 0);
+      waiting = { frame, ticket };
+      drain();
+    }, delay);
   };
+
+  const isDrawn = (frame: ViewFrame): boolean =>
+    drawn !== null &&
+    sameMatrix(drawn.matrix, frame.matrix) &&
+    drawn.width === frame.layout.width &&
+    drawn.height === frame.layout.height;
 
   const write = (frame: ViewFrame): void => {
     if (!image) {
       return;
     }
+    const { layout } = frame;
+    const resized =
+      seen !== null &&
+      (seen.width !== layout.width ||
+        seen.height !== layout.height ||
+        seen.dpr !== layout.dpr);
+    seen = layout;
     const next = cssMatrix(frame.matrix);
     if (next !== transform) {
       transform = next;
       motion.style.transform = next;
     }
-    const current =
-      drawn !== null &&
-      sameMatrix(drawn.matrix, frame.matrix) &&
-      drawn.width === frame.layout.width &&
-      drawn.height === frame.layout.height;
-    if (current) {
+    if (isDrawn(frame)) {
+      if (settled()) {
+        reuse();
+      }
       return;
     }
     if (motionReady) {
@@ -203,7 +245,7 @@ export const bindPhoto = (
       rest.style.visibility = "visible";
     }
     if (settled()) {
-      schedule(frame);
+      schedule(frame, resized ? LAYOUT_IDLE : 0);
     }
   };
 
@@ -265,14 +307,15 @@ export const bindPhoto = (
     moving = next;
     if (moving) {
       token += 1;
-      drawn = null;
       motion.style.willChange = "transform";
       if (motionReady) {
         show(false);
       }
     } else {
       const frame = view.frame();
-      if (frame) {
+      if (frame && isDrawn(frame)) {
+        reuse();
+      } else if (frame) {
         schedule(frame);
       }
     }

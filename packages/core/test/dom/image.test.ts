@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import { ZrizError, attachImage, loadImage } from "../../src/dom";
-import { raster, toZriz, withTimeout } from "../../src/dom/image";
+import { freeImage, raster, toZriz } from "../../src/dom/image";
+import { withTimeout } from "../../src/dom/turn";
 import { FakeWorker } from "./fake-worker";
 
 vi.mock(import("../../src/dom/source"), () => ({
@@ -224,7 +225,7 @@ describe("a load that never reaches attachImage", () => {
       const load = loadImage(jpeg(), { signal: controller.signal });
       return { controller, load };
     });
-    await decoding(5);
+    await decoding(3);
     for (const { controller } of loads) {
       controller.abort();
     }
@@ -273,6 +274,115 @@ describe("a load that never reaches attachImage", () => {
     copyFails = true;
     const error = await failure(loadImage(jpeg(), { previewEdge: 10 }));
     expect(codeOf(error)).toBe("decode");
+    await noneLive();
+  });
+});
+
+describe("decoding in turn", () => {
+  beforeEach(() => {
+    open.clear();
+    decodes = 0;
+    made = 0;
+    decodeFails = false;
+    copyFails = false;
+    gate = Promise.resolve();
+    stub(true);
+  });
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    await delay(0);
+  });
+
+  it("runs three decodes at a time and starts the rest as they end", async () => {
+    const release = hold();
+    const loads = Array.from(
+      { length: 5 },
+      async () => await loadImage(jpeg())
+    );
+    await decoding(3);
+    await delay(10);
+    expect(decodes).toBe(3);
+    release();
+    const images = await Promise.all(loads);
+    expect(decodes).toBe(5);
+    for (const image of images) {
+      freeImage(image);
+    }
+    await noneLive();
+  });
+
+  it("keeps a photo waiting for its turn off the clock", async () => {
+    const release = hold();
+    const running = Array.from(
+      { length: 3 },
+      async () => await loadImage(jpeg())
+    );
+    await decoding(3);
+    const waiting = loadImage(jpeg(), { timeout: 20 });
+    await delay(60);
+    release();
+    const images = await Promise.all([...running, waiting]);
+    expect(images).toHaveLength(4);
+    for (const image of images) {
+      freeImage(image);
+    }
+    await noneLive();
+  });
+
+  it("starts nothing for a load aborted in the line", async () => {
+    const release = hold();
+    const running = Array.from(
+      { length: 3 },
+      async () => await loadImage(jpeg())
+    );
+    await decoding(3);
+    const controller = new AbortController();
+    const waiting = loadImage(jpeg(), { signal: controller.signal });
+    await delay(5);
+    controller.abort();
+    expect(codeOf(await failure(waiting))).toBe("aborted");
+    release();
+    const images = await Promise.all(running);
+    expect(decodes).toBe(3);
+    for (const image of images) {
+      freeImage(image);
+    }
+    await noneLive();
+  });
+
+  it("holds the slot of an aborted decode until that decode ends", async () => {
+    const release = hold();
+    const controllers = [0, 1, 2].map(() => new AbortController());
+    const running = controllers.map(
+      async ({ signal }) => await failure(loadImage(jpeg(), { signal }))
+    );
+    await decoding(3);
+    const waiting = loadImage(jpeg());
+    for (const controller of controllers) {
+      controller.abort();
+    }
+    await Promise.all(running);
+    await delay(10);
+    expect(decodes).toBe(3);
+    release();
+    freeImage(await waiting);
+    await noneLive();
+  });
+
+  it("gives up the slot of a decode that never ends at the time limit", async () => {
+    const release = hold();
+    const stuck = Array.from(
+      { length: 3 },
+      async () => await failure(loadImage(jpeg(), { timeout: 10 }))
+    );
+    await decoding(3);
+    const waiting = loadImage(jpeg());
+    await Promise.all(stuck);
+    await decoding(4);
+    expect(decodes).toBe(4);
+    release();
+    freeImage(await waiting);
     await noneLive();
   });
 });

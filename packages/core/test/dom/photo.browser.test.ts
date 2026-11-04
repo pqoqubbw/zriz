@@ -26,7 +26,7 @@ const stripes = async (): Promise<Blob> => {
   return await canvas.convertToBlob({ type: "image/png" });
 };
 
-const mount = async (previewEdge: number) => {
+const mount = async (previewEdge: number, blob?: Blob) => {
   const viewport = document.createElement("div");
   viewport.style.cssText = "position:relative;width:400px;height:300px;";
   const photo = document.createElement("div");
@@ -34,7 +34,10 @@ const mount = async (previewEdge: number) => {
   document.body.append(viewport);
   const cropper = createCropper();
   const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
-  attachImage(cropper, await loadImage(await stripes(), { previewEdge }));
+  attachImage(
+    cropper,
+    await loadImage(blob ?? (await stripes()), { previewEdge })
+  );
   cleanups.push(() => {
     for (const stop of off) {
       stop();
@@ -44,7 +47,55 @@ const mount = async (previewEdge: number) => {
     cropper.destroy();
     viewport.remove();
   });
-  return { cropper, photo };
+  return { cropper, photo, viewport };
+};
+
+const nextFrame = async (): Promise<void> => {
+  await new Promise((resolve) => {
+    requestAnimationFrame(resolve);
+  });
+};
+
+const isJob = (value: unknown): value is { id: number; op: string } =>
+  typeof value === "object" && value !== null && "op" in value;
+
+const flights = (op: string) => {
+  const open = new Set<number>();
+  const hooked = new WeakSet<Worker>();
+  let total = 0;
+  let peak = 0;
+  const post: unknown = Reflect.get(Worker.prototype, "postMessage");
+  if (typeof post !== "function") {
+    throw new TypeError("no postMessage");
+  }
+  const spy = vi.spyOn(Worker.prototype, "postMessage");
+  spy.mockImplementation(function record(
+    this: Worker,
+    ...args: Parameters<Worker["postMessage"]>
+  ): void {
+    const message: unknown = args[0];
+    if (isJob(message) && message.op === op) {
+      total += 1;
+      open.add(message.id);
+      setTimeout(() => {
+        peak = Math.max(peak, open.size);
+      }, 0);
+    }
+    if (!hooked.has(this)) {
+      hooked.add(this);
+      this.addEventListener(
+        "message",
+        (event: MessageEvent<{ id: number }>) => {
+          open.delete(event.data.id);
+        }
+      );
+    }
+    Reflect.apply(post, this, args);
+  });
+  cleanups.push(() => {
+    spy.mockRestore();
+  });
+  return { peak: () => peak, total: () => total };
 };
 
 const sharp = async (photo: HTMLElement): Promise<void> => {
@@ -124,6 +175,100 @@ describe("photo layer", () => {
       .poll(() => (canvas ? contrast(canvas) : 0), { timeout: 5000 })
       .toBeGreaterThan(150);
     await sharp(photo);
+  });
+
+  it("runs one region job at a time through a burst of zoom writes", async () => {
+    const big = new OffscreenCanvas(6000, 4000);
+    const context = big.getContext("2d");
+    if (!context) {
+      throw new Error("no 2d context");
+    }
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, 6000, 4000);
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, 3000, 2000);
+    const { cropper, photo } = await mount(
+      400,
+      await big.convertToBlob({ type: "image/png" })
+    );
+    await sharp(photo);
+    const jobs = flights("region");
+    for (let i = 0; i < 12; i += 1) {
+      cropper.setZoom(3 + i * 0.1);
+      await nextFrame();
+    }
+    await sharp(photo);
+    expect(jobs.total()).toBeGreaterThan(0);
+    expect(jobs.peak()).toBe(1);
+  });
+
+  it("starts one job after a resize drag, not one per frame", async () => {
+    const { photo, viewport } = await mount(1024);
+    await sharp(photo);
+    const jobs = flights("resample");
+    for (let i = 0; i < 20; i += 1) {
+      viewport.style.width = `${400 + i * 4}px`;
+      await nextFrame();
+    }
+    await sharp(photo);
+    expect(jobs.total()).toBeLessThanOrEqual(2);
+  });
+
+  it("keeps the drawn canvas when a gesture moved nothing", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const jobs = flights("resample");
+    cropper.begin("pan");
+    await nextFrame();
+    cropper.end();
+    await sharp(photo);
+    expect(jobs.total()).toBe(0);
+  });
+
+  it("draws a cropped resample where the whole preview would land", async () => {
+    const canvas = new OffscreenCanvas(1600, 1200);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("no 2d context");
+    }
+    const across = context.createLinearGradient(0, 0, 1600, 0);
+    across.addColorStop(0, "#000");
+    across.addColorStop(1, "#f00");
+    context.fillStyle = across;
+    context.fillRect(0, 0, 1600, 1200);
+    context.globalCompositeOperation = "lighter";
+    const down = context.createLinearGradient(0, 0, 0, 1200);
+    down.addColorStop(0, "#000");
+    down.addColorStop(1, "#00f");
+    context.fillStyle = down;
+    context.fillRect(0, 0, 1600, 1200);
+    const { cropper, photo } = await mount(
+      1600,
+      await canvas.convertToBlob({ type: "image/png" })
+    );
+    cropper.setZoom(2);
+    const rest = photo.querySelector("canvas");
+    await sharp(photo);
+    await expect
+      .poll(() => viewOf(cropper).frame()?.matrix[0], { timeout: 3000 })
+      .toBeGreaterThan(0.4);
+    await sharp(photo);
+    const frame = viewOf(cropper).frame();
+    const drawn = rest?.getContext("2d");
+    if (!frame || !drawn || !rest) {
+      throw new Error("no frame");
+    }
+    const [a, , e, , d, f] = frame.matrix;
+    const { dpr } = frame.layout;
+    for (const [x, y] of [
+      [100, 80],
+      [200, 150],
+      [300, 220],
+    ] as const) {
+      const pixel = drawn.getImageData(x * dpr, y * dpr, 1, 1).data;
+      expect(pixel[0]).toBeCloseTo(((x - e) / a / 1600) * 255, -1);
+      expect(pixel[2]).toBeCloseTo(((y - f) / d / 1200) * 255, -1);
+    }
   });
 
   it("takes the photo off the moving image and the canvas when it goes", async () => {

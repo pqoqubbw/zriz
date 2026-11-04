@@ -2,7 +2,8 @@ import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { fitEdge, textOf } from "./media";
-import { decodeOff, keepOff, releaseOff } from "./worker";
+import { TIMEOUT, aborted, deadline } from "./turn";
+import { decodeOff, decodeTurn, keepOff, releaseOff } from "./worker";
 
 export type ImageSource =
   | Blob
@@ -49,12 +50,9 @@ export interface ExportResult {
   crop: ExportPlan;
 }
 
-export const TIMEOUT = 15_000;
 let nextId = 0;
 const MOBILE_AREA = 16_777_216;
 const DESKTOP_AREA = 268_435_456;
-const MAX_DELAY = 2_147_483_647;
-const SUSPENDED = 1000;
 const HEAD = 4096;
 
 const startsWith = (
@@ -128,55 +126,6 @@ export const raster = (
 };
 
 const noop = (): void => undefined;
-
-const aborted = (): ZrizError => new ZrizError("aborted", "zriz: aborted");
-
-const deadline = (
-  ms: number,
-  signal: AbortSignal | undefined
-): { promise: Promise<never>; clear: () => void } => {
-  let clear = noop;
-  const promise = new Promise<never>((_resolve, reject) => {
-    const delay = Math.min(ms, MAX_DELAY);
-    let timer: ReturnType<typeof setTimeout>;
-    const arm = (): void => {
-      const due = performance.now() + delay;
-      timer = setTimeout(() => {
-        if (performance.now() - due > SUSPENDED) {
-          arm();
-        } else {
-          reject(new ZrizError("timeout", `zriz: timed out after ${ms} ms`));
-        }
-      }, delay);
-    };
-    arm();
-    const abort = (): void => {
-      reject(aborted());
-    };
-    if (signal?.aborted === true) {
-      abort();
-    }
-    signal?.addEventListener("abort", abort, { once: true });
-    clear = () => {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
-    };
-  });
-  return { clear, promise };
-};
-
-export const withTimeout = async <T>(
-  work: Promise<T>,
-  ms: number,
-  signal: AbortSignal | undefined
-): Promise<T> => {
-  const limit = deadline(ms, signal);
-  try {
-    return await Promise.race([work, limit.promise]);
-  } finally {
-    limit.clear();
-  }
-};
 
 const isMobile = (): boolean =>
   typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
@@ -291,6 +240,8 @@ export const loadImage = async (
     ? AbortSignal.any([options.signal, cancel.signal])
     : cancel.signal;
   const held: ImageBitmap[] = [];
+  const ms = options.timeout ?? TIMEOUT;
+  const limit = deadline(ms, options.signal);
   let inHook = false;
   const own = (bitmap: ImageBitmap): ImageBitmap => {
     if (bitmap !== src) {
@@ -339,22 +290,28 @@ export const loadImage = async (
         await keepOff(id, preview);
         return loaded(preview, preview, preview);
       }
-      const decoded = await decodeOff(blob, edge, id).catch(
-        async (error: unknown) => {
-          if (!options.decode) {
-            throw toZriz(error, mime);
-          }
-          checkpoint();
-          inHook = true;
-          const full = own(await options.decode(blob));
-          inHook = false;
-          const { assertReadable } = await import("./source");
-          assertReadable(full);
-          const preview = own(await resizeBitmap(full, edge));
-          await keepOff(id, preview);
-          return { full, height: full.height, preview, width: full.width };
+      const resume = limit.pause();
+      const decoded = await decodeTurn(
+        async () => {
+          resume();
+          return await decodeOff(blob, edge, id);
+        },
+        ms,
+        signal
+      ).catch(async (error: unknown) => {
+        if (!options.decode) {
+          throw toZriz(error, mime);
         }
-      );
+        checkpoint();
+        inHook = true;
+        const full = own(await options.decode(blob));
+        inHook = false;
+        const { assertReadable } = await import("./source");
+        assertReadable(full);
+        const preview = own(await resizeBitmap(full, edge));
+        await keepOff(id, preview);
+        return { full, height: full.height, preview, width: full.width };
+      });
       return loaded(
         decoded.preview,
         "full" in decoded ? decoded.full : blob,
@@ -379,14 +336,12 @@ export const loadImage = async (
   };
   const pending = guarded();
   try {
-    return await withTimeout(
-      pending,
-      options.timeout ?? TIMEOUT,
-      options.signal
-    );
+    return await Promise.race([pending, limit.promise]);
   } catch (error) {
     cancel.abort();
     void pending.then(freeImage, noop);
     throw inHook ? error : toZriz(error);
+  } finally {
+    limit.clear();
   }
 };

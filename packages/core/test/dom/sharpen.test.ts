@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
@@ -9,6 +11,7 @@ import type { ViewFrame } from "../../src/dom/view";
 import { regionOff, resampleOff } from "../../src/dom/worker";
 import type { Matrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
+import { deferred } from "./deferred";
 
 vi.mock(import("../../src/dom/worker"), { spy: true });
 
@@ -25,8 +28,11 @@ const bitmap = (size: Size): ImageBitmap => {
 const refined = async (
   width: number,
   height: number,
-  device: number
+  device: number,
+  shown?: Size,
+  live?: () => boolean
 ): Promise<void> => {
+  const stage = shown ?? { height: height * device, width: width * device };
   const size = { height, width };
   const image: LoadedImage = {
     ...size,
@@ -47,16 +53,16 @@ const refined = async (
   const frame: ViewFrame = {
     layout: {
       dpr: 1,
-      height: height * device,
+      height: stage.height,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
-      width: width * device,
+      width: stage.width,
     },
     matrix,
-    rect: { height: height * device, width: width * device, x: 0, y: 0 },
+    rect: { ...stage, x: 0, y: 0 },
     scale: device,
     state,
   };
-  await refine(frame, image);
+  await refine(frame, image, live);
 };
 
 describe(refine, () => {
@@ -82,5 +88,36 @@ describe(refine, () => {
   it("resamples a thin photo below preview resolution", async () => {
     await refined(3, 4096, 0.25);
     expect(resampleOff).toHaveBeenCalledOnce();
+  });
+
+  it("resamples only what the stage shows", async () => {
+    await refined(2048, 1536, 0.5, { height: 100, width: 200 });
+    expect(resampleOff).toHaveBeenCalledWith(
+      1,
+      { height: 200, width: 400, x: 0, y: 0 },
+      200,
+      100
+    );
+  });
+
+  it("skips the original when the frame went stale in the line", async () => {
+    await refined(4000, 3000, 0.6, undefined, () => false);
+    expect(regionOff).not.toHaveBeenCalled();
+  });
+
+  it("takes a decode turn for each region", async () => {
+    const held = deferred<ImageBitmap>();
+    vi.mocked(regionOff).mockImplementation(async () => await held.promise);
+    const jobs = Array.from({ length: 5 }, async () => {
+      await refined(4000, 3000, 0.6);
+    });
+    await vi.waitFor(() => {
+      expect(regionOff).toHaveBeenCalledTimes(3);
+    });
+    await delay(10);
+    expect(regionOff).toHaveBeenCalledTimes(3);
+    held.resolve(bitmap({ height: 1, width: 1 }));
+    await Promise.all(jobs);
+    expect(regionOff).toHaveBeenCalledTimes(5);
   });
 });

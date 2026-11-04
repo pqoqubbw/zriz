@@ -1,11 +1,12 @@
 import type { Cropper } from "../cropper";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
-import { TIMEOUT, outputLimit, toZriz, withTimeout } from "./image";
+import { outputLimit, toZriz } from "./image";
 import type { ExportOptions, ExportResult, LoadedImage } from "./image";
 import { loadElement } from "./media";
 import { renderKernel } from "./render-kernel";
 import type { RenderJob, RenderKernel, RenderReply } from "./render-kernel";
+import { TIMEOUT, withTimeout } from "./turn";
 import { lane, via } from "./worker";
 import type { Lane } from "./worker";
 

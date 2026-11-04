@@ -78,7 +78,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
-        "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
+        "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs three decodes at a time, and a photo waiting for its turn is not on the clock. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
       ),
       p("a content security policy needs these sources:"),
       table({

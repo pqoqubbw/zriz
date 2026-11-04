@@ -1,8 +1,9 @@
 import { applyHomography, invertMatrix3 } from "../geometry/matrix";
 import type { LoadedImage } from "./image";
 import type { Region } from "./kernel";
+import { TIMEOUT } from "./turn";
 import type { ViewFrame } from "./view";
-import { regionOff, resampleOff } from "./worker";
+import { decodeTurn, regionOff, resampleOff } from "./worker";
 
 const DETAIL = 1.02;
 
@@ -35,7 +36,8 @@ const visibleRect = (frame: ViewFrame, image: LoadedImage): Region => {
 
 export const refine = async (
   frame: ViewFrame,
-  image: LoadedImage
+  image: LoadedImage,
+  live: () => boolean = () => true
 ): Promise<{ bitmap: ImageBitmap | null; region: Region }> => {
   const { dpr } = frame.layout;
   const [a, c, , b, d] = frame.matrix;
@@ -45,19 +47,49 @@ export const refine = async (
     Math.max(image.width, image.height);
   const ratio = devicePerSource / previewPerSource;
   if (ratio <= 1 / DETAIL) {
+    const visible = visibleRect(frame, image);
+    const kx = image.preview.width / image.width;
+    const ky = image.preview.height / image.height;
+    const x = Math.floor(visible.x * kx);
+    const y = Math.floor(visible.y * ky);
+    const width = Math.min(
+      image.preview.width - x,
+      Math.max(1, Math.ceil((visible.x + visible.width) * kx) - x)
+    );
+    const height = Math.min(
+      image.preview.height - y,
+      Math.max(1, Math.ceil((visible.y + visible.height) * ky) - y)
+    );
     return {
-      bitmap: await resampleOff(image.id, ratio),
-      region: { height: image.height, width: image.width, x: 0, y: 0 },
+      bitmap: await resampleOff(
+        image.id,
+        { height, width, x, y },
+        Math.max(1, Math.round(width * ratio)),
+        Math.max(1, Math.round(height * ratio))
+      ),
+      region: {
+        height: height / ky,
+        width: width / kx,
+        x: x / kx,
+        y: y / ky,
+      },
     };
   }
   if (ratio > DETAIL && previewPerSource < 1) {
     const region = visibleRect(frame, image);
     return {
-      bitmap: await regionOff(
-        image.source,
-        region,
-        Math.max(1, Math.round(region.width * devicePerSource)),
-        Math.max(1, Math.round(region.height * devicePerSource))
+      bitmap: await decodeTurn(
+        async () =>
+          live()
+            ? await regionOff(
+                image.source,
+                region,
+                Math.max(1, Math.round(region.width * devicePerSource)),
+                Math.max(1, Math.round(region.height * devicePerSource))
+              )
+            : null,
+        TIMEOUT,
+        undefined
       ),
       region,
     };

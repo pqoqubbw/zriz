@@ -15,7 +15,12 @@ export interface Kernel {
   decode: (blob: Blob, edge: number, keep?: number) => Promise<DecodeReply>;
   keep: (id: number, bitmap: ImageBitmap) => Promise<undefined>;
   motion: (id: number, type: string) => Promise<Blob>;
-  resample: (id: number, scale: number) => Promise<ImageBitmap>;
+  resample: (
+    id: number,
+    rect: Region,
+    width: number,
+    height: number
+  ) => Promise<ImageBitmap>;
   region: (
     source: Blob | ImageBitmap,
     rect: Region,
@@ -177,13 +182,15 @@ export const imageKernel = (): Kernel => {
       kept.delete(id);
       await Promise.resolve();
     },
-    async resample(id, scale) {
-      const preview = keptOf(id);
-      return await createImageBitmap(preview, {
-        resizeHeight: Math.max(1, Math.round(preview.height * scale)),
-        resizeQuality: "medium",
-        resizeWidth: Math.max(1, Math.round(preview.width * scale)),
-      });
+    async resample(id, rect, width, height) {
+      return await createImageBitmap(
+        keptOf(id),
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        { resizeHeight: height, resizeQuality: "medium", resizeWidth: width }
+      );
     },
   };
 };

@@ -7025,7 +7025,7 @@ a worker decodes a preview sized for the screen. the original stays a blob until
 | preview size | twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere |
 | export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere, with a long edge of at most 16383 px for webp and 65500 px for other types. a bigger crop comes out scaled down |
 
-the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
+the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. zriz runs three decodes at a time, and a photo waiting for its turn is not on the clock. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
 
 a content security policy needs these sources:
 
