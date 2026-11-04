@@ -372,6 +372,23 @@ const NAMES = [
   "reset",
 ];
 
+const CallerDisabled = ({ off }: { off: boolean }) => (
+  <Cropper.Root disabled={off} image={PHOTO}>
+    <Cropper.Area aria-disabled aria-label="Crop" />
+    <Cropper.Dial aria-disabled aria-label="Dial" />
+    <Cropper.Zoom aria-disabled aria-label="Zoom" />
+    <Cropper.Rotate aria-disabled>Rotate</Cropper.Rotate>
+  </Cropper.Root>
+);
+
+const RootDisabled = ({ off }: { off: boolean }) => (
+  <Cropper.Root disabled={off} image={PHOTO}>
+    <Cropper.Area aria-label="Crop" />
+    <Cropper.Dial aria-label="Dial" />
+    <Cropper.Zoom aria-label="Zoom" />
+  </Cropper.Root>
+);
+
 const Sliders = ({
   api,
   ...props
@@ -688,6 +705,43 @@ describe("a disabled Root", () => {
     expect(item(screen.container, "rotate").getAttribute("aria-disabled")).toBe(
       "false"
     );
+  });
+});
+
+describe("an aria-disabled from the caller", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("survives Root leaving disabled on every part", async () => {
+    const screen = await render(<CallerDisabled off />);
+    await frames();
+    await screen.rerender(<CallerDisabled off={false} />);
+    await frames();
+    for (const name of ["area", "dial", "zoom", "rotate"]) {
+      expect(item(screen.container, name).getAttribute("aria-disabled")).toBe(
+        "true"
+      );
+    }
+  });
+
+  it("leaves the attribute off a part once Root is enabled again", async () => {
+    const screen = await render(<RootDisabled off={false} />);
+    await frames();
+    await screen.rerender(<RootDisabled off />);
+    await frames();
+    for (const name of ["area", "dial", "zoom"]) {
+      expect(item(screen.container, name).getAttribute("aria-disabled")).toBe(
+        "true"
+      );
+    }
+    await screen.rerender(<RootDisabled off={false} />);
+    await frames();
+    for (const name of ["area", "dial", "zoom"]) {
+      expect(
+        item(screen.container, name).hasAttribute("aria-disabled")
+      ).toBeFalsy();
+    }
   });
 });
 

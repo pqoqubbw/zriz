@@ -1289,6 +1289,41 @@ describe("slider attributes", () => {
   });
 });
 
+describe("aria-disabled from a binder", () => {
+  const binders = [
+    ["an area", bindArea],
+    ["a dial", bindDial],
+    ["a zoom", zoomAria],
+  ] as const;
+
+  it.each(binders)("%s clears what it wrote when it unbinds", (_, bind) => {
+    const cropper = createCropper({
+      disabled: true,
+      image: { height: 3000, width: 4000 },
+    });
+    const element = document.createElement("div");
+    const off = bind(cropper, element);
+    expect(element.getAttribute("aria-disabled")).toBe("true");
+    off();
+    expect(element.hasAttribute("aria-disabled")).toBeFalsy();
+    cropper.destroy();
+  });
+
+  it.each(binders)("%s keeps the value a caller set", (_, bind) => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const element = document.createElement("div");
+    element.setAttribute("aria-disabled", "false");
+    const off = bind(cropper, element);
+    cropper.setOptions({ disabled: true });
+    expect(element.getAttribute("aria-disabled")).toBe("false");
+    cropper.setOptions({ disabled: false });
+    expect(element.getAttribute("aria-disabled")).toBe("false");
+    off();
+    expect(element.getAttribute("aria-disabled")).toBe("false");
+    cropper.destroy();
+  });
+});
+
 describe("the angle label", () => {
   it("keeps its size when flip changes the sign", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });

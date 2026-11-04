@@ -38,20 +38,27 @@ export const followDisabled = (
   cropper: Cropper,
   element: Element
 ): (() => void) => {
-  let was = false;
+  let wrote = false;
+  const clear = (): void => {
+    if (wrote) {
+      wrote = false;
+      element.removeAttribute("aria-disabled");
+    }
+  };
   const sync = (): void => {
-    const { disabled } = cropper.getState();
-    if (disabled !== was) {
-      was = disabled;
-      if (disabled) {
-        element.setAttribute("aria-disabled", "true");
-      } else {
-        element.removeAttribute("aria-disabled");
-      }
+    if (!cropper.getState().disabled) {
+      clear();
+    } else if (!element.hasAttribute("aria-disabled")) {
+      wrote = true;
+      element.setAttribute("aria-disabled", "true");
     }
   };
   sync();
-  return cropper.subscribe(sync);
+  const stop = cropper.subscribe(sync);
+  return () => {
+    stop();
+    clear();
+  };
 };
 
 export const keyed = (
