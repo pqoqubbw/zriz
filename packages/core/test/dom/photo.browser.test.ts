@@ -12,6 +12,8 @@ import {
 } from "../../src/dom";
 import { TIMEOUT } from "../../src/dom/turn";
 
+const LAYOUT_IDLE = 120;
+
 const cleanups: (() => void)[] = [];
 
 const stripes = async (): Promise<Blob> => {
@@ -42,21 +44,21 @@ const mount = async (
   viewport.append(photo);
   document.body.append(viewport);
   const cropper = createCropper({ defaultValue });
-  const off = [bindViewport(cropper, viewport), bindPhoto(cropper, photo)];
+  const offViewport = bindViewport(cropper, viewport);
+  const unbind = bindPhoto(cropper, photo);
   attachImage(
     cropper,
     await loadImage(blob ?? (await stripes()), { previewEdge })
   );
   cleanups.push(() => {
-    for (const stop of off) {
-      stop();
-    }
+    offViewport();
+    unbind();
     attachImage(cropper, null);
     viewOf(cropper).destroy();
     cropper.destroy();
     viewport.remove();
   });
-  return { cropper, photo, viewport };
+  return { cropper, photo, unbind, viewport };
 };
 
 const nextFrame = async (): Promise<void> => {
@@ -205,6 +207,67 @@ const stalled = (op: string) => {
       }
       await expect.poll(() => replies, { timeout: 3000 }).toBe(1);
       await nextFrame();
+    },
+    total: () => total,
+  };
+};
+
+const stalledSharpen = () => {
+  const parked: (() => void)[] = [];
+  let total = 0;
+  let landed: unknown;
+  const post: unknown = Reflect.get(Worker.prototype, "postMessage");
+  if (typeof post !== "function") {
+    throw new TypeError("no postMessage");
+  }
+  const spy = vi.spyOn(Worker.prototype, "postMessage");
+  spy.mockImplementation(function record(
+    this: Worker,
+    ...args: Parameters<Worker["postMessage"]>
+  ): void {
+    const message: unknown = args[0];
+    if (
+      isJob(message) &&
+      (message.op === "resample" || (message.op === "release" && total > 0))
+    ) {
+      if (message.op === "resample") {
+        total += 1;
+      }
+      if (total === 1 && message.op === "resample") {
+        const onReply = (
+          event: MessageEvent<{ id: number; result?: unknown }>
+        ): void => {
+          if (event.data.id === message.id) {
+            landed = event.data.result ?? null;
+            this.removeEventListener("message", onReply);
+          }
+        };
+        this.addEventListener("message", onReply);
+      }
+      parked.push(() => {
+        Reflect.apply(post, this, args);
+      });
+      return;
+    }
+    Reflect.apply(post, this, args);
+  });
+  const send = (): void => {
+    for (const run of parked.splice(0)) {
+      run();
+    }
+  };
+  cleanups.push(() => {
+    spy.mockRestore();
+    send();
+  });
+  return {
+    land: async (): Promise<unknown> => {
+      send();
+      await expect
+        .poll(() => landed !== undefined, { timeout: 3000 })
+        .toBeTruthy();
+      await nextFrame();
+      return landed;
     },
     total: () => total,
   };
@@ -725,7 +788,7 @@ describe("photo layer", () => {
     const live = create.mock.results
       .map(({ value }: { value: unknown }) => value)
       .filter((url) => !revoke.mock.calls.some(([gone]) => gone === url));
-    expect(live).toContain(motion?.getAttribute("src"));
+    expect(live).toStrictEqual([motion?.getAttribute("src")]);
   });
 
   it("revokes the file and hides both layers when the photo is cleared", async () => {
@@ -759,7 +822,7 @@ describe("photo layer", () => {
     cropper.end();
   });
 
-  it.each<[string, (cropper: Cropper) => Promise<void>]>([
+  it.each<[string, (cropper: Cropper, unbind: () => void) => Promise<void>]>([
     [
       "a gesture",
       async (cropper) => {
@@ -783,48 +846,62 @@ describe("photo layer", () => {
         await nextFrame();
       },
     ],
-  ])("keeps data-sharp off when %s lands during a sharpen", async (_, act) => {
-    const errors = watchErrors();
-    const { cropper, photo } = await mount(1024);
-    await sharp(photo);
-    const jobs = stalled("resample");
-    cropper.setZoom(1.2);
-    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
-    expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
-    await act(cropper);
-    await jobs.release();
-    const moving = cropper.getState().interacting !== null;
-    const sharpWhileMoving = moving && Object.hasOwn(photo.dataset, "sharp");
-    cropper.end();
-    expect(sharpWhileMoving).toBeFalsy();
-    expect(errors).toStrictEqual([]);
-  });
+    [
+      "an unbind",
+      async (_cropper, unbind) => {
+        unbind();
+        await nextFrame();
+      },
+    ],
+  ])(
+    "keeps data-sharp off and closes the late bitmap unpainted when %s lands during a sharpen",
+    async (_, act) => {
+      const errors = watchErrors();
+      const { cropper, photo, unbind } = await mount(1024);
+      await sharp(photo);
+      const draws = vi.spyOn(CanvasRenderingContext2D.prototype, "drawImage");
+      cleanups.push(() => {
+        draws.mockRestore();
+      });
+      const jobs = stalledSharpen();
+      cropper.setZoom(1.2);
+      await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+      expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+      await act(cropper, unbind);
+      const late = await jobs.land();
+      expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
+      expect(late).toHaveProperty("width", 0);
+      expect(draws.mock.calls.flat()).not.toContain(late);
+      cropper.end();
+      expect(errors).toStrictEqual([]);
+    }
+  );
 
   it("starts no sharpen after unbind with the timer pending", async () => {
-    const viewport = document.createElement("div");
-    viewport.style.cssText = "position:relative;width:400px;height:300px;";
-    const photo = document.createElement("div");
-    viewport.append(photo);
-    document.body.append(viewport);
-    const cropper = createCropper();
-    const offViewport = bindViewport(cropper, viewport);
-    const offPhoto = bindPhoto(cropper, photo);
-    attachImage(
-      cropper,
-      await loadImage(await stripes(), { previewEdge: 1024 })
-    );
+    const { photo, unbind, viewport } = await mount(1024);
     await sharp(photo);
     const ops = opsSent();
-    cropper.setZoom(1.2);
-    offPhoto();
-    await new Promise((resolve) => {
-      setTimeout(resolve, 200);
+    const realTimeout = setTimeout.bind(globalThis);
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const arm = vi
+      .spyOn(globalThis, "setTimeout")
+      .mockImplementation((run, ms) => {
+        if (ms !== LAYOUT_IDLE) {
+          return realTimeout(run, ms);
+        }
+        idle = realTimeout(run, 60_000);
+        return idle;
+      });
+    const clear = vi.spyOn(globalThis, "clearTimeout");
+    cleanups.push(() => {
+      arm.mockRestore();
+      clear.mockRestore();
     });
+    viewport.style.width = "500px";
+    await expect.poll(() => idle, { timeout: 3000 }).toBeDefined();
+    unbind();
+    expect(clear).toHaveBeenCalledWith(idle);
     expect(ops).not.toContain("resample");
-    offViewport();
-    attachImage(cropper, null);
-    cropper.destroy();
-    viewport.remove();
   });
 
   it("swallows a failed encode and paints the preview on the canvas", async () => {
