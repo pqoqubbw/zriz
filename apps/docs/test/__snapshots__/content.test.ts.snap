@@ -4971,7 +4971,7 @@ what each set of imports adds to your bundle, minified and compressed with brotl
 | avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 17.00 kB |
 | root only | \`Root\` | 11.79 kB |
 | vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 14.64 kB |
-| server | \`toSharp\` from \`@zriz/core\` | 377 B |
+| server | \`toSharp\` from \`@zriz/core\` | 540 B |
 | stylesheet | \`styles.css\`, which is optional | 842 B |
 
 measured with size-limit 14.3 on 4 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the \`production\` export condition, so development warnings do not count.

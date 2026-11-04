@@ -19,7 +19,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
             "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
             "14.64 kB",
           ],
-          ["server", "`toSharp` from `@zriz/core`", "377 B"],
+          ["server", "`toSharp` from `@zriz/core`", "540 B"],
           ["stylesheet", "`styles.css`, which is optional", "842 B"],
         ],
       }),
