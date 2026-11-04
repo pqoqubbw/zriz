@@ -434,6 +434,24 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
     expect(colour).toBe(system("Highlight"));
   });
 
+  it("leaves a page element with data-zero alone", async () => {
+    page.textContent = '.mine::before { content: "label"; }';
+    document.head.append(page);
+    const mine = document.createElement("div");
+    const plain = document.createElement("div");
+    mine.className = "mine";
+    plain.className = "mine";
+    mine.dataset.zero = "";
+    document.body.append(mine, plain);
+    await commands.forcedColors("active");
+    const colours = [mine, plain].map(
+      (element) => getComputedStyle(element, "::before").backgroundColor
+    );
+    mine.remove();
+    plain.remove();
+    expect(colours[0]).toBe(colours[1]);
+  });
+
   it("loses to a class that paints a system colour directly", async () => {
     page.textContent = ".user-tick > * { background: Highlight; }";
     document.head.append(page);

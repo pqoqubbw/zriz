@@ -166,9 +166,12 @@
     background: var(--zriz-line, light-dark(#000, #fff));
   }
   @media (forced-colors) {
-    :where([data-zriz-item="grid"] > *, [data-zriz-item="dial-ticks"] > *),
-    :where([data-zriz-item="handle"], [data-zero])::before,
-    :where([data-zriz-item="dial"])::after {
+    :where([data-zriz-item="dial"])::after,
+    :where(
+      [data-zriz-item="dial"] [data-zero],
+      [data-zriz-item="handle"]
+    )::before,
+    :where([data-zriz-item="grid"] > *, [data-zriz-item="dial-ticks"] > *) {
       background: CanvasText;
     }
     :where([data-zriz-item="dial"][data-dragging])::after {
