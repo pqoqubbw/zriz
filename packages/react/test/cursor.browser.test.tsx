@@ -1,6 +1,7 @@
 import "../../core/src/styles.css";
 import { createCropper } from "@zriz/core";
-import { Suspense, lazy } from "react";
+import type { Cropper as CropperApi } from "@zriz/core";
+import { Suspense, createRef, lazy } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 
@@ -139,6 +140,42 @@ describe("cursors", () => {
     ).toStrictEqual(edges.map(([, cursor]) => cursor));
     expect(cursorOf('[data-zriz-item="viewport"]')).toBe("grab");
     expect(cursorOf('[data-zriz-item="dial"]')).toBe("grab");
+  });
+
+  it("leaves a page's own gesture and edge attributes alone", async () => {
+    const screen = await render(
+      <div data-panning="" data-pinching="">
+        <Editor />
+        <div data-edge="left" id="page-edge">
+          <span />
+        </div>
+      </div>
+    );
+    await frames();
+    expect(
+      getComputedStyle(find(screen.container, '[data-zriz-item="viewport"]'))
+        .cursor
+    ).toBe("grab");
+    expect(getComputedStyle(find(screen.container, "#page-edge")).cursor).toBe(
+      "auto"
+    );
+  });
+
+  it("shows grabbing on the viewport while its own root pans", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }} />
+      </Cropper.Root>
+    );
+    await frames();
+    api.current?.begin("pan");
+    await frames();
+    const { cursor } = getComputedStyle(
+      find(screen.container, '[data-zriz-item="viewport"]')
+    );
+    api.current?.end();
+    expect(cursor).toBe("grabbing");
   });
 
   it("keeps the cursor across the page during a drag and lets go after", async () => {

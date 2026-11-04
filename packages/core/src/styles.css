@@ -38,18 +38,6 @@
     outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
     border-radius: inherit;
   }
-  :where([data-zriz-item="viewport"], [data-zriz-item="dial"]) {
-    cursor: grab;
-    overflow: clip;
-  }
-  :where([data-zriz-item="dial"]) {
-    height: 40px;
-    overflow-y: visible;
-  }
-  :where([data-panning], [data-pinching]) :where([data-zriz-item="viewport"]),
-  :where([data-zriz-item="dial"][data-dragging]) {
-    cursor: grabbing;
-  }
   :where([data-zriz-item="handle"]) {
     cursor: nwse-resize;
   }
@@ -61,15 +49,28 @@
   ) {
     cursor: nesw-resize;
   }
-  :where(
-    [data-zriz-item="handle"]:is([data-edge="top"], [data-edge="bottom"])
-  ) {
+  :where([data-zriz-item="handle"]:not([data-edge*="\-"])) {
     cursor: ns-resize;
   }
   :where(
     [data-zriz-item="handle"]:is([data-edge="left"], [data-edge="right"])
   ) {
     cursor: ew-resize;
+  }
+  :where([data-zriz-item="viewport"], [data-zriz-item="dial"]) {
+    cursor: grab;
+    overflow: clip;
+  }
+  :where([data-zriz-item="dial"]) {
+    height: 40px;
+    overflow-y: visible;
+  }
+  :where(
+    [data-zriz-item="root"]:is([data-panning], [data-pinching])
+      [data-zriz-item="viewport"]
+  ),
+  :where([data-zriz-item="dial"][data-dragging]) {
+    cursor: grabbing;
   }
   :where([data-shape="circle"] > [data-zriz-item="handle"][data-edge*="\-"]) {
     display: none;
