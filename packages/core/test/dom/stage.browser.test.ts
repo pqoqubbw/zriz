@@ -807,3 +807,75 @@ describe("two viewports on one cropper", () => {
     });
   });
 });
+
+describe("a removed photo", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("leaves no crop box or mask hole, and the next photo lays out again", async () => {
+    const fixture = mount();
+    const mask = fixture.area.previousElementSibling as HTMLElement;
+    await frames();
+    const { width } = fixture.area.style;
+    expect(width).not.toBe("");
+    expect(mask.style.clipPath).not.toBe("");
+    fixture.cropper.setImage(null);
+    await frames();
+    expect(fixture.area.style.width).toBe("");
+    expect(fixture.area.style.left).toBe("");
+    expect(mask.style.clipPath).toBe("");
+    fixture.cropper.setImage(photo);
+    await frames();
+    expect(fixture.area.style.width).toBe(width);
+    expect(mask.style.clipPath).not.toBe("");
+  });
+
+  it("clears a box that went hidden before the photo left", async () => {
+    const fixture = mount();
+    await frames();
+    fixture.viewport.style.display = "none";
+    await expect.poll(() => viewOf(fixture.cropper).frame()).toBeNull();
+    fixture.cropper.setImage(null);
+    fixture.viewport.style.display = "block";
+    await frames(3);
+    expect(fixture.area.style.width).toBe("");
+  });
+});
+
+describe("zoom at the cursor", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("keeps the pixel under the cursor with two wheels in one frame", async () => {
+    const fixture = mount();
+    await frames();
+    const view = viewOf(fixture.cropper);
+    const box = fixture.viewport.getBoundingClientRect();
+    const cursor = { x: 340, y: 250 };
+    const under = (): { x: number; y: number } => {
+      const frame = view.frame();
+      if (!frame) {
+        throw new Error("no frame");
+      }
+      return applyHomography(invertMatrix3(frame.matrix), cursor);
+    };
+    const before = under();
+    for (let i = 0; i < 2; i += 1) {
+      wheel(fixture, {
+        clientX: box.x + cursor.x,
+        clientY: box.y + cursor.y,
+        ctrlKey: true,
+        deltaY: -50,
+      });
+    }
+    await frames();
+    const after = under();
+    expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(2);
+  });
+});

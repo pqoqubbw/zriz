@@ -174,9 +174,16 @@ export const bindMask = (
       style.clipPath = next;
     }
   });
+  const offEmpty = view.onEmpty(() => {
+    last = "";
+    style.clipPath = "";
+    style.removeProperty("mask-image");
+    style.removeProperty("-webkit-mask-image");
+  });
   return () => {
     stop();
     offChrome();
+    offEmpty();
   };
 };
 
@@ -203,8 +210,9 @@ export const bindArea = (
       style.setProperty(name, text);
     }
   };
-  let last: Box = { height: -1, width: -1, x: Number.NaN, y: Number.NaN };
-  return follow(cropper, (frame) => {
+  const unset: Box = { height: -1, width: -1, x: Number.NaN, y: Number.NaN };
+  let last = unset;
+  const stop = follow(cropper, (frame) => {
     const { rect } = frame;
     if (rect.x !== last.x) {
       style.left = px(rect.x);
@@ -237,6 +245,17 @@ export const bindArea = (
       variable("--zriz-overscroll", Math.hypot(shift.x, shift.y));
     }
   });
+  const offEmpty = viewOf(cropper).onEmpty(() => {
+    last = unset;
+    style.left = "";
+    style.top = "";
+    style.width = "";
+    style.height = "";
+  });
+  return () => {
+    stop();
+    offEmpty();
+  };
 };
 
 export type HandleHandlers = PointerHandlers & { release: () => void };

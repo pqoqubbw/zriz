@@ -80,6 +80,7 @@ export interface View {
   overzoom: () => number;
   settleOverscroll: (quick?: boolean) => void;
   onFrame: (listener: (frame: ViewFrame) => void) => () => void;
+  onEmpty: (listener: () => void) => () => void;
   destroy: () => void;
 }
 
@@ -274,6 +275,15 @@ const poseMatrix = ({
   ];
 };
 
+const subscribe =
+  <T>(set: Set<T>) =>
+  (listener: T): (() => void) => {
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+    };
+  };
+
 const easeOut = (t: number): number => 1 - (1 - t) ** 3;
 
 const settled = (omega: number, ms: number): number => {
@@ -312,6 +322,8 @@ export const viewOf = (cropper: Cropper): View => {
   let photo: Size | undefined;
   const listeners = new Set<(frame: ViewFrame) => void>();
   const chromeListeners = new Set<() => void>();
+  const emptyListeners = new Set<() => void>();
+  let empty = false;
   const reduceQuery =
     typeof matchMedia === "function"
       ? matchMedia("(prefers-reduced-motion: reduce)")
@@ -421,7 +433,12 @@ export const viewOf = (cropper: Cropper): View => {
       for (const listener of listeners) {
         listener(last);
       }
+    } else if (!empty) {
+      for (const listener of emptyListeners) {
+        listener();
+      }
     }
+    empty = !last;
   };
 
   const recentre = (): void => {
@@ -633,6 +650,7 @@ export const viewOf = (cropper: Cropper): View => {
       clearTimers();
       listeners.clear();
       chromeListeners.clear();
+      emptyListeners.clear();
       views.delete(cropper);
     },
     frame() {
@@ -658,18 +676,9 @@ export const viewOf = (cropper: Cropper): View => {
         y: event.clientY - box.top - target.clientTop,
       };
     },
-    onChrome(listener) {
-      chromeListeners.add(listener);
-      return () => {
-        chromeListeners.delete(listener);
-      };
-    },
-    onFrame(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    onChrome: subscribe(chromeListeners),
+    onEmpty: subscribe(emptyListeners),
+    onFrame: subscribe(listeners),
     overscroll: () => shift,
     overzoom: () => zoom,
     reducedMotion: reduced,
