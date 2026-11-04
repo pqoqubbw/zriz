@@ -37,12 +37,6 @@ const release = (image: LoadedImage): void => {
   }
 };
 
-const notify = (cropper: Cropper): void => {
-  for (const listener of imageListeners.get(cropper) ?? []) {
-    listener();
-  }
-};
-
 export const attachImage = (
   cropper: Cropper,
   image: LoadedImage | null
@@ -67,7 +61,9 @@ export const attachImage = (
     attached.delete(cropper);
     cropper.setImage(null);
   }
-  notify(cropper);
+  for (const listener of imageListeners.get(cropper) ?? []) {
+    listener();
+  }
   if (image && !watched.has(cropper)) {
     watched.add(cropper);
     cropper.on("destroy", () => {
@@ -75,7 +71,6 @@ export const attachImage = (
       if (held) {
         attached.delete(cropper);
         release(held);
-        notify(cropper);
       }
     });
   }
