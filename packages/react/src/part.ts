@@ -12,12 +12,13 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useInsertionEffect,
   useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
 
-import { mergeRefs } from "./merge-props";
+import { attach } from "./merge-props";
 import type { ClassName, RenderProp } from "./use-render";
 
 type ElementOf<T> = T extends keyof HTMLElementTagNameMap
@@ -86,38 +87,59 @@ const createBox = (): ElementBox => {
 
 export const useElementBox = (): ElementBox => useMemo(() => createBox(), []);
 
-const hold = <T>(ref: Ref<T> | undefined, node: T): (() => void) =>
-  mergeRefs<T>(ref)(node);
-
 export const useMergedRef = <T>(
   own: (node: T) => (() => void) | undefined,
   theirs: Ref<T> | undefined
 ): ((node: T | null) => void) => {
   const latest = useRef(theirs);
+  const held = useRef(theirs);
   const node = useRef<T | null>(null);
-  const release = useRef<(() => void) | undefined>(undefined);
+  const bound = useRef<typeof own | null>(null);
+  const leaving = useRef(false);
+  const release = useRef<(() => unknown) | null>(null);
   const unbind = useRef<(() => void) | undefined>(undefined);
+  useInsertionEffect(() => {
+    latest.current = theirs;
+  }, [theirs]);
   useIsomorphicLayoutEffect(() => {
-    if (latest.current === theirs) {
+    if (held.current === theirs) {
       return;
     }
-    latest.current = theirs;
-    if (node.current !== null) {
+    held.current = theirs;
+    if (node.current !== null && !leaving.current) {
       release.current?.();
-      release.current = hold(theirs, node.current);
+      release.current = attach(theirs, node.current);
     }
   }, [theirs]);
   return useCallback(
     (next: T | null) => {
       release.current?.();
-      release.current = undefined;
-      unbind.current?.();
-      unbind.current = undefined;
-      node.current = next;
-      if (next !== null) {
-        unbind.current = own(next);
-        release.current = hold(latest.current, next);
+      release.current = null;
+      const drop = (): void => {
+        unbind.current?.();
+        unbind.current = undefined;
+        bound.current = null;
+        node.current = null;
+      };
+      if (next === null) {
+        leaving.current = true;
+        queueMicrotask(() => {
+          if (leaving.current) {
+            leaving.current = false;
+            drop();
+          }
+        });
+        return;
       }
+      leaving.current = false;
+      if (next !== node.current || bound.current !== own) {
+        drop();
+        node.current = next;
+        bound.current = own;
+        unbind.current = own(next);
+      }
+      held.current = latest.current;
+      release.current = attach(latest.current, next);
     },
     [own]
   );

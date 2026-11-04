@@ -4,7 +4,7 @@ import type { ElementType } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { useZoom } from "../src";
+import { useRender, useZoom } from "../src";
 import * as Cropper from "../src/cropper";
 import { mergeProps, preventZrizHandler } from "../src/merge-props";
 
@@ -168,6 +168,68 @@ describe("part props", () => {
     expect(ours).toHaveBeenCalledOnce();
   });
 
+  it("calls both handlers with every argument when the first is not an object", () => {
+    const calls: unknown[][] = [];
+    const merged = mergeProps(
+      {
+        onValueChange: (...args: unknown[]) => {
+          calls.push(["ours", ...args]);
+        },
+      },
+      {
+        onValueChange: (...args: unknown[]) => {
+          preventZrizHandler(args[0] as object);
+          calls.push(["theirs", ...args]);
+        },
+      }
+    );
+    (merged.onValueChange as (...args: unknown[]) => void)(0.5, "drag");
+    expect(calls).toStrictEqual([
+      ["theirs", 0.5, "drag"],
+      ["ours", 0.5, "drag"],
+    ]);
+  });
+
+  it("skips only zriz when a render element vetoes, never the part's prop", () => {
+    const calls: string[] = [];
+    const part = mergeProps(
+      {
+        onClick: () => {
+          calls.push("zriz");
+        },
+      },
+      {
+        onClick: () => {
+          calls.push("prop");
+        },
+      }
+    );
+    const veto = mergeProps(part, {
+      onClick: (event: object) => {
+        calls.push("element");
+        preventZrizHandler(event);
+      },
+    });
+    fire(veto.onClick, {});
+    expect(calls).toStrictEqual(["element", "prop"]);
+    calls.length = 0;
+    fire(
+      mergeProps(part, {
+        onClick: () => {
+          calls.push("element");
+        },
+      }).onClick,
+      {}
+    );
+    expect(calls).toStrictEqual(["element", "prop", "zriz"]);
+  });
+
+  it("keeps a part's handler when the user passes null", () => {
+    const { cropper, props } = propsOf(Cropper.Flip, { onClick: null });
+    click(props);
+    expect(cropper.getValue().mirrored).toBeTruthy();
+  });
+
   it("resolves a className function against the part state", () => {
     const { props } = propsOf(Cropper.Flip, {
       className: (state: { mirrored: boolean }) => `mirrored-${state.mirrored}`,
@@ -209,5 +271,42 @@ describe("part props", () => {
     expect(() => renderToString(createElement(Lost))).toThrow(
       "zriz: pass a cropper or render inside <Cropper.Root>"
     );
+  });
+});
+
+describe("useRender", () => {
+  const Own = ({
+    option,
+    props,
+  }: {
+    option?: string;
+    props: Record<string, unknown>;
+  }) => useRender({ className: option, props, state: {}, tag: "span" });
+
+  it("keeps a class given in props and joins it with the option", () => {
+    expect(
+      renderToString(createElement(Own, { props: { className: "a" } }))
+    ).toContain('class="a"');
+    expect(
+      renderToString(
+        createElement(Own, { option: "b", props: { className: "a" } })
+      )
+    ).toContain('class="a b"');
+  });
+
+  it("gives no key to a render element without one", () => {
+    let key: string | null = "unset";
+    const Probe = () => {
+      const element = useRender({
+        props: {},
+        render: createElement("a"),
+        state: {},
+        tag: "span",
+      });
+      ({ key } = element);
+      return element;
+    };
+    renderToString(createElement(Probe));
+    expect(key).toBeNull();
   });
 });

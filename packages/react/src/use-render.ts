@@ -1,15 +1,13 @@
 "use client";
 
-import { createElement, isValidElement, useMemo, version } from "react";
+import { createElement, isValidElement, useMemo } from "react";
 import type { JSX, ReactElement, Ref } from "react";
 
-import { mergeProps, mergeRefs } from "./merge-props";
+import { legacy, mergeProps, mergeRefs } from "./merge-props";
 
 export type RenderProp<S> =
   | ReactElement
   | ((props: Record<string, unknown>, state: S) => ReactElement);
-
-const legacy = Number(version.slice(0, version.indexOf("."))) < 19;
 
 const isRef = (value: unknown): value is Ref<HTMLElement> =>
   typeof value === "function" ||
@@ -29,8 +27,8 @@ export type ClassName<S> = string | ((state: S) => string | undefined);
 export interface RenderOptions<S> {
   tag: keyof JSX.IntrinsicElements;
   state: S;
-  props: Record<string, unknown>;
-  ref?: Ref<HTMLElement> | undefined;
+  props: object;
+  ref?: Ref<Element> | undefined;
   render?: RenderProp<S> | undefined;
   className?: ClassName<S> | undefined;
 }
@@ -53,7 +51,7 @@ export const usePart = <S>(
     typeof className === "function" ? className(state) : className;
   const elementRef = isValidElement(render) ? refOf(render) : undefined;
   const merged = useMemo(
-    () => (elementRef ? mergeRefs(ref, elementRef) : ref),
+    () => (elementRef || (legacy && ref) ? mergeRefs(ref, elementRef) : ref),
     [ref, elementRef]
   );
   const own = { ...mergeProps(ours, theirs), className: resolved, ref: merged };
@@ -63,7 +61,7 @@ export const usePart = <S>(
   if (isValidElement<Record<string, unknown>>(render)) {
     return createElement(render.type, {
       ...mergeProps(own, render.props),
-      key: render.key,
+      key: render.key ?? undefined,
       ref: merged,
     });
   }
@@ -77,5 +75,27 @@ export const useRender = <S>({
   ref,
   render,
   className,
-}: RenderOptions<S>): ReactElement =>
-  usePart(tag, props, { className, render }, ref, state);
+}: RenderOptions<S>): ReactElement => {
+  const {
+    className: base,
+    ref: inner,
+    ...rest
+  }: { className?: unknown; ref?: unknown } = props;
+  const resolved =
+    typeof className === "function" ? className(state) : className;
+  const joined = mergeProps({ className: base }, { className: resolved });
+  const outer = ref as Ref<HTMLElement> | undefined;
+  const merged = useMemo(() => {
+    if (!isRef(inner)) {
+      return outer;
+    }
+    return outer ? mergeRefs(outer, inner) : inner;
+  }, [inner, outer]);
+  return usePart(
+    tag,
+    rest,
+    { className: joined.className as string | undefined, render },
+    merged,
+    state
+  );
+};

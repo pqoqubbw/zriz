@@ -1,4 +1,8 @@
+import { version } from "react";
 import type { CSSProperties, Ref } from "react";
+
+export const legacy: boolean =
+  Number(version.slice(0, version.indexOf("."))) < 19;
 
 const vetoes = new WeakMap<object, () => void>();
 
@@ -6,7 +10,34 @@ export const preventZrizHandler = (event: object): void => {
   vetoes.get(event)?.();
 };
 
-type Handler = (event: object) => void;
+type Handler = (...args: unknown[]) => void;
+
+type Step = (args: unknown[], vetoed: boolean) => void;
+
+const steps = new WeakMap<Handler, Step>();
+
+const chain = (own: Handler, theirs: Handler): Handler => {
+  const next = steps.get(own);
+  const step: Step = (args, vetoed) => {
+    const event: object = Object(args[0]);
+    let prevented = vetoed;
+    vetoes.set(event, () => {
+      prevented = true;
+    });
+    theirs(...args);
+    vetoes.delete(event);
+    if (next) {
+      next(args, prevented);
+    } else if (!prevented) {
+      own(...args);
+    }
+  };
+  const handler: Handler = (...args) => {
+    step(args, false);
+  };
+  steps.set(handler, step);
+  return handler;
+};
 
 const isHandler = (key: string, value: unknown): value is Handler =>
   /^on[A-Z]/u.test(key) && typeof value === "function";
@@ -14,7 +45,7 @@ const isHandler = (key: string, value: unknown): value is Handler =>
 const isStyle = (value: unknown): value is CSSProperties =>
   typeof value === "object" && value !== null;
 
-const attach = <T>(
+export const attach = <T>(
   ref: Ref<T> | undefined,
   node: T | null
 ): (() => unknown) | null => {
@@ -41,11 +72,9 @@ const run = (cleanups: ((() => unknown) | null)[]): void => {
   }
 };
 
-const noop = (): void => undefined;
-
 export const mergeRefs = <T>(
   ...refs: (Ref<T> | undefined)[]
-): ((node: T | null) => () => void) => {
+): ((node: T | null) => (() => void) | undefined) => {
   let cleanups: ((() => unknown) | null)[] | null = null;
   return (node) => {
     const previous = cleanups;
@@ -55,39 +84,28 @@ export const mergeRefs = <T>(
     } else if (node === null) {
       refs.map((ref) => attach(ref, null));
     }
-    if (node === null) {
-      return noop;
-    }
-    const mine = refs.map((ref) => attach(ref, node));
+    const mine = node === null ? null : refs.map((ref) => attach(ref, node));
     cleanups = mine;
-    return () => {
-      if (cleanups === mine) {
-        cleanups = null;
-        run(mine);
-      }
-    };
+    return mine === null || legacy
+      ? undefined
+      : () => {
+          if (cleanups === mine) {
+            cleanups = null;
+            run(mine);
+          }
+        };
   };
 };
 
 export const mergeProps = (
-  ours: Record<string, unknown>,
-  theirs: Record<string, unknown>
+  ours: object,
+  theirs: object
 ): Record<string, unknown> => {
   const merged: Record<string, unknown> = { ...ours };
-  for (const [key, value] of Object.entries(theirs)) {
+  for (const [key, value] of Object.entries<unknown>({ ...theirs })) {
     const own = merged[key];
     if (isHandler(key, value) && isHandler(key, own)) {
-      merged[key] = (event: object) => {
-        let prevented = false;
-        vetoes.set(event, () => {
-          prevented = true;
-        });
-        value(event);
-        vetoes.delete(event);
-        if (!prevented) {
-          own(event);
-        }
-      };
+      merged[key] = chain(own, value);
     } else if (key === "style" && isStyle(own) && isStyle(value)) {
       merged.style = { ...own, ...value };
     } else if (
@@ -96,7 +114,7 @@ export const mergeProps = (
       typeof value === "string"
     ) {
       merged.className = `${own} ${value}`;
-    } else if (value !== undefined) {
+    } else if (value !== undefined && !isHandler(key, own)) {
       merged[key] = value;
     }
   }

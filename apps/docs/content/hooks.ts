@@ -180,13 +180,13 @@ const HOOKS_PAGE = defineDoc({
             {
               name: "props",
               required: true,
-              text: "sets the element's props",
-              type: "Record<string, unknown>",
+              text: "sets the element's props. take `render` and your own props out first, as the parts do",
+              type: "object",
             },
             {
               name: "ref",
               text: "attaches to the element",
-              type: "Ref<HTMLElement>",
+              type: "Ref<Element>",
             },
             {
               name: "render",

@@ -53,6 +53,18 @@ const userRef = (node: HTMLDivElement | null) => {
   };
 };
 
+const pointer = (selector: string, type: string): void => {
+  document.querySelector(selector)?.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+    })
+  );
+};
+
 const Shell = ({
   api,
   children,
@@ -174,8 +186,11 @@ describe("refs on React 18 and 19", () => {
     const api = createRef<CropperApi>();
     const area = createRef<HTMLDivElement>();
     const rotate = createRef<HTMLButtonElement>();
+    const flip = createRef<HTMLButtonElement>();
+    const plain = createRef<HTMLDivElement>();
     const screen = await render(
       <Shell api={api}>
+        <div ref={mergeRefs(plain)} />
         <Cropper.Image alt="" />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop" ref={area} render={<section />}>
@@ -191,8 +206,10 @@ describe("refs on React 18 and 19", () => {
         </Cropper.Zoom>
         <Cropper.ZoomStep factor={2}>in</Cropper.ZoomStep>
         <Cropper.Rotate ref={rotate}>rotate</Cropper.Rotate>
-        <Cropper.Flip>flip</Cropper.Flip>
-        <Cropper.Reset>reset</Cropper.Reset>
+        <Cropper.Flip render={<button ref={flip} type="button" />}>
+          flip
+        </Cropper.Flip>
+        <Cropper.Reset ref={userRef}>reset</Cropper.Reset>
         <Cropper.Orientation>turn</Cropper.Orientation>
         <Cropper.AspectGroup aria-label="Aspect">
           <Cropper.AspectItem value={1}>square</Cropper.AspectItem>
@@ -204,19 +221,23 @@ describe("refs on React 18 and 19", () => {
     await frames(2);
     expect(area.current?.tagName).toBe("SECTION");
     expect(rotate.current?.tagName).toBe("BUTTON");
+    expect(flip.current?.tagName).toBe("BUTTON");
+    expect(plain.current?.tagName).toBe("DIV");
     rotate.current?.click();
     await frames(2);
     await screen.unmount();
+    expect(count("attach")).toBe(count("cleanup"));
     expect(errors).not.toHaveBeenCalled();
     errors.mockRestore();
   });
 
-  it("returns a cleanup from mergeRefs that detaches every ref", () => {
+  it("detaches every ref a merged ref holds", () => {
     const object = createRef<HTMLDivElement>();
     const node = document.createElement("div");
-    const off = mergeRefs(object, userRef)(node);
+    const merged = mergeRefs(object, userRef);
+    merged(node);
     expect(object.current).toBe(node);
-    off();
+    merged(null);
     expect(object.current).toBeNull();
     expect(log).toStrictEqual(["attach", "cleanup"]);
   });
@@ -245,6 +266,78 @@ describe("refs on React 18 and 19", () => {
     expect(object.current).toBeNull();
     expect(log.at(-1)).toMatch(/^(?:cleanup|null)$/u);
     expect(log.filter((entry) => entry === "attach")).toHaveLength(1);
+  });
+
+  it("keeps a drag going when a render element's ref changes", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ tick }: { tick: number }) => (
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport
+          id="view"
+          render={
+            <div
+              data-tick={tick}
+              ref={() => {
+                log.push("inline");
+              }}
+            />
+          }
+          style={{ height: 300, position: "relative", width: 400 }}
+        />
+      </Cropper.Root>
+    );
+    const screen = await render(<Host tick={0} />);
+    await frames(2);
+    pointer("#view", "pointerdown");
+    expect(api.current?.getState().interacting).toBe("pan");
+    await screen.rerender(<Host tick={1} />);
+    expect(api.current?.getState().interacting).toBe("pan");
+    pointer("#view", "pointerup");
+  });
+
+  it("keeps a drag going when a render function makes a new ref", async () => {
+    const api = createRef<CropperApi>();
+    const Host = ({ tick }: { tick: number }) => (
+      <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport
+          id="view"
+          render={(own) => (
+            <div
+              {...own}
+              data-tick={tick}
+              ref={mergeRefs(own.ref as Ref<HTMLDivElement>)}
+            />
+          )}
+          style={{ height: 300, position: "relative", width: 400 }}
+        />
+      </Cropper.Root>
+    );
+    const screen = await render(<Host tick={0} />);
+    await frames(2);
+    pointer("#view", "pointerdown");
+    expect(api.current?.getState().interacting).toBe("pan");
+    await screen.rerender(<Host tick={1} />);
+    expect(api.current?.getState().interacting).toBe("pan");
+    pointer("#view", "pointerup");
+  });
+
+  it("moves a new ref over once when the part rebinds in the same render", async () => {
+    const entry = (name: string) => (node: HTMLDivElement | null) => {
+      log.push(`${name}${node ? "+" : "-"}`);
+    };
+    const first = entry("a");
+    const second = entry("b");
+    const api = createRef<CropperApi>();
+    const Host = ({ own }: { own: Ref<HTMLDivElement> }) => (
+      <Shell api={api}>
+        <Cropper.Zoom aria-label="Zoom" format={{}} ref={own} />
+      </Shell>
+    );
+    const screen = await render(<Host own={first} />);
+    await frames(1);
+    log.length = 0;
+    await screen.rerender(<Host own={second} />);
+    expect(log).toStrictEqual(["a-", "b+"]);
   });
 
   it("leaves no binding or ref behind in StrictMode", async () => {

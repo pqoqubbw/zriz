@@ -7063,10 +7063,10 @@ your part follows the \`render\` and \`className\` rules on [composition](https:
 - \`state\` \`S\` required
 
   goes to \`render\` and \`className\` functions
-- \`props\` \`Record<string, unknown>\` required
+- \`props\` \`object\` required
 
-  sets the element's props
-- \`ref\` \`Ref<HTMLElement>\`
+  sets the element's props. take \`render\` and your own props out first, as the parts do
+- \`ref\` \`Ref<Element>\`
 
   attaches to the element
 - \`render\` \`RenderProp<S>\`
