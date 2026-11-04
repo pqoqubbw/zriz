@@ -255,6 +255,31 @@ describe("buttons and state attributes", () => {
     expect(on(root, attribute)).toBeFalsy();
   });
 
+  it("Root shows data-interacting during a gesture and its hold", async () => {
+    const { api, root } = await mount(null);
+    expect(on(root, "data-interacting")).toBeFalsy();
+    api().begin("resize");
+    await frames();
+    expect(on(root, "data-interacting")).toBeTruthy();
+    api().end();
+    await frames();
+    expect(on(root, "data-interacting")).toBeTruthy();
+    await expect
+      .poll(() => on(root, "data-interacting"), { timeout: 5000 })
+      .toBeFalsy();
+  });
+
+  it("Root shows data-settling while an animation runs", async () => {
+    const { api, root } = await mount(null);
+    expect(on(root, "data-settling")).toBeFalsy();
+    let running = true;
+    api().run(() => running);
+    await frames();
+    expect(on(root, "data-settling")).toBeTruthy();
+    running = false;
+    await expect.poll(() => on(root, "data-settling")).toBeFalsy();
+  });
+
   it("Root shows data-overscroll while the view is pulled past an edge", async () => {
     const { api, root } = await mount(null);
     expect(on(root, "data-overscroll")).toBeFalsy();

@@ -613,6 +613,27 @@ describe("wheel and pinch on the photo", () => {
     fire(r.viewport, "pointerup", 350, 150, { pointerId: 1, ...touch });
   });
 
+  it("a stretched pinch springs back when one finger lifts and fires one settle", () => {
+    const r = rig();
+    const view = viewOf(r.cropper);
+    const touch = { pointerType: "touch" };
+    let settles = 0;
+    r.cropper.on("settle", () => {
+      settles += 1;
+    });
+    fire(r.viewport, "pointerdown", 100, 150, { pointerId: 1, ...touch });
+    fire(r.viewport, "pointerdown", 300, 150, { pointerId: 2, ...touch });
+    fire(r.viewport, "pointermove", 150, 150, { pointerId: 1, ...touch });
+    fire(r.viewport, "pointermove", 250, 150, { pointerId: 2, ...touch });
+    r.time.frames(1);
+    expect(view.overzoom()).toBeLessThan(1);
+    fire(r.viewport, "pointerup", 250, 150, { pointerId: 2, ...touch });
+    r.time.frames(300);
+    expect(view.overzoom()).toBe(1);
+    expect(settles).toBe(1);
+    fire(r.viewport, "pointerup", 150, 150, { pointerId: 1, ...touch });
+  });
+
   it("a wheel zoom reports the wheel on change and on commit", () => {
     const r = rig();
     const reasons: string[] = [];
@@ -1459,7 +1480,11 @@ describe("the angle label", () => {
 });
 
 const bound = () => {
-  const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    image: { height: 3000, width: 4000 },
+  });
   const root = document.createElement("div");
   const off = bindState(cropper, root);
   cleanups.push(() => {
@@ -1467,7 +1492,7 @@ const bound = () => {
     viewOf(cropper).destroy();
     cropper.destroy();
   });
-  return { cropper, root };
+  return { cropper, root, time };
 };
 
 describe("the state attributes on a root", () => {
@@ -1480,6 +1505,31 @@ describe("the state attributes on a root", () => {
     expect(root.dataset.resizing).toBeUndefined();
     cropper.setAspect(2);
     expect(root.dataset.orientation).toBe("landscape");
+  });
+
+  it("marks a gesture as interacting until the hold after it ends", async () => {
+    const { cropper, root } = bound();
+    expect(root.dataset.interacting).toBeUndefined();
+    cropper.begin("resize");
+    expect(root.dataset.interacting).toBe("");
+    cropper.end();
+    expect(root.dataset.interacting).toBe("");
+    await expect
+      .poll(() => root.dataset.interacting, { timeout: 5000 })
+      .toBeUndefined();
+  });
+
+  it("marks settling while an animation runs", () => {
+    const { cropper, root, time } = bound();
+    expect(root.dataset.settling).toBeUndefined();
+    let left = 2;
+    cropper.run(() => {
+      left -= 1;
+      return left > 0;
+    });
+    expect(root.dataset.settling).toBe("");
+    time.frames(2);
+    expect(root.dataset.settling).toBeUndefined();
   });
 
   it("marks a disabled cropper and clears the mark", () => {
