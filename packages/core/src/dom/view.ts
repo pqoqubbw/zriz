@@ -69,11 +69,10 @@ export interface View {
   onChrome: (listener: () => void) => () => void;
   setOptions: (options: ViewOptions) => void;
   reducedMotion: () => boolean;
-  setTarget: (element: HTMLElement | null) => void;
   local: (event: { clientX: number; clientY: number }) => Point;
   claim: (event: Event) => void;
   claimed: (event: Event) => boolean;
-  setLayout: (layout: Layout | null) => void;
+  setLayout: (layout: Layout | null, surface?: HTMLElement) => void;
   hold: () => Placement | null;
   release: () => void;
   setOverscroll: (offset: Point | null, zoom?: number, anchor?: Point) => void;
@@ -308,7 +307,8 @@ export const viewOf = (cropper: Cropper): View => {
     transition: null,
   };
   let last: ViewFrame | null = null;
-  let target: HTMLElement | null = null;
+  let target: HTMLElement | undefined;
+  const surfaces = new Map<HTMLElement | undefined, Layout>();
   let photo: Size | undefined;
   const listeners = new Set<(frame: ViewFrame) => void>();
   const chromeListeners = new Set<() => void>();
@@ -691,8 +691,15 @@ export const viewOf = (cropper: Cropper): View => {
       held = null;
       cropper.invalidate();
     },
-    setLayout(next) {
-      layout = next;
+    setLayout(next, surface) {
+      if (next) {
+        surfaces.set(surface, next);
+      } else {
+        surfaces.delete(surface);
+      }
+      const top = [...surfaces].at(-1);
+      target = top?.[0];
+      layout = top?.[1] ?? null;
       last = compute();
       cropper.invalidate();
     },
@@ -713,9 +720,6 @@ export const viewOf = (cropper: Cropper): View => {
       }
       markOverscroll();
       cropper.invalidate();
-    },
-    setTarget(element) {
-      target = element;
     },
     settleOverscroll(quick = false) {
       settleShift();

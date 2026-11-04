@@ -265,7 +265,6 @@ export const viewportController = (
 
   const measure = (): void => {
     if (!element) {
-      view.setLayout(null);
       return;
     }
     const style = getComputedStyle(element);
@@ -280,7 +279,10 @@ export const viewportController = (
       },
       width: element.clientWidth,
     };
-    view.setLayout(layout.width > 0 && layout.height > 0 ? layout : null);
+    view.setLayout(
+      layout.width > 0 && layout.height > 0 ? layout : null,
+      element
+    );
     if (view.frame()?.scale !== start?.scale) {
       rebase();
     }
@@ -790,6 +792,7 @@ export const viewportController = (
     unwatch = null;
     globalThis.removeEventListener("keydown", onEscape, true);
     releaseAll(new Event("lostpointercapture"));
+    view.setLayout(null, element);
     element = null;
   };
 
@@ -797,7 +800,6 @@ export const viewportController = (
     destroy() {
       detach();
       endWheel();
-      view.setLayout(null);
     },
     handlers,
     setElement(next) {
@@ -806,9 +808,7 @@ export const viewportController = (
       }
       detach();
       element = next;
-      view.setTarget(next);
       if (!next) {
-        view.setLayout(null);
         return;
       }
       if (getComputedStyle(next).position === "static") {

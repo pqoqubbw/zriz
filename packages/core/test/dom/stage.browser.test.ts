@@ -707,3 +707,103 @@ describe("viewport resize during a pan", () => {
     expect(moved).toBeCloseTo(-30, 3);
   });
 });
+
+describe("two viewports on one cropper", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const pair = () => {
+    const fixture = mount();
+    const element = document.createElement("div");
+    element.style.cssText = "position:relative;width:400px;height:300px;";
+    document.body.append(element);
+    const off = bindViewport(fixture.cropper, element);
+    cleanups.push(() => {
+      off();
+      element.remove();
+    });
+    return { element, fixture, off, view: viewOf(fixture.cropper) };
+  };
+
+  it("hiding one leaves the visible one working, in either direction", async () => {
+    const { element, fixture, view } = pair();
+    await frames();
+    element.style.display = "none";
+    await expect.poll(() => view.frame()?.layout.inset.left).toBe(20);
+    fixture.viewport.style.display = "none";
+    element.style.display = "block";
+    await expect.poll(() => view.frame()?.layout.inset.left).toBe(0);
+    fixture.viewport.style.display = "block";
+    element.style.display = "none";
+    await expect.poll(() => view.frame()?.layout.inset.left).toBe(20);
+    fixture.cropper.setZoom(2);
+    await frames();
+    const before = fixture.cropper.getCropState()?.crop.x;
+    await commands.drag(`#${fixture.id}`, [
+      [200, 150],
+      [160, 150],
+    ]);
+    expect(fixture.cropper.getCropState()?.crop.x).not.toBe(before);
+  });
+
+  it("removing the newer one hands the frame back to the older one", async () => {
+    const { fixture, off, view } = pair();
+    await frames();
+    off();
+    expect(view.frame()?.layout.inset.left).toBe(20);
+    const box = fixture.viewport.getBoundingClientRect();
+    expect(view.local({ clientX: box.x + 10, clientY: box.y + 20 })).toEqual({
+      x: 10,
+      y: 20,
+    });
+    wheel(fixture, { ctrlKey: true, deltaY: -30 });
+    expect(fixture.cropper.getZoom()).toBeGreaterThan(1);
+  });
+
+  it("removing the older one leaves the newer one in charge", async () => {
+    const { element, fixture, view } = pair();
+    await frames();
+    const controller = viewportController(fixture.cropper);
+    const other = document.createElement("div");
+    other.style.cssText = "width:400px;height:300px;padding:5px;";
+    document.body.append(other);
+    cleanups.push(() => {
+      other.remove();
+    });
+    controller.setElement(other);
+    expect(view.frame()?.layout.inset.left).toBe(5);
+    controller.setElement(null);
+    expect(view.frame()?.layout.inset.left).toBe(0);
+    const box = element.getBoundingClientRect();
+    expect(view.local({ clientX: box.x + 1, clientY: box.y + 2 })).toEqual({
+      x: 1,
+      y: 2,
+    });
+  });
+
+  it("cleanup lets go of the element", async () => {
+    const cropper = createCropper({ image: photo });
+    const element = document.createElement("div");
+    element.style.cssText = "position:fixed;left:50px;top:60px;width:40px;height:40px;";
+    document.body.append(element);
+    cleanups.push(() => {
+      cropper.destroy();
+      element.remove();
+    });
+    const off = bindViewport(cropper, element);
+    await frames();
+    expect(viewOf(cropper).local({ clientX: 60, clientY: 70 })).toEqual({
+      x: 10,
+      y: 10,
+    });
+    off();
+    expect(viewOf(cropper).frame()).toBeNull();
+    expect(viewOf(cropper).local({ clientX: 60, clientY: 70 })).toEqual({
+      x: 60,
+      y: 70,
+    });
+  });
+});
