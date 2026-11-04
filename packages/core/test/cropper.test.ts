@@ -2838,3 +2838,17 @@ describe("reset within the hold tolerance", () => {
     expect(cropper.getState().pristine).toBe(true);
   });
 });
+
+describe("destroy inside a listener", () => {
+  it("refuses a gesture when the flush at its start destroys the cropper", () => {
+    const { cropper } = setup();
+
+    cropper.on("change", () => {
+      cropper.destroy();
+    });
+    cropper.rotate90();
+
+    expect(cropper.begin("pan")).toBe(false);
+    expect(cropper.getState().interacting).toBeNull();
+  });
+});

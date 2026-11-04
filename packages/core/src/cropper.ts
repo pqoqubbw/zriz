@@ -812,6 +812,10 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (gesture === null) {
         flush();
         settleCommit();
+
+        if (destroyed) {
+          return false;
+        }
       }
 
       outside = false;
