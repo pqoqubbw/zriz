@@ -248,7 +248,7 @@ export const isSound = (value: CropValue): boolean =>
 export const sameCrop = (a: CropValue, b: CropValue, image: Size): boolean => {
   const reach = Math.min(
     1e-8,
-    (2e-8 + 4e-12 * Math.max(image.width, image.height)) /
+    (2e-8 + 2e-11 * Math.max(image.width, image.height)) /
       Math.min(image.width, image.height)
   );
   const other = numbersOf(b);
