@@ -438,6 +438,8 @@ export const viewOf = (cropper: Cropper): View => {
       const state = cropper.getCropState();
       if (!layout || !state) {
         pinned = null;
+        stopTransition = null;
+        setChrome({ transition: null });
         return false;
       }
       const fit = exactBox(state, fitPlacement(layout, state));
@@ -578,6 +580,7 @@ export const viewOf = (cropper: Cropper): View => {
     }
   });
   const offStart = cropper.on("gesturestart", (reason) => {
+    const moving = blend;
     clearTimers();
     endTransition();
     const grids: Partial<Record<string, Grid>> = {
@@ -585,6 +588,9 @@ export const viewOf = (cropper: Cropper): View => {
       keyboard: chrome.grid,
     };
     setChrome({ active: true, grid: grids[reason] ?? "coarse" });
+    if (moving) {
+      publish();
+    }
   });
   const offStop = cropper.on("stop", () => {
     endTransition();
@@ -631,7 +637,7 @@ export const viewOf = (cropper: Cropper): View => {
     },
     frame() {
       followPhoto();
-      return last ?? compute();
+      return last?.state === cropper.getCropState() ? last : compute();
     },
     hold() {
       followPhoto();

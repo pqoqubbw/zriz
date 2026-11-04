@@ -1034,3 +1034,224 @@ describe("zoom thumb", () => {
     expect(writes).toStrictEqual([]);
   });
 });
+
+const stateRig = () => {
+  vi.stubGlobal("addEventListener", () => {});
+  vi.stubGlobal("removeEventListener", () => {});
+  vi.stubGlobal("Element", Object);
+  vi.stubGlobal("document", {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  });
+  const { cropper, time } = photoCropper();
+  const view = viewOf(cropper);
+  const place = (width: number, height: number): void => {
+    view.setLayout({
+      dpr: 1,
+      height,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width,
+    });
+    time.frame();
+  };
+  place(400, 300);
+  const handle = handleHandlers(cropper, "bottom-right");
+  const pointer = (x: number, y: number): PointerEvent =>
+    pointerAt(x, y)[0] as unknown as PointerEvent;
+  const dragIn = (): void => {
+    handle.onPointerDown(pointer(400, 300));
+    handle.onPointerMove(pointer(250, 200));
+    time.frame();
+  };
+  const scaleOf = (): number | undefined => view.frame()?.scale;
+  return { cropper, dragIn, handle, place, pointer, scaleOf, time, view };
+};
+
+const fitScale = (width: number): number => width / 4000;
+
+const fittedScale = (view: ReturnType<typeof viewOf>): number => {
+  const frame = view.frame();
+  if (!frame) {
+    throw new Error("no frame");
+  }
+  return fitPlacement(frame.layout, frame.state).scale;
+};
+
+describe("a press during a transition", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    ["flip", "flip"],
+    ["rotate", "rotate90"],
+  ] as const)("ends a %s on the resting pose", (_, action) => {
+    const { cropper, time, view } = stateRig();
+    cropper[action]();
+    time.frames(4);
+    const frames: Box[] = [];
+    view.onFrame((frame) => {
+      frames.push(frame.rect);
+    });
+    cropper.begin("pan", undefined, "pan");
+    time.frame();
+    const painted = view.frame()?.matrix;
+    expect(view.chrome().transition).toBeNull();
+    expect(frames.length).toBeGreaterThan(0);
+    cropper.end(undefined, "pan");
+    time.frames(60);
+    expect(view.frame()?.matrix).toStrictEqual(painted);
+    expect(time.pending()).toBe(0);
+  });
+
+  it("stop ends a flip on the resting pose at once", () => {
+    const { cropper, time, view } = stateRig();
+    cropper.flip();
+    time.frames(4);
+    cropper.stop();
+    const stopped = view.frame()?.matrix;
+    cropper.flip();
+    time.frames(120);
+    cropper.flip();
+    time.frames(120);
+    expect(stopped?.map((v) => Math.round(v * 1e6))).toStrictEqual(
+      view.frame()?.matrix.map((v) => Math.round(v * 1e6))
+    );
+  });
+});
+
+describe("stop", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("returns a pinned crop to the fit on the next layout", () => {
+    vi.useFakeTimers();
+    const { cropper, dragIn, handle, place, pointer, scaleOf, time, view } =
+      stateRig();
+    dragIn();
+    handle.onPointerUp(pointer(250, 200));
+    time.frames(2);
+    cropper.stop();
+    vi.advanceTimersByTime(5000);
+    time.frames(60);
+    expect(scaleOf()).toBeCloseTo(fittedScale(view), 9);
+    place(800, 600);
+    expect(scaleOf()).toBeCloseTo(fittedScale(view), 9);
+  });
+
+  it("publishes the resting frame with no frame left pending", () => {
+    const { cropper, dragIn, time, view } = stateRig();
+    dragIn();
+    const frames: number[] = [];
+    view.onFrame((frame) => {
+      frames.push(frame.scale);
+    });
+    cropper.stop();
+    expect(frames.length).toBeGreaterThan(0);
+    time.frames(2);
+    expect(time.pending()).toBe(0);
+  });
+});
+
+describe("escape on a handle drag", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  const escapeDrag = () => {
+    let onEscape: ((event: KeyboardEvent) => void) | undefined;
+    const rig = stateRig();
+    vi.stubGlobal(
+      "addEventListener",
+      (type: string, listener: (event: KeyboardEvent) => void) => {
+        if (type === "keydown") {
+          onEscape = listener;
+        }
+      }
+    );
+    rig.dragIn();
+    onEscape?.({
+      key: "Escape",
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    } as unknown as KeyboardEvent);
+    return rig;
+  };
+
+  it("keeps refitting a crop that was fitted", () => {
+    vi.useFakeTimers();
+    const { place, scaleOf, time } = escapeDrag();
+    vi.advanceTimersByTime(5000);
+    time.frames(60);
+    place(800, 600);
+    expect(scaleOf()).toBeCloseTo(fitScale(800), 9);
+    place(200, 150);
+    expect(scaleOf()).toBeCloseTo(fitScale(200), 9);
+  });
+
+  it("runs no recentre from a fitted crop", () => {
+    vi.useFakeTimers();
+    const { time, view } = escapeDrag();
+    const seen: (string | null)[] = [];
+    view.onChrome(() => {
+      seen.push(view.chrome().transition);
+    });
+    vi.advanceTimersByTime(5000);
+    time.frames(60);
+    expect(seen).not.toContain("recentre");
+  });
+});
+
+describe("a recentre that loses its view", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ["a hidden viewport", "hide"],
+    ["a removed photo", "clear"],
+  ] as const)("clears the transition on %s", (_, how) => {
+    vi.useFakeTimers();
+    const { cropper, dragIn, handle, pointer, time, view } = stateRig();
+    dragIn();
+    handle.onPointerUp(pointer(250, 200));
+    vi.advanceTimersByTime(500);
+    time.frames(2);
+    expect(view.chrome().transition).toBe("recentre");
+    if (how === "hide") {
+      view.setLayout(null);
+    } else {
+      cropper.setImage(null);
+    }
+    time.frames(2);
+    expect(view.chrome().transition).toBeNull();
+    expect(time.pending()).toBe(0);
+  });
+});
+
+describe("the frame between two paints", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reads the scale of the current crop", () => {
+    const { cropper, time, view } = stateRig();
+    cropper.setValue({ size: { height: 0.5, width: 0.5 } });
+    expect(view.frame()?.state).toBe(cropper.getCropState());
+    expect(view.frame()?.scale).toBeCloseTo(fitScale(800), 9);
+    time.frame();
+    expect(view.frame()?.scale).toBeCloseTo(fitScale(800), 9);
+  });
+
+  it("starts a transition from the pose on screen, not the current crop", () => {
+    const { cropper, time, view } = stateRig();
+    const shown = view.frame()?.matrix;
+    cropper.flip();
+    time.frame(0);
+    expect(view.frame()?.matrix[0]).toBeCloseTo(shown?.[0] ?? 0, 6);
+  });
+});
