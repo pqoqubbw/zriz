@@ -513,6 +513,7 @@ export const bindDialTicks = (
   for (const [i, tick] of ticks.entries()) {
     const data = tickData(i, ticks.length);
     tick.style.position = "absolute";
+    tick.style.maxWidth = "none";
     tick.style.setProperty("--zriz-tick-index", String(i));
     tick.toggleAttribute("data-major", data.major);
     tick.toggleAttribute("data-zero", data.zero);

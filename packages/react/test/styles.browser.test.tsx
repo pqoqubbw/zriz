@@ -170,6 +170,22 @@ describe("default styles", () => {
     );
   });
 
+  it("keeps every dial tick under a page-wide percentage max-width", async () => {
+    const page = document.createElement("style");
+    page.textContent = "* { max-width: 100%; }";
+    document.head.append(page);
+    const api = createRef<CropperApi>();
+    await render(<Editor api={api} />);
+    await frames(3);
+    const widths = new Set(
+      [...pick('[data-zriz-item="dial-ticks"]').children].map(
+        (tick) => tick.getBoundingClientRect().width
+      )
+    );
+    page.remove();
+    expect(widths).toStrictEqual(new Set([1]));
+  });
+
   it("lets a part pin its own scheme inside a themed page", async () => {
     await render(
       <div className="dark">
