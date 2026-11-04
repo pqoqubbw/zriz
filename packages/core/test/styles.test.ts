@@ -20,6 +20,18 @@ const lower = (): string =>
   }).code.toString();
 
 describe("styles", () => {
+  it("leaves a page's own data-edge elements alone", () => {
+    const rules = source
+      .toString()
+      .replaceAll(/\s+/gu, " ")
+      .split("{")
+      .filter((selector) => selector.includes("data-edge"));
+    expect(rules.length).toBeGreaterThan(0);
+    for (const selector of rules) {
+      expect(selector).toContain('[data-zriz-item="handle"]');
+    }
+  });
+
   it("keeps colours when a consumer's bundler lowers light-dark()", () => {
     const css = lower();
     expect(css).toContain("var(--lightningcss-light");

@@ -41,7 +41,10 @@
       "production": "./dist/warn-off.js",
       "default": "./dist/warn.js"
     },
-    "./styles.css": "./dist/styles.css",
+    "./styles.css": {
+      "types": "./dist/styles.d.css.ts",
+      "default": "./dist/styles.css"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

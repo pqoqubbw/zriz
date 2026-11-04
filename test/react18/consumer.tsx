@@ -1,3 +1,4 @@
+import "@zriz/react/styles.css";
 import { mergeRefs, useRender } from "@zriz/react";
 import type { AreaProps, RotateProps } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";

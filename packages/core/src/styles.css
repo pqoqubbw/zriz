@@ -53,13 +53,18 @@
   :where([data-zriz-item="handle"]) {
     cursor: nwse-resize;
   }
-  :where([data-edge="top-right"], [data-edge="bottom-left"]) {
+  :where(
+    [data-zriz-item="handle"]:is(
+      [data-edge="top-right"],
+      [data-edge="bottom-left"]
+    )
+  ) {
     cursor: nesw-resize;
   }
-  :where([data-edge="top"], [data-edge="bottom"]) {
+  :where([data-zriz-item="handle"]:is([data-edge="top"], [data-edge="bottom"])) {
     cursor: ns-resize;
   }
-  :where([data-edge="left"], [data-edge="right"]) {
+  :where([data-zriz-item="handle"]:is([data-edge="left"], [data-edge="right"])) {
     cursor: ew-resize;
   }
   :where([data-shape="circle"] > [data-zriz-item="handle"][data-edge*="\-"]) {

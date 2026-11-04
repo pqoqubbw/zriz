@@ -5,7 +5,7 @@ import { gzipSync } from "node:zlib";
 
 import { transform } from "lightningcss";
 
-const BUDGET = 970;
+const BUDGET = 973;
 const version = (major: number): number => major * 65_536;
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -23,4 +23,5 @@ for (const out of process.argv.slice(2)) {
   const file = path.resolve(process.cwd(), out);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, code);
+  writeFileSync(file.replace(/\.css$/u, ".d.css.ts"), "export {};\n");
 }
