@@ -20,6 +20,13 @@ declare module "vitest/browser" {
   }
 }
 
+declare global {
+  interface Window {
+    File: typeof File;
+    ResizeObserver: typeof ResizeObserver;
+  }
+}
+
 interface Origin {
   x: number;
   y: number;

@@ -326,13 +326,13 @@ describe("react parts", () => {
   it("applies a controlled zoom set while disabled once enabled", async () => {
     const src = await photo();
     const api = createRef<CropperApi>();
-    const Editor = ({
-      disabled,
-      zoom,
-    }: {
+
+    type EditorProps = {
       disabled: boolean;
       zoom: number;
-    }) => (
+    };
+
+    const Editor = ({ disabled, zoom }: EditorProps) => (
       <Cropper.Root actionsRef={api} disabled={disabled} src={src} zoom={zoom}>
         <Cropper.Viewport
           style={{ height: 300, padding: 20, position: "relative", width: 400 }}
@@ -572,7 +572,9 @@ describe("Root load results", () => {
   });
 });
 
-const Shown = ({ cropper }: { cropper?: CropperApi }) => (
+type ShownProps = { cropper?: CropperApi };
+
+const Shown = ({ cropper }: ShownProps) => (
   <p id="shown">{JSON.stringify(useCropperValue(cropper))}</p>
 );
 
@@ -712,7 +714,10 @@ describe("work a render does not need", () => {
   it("keeps one subscription across parent renders", async () => {
     const cropper = photoCropper();
     const on = vi.spyOn(cropper, "on");
-    const Probe = ({ tick }: { tick: number }) => (
+
+    type ProbeProps = { tick: number };
+
+    const Probe = ({ tick }: ProbeProps) => (
       <p>
         {tick}
         {useZoom({ cropper }).value}
@@ -731,7 +736,9 @@ describe("work a render does not need", () => {
     const cropper = photoCropper();
     const setOptions = vi.spyOn(cropper, "setOptions");
 
-    const Probe = ({ tick }: { tick: number }) => {
+    type ProbeProps = { tick: number };
+
+    const Probe = ({ tick }: ProbeProps) => {
       useCropper({ cropper, minSize: { height: 100, width: 100 } });
 
       return <p>{tick}</p>;
@@ -748,7 +755,9 @@ describe("work a render does not need", () => {
     const cropper = photoCropper();
     const setValue = vi.spyOn(cropper, "setValue");
 
-    const Probe = ({ value }: { value: CropValue }) => {
+    type ProbeProps = { value: CropValue };
+
+    const Probe = ({ value }: ProbeProps) => {
       useCropper({ cropper, value });
 
       return null;
@@ -761,7 +770,10 @@ describe("work a render does not need", () => {
   it("keeps the dial ticks across parent renders", async () => {
     const cropper = photoCropper();
     const seen: unknown[] = [];
-    const Probe = ({ tick }: { tick: number }) => (
+
+    type ProbeProps = { tick: number };
+
+    const Probe = ({ tick }: ProbeProps) => (
       <Cropper.Root cropper={cropper} data-tick={tick}>
         <Cropper.DialTicks
           render={(props) => {
@@ -941,7 +953,10 @@ describe("controlled props", () => {
   it("does not bring back an old prop when disabled toggles or the photo returns", async () => {
     const api = createRef<CropperApi>();
     const { commits, onValueCommit } = events();
-    const Host = ({ disabled }: { disabled: boolean }) => (
+
+    type HostProps = { disabled: boolean };
+
+    const Host = ({ disabled }: HostProps) => (
       <Cropper.Root
         actionsRef={api}
         aspect={4 / 3}
@@ -995,7 +1010,10 @@ describe("controlled props", () => {
   it("applies props at load without events, and later ones with events", async () => {
     const api = createRef<CropperApi>();
     const { changes, commits, onValueChange, onValueCommit } = events();
-    const Host = ({ aspect, zoom }: { aspect: number; zoom: number }) => (
+
+    type HostProps = { aspect: number; zoom: number };
+
+    const Host = ({ aspect, zoom }: HostProps) => (
       <Cropper.Root
         actionsRef={api}
         aspect={aspect}
@@ -1022,13 +1040,13 @@ describe("controlled props", () => {
   it("reports aspect for a preset that also changes rotation or zoom", async () => {
     const api = createRef<CropperApi>();
     const { changes, commits, onValueChange, onValueCommit } = events();
-    const Host = ({
-      aspect,
-      rotation,
-    }: {
+
+    type HostProps = {
       aspect: number;
       rotation: number;
-    }) => (
+    };
+
+    const Host = ({ aspect, rotation }: HostProps) => (
       <Cropper.Root
         actionsRef={api}
         aspect={aspect}
@@ -1062,7 +1080,10 @@ describe("controlled props", () => {
 
   it("applies a prop that was released and comes back at its old value", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ locked }: { locked: boolean }) => (
+
+    type HostProps = { locked: boolean };
+
+    const Host = ({ locked }: HostProps) => (
       <Cropper.Root
         actionsRef={api}
         aspect={locked ? 1 : undefined}
@@ -1114,7 +1135,10 @@ describe("controlled props", () => {
 
   it("moves a capped prop up when its limit relaxes, never over an edit", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ maxZoom, min }: { maxZoom: number; min: number }) => (
+
+    type HostProps = { maxZoom: number; min: number };
+
+    const Host = ({ maxZoom, min }: HostProps) => (
       <Cropper.Root
         actionsRef={api}
         image={PHOTO}
@@ -1163,7 +1187,10 @@ describe("controlled props", () => {
 
   it("keeps a circle round through reset after a toggle, without marking it edited", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ shape }: { shape: "rect" | "circle" }) => (
+
+    type HostProps = { shape: "rect" | "circle" };
+
+    const Host = ({ shape }: HostProps) => (
       <Cropper.Root actionsRef={api} image={PHOTO} shape={shape} />
     );
     const screen = await render(<Host shape="rect" />);
@@ -1239,7 +1266,10 @@ describe("callbacks on a shared cropper", () => {
   it("keeps a second Root's callback when the first closes", async () => {
     const cropper = createCropper({ image: PHOTO });
     const stays = vi.fn<() => void>();
-    const Host = ({ both }: { both: boolean }) => (
+
+    type HostProps = { both: boolean };
+
+    const Host = ({ both }: HostProps) => (
       <>
         {both ? <Cropper.Root cropper={cropper} /> : null}
         <Cropper.Root cropper={cropper} onValueCommit={stays} />
@@ -1390,7 +1420,9 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
     const api = createRef<CropperApi>();
     const seen: boolean[] = [];
 
-    const Parent = ({ on }: { on: boolean }) => {
+    type ParentProps = { on: boolean };
+
+    const Parent = ({ on }: ParentProps) => {
       useLayoutEffect(() => {
         seen.push(api.current !== null);
       });
@@ -1449,7 +1481,10 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
   it.runIf(Activity)("keeps a photo across Activity", async () => {
     const api = createRef<CropperApi>();
     const source = await photo();
-    const Host = ({ mode }: { mode: "hidden" | "visible" }) => (
+
+    type HostProps = { mode: "hidden" | "visible" };
+
+    const Host = ({ mode }: HostProps) => (
       <Activity mode={mode}>
         <Cropper.Root actionsRef={api} src={source}>
           <Cropper.Viewport style={{ height: 300, width: 400 }} />
@@ -1475,7 +1510,10 @@ describe("lifetimes under StrictMode, Suspense and Activity", () => {
     const api = createRef<CropperApi>();
     const { Sibling, release } = lazySibling();
     const save = vi.fn<(held: CropperApi | null) => void>();
-    const Host = ({ wait }: { wait: boolean }) => (
+
+    type HostProps = { wait: boolean };
+
+    const Host = ({ wait }: HostProps) => (
       <Suspense fallback={null}>
         <Cropper.Root
           actionsRef={api}
@@ -1562,15 +1600,13 @@ const hydrated = async (tree: ReactNode, html: string, write?: () => void) => {
   };
 };
 
-const HidingEditor = ({
-  api,
-  hidden,
-  Waiting,
-}: {
+type HidingEditorProps = {
   api: Ref<CropperApi>;
   hidden: boolean;
   Waiting: ComponentType;
-}) => (
+};
+
+const HidingEditor = ({ api, hidden, Waiting }: HidingEditorProps) => (
   <div style={{ paddingLeft: 200, paddingTop: 150 }}>
     <Suspense fallback={null}>
       {hidden ? <Waiting /> : null}
@@ -1727,7 +1763,9 @@ describe("hydrating a cropper that changed after the server render", () => {
 const reduced = (container: Element): boolean =>
   container.querySelector("[data-reduced-motion]") !== null;
 
-const ReducedHost = ({ motion }: { motion: "reduce" | "always" }) => (
+type ReducedHostProps = { motion: "reduce" | "always" };
+
+const ReducedHost = ({ motion }: ReducedHostProps) => (
   <Cropper.Root image={PHOTO} motion={motion} />
 );
 
@@ -1785,7 +1823,9 @@ describe("reduced motion attribute", () => {
   });
 });
 
-const SwapHost = ({ cropper }: { cropper: CropperApi }) => (
+type SwapHostProps = { cropper: CropperApi };
+
+const SwapHost = ({ cropper }: SwapHostProps) => (
   <Cropper.Root cropper={cropper}>
     <Cropper.Viewport style={{ height: 300, width: 400 }}>
       <Cropper.Area aria-label="Crop" id="swap-area" />
@@ -1830,13 +1870,12 @@ describe("swapping the cropper prop", () => {
   });
 });
 
-const Slider = ({
-  cropper,
-  onValue,
-}: {
+type SliderProps = {
   cropper: CropperApi;
   onValue: (zoom: ReturnType<typeof useZoom>) => void;
-}) => {
+};
+
+const Slider = ({ cropper, onValue }: SliderProps) => {
   const zoom = useZoom({ cropper });
 
   useEffect(() => {
@@ -2012,7 +2051,9 @@ const ReadMax = memo(function ReadMax() {
   return <output id="zoom-max">{max}</output>;
 });
 
-const ZoomMaxHost = ({ top }: { top: number }) => (
+type ZoomMaxHostProps = { top: number };
+
+const ZoomMaxHost = ({ top }: ZoomMaxHostProps) => (
   <Cropper.Root image={PHOTO} maxZoom={top}>
     <ReadMax />
   </Cropper.Root>
@@ -2058,7 +2099,10 @@ describe("a circle holds its aspect", () => {
 
   it("frees the aspect once the circle goes", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ shape }: { shape: "rect" | "circle" }) => (
+
+    type HostProps = { shape: "rect" | "circle" };
+
+    const Host = ({ shape }: HostProps) => (
       <Cropper.Root actionsRef={api} image={PHOTO} shape={shape} />
     );
     const screen = await render(<Host shape="circle" />);

@@ -318,7 +318,10 @@ describe("a gesture whose part goes away", () => {
 
   it("a key held on an area that unmounts ends the key gesture", async () => {
     const cropper = createCropper({ image });
-    const Tree = ({ area = true }: { area?: boolean }) => (
+
+    type TreeProps = { area?: boolean };
+
+    const Tree = ({ area = true }: TreeProps) => (
       <Cropper.Root cropper={cropper}>
         {area ? <Cropper.Area aria-label="Crop" data-testid="area" /> : null}
       </Cropper.Root>
@@ -363,7 +366,10 @@ describe("a gesture whose part goes away", () => {
       async () => await new Promise<{ default: () => null }>(() => {})
     );
     const cropper = createCropper({ image });
-    const Tree = ({ hide }: { hide: boolean }) => (
+
+    type TreeProps = { hide: boolean };
+
+    const Tree = ({ hide }: TreeProps) => (
       <div style={{ paddingLeft: 200, paddingTop: 150 }}>
         <Suspense fallback={null}>
           {hide ? <Pending /> : null}

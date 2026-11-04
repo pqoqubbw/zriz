@@ -86,12 +86,6 @@ const halves = async (width: number, height: number): Promise<Blob> => {
   return await canvas.convertToBlob({ type: "image/png" });
 };
 
-declare global {
-  interface Window {
-    File: typeof File;
-  }
-}
-
 const otherRealm = async () => {
   const frame = document.createElement("iframe");
 

@@ -500,7 +500,9 @@ describe("hooks in a real render", () => {
     const cropper = createCropper({ image: { height: 300, width: 400 } });
     const calls: string[] = [];
 
-    const Probe = ({ tag }: { tag: string }) => {
+    type ProbeProps = { tag: string };
+
+    const Probe = ({ tag }: ProbeProps) => {
       useCropperFrame(() => {
         calls.push(tag);
       }, cropper);
@@ -1024,7 +1026,9 @@ describe("unmount parity under StrictMode", () => {
   });
 });
 
-const Full = ({ api }: { api?: React.Ref<CropperApi> }) => (
+type FullProps = { api?: React.Ref<CropperApi> };
+
+const Full = ({ api }: FullProps) => (
   <Editor api={api} rootProps={{ image: { height: 300, width: 400 } }}>
     <Cropper.Orientation aria-label="Orientation" />
     <Cropper.ZoomStep aria-label="Zoom in" factor={2} />

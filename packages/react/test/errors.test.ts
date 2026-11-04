@@ -10,7 +10,9 @@ import { useZoom } from "../src/use-zoom";
 
 const OUTSIDE_ROOT = "zriz: pass a cropper or render inside <Cropper.Root>";
 
-const HookProbe = ({ hook }: { hook: () => unknown }) => {
+type HookProbeProps = { hook: () => unknown };
+
+const HookProbe = ({ hook }: HookProbeProps) => {
   hook();
 
   return null;

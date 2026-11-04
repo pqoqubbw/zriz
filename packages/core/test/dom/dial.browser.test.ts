@@ -1103,12 +1103,6 @@ describe("the ruler under an ancestor or a border", () => {
   });
 });
 
-declare global {
-  interface Window {
-    ResizeObserver: typeof ResizeObserver;
-  }
-}
-
 const inFrame = async (): Promise<{
   frame: HTMLIFrameElement;
   doc: Document;

@@ -34,13 +34,12 @@ const theirs = (node: HTMLDivElement | null): void => {
   log.push(node ? "theirs+" : "theirs-");
 };
 
-const Probe = ({
-  tag,
-  held = theirs,
-}: {
+type ProbeProps = {
   tag: string;
   held?: Ref<HTMLDivElement>;
-}) => {
+};
+
+const Probe = ({ tag, held = theirs }: ProbeProps) => {
   const own = useCallback(
     (node: HTMLDivElement) => {
       log.push(`bind ${tag} ${node.tagName}`);
@@ -63,7 +62,9 @@ const userRef = (node: HTMLElement | null) => {
   };
 };
 
-const OwnPart = ({ own }: { own: object }) =>
+type OwnPartProps = { own: object };
+
+const OwnPart = ({ own }: OwnPartProps) =>
   useRender({ props: own, state: {}, tag: "span" });
 
 const isCallback = (
@@ -83,13 +84,12 @@ const pointer = (selector: string, type: string): void => {
   );
 };
 
-const Shell = ({
-  api,
-  children,
-}: {
+type ShellProps = {
   api: Ref<CropperApi>;
   children: React.ReactNode;
-}) => (
+};
+
+const Shell = ({ api, children }: ShellProps) => (
   <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
     <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
       {children}
@@ -313,7 +313,10 @@ describe("refs on React 18 and 19", () => {
 
   it("keeps the node when a part gains a render element of the same tag", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ own }: { own: boolean }) => (
+
+    type HostProps = { own: boolean };
+
+    const Host = ({ own }: HostProps) => (
       <Shell api={api}>
         {own ? (
           <Cropper.Rotate
@@ -334,7 +337,10 @@ describe("refs on React 18 and 19", () => {
 
   it("keeps a drag going when a render element's ref changes", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ tick }: { tick: number }) => (
+
+    type HostProps = { tick: number };
+
+    const Host = ({ tick }: HostProps) => (
       <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
         <Cropper.Viewport
           id="view"
@@ -362,7 +368,10 @@ describe("refs on React 18 and 19", () => {
 
   it("keeps a drag going when a render function makes a new ref", async () => {
     const api = createRef<CropperApi>();
-    const Host = ({ tick }: { tick: number }) => (
+
+    type HostProps = { tick: number };
+
+    const Host = ({ tick }: HostProps) => (
       <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
         <Cropper.Viewport
           id="view"
@@ -395,7 +404,10 @@ describe("refs on React 18 and 19", () => {
     const first = entry("a");
     const second = entry("b");
     const api = createRef<CropperApi>();
-    const Host = ({ own }: { own: Ref<HTMLDivElement> }) => (
+
+    type HostProps = { own: Ref<HTMLDivElement> };
+
+    const Host = ({ own }: HostProps) => (
       <Shell api={api}>
         <Cropper.Zoom aria-label="Zoom" format={{}} ref={own} />
       </Shell>
@@ -552,15 +564,13 @@ describe("refs on React 18 and 19", () => {
   });
 });
 
-const FormatHost = ({
-  digits,
-  dial,
-  zoom,
-}: {
+type FormatHostProps = {
   digits: number;
   dial: () => void;
   zoom: () => void;
-}) => (
+};
+
+const FormatHost = ({ digits, dial, zoom }: FormatHostProps) => (
   <Cropper.Root image={{ height: 300, width: 400 }}>
     <Cropper.Dial
       aria-label="Dial"
@@ -575,19 +585,25 @@ const FormatHost = ({
   </Cropper.Root>
 );
 
-const SpokenHost = ({ kind }: { kind: "percent" | "decimal" }) => (
+type SpokenHostProps = { kind: "percent" | "decimal" };
+
+const SpokenHost = ({ kind }: SpokenHostProps) => (
   <Cropper.Root image={{ height: 300, width: 400 }}>
     <Cropper.Zoom aria-label="Zoom" format={{ style: kind }} />
   </Cropper.Root>
 );
 
-const UnitHost = ({ unit }: { unit: string }) => (
+type UnitHostProps = { unit: string };
+
+const UnitHost = ({ unit }: UnitHostProps) => (
   <Cropper.Root image={{ height: 300, width: 400 }}>
     <Cropper.DialValue format={(angle) => `${angle}${unit}`} />
   </Cropper.Root>
 );
 
-const ChildHost = ({ on }: { on: boolean }) => {
+type ChildHostProps = { on: boolean };
+
+const ChildHost = ({ on }: ChildHostProps) => {
   const loose: Record<string, unknown> = { children: on ? <b>x</b> : null };
 
   return (
@@ -597,7 +613,9 @@ const ChildHost = ({ on }: { on: boolean }) => {
   );
 };
 
-const MaskHost = ({ shape }: { shape: "rect" | "circle" }) => (
+type MaskHostProps = { shape: "rect" | "circle" };
+
+const MaskHost = ({ shape }: MaskHostProps) => (
   <Cropper.Root image={{ height: 300, width: 400 }} shape={shape}>
     <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
       <Cropper.Mask />
@@ -605,7 +623,9 @@ const MaskHost = ({ shape }: { shape: "rect" | "circle" }) => (
   </Cropper.Root>
 );
 
-const LiveHost = ({ live }: { live: boolean }) => (
+type LiveHostProps = { live: boolean };
+
+const LiveHost = ({ live }: LiveHostProps) => (
   <Cropper.Root image={{ height: 300, width: 400 }}>
     <Cropper.Viewport style={{ height: 300, position: "relative", width: 400 }}>
       <Cropper.Area aria-label="Crop" liveVariables={live} />

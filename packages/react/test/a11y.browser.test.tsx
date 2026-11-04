@@ -17,7 +17,9 @@ const frames = async (n = 2): Promise<void> => {
   }
 };
 
-const Editor = ({ api }: { api: React.Ref<CropperApi> }) => (
+type EditorProps = { api: React.Ref<CropperApi> };
+
+const Editor = ({ api }: EditorProps) => (
   <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
     <Cropper.Viewport
       style={{ height: 300, padding: 20, position: "relative", width: 400 }}
@@ -376,7 +378,9 @@ const item = (container: Element, name: string): HTMLElement => {
   return node;
 };
 
-const Group = ({ api }: { api: React.Ref<CropperApi> }) => (
+type GroupProps = { api: React.Ref<CropperApi> };
+
+const Group = ({ api }: GroupProps) => (
   <Cropper.Root actionsRef={api} defaultValue={{ aspect: 1 }} image={PHOTO}>
     <Cropper.AspectGroup aria-label="Aspect">
       <Cropper.AspectItem render={<div />} value={1}>
@@ -392,7 +396,9 @@ const Group = ({ api }: { api: React.Ref<CropperApi> }) => (
   </Cropper.Root>
 );
 
-const Parts = ({ disabled }: { disabled: boolean }) => (
+type PartsProps = { disabled: boolean };
+
+const Parts = ({ disabled }: PartsProps) => (
   <Cropper.Root disabled={disabled} image={PHOTO}>
     <Cropper.Area aria-label="Crop" />
     <Cropper.Dial aria-label="Dial" />
@@ -417,7 +423,9 @@ const NAMES = [
   "reset",
 ];
 
-const CallerDisabled = ({ off }: { off: boolean }) => (
+type CallerDisabledProps = { off: boolean };
+
+const CallerDisabled = ({ off }: CallerDisabledProps) => (
   <Cropper.Root disabled={off} image={PHOTO}>
     <Cropper.Area aria-disabled aria-label="Crop" />
     <Cropper.Dial aria-disabled aria-label="Dial" />
@@ -426,7 +434,9 @@ const CallerDisabled = ({ off }: { off: boolean }) => (
   </Cropper.Root>
 );
 
-const RootDisabled = ({ off }: { off: boolean }) => (
+type RootDisabledProps = { off: boolean };
+
+const RootDisabled = ({ off }: RootDisabledProps) => (
   <Cropper.Root disabled={off} image={PHOTO}>
     <Cropper.Area aria-label="Crop" />
     <Cropper.Dial aria-label="Dial" />
@@ -434,7 +444,9 @@ const RootDisabled = ({ off }: { off: boolean }) => (
   </Cropper.Root>
 );
 
-const QuietItem = ({ off }: { off: boolean }) => (
+type QuietItemProps = { off: boolean };
+
+const QuietItem = ({ off }: QuietItemProps) => (
   <Cropper.Root defaultValue={{ aspect: 1 }} image={PHOTO}>
     <Cropper.AspectGroup aria-label="Aspect">
       <Cropper.AspectItem
@@ -451,12 +463,11 @@ const QuietItem = ({ off }: { off: boolean }) => (
   </Cropper.Root>
 );
 
-const Sliders = ({
-  api,
-  ...props
-}: { api?: React.Ref<CropperApi> } & React.ComponentProps<
+type SlidersProps = { api?: React.Ref<CropperApi> } & React.ComponentProps<
   typeof Cropper.Root
->) => (
+>;
+
+const Sliders = ({ api, ...props }: SlidersProps) => (
   <Cropper.Root actionsRef={api} image={PHOTO} {...props}>
     <Cropper.Dial aria-label="Dial" />
     <Cropper.Zoom aria-label="Zoom">

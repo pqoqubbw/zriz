@@ -342,13 +342,13 @@ describe("plugins on the server", () => {
   });
 });
 
-const Own = ({
-  option,
-  props,
-}: {
+type OwnProps = {
   option?: string;
   props: Record<string, unknown>;
-}) => useRender({ className: option, props, state: {}, tag: "span" });
+};
+
+const Own = ({ option, props }: OwnProps) =>
+  useRender({ className: option, props, state: {}, tag: "span" });
 
 describe("useRender options", () => {
   it("keeps a class given in props and joins it with the option", () => {

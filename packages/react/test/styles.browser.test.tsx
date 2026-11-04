@@ -24,7 +24,9 @@ const user = document.createElement("style");
 user.textContent =
   ".user-scrim { background: rgb(255 0 0); } .user-tick > * { background: rgb(0 128 0); }";
 
-const Editor = ({ api }: { api: React.Ref<CropperApi> }) => (
+type EditorProps = { api: React.Ref<CropperApi> };
+
+const Editor = ({ api }: EditorProps) => (
   <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
     <Cropper.Viewport
       style={{
