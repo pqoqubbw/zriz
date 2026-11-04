@@ -9,10 +9,17 @@ export interface KeyHandlers {
 
 export const numberFormat = (
   locale: string | undefined,
-  defaults: Intl.NumberFormatOptions,
+  defaults: Intl.NumberFormatOptions & { maximumFractionDigits: number },
   format?: Intl.NumberFormatOptions
 ): Intl.NumberFormat => {
-  const merged = { ...defaults, ...format };
+  const merged = {
+    ...defaults,
+    maximumFractionDigits: Math.max(
+      defaults.maximumFractionDigits,
+      format?.minimumFractionDigits ?? 0
+    ),
+    ...format,
+  };
   for (const [tag, options] of [
     [locale, merged],
     [undefined, merged],

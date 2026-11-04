@@ -2,6 +2,11 @@ declare const process: { env: { NODE_ENV?: string } };
 
 const warned = new Set<string>();
 
+const SPOKEN: Partial<Record<string, Intl.NumberFormatOptions>> = {
+  Dial: { style: "unit", unit: "degree" },
+  Zoom: { style: "percent" },
+};
+
 const isDev = (): boolean => {
   try {
     return process.env.NODE_ENV !== "production";
@@ -35,7 +40,7 @@ export const warnFormat = (
     return;
   }
   try {
-    new Intl.NumberFormat(locale, format).format(0);
+    new Intl.NumberFormat(locale, { ...SPOKEN[part], ...format }).format(0);
   } catch {
     warned.add(key);
     console.warn(

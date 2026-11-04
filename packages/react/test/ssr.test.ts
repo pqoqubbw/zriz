@@ -307,6 +307,39 @@ describe("useRender options", () => {
   });
 });
 
+const warned = async (
+  part: string,
+  format: Intl.NumberFormatOptions,
+  locale?: string
+): Promise<number> => {
+  vi.resetModules();
+  const { warnFormat } = await import("../src/warn");
+  const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+  warnFormat(part, locale, format);
+  const count = warn.mock.calls.length;
+  warn.mockRestore();
+  return count;
+};
+
+describe("format warnings", () => {
+  it("stays quiet for a format the part's defaults complete", async () => {
+    await expect(
+      warned("Dial", { style: "unit", unitDisplay: "short" })
+    ).resolves.toBe(0);
+    await expect(warned("Dial", { minimumFractionDigits: 2 })).resolves.toBe(0);
+    await expect(warned("Zoom", { minimumFractionDigits: 1 })).resolves.toBe(0);
+  });
+
+  it("warns for a format that fails with the part's defaults", async () => {
+    await expect(warned("Zoom", { style: "unit" })).resolves.toBe(1);
+    await expect(warned("Dial", { style: "currency" })).resolves.toBe(1);
+    await expect(
+      warned("Zoom", { maximumFractionDigits: 1, minimumFractionDigits: 2 })
+    ).resolves.toBe(1);
+    await expect(warned("Zoom", {}, "en_US")).resolves.toBe(1);
+  });
+});
+
 describe("sliders on the server", () => {
   it("carry a value and the zero mark before hydration", () => {
     const html = renderToString(

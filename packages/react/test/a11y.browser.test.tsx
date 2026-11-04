@@ -537,6 +537,35 @@ describe("what the warnings count", () => {
     ).toMatch(/^100\s%$/u);
   });
 
+  it("speaks a format that asks for more digits than the default allows", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO} locale="en">
+        <Cropper.Dial aria-label="Dial" format={{ minimumFractionDigits: 2 }} />
+        <Cropper.Zoom aria-label="Zoom" format={{ minimumFractionDigits: 1 }} />
+      </Cropper.Root>
+    );
+    expect(item(screen.container, "dial").getAttribute("aria-valuetext")).toBe(
+      "0.00 degrees"
+    );
+    expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
+      "100.0%"
+    );
+  });
+
+  it("drops a format whose own digits conflict", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO} locale="en">
+        <Cropper.Zoom
+          aria-label="Zoom"
+          format={{ maximumFractionDigits: 1, minimumFractionDigits: 2 }}
+        />
+      </Cropper.Root>
+    );
+    expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
+      "100%"
+    );
+  });
+
   it("keeps a valid format when only the locale is bad", async () => {
     const screen = await render(
       <Cropper.Root image={PHOTO} locale="en_US">
