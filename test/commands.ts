@@ -22,6 +22,16 @@ const origin = async (
   return { x: box.x, y: box.y };
 };
 
+export const forcedColors: BrowserCommand<[mode: "active" | "none"]> = async (
+  context,
+  mode
+) => {
+  if (!("page" in context)) {
+    throw new Error("playwright only");
+  }
+  await context.page.emulateMedia({ forcedColors: mode });
+};
+
 export const drag: BrowserCommand<[selector: string, path: Path]> = async (
   context,
   selector,

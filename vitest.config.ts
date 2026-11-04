@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-import { drag, pinch, touch } from "./test/commands.ts";
+import { drag, forcedColors, pinch, touch } from "./test/commands.ts";
 
 const react18 = fileURLToPath(
   new URL("test/react18/node_modules/", import.meta.url)
@@ -34,7 +34,7 @@ const unit = {
 };
 
 const browser = () => ({
-  commands: { drag, pinch, touch },
+  commands: { drag, forcedColors, pinch, touch },
   enabled: true,
   headless: true,
   instances: [

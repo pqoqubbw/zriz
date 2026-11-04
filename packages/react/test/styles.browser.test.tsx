@@ -6,8 +6,15 @@ import type { Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
+import { commands, server } from "vitest/browser";
 
 import * as Cropper from "../src/cropper";
+
+declare module "vitest/browser" {
+  interface BrowserCommands {
+    forcedColors: (mode: "active" | "none") => Promise<void>;
+  }
+}
 
 const frames = async (n = 2): Promise<void> => {
   for (let i = 0; i < n; i += 1) {
@@ -329,5 +336,111 @@ describe("before the photo is placed", () => {
       .toBeFalsy();
     expect(painted('[data-edge="bottom-right"]', "::before")).toBeFalsy();
     root.unmount();
+  });
+});
+
+const system = (name: string): string => {
+  const probe = document.createElement("div");
+  probe.style.background = name;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return colour;
+};
+
+const background = (selector: string, pseudo?: string): string =>
+  getComputedStyle(pick(selector), pseudo).backgroundColor;
+
+const placeRotated = async (): Promise<void> => {
+  const api = createRef<CropperApi>();
+  await render(<Editor api={api} />);
+  api.current?.setRotation(5);
+  await frames(3);
+};
+
+const everyPart = (colour: string): string[] => [
+  colour,
+  colour,
+  colour,
+  colour,
+  colour,
+  colour,
+];
+
+const paintedColours = (): string[] => [
+  background('[data-zriz-item="dial"]', "::after"),
+  background('[data-edge="top-left"]', "::before"),
+  background('[data-zriz-item="grid"] > *'),
+  background('[data-zriz-item="dial-ticks"] > *'),
+  background("[data-zero]", "::before"),
+  getComputedStyle(pick('[data-zriz-item="area"]'), "::after").outlineColor,
+];
+
+describe.runIf(server.browser !== "webkit")("forced colours", () => {
+  const page = document.createElement("style");
+
+  afterEach(async () => {
+    page.remove();
+    await cleanup();
+    await commands.forcedColors("none");
+  });
+
+  it("paints system colours with no override", async () => {
+    await commands.forcedColors("active");
+    expect(matchMedia("(forced-colors)").matches).toBeTruthy();
+    await placeRotated();
+    expect(paintedColours()).toStrictEqual(everyPart(system("CanvasText")));
+  });
+
+  it("keeps a part visible when a colour variable is set on it", async () => {
+    page.textContent = `
+      [data-zriz-item="handle"], [data-zriz-item="grid"], [data-zriz-item="area"],
+      [data-zriz-item="dial"], [data-zriz-item="dial-ticks"],
+      [data-zriz-item="grid"] > *, [data-zriz-item="dial-ticks"] > * {
+        --zriz-line: #0a84ff; --zriz-grid: #0a84ff; --zriz-tick: #0a84ff; --zriz-accent: #0a84ff;
+      }`;
+    document.head.append(page);
+    await commands.forcedColors("active");
+    await placeRotated();
+    expect(paintedColours()).toStrictEqual(everyPart(system("CanvasText")));
+  });
+
+  it("keeps the dial line on Highlight during a drag with a custom accent", async () => {
+    page.textContent = '[data-zriz-item="dial"] { --zriz-accent: #0a84ff; }';
+    document.head.append(page);
+    await commands.forcedColors("active");
+    await placeRotated();
+    const dial = pick('[data-zriz-item="dial"]');
+    const { left, top } = dial.getBoundingClientRect();
+    const hold = (type: string, x: number): boolean =>
+      dial.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons: 1,
+          clientX: left + x,
+          clientY: top + 10,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    hold("pointerdown", 50);
+    hold("pointermove", 80);
+    await expect
+      .poll(() => Object.hasOwn(dial.dataset, "dragging"))
+      .toBeTruthy();
+    const colour = background('[data-zriz-item="dial"]', "::after");
+    hold("pointerup", 80);
+    expect(colour).toBe(system("Highlight"));
+  });
+
+  it("loses to a class that paints a system colour directly", async () => {
+    page.textContent = ".user-tick > * { background: Highlight; }";
+    document.head.append(page);
+    await commands.forcedColors("active");
+    await placeRotated();
+    expect(background('[data-zriz-item="dial-ticks"] > *')).toBe(
+      system("Highlight")
+    );
   });
 });

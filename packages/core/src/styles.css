@@ -166,11 +166,13 @@
     background: var(--zriz-line, light-dark(#000, #fff));
   }
   @media (forced-colors) {
-    :where([data-zriz-item]) {
-      --zriz-line: CanvasText;
-      --zriz-grid: CanvasText;
-      --zriz-tick: CanvasText;
-      --zriz-accent: Highlight;
+    :where([data-zriz-item="grid"] > *, [data-zriz-item="dial-ticks"] > *),
+    :where([data-zriz-item="handle"], [data-zero])::before,
+    :where([data-zriz-item="dial"])::after {
+      background: CanvasText;
+    }
+    :where([data-zriz-item="dial"][data-dragging])::after {
+      background: Highlight;
     }
   }
 }
