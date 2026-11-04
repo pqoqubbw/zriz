@@ -7,6 +7,7 @@ import { cleanup, render } from "vitest-browser-react";
 import { commands as browser } from "vitest/browser";
 
 import { AvatarPicker } from "../snippets/avatar/avatar-picker";
+import { SaveCrop } from "../snippets/exporting/save-crop";
 import { Editor } from "../snippets/full-editor/editor";
 import { Heic } from "../snippets/loading-images/heic";
 import { SavedCrop } from "../snippets/saving-state/saved-crop";
@@ -17,6 +18,16 @@ import zoomMarkup from "../snippets/vanilla-js/zoom.html?raw";
 import { ZoomSteps } from "../snippets/zoom/steps";
 
 import thumbCss from "../snippets/zoom/thumb.css?inline";
+
+const decoder = vi.hoisted(() => ({ signals: [] as AbortSignal[] }));
+
+vi.mock(import("../snippets/loading-images/decoder"), () => ({
+  open: async (_, __, signal) => {
+    decoder.signals.push(signal);
+
+    await Promise.withResolvers<null>().promise;
+  },
+}));
 
 type Pending = {
   answer: (response: Response) => void;
@@ -239,6 +250,9 @@ const resultUrls = (): { live: () => number } => {
   return { live: () => made.size };
 };
 
+const downloads = () =>
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockReturnValue(undefined);
+
 const answer = (): Response =>
   new Response(new Blob(["x"], { type: "image/x-answer" }));
 
@@ -318,7 +332,14 @@ describe("docs recipes", () => {
       await whenPhoto();
 
       const area = find(item("area")).getBoundingClientRect();
-      const full = { height: area.height, width: area.width };
+
+      await settled();
+
+      const full = {
+        height: area.height,
+        transform: photoTransform(),
+        width: area.width,
+      };
 
       await fresh.unmount();
 
@@ -335,7 +356,11 @@ describe("docs recipes", () => {
         .poll(() => {
           const now = find(item("area")).getBoundingClientRect();
 
-          return { height: now.height, width: now.width };
+          return {
+            height: now.height,
+            transform: photoTransform(),
+            width: now.width,
+          };
         })
         .toStrictEqual(full);
 
@@ -474,6 +499,43 @@ describe("docs recipes", () => {
 
       expect(onSave).toHaveBeenCalledOnce();
       expect(document.activeElement).toBe(save);
+    });
+
+    it("save crop downloads once on a double click and keeps focus", async () => {
+      const clicked = downloads();
+
+      await render(<SaveCrop file={await flat(800, 600)} />);
+      await whenOn("save");
+
+      const save = button("save");
+
+      save.focus();
+      save.click();
+      save.click();
+      await expect.poll(() => clicked.mock.calls.length).toBeGreaterThan(0);
+      await frames(30);
+
+      expect(clicked).toHaveBeenCalledOnce();
+      expect(document.activeElement).toBe(save);
+    });
+
+    it("drops a save crop export still running when the file changes", async () => {
+      const clicked = downloads();
+      const screen = await render(<SaveCrop file={await flat(800, 600)} />);
+
+      await whenOn("save");
+
+      const next = await flat(640, 640);
+
+      button("save").click();
+      await screen.rerender(<SaveCrop file={next} />);
+      await whenOn("save");
+      await frames(30);
+
+      expect(clicked).not.toHaveBeenCalled();
+
+      button("save").click();
+      await expect.poll(() => clicked.mock.calls.length).toBe(1);
     });
 
     it("drops an avatar save still running when another photo is picked", async () => {
@@ -632,15 +694,17 @@ describe("docs recipes", () => {
 
   describe("heic", () => {
     it("aborts the load still running on unmount", async () => {
-      const abort = vi.spyOn(AbortController.prototype, "abort");
       const screen = await render(<Heic onSave={noop} />);
 
-      pick(fileInput(), held(await flat(400, 300)).file);
-      await frames();
-      abort.mockClear();
+      pick(fileInput(), await flat(400, 300));
+
+      const signal = decoder.signals.at(-1);
+
+      expect(signal?.aborted).toBeFalsy();
+
       await screen.unmount();
 
-      expect(abort).toHaveBeenCalledWith();
+      expect(signal?.aborted).toBeTruthy();
     });
   });
 
