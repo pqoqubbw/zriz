@@ -460,6 +460,22 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
   };
 
+  const sendCommit = (
+    event: Event | undefined,
+    from: CropState | null,
+    reason: ChangeReason
+  ): void => {
+    const previous = committed;
+    committed = value;
+    refresh();
+    emit("commit", value, {
+      event,
+      pixelCrop: from ? exportPlan(from) : null,
+      previous,
+      reason,
+    });
+  };
+
   const settleCommit = (): void => {
     if (gesture || blocking() || dirty || !commitPending) {
       return;
@@ -470,15 +486,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     if (valuesEqual(value, committed)) {
       return;
     }
-    const previous = committed;
-    committed = value;
-    refresh();
-    emit("commit", value, {
-      event: pending.event,
-      pixelCrop: state ? exportPlan(state) : null,
-      previous,
-      reason: pending.reason,
-    });
+    sendCommit(pending.event, state, pending.reason);
   };
 
   const refit = (
@@ -714,11 +722,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const cropper: Cropper = {
     begin(reason, event, owner) {
-      if (
-        destroyed ||
-        disabled() ||
-        (gesture !== null && gesture.owner !== owner)
-      ) {
+      if (disabled() || (gesture !== null && gesture.owner !== owner)) {
         return false;
       }
       dropHolding();
@@ -1006,15 +1010,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (gesture) {
         flush();
         if (!valuesEqual(value, committed)) {
-          const previous = committed;
-          committed = value;
-          refresh();
-          emit("commit", value, {
-            event: undefined,
-            pixelCrop: exportPlan(fixed),
-            previous,
-            reason: "coverage",
-          });
+          sendCommit(undefined, fixed, "coverage");
         }
         gesture.start = state;
         gesture.startValue = value;
