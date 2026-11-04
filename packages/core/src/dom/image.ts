@@ -51,8 +51,8 @@ export interface ExportResult {
 }
 
 let nextId = 0;
-const MOBILE_AREA = 16_777_216;
-const DESKTOP_AREA = 268_435_456;
+const TOUCH_AREA = 16_777_216;
+const NON_TOUCH_AREA = 268_435_456;
 const HEAD = 4096;
 
 const startsWith = (
@@ -125,11 +125,11 @@ export const raster = (
   return { animated: false, mime: null };
 };
 
-const isMobile = (): boolean =>
+const hasTouchScreen = (): boolean =>
   typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
 
 export const outputLimit = (): number =>
-  isMobile() ? MOBILE_AREA : DESKTOP_AREA;
+  hasTouchScreen() ? TOUCH_AREA : NON_TOUCH_AREA;
 
 export const defaultPreviewEdge = (): number => {
   const dpr = typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
@@ -137,7 +137,10 @@ export const defaultPreviewEdge = (): number => {
     typeof screen === "undefined"
       ? 1280
       : Math.max(screen.width, screen.height);
-  return Math.min(Math.ceil(viewport * dpr * 2), isMobile() ? 4096 : 8192);
+  return Math.min(
+    Math.ceil(viewport * dpr * 2),
+    hasTouchScreen() ? 4096 : 8192
+  );
 };
 
 const resizeBitmap = async (

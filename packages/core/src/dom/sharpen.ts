@@ -5,7 +5,7 @@ import { TIMEOUT } from "./turn";
 import type { ViewFrame } from "./view";
 import { decodeTurn, regionOff, resampleOff } from "./worker";
 
-const DETAIL = 1.02;
+const SHARPEN_RATIO = 1.02;
 
 const visibleRect = (frame: ViewFrame, image: LoadedImage): Region => {
   const back = invertMatrix3(frame.matrix);
@@ -46,7 +46,7 @@ export const refine = async (
     Math.max(image.preview.width, image.preview.height) /
     Math.max(image.width, image.height);
   const ratio = devicePerSource / previewPerSource;
-  if (ratio <= 1 / DETAIL) {
+  if (ratio <= 1 / SHARPEN_RATIO) {
     const visible = visibleRect(frame, image);
     const kx = image.preview.width / image.width;
     const ky = image.preview.height / image.height;
@@ -75,7 +75,7 @@ export const refine = async (
       },
     };
   }
-  if (ratio > DETAIL && previewPerSource < 1) {
+  if (ratio > SHARPEN_RATIO && previewPerSource < 1) {
     const region = visibleRect(frame, image);
     return {
       bitmap: await decodeTurn(

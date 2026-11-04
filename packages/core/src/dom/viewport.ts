@@ -63,7 +63,7 @@ const PAD_BAND = 0.08;
 const PAD_REACH = 0.5;
 const PAN_NOISE = 0.01;
 const ROTATE_DEAD_ZONE = 5;
-const WHEEL_IDLE = 150;
+const WHEEL_IDLE_MS = 150;
 const LINE_HEIGHT = 16;
 const CONTROLS =
   "a[href],button,input,label,select,summary,textarea,[contenteditable],[role=button],[role=link],[role=menuitem],[role=option],[role=slider],[role=switch],[role=tab]";
@@ -129,7 +129,7 @@ const absorb = (held: number, step: number): [number, number] => {
   return Math.sign(left) === Math.sign(held) ? [left, 0] : [0, left];
 };
 
-const settle = (value: number, noise: number): number =>
+const snapNoise = (value: number, noise: number): number =>
   Math.abs(value) < noise ? 0 : value;
 
 const canPan = (state: CropState, delta: Point, scale: number): boolean => {
@@ -362,8 +362,8 @@ export const viewportController = (
     }
     return {
       excess: {
-        x: settle((desired.x - after.crop.x) * -begin.scale, PAN_NOISE),
-        y: settle((desired.y - after.crop.y) * -begin.scale, PAN_NOISE),
+        x: snapNoise((desired.x - after.crop.x) * -begin.scale, PAN_NOISE),
+        y: snapNoise((desired.y - after.crop.y) * -begin.scale, PAN_NOISE),
       },
       moved: before !== after,
     };
@@ -413,9 +413,9 @@ export const viewportController = (
       reason: cropper.getState().interacting ?? "pinch",
     });
     if (wanted < 1) {
-      return settle(Math.log(wanted), ZOOM_NOISE);
+      return snapNoise(Math.log(wanted), ZOOM_NOISE);
     }
-    return wanted > max ? settle(Math.log(wanted / max), ZOOM_NOISE) : 0;
+    return wanted > max ? snapNoise(Math.log(wanted / max), ZOOM_NOISE) : 0;
   };
 
   const backStart = (by: Point, raw: number): void => {
@@ -566,7 +566,7 @@ export const viewportController = (
     if (wheelTimer !== null) {
       clearTimeout(wheelTimer);
     }
-    wheelTimer = setTimeout(endWheel, WHEEL_IDLE);
+    wheelTimer = setTimeout(endWheel, WHEEL_IDLE_MS);
   };
 
   const wheelIgnored = (pinching: boolean, zoom: boolean): boolean =>

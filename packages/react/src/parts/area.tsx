@@ -5,12 +5,7 @@ import { warnUnlabelled } from "@zriz/react/warn";
 import { forwardRef, useContext, useCallback, useMemo } from "react";
 
 import { useCropperContext } from "../context";
-import {
-  RootContext,
-  nativeProps,
-  useMergedRef,
-  useRelease,
-} from "../part";
+import { RootContext, nativeProps, useMergedRef, useRelease } from "../part";
 import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";

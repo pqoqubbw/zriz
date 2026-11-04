@@ -23,11 +23,11 @@ interface MotionFile {
 }
 
 const files = new WeakMap<LoadedImage, MotionFile>();
-const SAME = 1e-6;
+const MATRIX_TOLERANCE = 1e-6;
 const LAYOUT_IDLE = 120;
 
 const sameMatrix = (a: Matrix3, b: Matrix3): boolean =>
-  a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < SAME);
+  a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < MATRIX_TOLERANCE);
 
 const isAffine = (m: Matrix3): boolean =>
   m[6] === 0 && m[7] === 0 && m[8] === 1;
@@ -123,7 +123,7 @@ export const bindPhoto = (
     container.toggleAttribute("data-sharp", canvas);
   };
 
-  const settled = (): boolean => {
+  const isIdle = (): boolean => {
     const state = cropper.getState();
     return state.interacting === null && !state.settling;
   };
@@ -189,7 +189,7 @@ export const bindPhoto = (
       () => null
     );
     const bitmap = fine?.bitmap;
-    if (ticket !== token || !settled()) {
+    if (ticket !== token || !isIdle()) {
       bitmap?.close();
       return;
     }
@@ -274,7 +274,7 @@ export const bindPhoto = (
     }
     if (isDrawn(frame)) {
       cancel();
-      if (settled()) {
+      if (isIdle()) {
         reuse();
       }
       return;
@@ -286,7 +286,7 @@ export const bindPhoto = (
       drawn = null;
       show(false, !blank);
     }
-    if (settled()) {
+    if (isIdle()) {
       schedule(frame, resized ? LAYOUT_IDLE : 0);
     }
   };
@@ -307,7 +307,7 @@ export const bindPhoto = (
     await motion.decode();
     if (ticket === loading) {
       motionReady = true;
-      if (drawn === null && (blank || !settled())) {
+      if (drawn === null && (blank || !isIdle())) {
         show(false);
       }
     }
@@ -352,7 +352,7 @@ export const bindPhoto = (
   };
 
   const sync = (): void => {
-    const next = !settled();
+    const next = !isIdle();
     if (next === moving) {
       return;
     }

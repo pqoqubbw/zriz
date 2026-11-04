@@ -252,9 +252,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   );
   return (
     <CropperContext.Provider value={cropper}>
-      <RootContext.Provider value={context}>
-        {part}
-      </RootContext.Provider>
+      <RootContext.Provider value={context}>{part}</RootContext.Provider>
     </CropperContext.Provider>
   );
 });

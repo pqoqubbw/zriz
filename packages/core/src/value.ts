@@ -43,7 +43,7 @@ export const defaultValue: CropValue = seal({
   size: { height: 1, width: 1 },
 });
 
-const fields: readonly ValueField[] = [
+const VALUE_FIELDS: readonly ValueField[] = [
   "center",
   "size",
   "rotation",
@@ -160,10 +160,10 @@ const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
 };
 
 export const changedFields = (a: CropValue, b: CropValue): ValueField[] =>
-  fields.filter((field) => !fieldEqual(a, b, field));
+  VALUE_FIELDS.filter((field) => !fieldEqual(a, b, field));
 
 export const valuesEqual = (a: CropValue, b: CropValue): boolean =>
-  a === b || fields.every((field) => fieldEqual(a, b, field));
+  a === b || VALUE_FIELDS.every((field) => fieldEqual(a, b, field));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

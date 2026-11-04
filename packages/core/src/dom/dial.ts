@@ -46,10 +46,10 @@ export interface DialState {
 
 export const DIAL_TICKS = 41;
 export const DIAL_STEP = 2.25;
-const GAIN = 4;
-const SLOP = 10;
+const DEFAULT_GAIN = 4;
+const DEFAULT_SLOP = 10;
 const AXIS_LOCK = 6;
-const TAU = 95;
+const DEFAULT_TAU = 95;
 const RETURN_OMEGA = 16;
 const STOP_SPEED = 0.5;
 
@@ -134,7 +134,7 @@ export const dialHandlers = (
   let unwatch: (() => void) | null = null;
   let stopGlide: ((event?: Event) => void) | null = null;
 
-  const gain = (): number => positive(dial.options().gain, GAIN);
+  const gain = (): number => positive(dial.options().gain, DEFAULT_GAIN);
   const sign = (): number => (dial.options().dir === "rtl" ? -1 : 1);
 
   const show = (raw: number, dragging: boolean, event: Event): void => {
@@ -172,7 +172,7 @@ export const dialHandlers = (
 
   const fling = (velocity: number, from: number, event: Event): void => {
     const limit = cropper.getRotationLimit();
-    const tau = positive(dial.options().tau, TAU);
+    const tau = positive(dial.options().tau, DEFAULT_TAU);
     const rest = from + (velocity / 1000) * tau;
     let elapsed = 0;
     const target = clamp(rest, limit);
@@ -356,7 +356,7 @@ export const dialHandlers = (
             capture(target, event.pointerId);
           }
         }
-        const slop = dial.options().slop ?? SLOP;
+        const slop = dial.options().slop ?? DEFAULT_SLOP;
         if (Math.abs(dx) < slop) {
           return;
         }
@@ -501,7 +501,8 @@ export const bindDialTicks = (
     }
     strip.append(...created);
   }
-  const spacing = (): number => positive(dial.options().gain, GAIN) * DIAL_STEP;
+  const spacing = (): number =>
+    positive(dial.options().gain, DEFAULT_GAIN) * DIAL_STEP;
   const ticks = [...strip.children].filter(isHtml);
   for (const [i, tick] of ticks.entries()) {
     const data = tickData(i, ticks.length);

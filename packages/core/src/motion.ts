@@ -15,7 +15,7 @@ export interface VelocityTracker {
   reset: () => void;
 }
 
-const fallbackFrame = 1000 / 60;
+const FALLBACK_FRAME_MS = 1000 / 60;
 const MIN_FIT_SPAN = 10;
 const BACKUP_FRAME = 250;
 
@@ -39,7 +39,7 @@ export const frameClock = (): Clock => {
         () => {
           run(performance.now());
         },
-        hasFrames ? BACKUP_FRAME : fallbackFrame
+        hasFrames ? BACKUP_FRAME : FALLBACK_FRAME_MS
       );
       const frame = hasFrames ? globalThis.requestAnimationFrame(run) : 0;
       pending.set(key, () => {

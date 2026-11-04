@@ -16,10 +16,10 @@ export interface AspectGroupState {
 
 export type AspectGroupProps = PartProps<"div", AspectGroupState>;
 
-const ITEMS = '[data-zriz-item="aspect-item"]';
+const ITEM_SELECTOR = '[data-zriz-item="aspect-item"]';
 
 const itemsOf = (group: Element): HTMLElement[] =>
-  [...group.querySelectorAll<HTMLElement>(ITEMS)].filter(
+  [...group.querySelectorAll<HTMLElement>(ITEM_SELECTOR)].filter(
     (item) =>
       item.closest('[data-zriz-item="aspect-group"]') === group &&
       !item.matches(":disabled,[data-disabled]")
@@ -35,7 +35,7 @@ const syncStop = (group: Element): void => {
   }
 };
 
-const STEPS: Partial<Record<string, number>> = {
+const ARROW_STEPS: Partial<Record<string, number>> = {
   ArrowDown: 1,
   ArrowLeft: -1,
   ArrowRight: 1,
@@ -93,7 +93,7 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
     } else if (event.key === "End") {
       next = enabled.length - 1;
     } else {
-      const step = STEPS[event.key];
+      const step = ARROW_STEPS[event.key];
       if (step === undefined) {
         return;
       }

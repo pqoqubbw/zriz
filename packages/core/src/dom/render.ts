@@ -10,7 +10,7 @@ import { TIMEOUT, aborted, withTimeout } from "./turn";
 import { gate, lane, via } from "./worker";
 import type { Lane } from "./worker";
 
-const QUALITY = 0.9;
+const DEFAULT_QUALITY = 0.9;
 
 const exportTurn = gate(1);
 
@@ -97,7 +97,7 @@ export const exportImage = async (
         colorSpace: options.colorSpace ?? "srgb",
         image: state.image,
         plans,
-        quality: options.quality ?? QUALITY,
+        quality: options.quality ?? DEFAULT_QUALITY,
         source,
         type,
       });

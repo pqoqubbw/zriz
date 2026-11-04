@@ -2,26 +2,28 @@ import type { Size } from "./geometry/types";
 
 export type { Size } from "./geometry/types";
 
-/** Minimum cover scale for a centred crop. */
-export const coverScale = (image: Size, crop: Size, angle: number): number => {
-  const cos = Math.abs(Math.cos(angle));
-  const sin = Math.abs(Math.sin(angle));
+export const coverScale = (
+  image: Size,
+  crop: Size,
+  radians: number
+): number => {
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
   return Math.max(
     (crop.width * cos + crop.height * sin) / image.width,
     (crop.width * sin + crop.height * cos) / image.height
   );
 };
 
-/** Whether a centred crop is covered. */
 export const covers = (
   image: Size,
   crop: Size,
-  angle: number,
+  radians: number,
   scale: number,
   epsilon = 1e-9
 ): boolean => {
-  const cos = Math.cos(-angle);
-  const sin = Math.sin(-angle);
+  const cos = Math.cos(-radians);
+  const sin = Math.sin(-radians);
   const halfWidth = (image.width * scale) / 2;
   const halfHeight = (image.height * scale) / 2;
   for (const [sx, sy] of [

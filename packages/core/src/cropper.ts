@@ -270,9 +270,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     stop: new Set(),
   };
   const subscribers = new Set<() => void>();
-  const tasks = new Map<FrameTask, { holds: boolean }>();
-  const blocking = (): boolean =>
-    [...tasks.values()].some((entry) => entry.holds);
+  const tasks = new Map<FrameTask, { blocking: boolean }>();
+  const hasBlockingTask = (): boolean =>
+    [...tasks.values()].some((entry) => entry.blocking);
 
   const firstReset = readValue(initial.defaultValue ?? {}, defaultValue);
   const targets = new Set<Record<string, unknown>>();
@@ -469,7 +469,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   };
 
   const settleCommit = (): void => {
-    if (gesture || blocking() || dirty || !commitPending) {
+    if (gesture || hasBlockingTask() || dirty || !commitPending) {
       return;
     }
     const pending = commitPending;
@@ -501,7 +501,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
     dirty = false;
     let phase: ChangePhase = "instant";
-    if (gesture || blocking()) {
+    if (gesture || hasBlockingTask()) {
       phase = gesture && !gesture.flushed ? "start" : "move";
     } else if (afterGesture) {
       phase = "end";
@@ -616,9 +616,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     };
   };
 
-  const dropHolding = (): void => {
+  const dropBlockingTasks = (): void => {
     for (const [task, entry] of tasks) {
-      if (entry.holds) {
+      if (entry.blocking) {
         tasks.delete(task);
         settlePending = true;
       }
@@ -627,7 +627,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const stopCoast = (): void => {
     if (gesture?.coast) {
-      dropHolding();
+      dropBlockingTasks();
       gesture.coast();
     }
   };
@@ -740,7 +740,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (disabled() || (gesture !== null && gesture.owner !== owner)) {
         return false;
       }
-      dropHolding();
+      dropBlockingTasks();
       if (gesture === null) {
         flush();
         settleCommit();
@@ -765,7 +765,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
       const { start, startValue, reason } = gesture;
-      dropHolding();
+      dropBlockingTasks();
       const [fitted, fittedValue] = refit(start, startValue);
       accept(fitted, fittedValue, { event, reason }, reason);
       cropper.end(event, owner);
@@ -889,11 +889,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         typeof value.aspect === "number" ? 1 / value.aspect : value.aspect;
       commitState(next, "size", action, "rotate-90", aspect);
     },
-    run(task, holds = true) {
+    run(task, blocking = true) {
       if (destroyed) {
         return noop;
       }
-      const entry = { holds };
+      const entry = { blocking };
       tasks.set(task, entry);
       schedule();
       refresh();
