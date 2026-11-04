@@ -5,7 +5,12 @@ import { warnUnlabelled } from "@zriz/react/warn";
 import { forwardRef, useContext, useCallback, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { RootContextValue, nativeProps, useMergedRef } from "../part";
+import {
+  RootContextValue,
+  nativeProps,
+  useMergedRef,
+  useRelease,
+} from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
@@ -28,6 +33,7 @@ export const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   const { shape, instructions } = useContext(RootContextValue);
   const interacting = useCropperState((s) => s.interacting !== null);
   const [keys] = useState(() => areaKeyHandlers(cropper));
+  useRelease(keys);
   const own = useCallback(
     (element: HTMLDivElement) => {
       warnUnlabelled("Area", element);

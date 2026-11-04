@@ -126,7 +126,7 @@ describe("part props", () => {
     expect(handlerNames(Cropper.Viewport)).toStrictEqual(pointer);
     expect(
       handlerNames(Cropper.Handle, { position: "top-left" })
-    ).toStrictEqual(pointer);
+    ).toStrictEqual([...pointer, "onPointerDownCapture"].toSorted());
     expect(handlerNames(Cropper.Area)).toStrictEqual(keys);
     const both = [...keys, ...pointer].toSorted();
     expect(handlerNames(Cropper.Dial)).toStrictEqual(both);

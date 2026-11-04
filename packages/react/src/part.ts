@@ -136,7 +136,22 @@ export const nativeProps = <H extends Record<keyof H, (event: never) => void>>(
   for (const [key, handler] of Object.entries<(event: never) => void>(
     handlers
   )) {
-    props[key] = native(handler);
+    if (key === "onKeyDown") {
+      const send = native(handler);
+      props[key] = (
+        event: React.KeyboardEvent & { nativeEvent: never }
+      ): void => {
+        if (event.target === event.currentTarget) {
+          send(event);
+        }
+      };
+    } else if (key !== "release") {
+      props[key] = native(handler);
+    }
   }
   return props;
+};
+
+export const useRelease = (handlers: { release: () => void }): void => {
+  useIsomorphicLayoutEffect(() => handlers.release, [handlers]);
 };

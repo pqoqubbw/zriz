@@ -179,6 +179,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   const element = usePart(
     "div",
     {
+      "data-base-ui-swipe-ignore": "",
       "data-changed": snapshot.pristine ? undefined : "",
       "data-disabled": snapshot.disabled ? "" : undefined,
       "data-grid": chrome.grid,

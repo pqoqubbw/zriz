@@ -1,11 +1,17 @@
 "use client";
 
-import { handleHandlers } from "@zriz/core/dom";
+import { handleHandlers, viewOf } from "@zriz/core/dom";
 import type { HandleEdge } from "@zriz/core/dom";
 import { forwardRef, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
-import { nativeProps, useElementBox, useMergedRef } from "../part";
+import {
+  nativeProps,
+  useElementBox,
+  useLatest,
+  useMergedRef,
+  useRelease,
+} from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
@@ -57,18 +63,23 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
 >(function Handle({ position, ...props }, ref) {
   const cropper = useCropperContext();
   const box = useElementBox();
+  const edge = useLatest(position);
   const handlers = useMemo(
-    () => handleHandlers(cropper, position, box.get),
-    [box, cropper, position]
+    () => handleHandlers(cropper, () => edge.current, box.get),
+    [box, cropper, edge]
   );
+  useRelease(handlers);
   const [mine, setMine] = useState(false);
   const active = useCropperState((s) => mine && s.interacting === "resize");
   if (mine && !active) {
     setMine(false);
   }
   const onPointerDown = (event: React.PointerEvent): void => {
+    const free = cropper.getState().interacting === null;
     handlers.onPointerDown(event.nativeEvent);
-    setMine(cropper.getState().interacting === "resize");
+    if (free) {
+      setMine(cropper.getState().interacting === "resize");
+    }
   };
   return usePart(
     "div",
@@ -79,6 +90,9 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
       "data-zriz-item": "handle",
       ...nativeProps(handlers),
       onPointerDown,
+      onPointerDownCapture: (event: React.PointerEvent): void => {
+        viewOf(cropper).claim(event.nativeEvent);
+      },
       style: placement(position),
     },
     props,

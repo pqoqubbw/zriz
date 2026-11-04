@@ -17,6 +17,7 @@ import {
   nativeProps,
   useElementBox,
   useMergedRef,
+  useRelease,
 } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
@@ -38,6 +39,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
   const [handlers] = useState(() => dialHandlers(cropper, { dir }, box.get));
+  useRelease(handlers);
   const state = dialState(cropper);
   useEffect(() => {
     state.setOptions({ ...state.options(), dir });

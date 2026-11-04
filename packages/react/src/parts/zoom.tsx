@@ -9,7 +9,9 @@ import {
   RootContextValue,
   nativeProps,
   useElementBox,
+  useLatest,
   useMergedRef,
+  useRelease,
 } from "../part";
 import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
@@ -33,10 +35,12 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const { dir, locale } = useContext(RootContextValue);
   const box = useElementBox();
+  const latest = useLatest({ dir, max });
   const handlers = useMemo(
-    () => zoomHandlers(cropper, { dir, max }, box.get),
-    [box, cropper, dir, max]
+    () => zoomHandlers(cropper, () => latest.current, box.get),
+    [box, cropper, latest]
   );
+  useRelease(handlers);
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
   const own = useCallback(
     (node: HTMLDivElement) => {
