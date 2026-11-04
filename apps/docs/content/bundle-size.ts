@@ -11,16 +11,16 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           column("brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["editor", "every part from `@zriz/react/cropper`", "22.14 kB"],
-          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "17.00 kB"],
-          ["root only", "`Root`", "11.79 kB"],
+          ["editor", "every part from `@zriz/react/cropper`", "29.02 kB"],
+          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "22.69 kB"],
+          ["root only", "`Root`", "15.45 kB"],
           [
             "vanilla avatar",
             "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
-            "14.64 kB",
+            "18.98 kB",
           ],
-          ["server", "`toSharp` from `@zriz/core`", "540 B"],
-          ["stylesheet", "`styles.css`, which is optional", "858 B"],
+          ["server", "`toSharp` from `@zriz/core`", "563 B"],
+          ["stylesheet", "`styles.css`, which is optional", "857 B"],
         ],
       }),
       p(
@@ -43,23 +43,23 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           [
             "render",
             "the first export. it starts downloading once the first photo attaches",
-            "1.92 kB",
+            "2.28 kB",
           ],
           [
             "sharpen",
             "the sharper redraw at rest and on deep zoom. it starts downloading after the first paint",
-            "393 B",
+            "546 B",
           ],
-          ["svg", "the photo is an svg", "564 B"],
+          ["svg", "the photo is an svg", "869 B"],
           [
             "source",
             "you pass an `img`, `video`, `canvas` or `OffscreenCanvas` to `loadImage`. `Root` never loads it",
-            "325 B",
+            "557 B",
           ],
         ],
       }),
       p(
-        "with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 20.20 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: `render` is 2.89 kB."
+        "with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 26.94 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: `render` is 3.50 kB."
       )
     ),
     section(
