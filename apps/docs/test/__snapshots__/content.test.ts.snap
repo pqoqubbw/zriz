@@ -5960,6 +5960,7 @@ renders a \`<div role="group">\` with \`tabIndex={0}\` inside \`Viewport\`. zriz
 | attribute | when |
 | - | - |
 | \`data-shape\` | \`"rect"\` or \`"circle"\`, from \`Root\` |
+| \`data-visible\` | while a photo is placed |
 | \`data-interacting\` | during a gesture, and while a zriz key is held down |
 
 | variable | what it sets |

@@ -119,6 +119,7 @@ const CROP_AREA_PAGE = defineDoc({
           ],
           rows: [
             ["data-shape", '`"rect"` or `"circle"`, from `Root`'],
+            ["data-visible", "while a photo is placed"],
             [
               "data-interacting",
               "during a gesture, and while a zriz key is held down",
