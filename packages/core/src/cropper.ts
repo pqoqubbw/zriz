@@ -27,10 +27,10 @@ import {
   clean,
   defaultValue,
   focalLength,
+  holdCrop,
   isSound,
   positive,
   readValue,
-  sameCrop,
   seal,
   stateToValue,
   toAspect,
@@ -213,7 +213,13 @@ const holdIf = (
   computed: CropValue,
   held: CropValue | undefined,
   size: Size
-): CropValue => (held && sameCrop(computed, held, size) ? held : computed);
+): CropValue => {
+  if (!held) {
+    return computed;
+  }
+  const kept = holdCrop(computed, held, size);
+  return valuesEqual(kept, held) ? held : kept;
+};
 
 const lengthenLens = (state: CropState): CropState => {
   const { focal, horizontal, vertical } = state.perspective;
@@ -460,8 +466,12 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       return [saved, savedValue];
     }
     const fixed = constrain(saved, "centre");
-    const fixedValue = stateToValue(fixed, savedValue.aspect);
-    return sameCrop(fixedValue, savedValue, saved.image)
+    const fixedValue = holdIf(
+      stateToValue(fixed, savedValue.aspect),
+      savedValue,
+      saved.image
+    );
+    return fixedValue === savedValue
       ? [saved, savedValue]
       : [fixed, fixedValue];
   };

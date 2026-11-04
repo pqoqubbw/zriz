@@ -245,19 +245,44 @@ export const isSound = (value: CropValue): boolean =>
   value.size.width > 0 &&
   value.size.height > 0;
 
-export const sameCrop = (a: CropValue, b: CropValue, image: Size): boolean => {
-  const reach = Math.min(
-    1e-8,
-    (2e-8 + 2e-11 * Math.max(image.width, image.height)) /
-      Math.min(image.width, image.height)
-  );
-  const other = numbersOf(b);
-  return (
-    sameAspect(a.aspect, b.aspect) &&
-    a.mirrored === b.mirrored &&
-    a.quarterTurns === b.quarterTurns &&
-    numbersOf(a).every((n, i) => Math.abs(n - (other[i] ?? 0)) <= reach)
-  );
+const near = (a: number, b: number, reach: number): number =>
+  Math.abs(a - b) <= reach ? b : a;
+
+export const holdCrop = (
+  next: CropValue,
+  held: CropValue,
+  image: Size
+): CropValue => {
+  const { width, height } = turnedSize(image, next.quarterTurns);
+  const pixels = 2e-8 + 2e-11 * Math.max(width, height);
+  const x = pixels / width;
+  const y = pixels / height;
+  const angle = Math.min(1e-8, x + y);
+  const ratio = next.size.height / next.size.width;
+  return seal({
+    ...next,
+    center: {
+      x: near(next.center.x, held.center.x, x),
+      y: near(next.center.y, held.center.y, y),
+    },
+    perspective: {
+      horizontal: near(
+        next.perspective.horizontal,
+        held.perspective.horizontal,
+        angle
+      ),
+      vertical: near(
+        next.perspective.vertical,
+        held.perspective.vertical,
+        angle
+      ),
+    },
+    rotation: near(next.rotation, held.rotation, angle),
+    size: {
+      height: near(next.size.height, held.size.height, y + ratio * x),
+      width: near(next.size.width, held.size.width, x + y / ratio),
+    },
+  });
 };
 
 export const serialize = (value: CropValue): string =>

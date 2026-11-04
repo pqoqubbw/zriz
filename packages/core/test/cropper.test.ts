@@ -1151,6 +1151,116 @@ describe("change and commit reporting", () => {
     }
   );
 
+  it("lists only the field that moved after a value with long decimals", () => {
+    const { change, cropper, time } = setup({
+      image: { height: 1000, width: 1000 },
+    });
+    cropper.setValue({
+      size: { height: 0.3, width: 0.19416446166578682 },
+    });
+    time.frame();
+    const { size } = cropper.getValue();
+    change.mockClear();
+    cropper.flip();
+    time.frame();
+    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["mirrored"]);
+    expect(cropper.getValue().size).toStrictEqual(size);
+  });
+
+  it("keeps a held angle out of the fields a zoom moves", () => {
+    const { change, cropper, time } = setup();
+    const rotation = 1.1234567890123457;
+    cropper.setValue({ rotation });
+    time.frame();
+    change.mockClear();
+    cropper.setZoom(2);
+    time.frame();
+    expect(change.mock.calls[0]?.[1].changed).not.toContain("rotation");
+    expect(cropper.getValue().rotation).toBe(rotation);
+  });
+
+  it("holds a round trip on a very long photo with a locked aspect", () => {
+    const { change, commit, cropper, time } = setup({
+      image: { height: 3, width: 1_000_000 },
+      value: { ...defaultValue, aspect: 16 / 9 },
+    });
+    time.frame();
+    const held = cropper.getValue();
+    for (let write = 0; write < 3; write += 1) {
+      cropper.setValue(cropper.getValue());
+      time.frame();
+    }
+    expect(change).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(cropper.getValue().size).toStrictEqual(held.size);
+  });
+
+  it("holds a change below a pixel's rounding and reports one above it", () => {
+    const { change, cropper, time } = setup({
+      value: {
+        ...defaultValue,
+        center: { x: 0.4, y: 0.4 },
+        size: { height: 0.5, width: 0.5 },
+      },
+    });
+    time.frame();
+    const nudge = (x: number, y: number): void => {
+      cropper.setValue({ center: { x: 0.4 + x, y: 0.4 + y } });
+      time.frame();
+    };
+    nudge(1e-11, 2e-11);
+    expect(change).not.toHaveBeenCalled();
+    expect(cropper.getValue().center).toStrictEqual({ x: 0.4, y: 0.4 });
+    nudge(1e-10, 0);
+    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
+    change.mockClear();
+    cropper.setValue({ center: { x: 0.4, y: 0.4 } });
+    time.frame();
+    change.mockClear();
+    nudge(0, 1e-10);
+    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
+  });
+
+  it("reports a small move along a very long photo", () => {
+    const { change, cropper, time } = setup({
+      image: { height: 3, width: 1_000_000 },
+      value: {
+        ...defaultValue,
+        center: { x: 0.4, y: 0.5 },
+        size: { height: 1, width: 0.5 },
+      },
+    });
+    time.frame();
+    cropper.setValue({ center: { x: 0.4 + 1e-9, y: 0.5 } });
+    time.frame();
+    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
+  });
+
+  it("reports ten pixels of width on a very long photo", () => {
+    const { change, cropper, time } = setup({
+      image: { height: 3, width: 1_000_000 },
+      value: { ...defaultValue, size: { height: 1, width: 0.5 } },
+    });
+    time.frame();
+    cropper.setValue({ size: { height: 1, width: 0.5 + 1e-5 } });
+    time.frame();
+    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["size"]);
+  });
+
+  it("holds a crop on a long photo through the slack of its short side", () => {
+    const { change, cropper, time } = setup({
+      image: { height: 100, width: 20_000 },
+    });
+    cropper.setRotation(7.5e-12);
+    cropper.setZoom(6.8102518945089665);
+    cropper.panBy(-0.8531595559399789, -0.8531595559399789 / 2);
+    time.frames(2);
+    change.mockClear();
+    cropper.setValue(cropper.getValue());
+    time.frames(2);
+    expect(change).not.toHaveBeenCalled();
+  });
+
   it("reports a later photo's refit as a change with the old value as previous", () => {
     const { change, commit, cropper, time } = setup({
       image: { height: 750, width: 1000 },
