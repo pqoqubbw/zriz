@@ -20,13 +20,13 @@ const BUNDLE_SIZE_PAGE = defineDoc({
             "14.64 kB",
           ],
           ["server", "`toSharp` from `@zriz/core`", "540 B"],
-          ["stylesheet", "`styles.css`, which is optional", "842 B"],
+          ["stylesheet", "`styles.css`, which is optional", "858 B"],
         ],
       }),
       p(
         "measured with size-limit 14.3 on 4 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the `production` export condition, so development warnings do not count."
       ),
-      p("with gzip, the stylesheet is 968 B.")
+      p("with gzip, the stylesheet is 978 B.")
     ),
     section(
       "loaded later",
