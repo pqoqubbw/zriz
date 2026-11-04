@@ -17,35 +17,42 @@ export interface VelocityTracker {
 
 const fallbackFrame = 1000 / 60;
 const MIN_FIT_SPAN = 10;
+const BACKUP_FRAME = 250;
 
 export const frameClock = (): Clock => {
-  if (typeof globalThis.requestAnimationFrame === "function") {
-    return {
-      cancel: (handle) => {
-        globalThis.cancelAnimationFrame(handle);
-      },
-      now: () => performance.now(),
-      request: (step) => globalThis.requestAnimationFrame(step),
-    };
-  }
+  const hasFrames = typeof globalThis.requestAnimationFrame === "function";
+  const pending = new Map<number, () => void>();
   let id = 0;
-  const timers = new Map<number, ReturnType<typeof setTimeout>>();
   return {
     cancel: (handle) => {
-      clearTimeout(timers.get(handle));
-      timers.delete(handle);
+      pending.get(handle)?.();
     },
     now: () => performance.now(),
     request: (step) => {
       id += 1;
       const key = id;
-      timers.set(
-        key,
-        setTimeout(() => {
-          timers.delete(key);
-          step(performance.now());
-        }, fallbackFrame)
+      let frame = 0;
+      const clear = (): void => {
+        pending.delete(key);
+        clearTimeout(timer);
+        if (hasFrames) {
+          globalThis.cancelAnimationFrame(frame);
+        }
+      };
+      const run = (time: number): void => {
+        clear();
+        step(time);
+      };
+      const timer = setTimeout(
+        () => {
+          run(performance.now());
+        },
+        hasFrames ? BACKUP_FRAME : fallbackFrame
       );
+      if (hasFrames) {
+        frame = globalThis.requestAnimationFrame(run);
+      }
+      pending.set(key, clear);
       return key;
     },
   };

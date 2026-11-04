@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands } from "vitest/browser";
 
-import { createCropper } from "../../src";
+import { createCropper, frameClock } from "../../src";
 import type { Clock, Cropper } from "../../src";
 import {
   bindArea,
@@ -333,5 +333,69 @@ describe("view motion", () => {
       .toBe("none");
     expect(cleared - ended).toBeGreaterThanOrEqual(1380 - TIMER_ROUNDING);
     expect(Object.hasOwn(fixture.root.dataset, "interacting")).toBeFalsy();
+  });
+});
+
+describe("a page where frames stop, as in a hidden tab", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("still reports writes and commits on a timer", async () => {
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    const cropper = createCropper({ image: { height: 300, width: 400 } });
+    const commits: number[] = [];
+    let changes = 0;
+    cropper.on("change", () => {
+      changes += 1;
+    });
+    cropper.on("commit", (value) => {
+      commits.push(value.rotation);
+    });
+    cropper.setRotation(5);
+    await expect
+      .poll(() => commits, { interval: 50, timeout: 2000 })
+      .toStrictEqual([5]);
+    expect(changes).toBe(1);
+    expect(cropper.getState().committed.rotation).toBe(5);
+    cropper.destroy();
+  });
+
+  it("finishes held motion and commits once", async () => {
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    const cropper = createCropper({ image: { height: 300, width: 400 } });
+    const commits: number[] = [];
+    cropper.on("commit", (value) => {
+      commits.push(value.rotation);
+    });
+    let ticks = 0;
+    cropper.setRotation(5);
+    cropper.run(() => {
+      ticks += 1;
+      return ticks < 2;
+    });
+    await expect
+      .poll(() => commits, { interval: 50, timeout: 3000 })
+      .toStrictEqual([5]);
+    expect(cropper.getState().settling).toBe(false);
+    cropper.destroy();
+  });
+});
+
+describe("a page with frames", () => {
+  it("runs one step per request and cancels both paths", async () => {
+    const clock = frameClock();
+    let steps = 0;
+    const handle = clock.request(() => {
+      steps += 1;
+    });
+    clock.cancel(handle);
+    await wait(300);
+    expect(steps).toBe(0);
+    clock.request(() => {
+      steps += 1;
+    });
+    await wait(400);
+    expect(steps).toBe(1);
   });
 });

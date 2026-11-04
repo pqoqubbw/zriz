@@ -499,7 +499,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const tick = (time: number): void => {
     handle = null;
-    const delta = lastTime === null ? 0 : time - lastTime;
+    const delta = lastTime === null ? 0 : Math.max(0, time - lastTime);
     lastTime = time;
     if (tasks.size > 0) {
       frameDirty = true;

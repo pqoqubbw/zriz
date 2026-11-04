@@ -1873,3 +1873,28 @@ describe("values handed out", () => {
     expect(commit).toHaveBeenCalledOnce();
   });
 });
+
+describe("frame timing", () => {
+  it("hands a task no negative delta when the clock runs backward", () => {
+    const steps: ((now: number) => void)[] = [];
+    const cropper = createCropper({
+      clock: {
+        cancel: () => undefined,
+        now: () => 0,
+        request: (step) => steps.push(step),
+      },
+      image: photo,
+    });
+    const deltas: number[] = [];
+    let left = 3;
+    cropper.run((_, delta) => {
+      deltas.push(delta);
+      left -= 1;
+      return left > 0;
+    });
+    for (const now of [100, 50, 80]) {
+      steps.shift()?.(now);
+    }
+    expect(deltas).toStrictEqual([0, 0, 30]);
+  });
+});
