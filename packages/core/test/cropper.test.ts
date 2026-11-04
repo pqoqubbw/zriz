@@ -1760,6 +1760,15 @@ describe("input validation", () => {
   });
 
   it.each([
+    [0, 1],
+    [-3, 1],
+    [0.5, 1],
+    [bad, 15],
+  ])("reads a maxZoom of %s as %s", (maxZoom, cap) => {
+    expect(setup({ maxZoom }).cropper.getMaxZoom()).toBe(cap);
+  });
+
+  it.each([
     ["a string", "x"],
     ["a number", 1],
     ["nothing", undefined],
