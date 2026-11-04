@@ -954,6 +954,16 @@ describe("controlled props", () => {
     expect(api.current?.getValue().rotation).toBe(5);
   });
 
+  it("holds a controlled zoom on the same frame as a photo of another size", async () => {
+    const api = createRef<CropperApi>();
+    await render(
+      <Cropper.Root actionsRef={api} aspect={1} image={PHOTO} zoom={2} />
+    );
+    await frames(2);
+    api.current?.setImage({ height: 3000, width: 1000 });
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+  });
+
   it("applies a prop that was released and comes back at its old value", async () => {
     const api = createRef<CropperApi>();
     const Host = ({ locked }: { locked: boolean }) => (
