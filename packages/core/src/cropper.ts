@@ -264,7 +264,9 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
   const blocking = (): boolean =>
     [...tasks.values()].some((entry) => entry.holds);
 
-  let resetValue = readValue(initial.defaultValue ?? {}, defaultValue);
+  const firstReset = readValue(initial.defaultValue ?? {}, defaultValue);
+  const targets = new Set<Record<string, unknown>>();
+  let resetValue = firstReset;
   let image: Size | null = initial.image ?? null;
   let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
   let state: CropState | null = null;
@@ -848,15 +850,19 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       applyValue(resetValue, action, "reset");
     },
     retarget(next) {
-      const previous = resetValue;
-      const aim = (target: CropValue): void => {
-        resetValue = target;
+      const aim = (): void => {
+        resetValue = firstReset;
+        for (const patch of targets) {
+          resetValue = readValue(patch, resetValue);
+        }
         fitReset();
         refresh();
       };
-      aim(readValue(next, resetValue));
+      targets.add(next);
+      aim();
       return () => {
-        aim(previous);
+        targets.delete(next);
+        aim();
       };
     },
     rotate90(direction = "ccw", action = {}) {

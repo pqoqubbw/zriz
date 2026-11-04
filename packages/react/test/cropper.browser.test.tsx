@@ -1044,6 +1044,34 @@ describe("callbacks on a shared cropper", () => {
     await cleanup();
   });
 
+  it("drops the reset target of a Root that left", async () => {
+    const cropper = photoCropper();
+    const screen = await render(
+      <Cropper.Root aspect={1} cropper={cropper} rotation={10} />
+    );
+    await frames(2);
+    await screen.unmount();
+    await render(<Cropper.Root cropper={cropper} />);
+    cropper.reset();
+    await frames(2);
+    const { aspect, rotation } = cropper.getValue();
+    expect({ aspect, rotation }).toStrictEqual({ aspect: "free", rotation: 0 });
+  });
+
+  it("drops the reset target of a circle Root that left", async () => {
+    const cropper = photoCropper();
+    const screen = await render(
+      <Cropper.Root cropper={cropper} rotation={10} shape="circle" />
+    );
+    await frames(2);
+    await screen.unmount();
+    await render(<Cropper.Root cropper={cropper} />);
+    cropper.reset();
+    await frames(2);
+    const { aspect, rotation } = cropper.getValue();
+    expect({ aspect, rotation }).toStrictEqual({ aspect: "free", rotation: 0 });
+  });
+
   it("stops calling a closed Root and gives the creator's callback back", async () => {
     const mine = vi.fn<() => void>();
     const cropper = createCropper({ image: PHOTO, onValueCommit: mine });
