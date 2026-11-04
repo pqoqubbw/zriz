@@ -39,22 +39,6 @@
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
     },
-    "./dom/render": {
-      "types": "./dist/dom/render.d.ts",
-      "default": "./dist/dom/render.js"
-    },
-    "./dom/svg": {
-      "types": "./dist/dom/svg.d.ts",
-      "default": "./dist/dom/svg.js"
-    },
-    "./dom/source": {
-      "types": "./dist/dom/source.d.ts",
-      "default": "./dist/dom/source.js"
-    },
-    "./dom/sharpen": {
-      "types": "./dist/dom/sharpen.d.ts",
-      "default": "./dist/dom/sharpen.js"
-    },
     "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
