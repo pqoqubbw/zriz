@@ -7399,7 +7399,7 @@ everything goes inside \`Root\`. \`Image\`, \`Mask\` and \`Area\` go in \`Viewpo
 
 ## lock the cropper while you save
 
-\`disabled\` ignores every gesture, key and button press, and every cropper method that moves the crop, such as \`rotate90()\` or \`setZoom()\`, except \`setValue()\`. \`Root\` gets \`data-disabled\`, so css can grey it out. \`value\` still applies, and \`aspect\`, \`rotation\` and \`zoom\` set while disabled apply once it ends:
+\`disabled\` ignores every gesture, key and button press, and every cropper method that moves the crop, such as \`rotate90()\` or \`setZoom()\`, except \`setValue()\`, \`setImage()\` and \`setOptions()\`. \`Root\` gets \`data-disabled\`, so css can grey it out. \`value\` and a new \`src\` still apply, and \`aspect\`, \`rotation\` and \`zoom\` set while disabled apply once it ends:
 
 \`\`\`tsx
 <Cropper.Root src={photo} disabled={saving}>
@@ -8608,6 +8608,9 @@ to turn the crop into a file, pass the cropper to \`exportCrop\` as in [exportin
 | buttons | no binder. call \`rotate90()\`, \`flip()\`, \`reset()\` or \`setAspect(1)\` on the cropper from a click |
 | your own img | \`bindImage(cropper, element)\` sizes and moves an element of yours with the photo. you set its \`src\` |
 | round crop | pass \`"circle"\` as the third argument of \`bindMask\` and \`{ shape: "circle" }\` as the third argument of \`bindArea\`. set \`aspect: 1\` in \`defaultValue\`. the stylesheet hides the corner handles when the area has \`data-shape="circle"\`, which \`bindArea\` leaves to your markup |
+| wheel and twist | pass \`{ wheel: "zoom", rotateGesture: false }\` as the third argument of \`bindViewport\`. \`wheel\` also takes \`"pan"\` and \`"none"\` |
+| motion | call \`viewOf(cropper).setOptions({ motion: "reduce", recentreDelay: 800 })\`. \`motion\` also takes \`"auto"\` and \`"always"\`. each call replaces both options |
+| live variables | pass \`{ liveVariables: true }\` as the third argument of \`bindArea\`, see [crop area](https://zriz.dev/docs/crop-area.md) |
 | announcements | no binder. on \`commit\`, write your own text into an element with \`role="status"\`, and point the area's \`aria-describedby\` at your instructions |
 
 ## tear it down

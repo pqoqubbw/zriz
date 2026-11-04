@@ -101,6 +101,18 @@ const VANILLA_JS_PAGE = defineDoc({
             'pass `"circle"` as the third argument of `bindMask` and `{ shape: "circle" }` as the third argument of `bindArea`. set `aspect: 1` in `defaultValue`. the stylesheet hides the corner handles when the area has `data-shape="circle"`, which `bindArea` leaves to your markup',
           ],
           [
+            "wheel and twist",
+            'pass `{ wheel: "zoom", rotateGesture: false }` as the third argument of `bindViewport`. `wheel` also takes `"pan"` and `"none"`',
+          ],
+          [
+            "motion",
+            'call `viewOf(cropper).setOptions({ motion: "reduce", recentreDelay: 800 })`. `motion` also takes `"auto"` and `"always"`. each call replaces both options',
+          ],
+          [
+            "live variables",
+            "pass `{ liveVariables: true }` as the third argument of `bindArea`, see [crop area](crop-area)",
+          ],
+          [
             "announcements",
             'no binder. on `commit`, write your own text into an element with `role="status"`, and point the area\'s `aria-describedby` at your instructions',
           ],

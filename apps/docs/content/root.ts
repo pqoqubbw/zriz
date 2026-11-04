@@ -22,7 +22,7 @@ const ROOT_PAGE = defineDoc({
     section(
       "lock the cropper while you save",
       p(
-        "`disabled` ignores every gesture, key and button press, and every cropper method that moves the crop, such as `rotate90()` or `setZoom()`, except `setValue()`. `Root` gets `data-disabled`, so css can grey it out. `value` still applies, and `aspect`, `rotation` and `zoom` set while disabled apply once it ends:"
+        "`disabled` ignores every gesture, key and button press, and every cropper method that moves the crop, such as `rotate90()` or `setZoom()`, except `setValue()`, `setImage()` and `setOptions()`. `Root` gets `data-disabled`, so css can grey it out. `value` and a new `src` still apply, and `aspect`, `rotation` and `zoom` set while disabled apply once it ends:"
       ),
       code("root/disabled.jsx.tsx"),
       p("grey out the buttons while it is set:"),
