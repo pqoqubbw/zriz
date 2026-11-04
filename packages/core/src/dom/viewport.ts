@@ -349,26 +349,23 @@ const viewportController = (
     local = localOf(target);
   };
 
-  const offsetOf = (begin: Start): Point => {
-    const frame = view.frame();
-    const rect = frame?.rect;
-
-    if (!rect) {
-      return { x: 0, y: 0 };
-    }
-
-    return {
-      x: rect.x + rect.width / 2 - begin.scale * begin.state.crop.x,
-      y: rect.y + rect.height / 2 - begin.scale * begin.state.crop.y,
-    };
-  };
-
   const rectCentre = (): Point | null => {
     const rect = view.frame()?.rect;
 
     return rect
       ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }
       : null;
+  };
+
+  const offsetOf = (begin: Start): Point => {
+    const centre = rectCentre();
+
+    return centre
+      ? {
+          x: centre.x - begin.scale * begin.state.crop.x,
+          y: centre.y - begin.scale * begin.state.crop.y,
+        }
+      : { x: 0, y: 0 };
   };
 
   const zoomAnchor = (): Point => rectCentre() ?? { x: 0, y: 0 };
@@ -924,7 +921,6 @@ const viewportController = (
   return {
     destroy() {
       detach();
-      endWheel();
     },
     handlers,
     setElement(next) {
