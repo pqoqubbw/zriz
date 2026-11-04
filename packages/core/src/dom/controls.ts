@@ -2,12 +2,8 @@ import { MAX_ZOOM } from "../cropper";
 import type { Cropper } from "../cropper";
 import { capture, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
-
-export interface KeyHandlers {
-  onKeyDown: (event: KeyboardEvent) => void;
-  onKeyUp: (event: KeyboardEvent) => void;
-  onBlur: (event: FocusEvent) => void;
-}
+import { keyed, sliderAria, sliderKey } from "./slider";
+import type { KeyHandlers } from "./slider";
 
 export type ZoomHandlers = KeyHandlers & PointerHandlers;
 
@@ -26,39 +22,6 @@ export const zoomProgress = (zoom: number, max: number = MAX_ZOOM): number =>
 
 export const zoomAt = (progress: number, max: number = MAX_ZOOM): number =>
   max ** Math.min(Math.max(progress, 0), 1);
-
-type KeyAction = (() => void) | null;
-
-const keyed = (
-  cropper: Cropper,
-  plan: (event: KeyboardEvent) => KeyAction
-): KeyHandlers => {
-  let active = false;
-  const owner = {};
-  return {
-    onBlur(event) {
-      if (active) {
-        active = false;
-        cropper.end(event, owner);
-      }
-    },
-    onKeyDown(event) {
-      const run = plan(event);
-      if (!run || (!active && !cropper.begin("keyboard", event, owner))) {
-        return;
-      }
-      event.preventDefault();
-      active = true;
-      run();
-    },
-    onKeyUp(event) {
-      if (active) {
-        active = false;
-        cropper.end(event, owner);
-      }
-    },
-  };
-};
 
 export const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
   keyed(cropper, (event) => {
@@ -153,19 +116,14 @@ export const zoomHandlers = (
     }
   };
   const keys = keyed(cropper, (event) => {
-    const progress = zoomProgress(cropper.getZoom(), max());
-    const step = (event.shiftKey ? 10 : 1) / KEY_STEPS;
-    const moves: Partial<Record<string, number>> = {
-      ArrowDown: progress - step,
-      ArrowLeft: progress - step * sign(),
-      ArrowRight: progress + step * sign(),
-      ArrowUp: progress + step,
-      End: 1,
-      Home: 0,
-      PageDown: progress - 10 / KEY_STEPS,
-      PageUp: progress + 10 / KEY_STEPS,
-    };
-    const next = moves[event.key];
+    const next = sliderKey(
+      event,
+      zoomProgress(cropper.getZoom(), max()),
+      KEY_STEPS,
+      0,
+      1,
+      sign()
+    );
     if (next === undefined) {
       return null;
     }
@@ -211,27 +169,15 @@ export const zoomAria = (
     style: "percent",
     ...options.format,
   });
-  const aria = (): void => {
+  return sliderAria(cropper, element, "zoom-control", () => {
     const zoom = cropper.getZoom();
-    element.setAttribute("aria-valuemin", "1");
-    element.setAttribute(
-      "aria-valuemax",
-      String(options.max ?? cropper.getMaxZoom())
-    );
-    element.setAttribute("aria-valuenow", String(Math.round(zoom * 100) / 100));
-    element.setAttribute("aria-valuetext", formatter.format(zoom));
-  };
-  aria();
-  const offCommit = cropper.on("commit", aria);
-  const offKeys = cropper.on("change", (_, details) => {
-    if (details.reason === "keyboard" || details.reason === "zoom-control") {
-      aria();
-    }
+    return [
+      1,
+      options.max ?? cropper.getMaxZoom(),
+      Math.round(zoom * 100) / 100,
+      formatter.format(zoom),
+    ];
   });
-  return () => {
-    offCommit();
-    offKeys();
-  };
 };
 
 export const bindZoomThumb = (

@@ -21,7 +21,8 @@ export {
   zoomHandlers,
   zoomProgress,
 } from "./controls";
-export type { KeyHandlers, ZoomHandlers, ZoomOptions } from "./controls";
+export type { ZoomHandlers, ZoomOptions } from "./controls";
+export type { KeyHandlers } from "./slider";
 export {
   DIAL_STEP,
   DIAL_TICKS,

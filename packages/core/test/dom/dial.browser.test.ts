@@ -12,6 +12,7 @@ import {
   dialState,
   viewOf,
 } from "../../src/dom";
+import type { DialHandlers } from "../../src/dom";
 import { fakeClock } from "../fake-clock";
 
 declare module "vitest/browser" {
@@ -160,6 +161,67 @@ describe("dial release", () => {
         [160, 32],
       ])
     ).toBeGreaterThan(20);
+  });
+});
+
+const arrowRight = (): KeyboardEvent =>
+  new KeyboardEvent("keydown", { cancelable: true, key: "ArrowRight" });
+
+describe("dial while another gesture or disabled blocks it", () => {
+  it("leaves a key to the page when disabled, like Zoom and Area", () => {
+    const cropper = createCropper({
+      disabled: true,
+      image: { height: 3000, width: 4000 },
+    });
+    const event = arrowRight();
+    dialHandlers(cropper).onKeyDown(event);
+    expect(event.defaultPrevented).toBeFalsy();
+    cropper.destroy();
+  });
+
+  it("leaves a key to the page while another owner holds the gesture", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    expect(cropper.begin("pan", undefined, {})).toBeTruthy();
+    const event = arrowRight();
+    dialHandlers(cropper).onKeyDown(event);
+    expect(event.defaultPrevented).toBeFalsy();
+    expect(cropper.getValue().rotation).toBe(0);
+    cropper.destroy();
+  });
+
+  it.each([
+    [
+      "a key",
+      (handlers: DialHandlers) => {
+        handlers.onKeyDown(arrowRight());
+      },
+    ],
+    [
+      "a press",
+      (handlers: DialHandlers) => {
+        handlers.onPointerDown(at(100, 100));
+      },
+    ],
+  ])("lets a throw finish when %s is refused", (_, refused) => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const handlers = dialHandlers(cropper);
+    handlers.onPointerDown(at(100, 0));
+    for (let i = 1; i <= 5; i += 1) {
+      handlers.onPointerMove(at(100 + i * 12, i * 8));
+    }
+    handlers.onPointerUp(at(160, 41));
+    expect(cropper.getState().interacting).toBe("dial");
+    cropper.setOptions({ disabled: true });
+    refused(handlers);
+    time.frames(200);
+    cropper.setOptions({ disabled: false });
+    expect(cropper.getState().interacting).toBeNull();
+    expect(cropper.begin("pan", undefined, {})).toBeTruthy();
+    cropper.destroy();
   });
 });
 

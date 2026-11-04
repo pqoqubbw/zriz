@@ -1,10 +1,11 @@
 import type { Cropper } from "../cropper";
 import { rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
-import type { KeyHandlers } from "./controls";
 import { holdCursor } from "./cursor";
 import { bindPointers, capture, targetOf } from "./input";
 import type { PointerHandlers } from "./input";
+import { keyed, sliderAria, sliderKey } from "./slider";
+import type { KeyHandlers } from "./slider";
 import { snap } from "./view";
 
 export interface DialOptions {
@@ -101,9 +102,7 @@ export const dialHandlers = (
   let startRotation = 0;
   let engaged = false;
   let width = 1;
-  let stopMotion: (() => void) | null = null;
   let stopSettle: (() => void) | null = null;
-  let keyboard = false;
 
   const gain = (): number => dial.options().gain ?? GAIN;
   const sign = (): number => (dial.options().dir === "rtl" ? -1 : 1);
@@ -128,7 +127,7 @@ export const dialHandlers = (
     let elapsed = 0;
     const target = clamp(rest, limit);
     const toLimit = rest !== target;
-    stopMotion = cropper.run((_, delta) => {
+    cropper.run((_, delta) => {
       elapsed += delta;
       if (toLimit) {
         const motion = spring(
@@ -144,7 +143,6 @@ export const dialHandlers = (
           Math.abs(motion.velocity) < STOP_SPEED
         ) {
           show(target, false);
-          stopMotion = null;
           cropper.end(event, owner);
           return false;
         }
@@ -153,7 +151,6 @@ export const dialHandlers = (
       const motion = decay(velocity, tau, elapsed);
       show(from + motion.value, false);
       if (Math.abs(motion.velocity) < STOP_SPEED) {
-        stopMotion = null;
         cropper.end(event, owner);
         return false;
       }
@@ -202,71 +199,36 @@ export const dialHandlers = (
     settleOvershoot();
   };
 
-  const step = (event: KeyboardEvent): number | null => {
-    const big = event.shiftKey ? 10 : 1;
-    const limit = cropper.getRotationLimit();
-    const current = cropper.getValue().rotation;
-    switch (event.key) {
-      case "ArrowRight":
-      case "ArrowUp": {
-        return current + big * (event.key === "ArrowRight" ? sign() : 1);
-      }
-      case "ArrowLeft":
-      case "ArrowDown": {
-        return current - big * (event.key === "ArrowLeft" ? sign() : 1);
-      }
-      case "PageUp": {
-        return current + 10;
-      }
-      case "PageDown": {
-        return current - 10;
-      }
-      case "Home": {
-        return -limit;
-      }
-      case "End": {
-        return limit;
-      }
-      case "0": {
-        return 0;
-      }
-      default: {
+  const keys = keyed(
+    cropper,
+    (event) => {
+      const limit = cropper.getRotationLimit();
+      const next =
+        event.key === "0"
+          ? 0
+          : sliderKey(
+              event,
+              cropper.getValue().rotation,
+              1,
+              -limit,
+              limit,
+              sign()
+            );
+      if (next === undefined) {
         return null;
       }
-    }
-  };
+      return () => {
+        cropper.setRotation(clamp(next, limit), {
+          event,
+          reason: "keyboard",
+        });
+      };
+    },
+    owner
+  );
 
   return {
-    onBlur(event) {
-      if (keyboard) {
-        keyboard = false;
-        cropper.end(event, owner);
-      }
-    },
-    onKeyDown(event) {
-      const next = step(event);
-      if (next === null) {
-        return;
-      }
-      event.preventDefault();
-      if (!keyboard) {
-        stopMotion?.();
-        if (!cropper.begin("keyboard", event, owner)) {
-          return;
-        }
-        keyboard = true;
-      }
-      cropper.setRotation(clamp(next, cropper.getRotationLimit()), {
-        event,
-        reason: "keyboard",
-      });
-    },
-    onKeyUp(event) {
-      if (keyboard) {
-        keyboard = false;
-        cropper.end(event, owner);
-      }
-    },
+    ...keys,
     onLostPointerCapture(event) {
       finish(event, 0);
     },
@@ -277,8 +239,6 @@ export const dialHandlers = (
       if (pointer !== null || event.button !== 0 || !cropper.getCropState()) {
         return;
       }
-      stopMotion?.();
-      stopMotion = null;
       if (!cropper.begin("dial", event, owner)) {
         return;
       }
@@ -344,26 +304,12 @@ export const dialAria = (
     unitDisplay: "long",
     ...options.format,
   });
-  const aria = (): void => {
+  return sliderAria(cropper, element, "reset", () => {
     const limit = cropper.getRotationLimit();
     const { rotation } = cropper.getValue();
-    element.setAttribute("aria-valuemin", String(-limit));
-    element.setAttribute("aria-valuemax", String(limit));
-    element.setAttribute("aria-valuenow", String(rotation));
-    element.setAttribute("aria-valuetext", formatter.format(rotation));
     element.toggleAttribute("data-snapped", rotation === 0);
-  };
-  aria();
-  const offCommit = cropper.on("commit", aria);
-  const offKeys = cropper.on("change", (_, details) => {
-    if (details.reason === "keyboard" || details.reason === "reset") {
-      aria();
-    }
+    return [-limit, limit, rotation, formatter.format(rotation)];
   });
-  return () => {
-    offCommit();
-    offKeys();
-  };
 };
 
 export const bindDial = (
