@@ -34,6 +34,7 @@ export type DialHandlers = KeyHandlers & PointerHandlers;
 type SharedDial = DialState & {
   set: (overshoot: number, dragging: boolean) => void;
   stopSettle: (() => void) | null;
+  binders: number;
 };
 
 export interface DialState {
@@ -65,6 +66,7 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
   let options: DialOptions = {};
   const listeners = new Set<() => void>();
   const state: SharedDial = {
+    binders: 0,
     dragging: () => dragging,
     onChange(listener: () => void) {
       listeners.add(listener);
@@ -119,7 +121,7 @@ export const dialHandlers = (
   const owner = {};
   let releaseCursor: (() => void) | null = null;
   const dial = dialStateOf(cropper);
-  dial.setOptions(initial);
+  dial.setOptions({ ...dial.options(), ...initial });
   const tracker = velocityTracker();
   let pointer: number | null = null;
   let startX = 0;
@@ -446,12 +448,17 @@ export const bindDial = (
   element.addEventListener("keydown", onKeyDown);
   element.addEventListener("keyup", handlers.onKeyUp);
   element.addEventListener("blur", handlers.onBlur);
-  const dial = dialState(cropper);
+  const dial = dialStateOf(cropper);
+  dial.binders += 1;
   const sync = (): void => {
     element.toggleAttribute("data-dragging", dial.dragging());
   };
   const offChange = dial.onChange(sync);
   return () => {
+    dial.binders -= 1;
+    if (dial.binders === 0) {
+      dial.setOptions({});
+    }
     offPointers();
     element.removeEventListener("keydown", onKeyDown);
     element.removeEventListener("keyup", handlers.onKeyUp);

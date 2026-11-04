@@ -491,3 +491,37 @@ describe("sliders across parent renders", () => {
     ).toBe("1");
   });
 });
+
+describe("Mask and Area rebinding", () => {
+  afterEach(async () => {
+    await cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("drops the gradient when a circle goes back to a rect without css shape()", async () => {
+    vi.spyOn(CSS, "supports").mockReturnValue(false);
+    const screen = await render(<MaskHost shape="circle" />);
+    await frames(3);
+    const mask = screen.container.querySelector<HTMLElement>(
+      '[data-zriz-item="mask"]'
+    );
+    expect(mask?.style.getPropertyValue("mask-image")).not.toBe("");
+    await screen.rerender(<MaskHost shape="rect" />);
+    await frames(3);
+    expect(mask?.style.getPropertyValue("mask-image")).toBe("");
+    expect(mask?.style.clipPath).not.toBe("");
+  });
+
+  it("removes the live variables when they turn off", async () => {
+    const screen = await render(<LiveHost live />);
+    await frames(3);
+    const area = screen.container.querySelector<HTMLElement>(
+      '[data-zriz-item="area"]'
+    );
+    expect(area?.style.getPropertyValue("--zriz-zoom")).toBe("1");
+    await screen.rerender(<LiveHost live={false} />);
+    await frames(2);
+    expect(area?.style.getPropertyValue("--zriz-zoom")).toBe("");
+    expect(area?.style.width).not.toBe("");
+  });
+});

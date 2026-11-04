@@ -1094,3 +1094,180 @@ describe("writes during a held gesture", () => {
 
 const keyDown = (name: string): KeyboardEvent =>
   new KeyboardEvent("keydown", { bubbles: true, code: name, key: name });
+
+describe("binding twice", () => {
+  it("a mask with no shape keeps the shape set before it", () => {
+    const cropper = createCropper();
+    setCropShape(cropper, "circle");
+    const off = bindMask(cropper, document.createElement("div"));
+    expect(cropShapeOf(cropper)).toBe("circle");
+    off();
+    cropper.destroy();
+  });
+
+  it("a second mask with no shape draws the first one's circle", async () => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    document.body.append(viewport);
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    viewport.append(first, second);
+    const off = [
+      bindViewport(cropper, viewport),
+      bindMask(cropper, first, "circle"),
+      bindMask(cropper, second),
+    ];
+    await frames();
+    expect(cropShapeOf(cropper)).toBe("circle");
+    expect(second.style.clipPath).toBe(first.style.clipPath);
+    for (const stop of off) {
+      stop();
+    }
+    cropper.destroy();
+    viewport.remove();
+  });
+
+  it("an unbound mask leaves no clip, gradient or area radius behind", async () => {
+    const viewport = document.createElement("div");
+    viewport.style.cssText = "position:relative;width:400px;height:300px;";
+    document.body.append(viewport);
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const mask = document.createElement("div");
+    const area = document.createElement("div");
+    mask.style.setProperty("mask-image", "none");
+    viewport.append(mask, area);
+    const stopView = bindViewport(cropper, viewport);
+    const stopMask = bindMask(cropper, mask, "rect");
+    const stopArea = bindArea(cropper, area, { shape: "circle" });
+    await frames();
+    expect(mask.style.clipPath).not.toBe("");
+    expect(area.style.borderRadius).toBe("50%");
+    stopMask();
+    stopArea();
+    expect(mask.style.clipPath).toBe("");
+    expect(mask.style.getPropertyValue("mask-image")).toBe("none");
+    expect(area.style.borderRadius).toBe("");
+    stopView();
+    cropper.destroy();
+    viewport.remove();
+  });
+
+  it("a second dial with no options keeps the first one's direction", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    document.body.append(first, second);
+    const stopFirst = bindDial(cropper, first, { dir: "rtl" });
+    const stopSecond = bindDial(cropper, second);
+    expect(dialState(cropper).options().dir).toBe("rtl");
+    stopSecond();
+    expect(dialState(cropper).options().dir).toBe("rtl");
+    stopFirst();
+    expect(dialState(cropper).options().dir).toBeUndefined();
+    const stopAgain = bindDial(cropper, first);
+    first.dispatchEvent(keyDown("ArrowRight"));
+    expect(cropper.getValue().rotation).toBeGreaterThan(0);
+    stopAgain();
+    first.remove();
+    second.remove();
+    cropper.destroy();
+  });
+});
+
+describe("slider attributes", () => {
+  it("the dial never says minus zero and keeps numbers short", () => {
+    const cropper = createCropper({
+      image: { height: 100, width: 4000 },
+      minSize: { height: 90, width: 90 },
+    });
+    const element = document.createElement("div");
+    document.body.append(element);
+    const off = bindDial(cropper, element, { locale: "en" });
+    cropper.setRotation(-0.04);
+    cropper.stop();
+    expect(element.getAttribute("aria-valuetext")).toBe("0 degrees");
+    expect(element.getAttribute("aria-valuenow")).toBe("0");
+    expect(element.getAttribute("aria-valuemax")?.length).toBeLessThan(5);
+    off();
+    element.remove();
+    cropper.destroy();
+  });
+
+  it("zoom past the slider's end clamps the value and keeps the text", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const element = document.createElement("div");
+    const off = zoomAria(cropper, element, { locale: "en", max: 5 });
+    cropper.setZoom(10);
+    cropper.stop();
+    expect(element.getAttribute("aria-valuenow")).toBe("5");
+    expect(element.getAttribute("aria-valuetext")).toBe("1,000%");
+    off();
+    cropper.destroy();
+  });
+
+  it("keys past the slider's end do not zoom out to it", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const handlers = zoomHandlers(cropper, { max: 5 });
+    cropper.setZoom(10);
+    const press = (name: string): void => {
+      handlers.onKeyDown(keyDown(name));
+      handlers.onKeyUp(new KeyboardEvent("keyup", { code: name, key: name }));
+    };
+    press("ArrowUp");
+    expect(cropper.getZoom()).toBeCloseTo(10, 6);
+    press("ArrowDown");
+    expect(cropper.getZoom()).toBeCloseTo(5 ** 0.95 * 2, 6);
+    cropper.setZoom(10);
+    press("End");
+    expect(cropper.getZoom()).toBeCloseTo(5, 6);
+    cropper.setZoom(10);
+    press("Home");
+    expect(cropper.getZoom()).toBeCloseTo(1, 6);
+    cropper.destroy();
+  });
+
+  it("writes bounds once through a zoom drag", async () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const element = document.createElement("div");
+    const off = zoomAria(cropper, element, { locale: "en" });
+    const write = vi.spyOn(element, "setAttribute");
+    cropper.begin("zoom-control");
+    for (const zoom of [2, 3, 4]) {
+      cropper.setZoom(zoom, { reason: "zoom-control" });
+      await frames(1);
+    }
+    expect(write).toHaveBeenCalledWith("aria-valuenow", "3");
+    const bounds = write.mock.calls.filter(([name]) =>
+      ["aria-valuemin", "aria-valuemax"].includes(name)
+    );
+    expect(bounds).toStrictEqual([]);
+    cropper.end();
+    off();
+    cropper.destroy();
+  });
+
+  it("follows disabled on a dial, a zoom and an area from a binder", () => {
+    const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+    const dial = document.createElement("div");
+    const zoom = document.createElement("div");
+    const area = document.createElement("div");
+    const off = [
+      bindDial(cropper, dial),
+      zoomAria(cropper, zoom),
+      bindArea(cropper, area),
+    ];
+    cropper.setOptions({ disabled: true });
+    for (const element of [dial, zoom, area]) {
+      expect(element.getAttribute("aria-disabled")).toBe("true");
+    }
+    cropper.setOptions({ disabled: false });
+    for (const element of [dial, zoom, area]) {
+      expect(element.hasAttribute("aria-disabled")).toBeFalsy();
+    }
+    for (const stop of off) {
+      stop();
+    }
+    cropper.destroy();
+  });
+});

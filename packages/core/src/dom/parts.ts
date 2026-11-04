@@ -24,7 +24,8 @@ import {
   windowOf,
 } from "./input";
 import type { PointerHandlers } from "./input";
-import { setCropShape } from "./shape";
+import { cropShapeOf, setCropShape } from "./shape";
+import { followDisabled } from "./slider";
 import { LAYER_BOX, cssMatrix, viewOf } from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
@@ -143,14 +144,26 @@ export const bindImage = (
 export const bindMask = (
   cropper: Cropper,
   element: HTMLElement,
-  shape: MaskShape = "rect"
+  shape?: MaskShape
 ): (() => void) => {
-  setCropShape(cropper, shape);
+  if (shape) {
+    setCropShape(cropper, shape);
+  }
   const { style } = element;
   style.position = "absolute";
   style.inset = "0";
   style.pointerEvents = "none";
   let last = "";
+  let gradient = false;
+  const clear = (): void => {
+    last = "";
+    if (gradient) {
+      style.removeProperty("mask-image");
+      style.removeProperty("-webkit-mask-image");
+    } else {
+      style.clipPath = "";
+    }
+  };
   const view = viewOf(cropper);
   const sync = (): void => {
     element.toggleAttribute("data-interacting", view.chrome().active);
@@ -158,31 +171,32 @@ export const bindMask = (
   sync();
   const offChrome = view.onChrome(sync);
   const stop = follow(cropper, (frame) => {
-    if (shape === "circle" && !supportsShape()) {
-      const next = maskGradient(frame.rect, frame.layout.dpr);
-      if (next !== last) {
-        last = next;
-        style.setProperty("mask-image", next);
-        style.setProperty("-webkit-mask-image", next);
-      }
+    const current = shape ?? cropShapeOf(cropper);
+    const round = current === "circle" && !supportsShape();
+    const next = round
+      ? maskGradient(frame.rect, frame.layout.dpr)
+      : maskClip(frame.rect, current);
+    if (next === last) {
       return;
     }
-    const next = maskClip(frame.rect, shape);
-    if (next !== last) {
-      last = next;
+    if (round !== gradient) {
+      clear();
+      gradient = round;
+    }
+    last = next;
+    if (round) {
+      style.setProperty("mask-image", next);
+      style.setProperty("-webkit-mask-image", next);
+    } else {
       style.clipPath = next;
     }
   });
-  const offEmpty = view.onEmpty(() => {
-    last = "";
-    style.clipPath = "";
-    style.removeProperty("mask-image");
-    style.removeProperty("-webkit-mask-image");
-  });
+  const offEmpty = view.onEmpty(clear);
   return () => {
     stop();
     offChrome();
     offEmpty();
+    clear();
   };
 };
 
@@ -251,9 +265,17 @@ export const bindArea = (
     style.width = "";
     style.height = "";
   });
+  const offDisabled = followDisabled(cropper, element);
   return () => {
     stop();
     offEmpty();
+    offDisabled();
+    for (const name of live.keys()) {
+      style.removeProperty(name);
+    }
+    if (options.shape === "circle") {
+      style.borderRadius = "";
+    }
   };
 };
 
