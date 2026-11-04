@@ -1001,6 +1001,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       return () => {
         if (tasks.get(task) === entry) {
           tasks.delete(task);
+          settlePending ||= tasks.size === 0;
           schedule();
         }
       };

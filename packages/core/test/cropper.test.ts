@@ -2787,3 +2787,26 @@ describe("controlled writes around a gesture", () => {
     expect(commits).toStrictEqual([{ reason: "dial", rotation: 11 }]);
   });
 });
+
+describe("settle after a canceled task", () => {
+  it.each<[string, (cropper: Cropper) => void]>([
+    ["nothing", () => null],
+    ["a rotation", (cropper) => cropper.setRotation(5)],
+    ["a zoom", (cropper) => cropper.setZoom(2)],
+  ])("fires once when %s is written after the cancel", (_name, write) => {
+    const { clock, frames } = fakeClock();
+    const cropper = createCropper({ clock, image: PHOTO });
+    const settle = vi.fn<CropperEvents["settle"]>();
+
+    cropper.on("settle", settle);
+    const stop = cropper.run(() => true);
+
+    frames(2);
+    stop();
+    write(cropper);
+    frames(5);
+
+    expect(cropper.getState().settling).toBe(false);
+    expect(settle).toHaveBeenCalledOnce();
+  });
+});
