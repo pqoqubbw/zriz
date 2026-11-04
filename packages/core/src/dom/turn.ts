@@ -1,8 +1,8 @@
 import { ZrizError } from "./error";
 
-const TIMEOUT = 15_000;
-const MAX_DELAY = 2_147_483_647;
-const SUSPENDED = 1000;
+const TIMEOUT_MS = 15_000;
+const MAX_DELAY_MS = 2_147_483_647;
+const SUSPENDED_MS = 1000;
 
 const noop = (): void => undefined;
 
@@ -26,7 +26,7 @@ const deadline = (
       due = performance.now() + delay;
 
       timer = setTimeout(() => {
-        if (performance.now() - due > SUSPENDED) {
+        if (performance.now() - due > SUSPENDED_MS) {
           arm(delay);
         } else {
           reject(new ZrizError("timeout", `zriz: timed out after ${ms} ms`));
@@ -34,7 +34,7 @@ const deadline = (
       }, delay);
     };
 
-    arm(Math.min(ms, MAX_DELAY));
+    arm(Math.min(ms, MAX_DELAY_MS));
 
     const abort = (): void => {
       reject(aborted());
@@ -78,4 +78,4 @@ const withTimeout = async <T>(
   }
 };
 
-export { MAX_DELAY, TIMEOUT, aborted, deadline, noop, withTimeout };
+export { MAX_DELAY_MS, TIMEOUT_MS, aborted, deadline, noop, withTimeout };

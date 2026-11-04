@@ -1,6 +1,6 @@
 import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
-import { MAX_DELAY, aborted, noop, withTimeout } from "./turn";
+import { MAX_DELAY_MS, aborted, noop, withTimeout } from "./turn";
 
 type Waiting = {
   resolve: (value: never) => void;
@@ -166,7 +166,7 @@ const gate = (size: number): Turn => {
     }
 
     try {
-      await withTimeout(turn, MAX_DELAY, signal);
+      await withTimeout(turn, MAX_DELAY_MS, signal);
 
       if (signal?.aborted === true) {
         throw aborted();

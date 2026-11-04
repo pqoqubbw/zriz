@@ -2,7 +2,7 @@ import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { fitEdge, textOf } from "./media";
-import { TIMEOUT, aborted, deadline, noop } from "./turn";
+import { TIMEOUT_MS, aborted, deadline, noop } from "./turn";
 import { decodeOff, decodeTurn, keepOff, releaseOff } from "./worker";
 
 type ImageSource =
@@ -265,7 +265,7 @@ const loadImage = async (
     ? AbortSignal.any([options.signal, cancel.signal])
     : cancel.signal;
   const held: ImageBitmap[] = [];
-  const ms = options.timeout ?? TIMEOUT;
+  const ms = options.timeout ?? TIMEOUT_MS;
   const limit = deadline(ms, options.signal);
   let inHook = false;
 

@@ -10,9 +10,9 @@ import {
   loadImage,
   viewOf,
 } from "../../src/dom";
-import { TIMEOUT } from "../../src/dom/turn";
+import { TIMEOUT_MS } from "../../src/dom/turn";
 
-const LAYOUT_IDLE = 120;
+const LAYOUT_IDLE_MS = 120;
 
 const cleanups: (() => void)[] = [];
 
@@ -771,7 +771,7 @@ describe("photo layer", () => {
       await nextFrame();
       await nextFrame();
       expect(jobs.total()).toBe(1);
-      vi.advanceTimersByTime(TIMEOUT);
+      vi.advanceTimersByTime(TIMEOUT_MS);
       await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
       await sharp(photo);
     }
@@ -800,7 +800,7 @@ describe("photo layer", () => {
       await loadImage(await stripes(), { previewEdge: 1024 })
     );
 
-    vi.advanceTimersByTime(TIMEOUT);
+    vi.advanceTimersByTime(TIMEOUT_MS);
     await sharp(photo);
   });
 
@@ -821,7 +821,7 @@ describe("photo layer", () => {
 
     cropper.setZoom(3);
     await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
-    vi.advanceTimersByTime(TIMEOUT);
+    vi.advanceTimersByTime(TIMEOUT_MS);
     cropper.setZoom(4);
     await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
     await sharp(photo);
@@ -1077,7 +1077,7 @@ describe("photo layer", () => {
     const arm = vi
       .spyOn(globalThis, "setTimeout")
       .mockImplementation((run, ms) => {
-        if (ms !== LAYOUT_IDLE) {
+        if (ms !== LAYOUT_IDLE_MS) {
           return realTimeout(run, ms);
         }
 

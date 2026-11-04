@@ -5,7 +5,7 @@ import { imageOf, onImage } from "./image-store";
 import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
-import { TIMEOUT, withTimeout } from "./turn";
+import { TIMEOUT_MS, withTimeout } from "./turn";
 import { LAYER_BOX, cssMatrix, viewOf } from "./view";
 import type { ViewFrame } from "./view";
 import { motionOff } from "./worker";
@@ -24,7 +24,7 @@ type MotionFile = {
 
 const files = new WeakMap<LoadedImage, MotionFile>();
 const MATRIX_TOLERANCE = 1e-6;
-const LAYOUT_IDLE = 120;
+const LAYOUT_IDLE_MS = 120;
 
 const sameMatrix = (a: Matrix3, b: Matrix3): boolean =>
   a.every((value, i) => Math.abs(value - (b[i] ?? 0)) < MATRIX_TOLERANCE);
@@ -256,7 +256,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
 
     running = true;
 
-    withTimeout(sharpen(frame, ticket), TIMEOUT, undefined)
+    withTimeout(sharpen(frame, ticket), TIMEOUT_MS, undefined)
       .finally(() => {
         running = false;
 
@@ -335,7 +335,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     }
 
     if (isIdle()) {
-      schedule(frame, resized ? LAYOUT_IDLE : 0);
+      schedule(frame, resized ? LAYOUT_IDLE_MS : 0);
     }
   };
 

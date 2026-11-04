@@ -3,7 +3,7 @@ import { ZrizError } from "./error";
 import type { ExportOptions, ExportResult, LoadedImage } from "./image";
 import { imageOf } from "./image-store";
 import { cropShapeOf } from "./shape";
-import { TIMEOUT, aborted, withTimeout } from "./turn";
+import { TIMEOUT_MS, aborted, withTimeout } from "./turn";
 
 const exportImage = async (
   cropper: Cropper,
@@ -19,7 +19,7 @@ const exportImage = async (
     import("./render").catch((error: unknown) => {
       throw new ZrizError("decode", `zriz: ${String(error)}`);
     }),
-    TIMEOUT * 2,
+    TIMEOUT_MS * 2,
     options.signal
   );
 

@@ -3,7 +3,7 @@ import { canvasFor, context2d, drawn, free } from "./media";
 
 const PROBE = 16;
 const FRAME_TRIES = 180;
-const FRAME_POLL = 16;
+const FRAME_POLL_MS = 16;
 const UNSIZED_WIDTH = 300;
 const UNSIZED_HEIGHT = 150;
 
@@ -45,7 +45,7 @@ const showsFrame = async (
   }
 
   await new Promise((resolve) => {
-    setTimeout(resolve, FRAME_POLL);
+    setTimeout(resolve, FRAME_POLL_MS);
   });
 
   return await showsFrame(video, tries - 1);

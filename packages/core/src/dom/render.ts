@@ -6,7 +6,7 @@ import type { ExportOptions, ExportResult, LoadedImage } from "./image";
 import { loadElement } from "./media";
 import { renderKernel } from "./render-kernel";
 import type { RenderJob, RenderKernel, RenderReply } from "./render-kernel";
-import { TIMEOUT, aborted, withTimeout } from "./turn";
+import { TIMEOUT_MS, aborted, withTimeout } from "./turn";
 import { gate, lane, via } from "./worker";
 import type { Lane } from "./worker";
 
@@ -118,8 +118,8 @@ const exportImage = async (
   try {
     const { blob, index } = await withTimeout(
       exportTurn(
-        async () => await withTimeout(work(), TIMEOUT * 2, undefined),
-        TIMEOUT * 2,
+        async () => await withTimeout(work(), TIMEOUT_MS * 2, undefined),
+        TIMEOUT_MS * 2,
         options.signal
       ),
       Number.POSITIVE_INFINITY,

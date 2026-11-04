@@ -16,8 +16,8 @@ type VelocityTracker = {
 };
 
 const FALLBACK_FRAME_MS = 1000 / 60;
-const MIN_FIT_SPAN = 10;
-const BACKUP_FRAME = 250;
+const MIN_FIT_SPAN_MS = 10;
+const BACKUP_FRAME_MS = 250;
 
 const frameClock = (): Clock => {
   const hasFrames = typeof globalThis.requestAnimationFrame === "function";
@@ -42,7 +42,7 @@ const frameClock = (): Clock => {
         () => {
           run(performance.now());
         },
-        hasFrames ? BACKUP_FRAME : FALLBACK_FRAME_MS
+        hasFrames ? BACKUP_FRAME_MS : FALLBACK_FRAME_MS
       );
       const frame = hasFrames ? globalThis.requestAnimationFrame(run) : 0;
 
@@ -141,7 +141,7 @@ const velocityTracker = (
       if (
         first === undefined ||
         last === undefined ||
-        last - first < MIN_FIT_SPAN ||
+        last - first < MIN_FIT_SPAN_MS ||
         time - last > stale
       ) {
         return 0;
