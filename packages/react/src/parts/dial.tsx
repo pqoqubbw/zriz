@@ -4,8 +4,8 @@ import { dialAria, dialHandlers, dialState } from "@zriz/core/dom";
 import { warnFormat, warnUnlabelled } from "@zriz/react/warn";
 import {
   forwardRef,
-  useContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,

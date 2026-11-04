@@ -2,7 +2,7 @@
 
 import { zoomAria, zoomHandlers } from "@zriz/core/dom";
 import { warnFormat, warnUnlabelled } from "@zriz/react/warn";
-import { forwardRef, useContext, useCallback, useMemo, useState } from "react";
+import { forwardRef, useCallback, useContext, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
 import {

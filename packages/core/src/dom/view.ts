@@ -123,6 +123,7 @@ const FLIP_OMEGA = 17.6 * TEMPO;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
 const SETTLED_PROGRESS = 0.9995;
+
 const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
   aspect: "morph",
   flip: "flip",
@@ -730,6 +731,7 @@ const viewOf = (cropper: Cropper): View => {
 
     clearTimers();
     endTransition();
+
     const grids: Partial<Record<string, Grid>> = {
       dial: "fine",
       keyboard: chrome.grid,

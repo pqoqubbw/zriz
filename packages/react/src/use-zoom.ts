@@ -20,18 +20,19 @@ type UseZoom = {
   onValueCommitted: () => void;
 };
 
+type UseZoomOptions = {
+  max?: number | undefined;
+  cropper?: Cropper | undefined;
+};
+
 const IDLE_MS = 150;
-
 const PRESSES = ["pointerdown", "keydown"] as const;
-
 const RELEASES = ["pointerup", "pointercancel", "keyup"] as const;
 
 const heldBy = (event: PointerEvent | KeyboardEvent): number | string =>
   "key" in event ? event.key : event.pointerId;
 
-const useZoom = (
-  options: { max?: number | undefined; cropper?: Cropper | undefined } = {}
-): UseZoom => {
+const useZoom = (options: UseZoomOptions = {}): UseZoom => {
   const cropper = useTarget(options.cropper);
   const subscribe = useCallback(
     (listener: () => void) => cropper.on("frame", listener),
