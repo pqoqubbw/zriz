@@ -4,7 +4,7 @@ import { exportCrop } from "@zriz/core/dom";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = { onSave: (png: Blob) => void };
 type Status = "empty" | "ready" | "failed";
@@ -18,18 +18,29 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const [status, setStatus] = useState<Status>("empty");
   const [saveFailed, setSaveFailed] = useState(false);
   const [picks, setPicks] = useState(0);
+  const [saving, setSaving] = useState(false);
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+
+  useEffect(() => () => running.current?.abort(), [picks]);
 
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
+        signal: controller.signal,
       });
       setSaveFailed(false);
       onSave(blob);
     } catch {
-      setSaveFailed(true);
+      setSaveFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -38,6 +49,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <input
         type="file"
         accept="image/*"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
           setStatus("empty");
           setSaveFailed(false);
@@ -68,6 +82,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <button
         type="button"
         disabled={status !== "ready"}
+        aria-disabled={saving}
         onClick={save}
       >
         save

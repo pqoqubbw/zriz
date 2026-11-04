@@ -9,7 +9,7 @@ const AVATAR_PAGE = defineDoc({
         "`src` takes the `File` from the input as it is. picking a new file turns save off until that photo loads."
       ),
       p(
-        "each pick bumps a counter that `Root` takes as its `key`, so every photo starts from the full frame. [loading images](loading-images) explains why."
+        "each pick bumps a counter that `Root` takes as its `key`, so every photo starts from the full frame. [loading images](loading-images) explains why. safari fires no `change` for the same file twice, so `onClick` clears the input first."
       ),
       excerpt("avatar/avatar-picker.tsx", ["<input", "/>"])
     ),
@@ -42,9 +42,14 @@ const AVATAR_PAGE = defineDoc({
       p(
         "an export can still fail on a very large photo, so `save` shows its own alert when it does."
       ),
+      p(
+        "`running` holds the export in flight. a second click does nothing, and the button keeps focus because `saving` sets `aria-disabled` and leaves it enabled. a new pick aborts the export, so an old crop never lands on the next photo. if an export finishes between two clicks, `onSave` runs twice, so keep it safe to repeat."
+      ),
       excerpt(
         "avatar/avatar-picker.tsx",
         ["const unsaved", null],
+        ["const running", null],
+        ["useEffect(", null],
         ["const save", "};"],
         ["{saveFailed", null],
         ["<button", "</button>"]

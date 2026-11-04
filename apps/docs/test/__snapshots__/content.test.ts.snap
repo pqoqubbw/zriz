@@ -2004,21 +2004,31 @@ export const IconButton = forwardRef<
 import { exportCrop } from "@zriz/core/dom";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const SaveCrop = ({ file }: { file: File }) => {
   const cropper = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
   const [loaded, setLoaded] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => () => running.current?.abort(), [file]);
 
   const save = async () => {
-    if (!cropper.current) return;
+    if (!cropper.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     const result = await exportCrop(cropper.current, {
       type: "image/webp",
       maxSize: { width: 2048, height: 2048 },
+      signal: controller.signal,
     }).catch((error: unknown) => {
-      console.error(error);
+      if (!controller.signal.aborted) console.error(error);
       return null;
     });
+    running.current = null;
+    setSaving(false);
     if (!result) return;
     const { blob, type } = result;
     const link = document.createElement("a");
@@ -2045,6 +2055,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
       <button
         type="button"
         disabled={loaded !== file}
+        aria-disabled={saving}
         onClick={save}
       >
         save
@@ -2057,21 +2068,31 @@ export const SaveCrop = ({ file }: { file: File }) => {
 <span class=k>import </span><span class=p>{</span> exportCrop <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core/dom"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> Cropper <span class=k>as</span> CropperApi <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
-<span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 
 <span class=k>export const </span><span class=t>SaveCrop </span><span class=p>= ({</span> file <span class=p>}: {</span> file<span class=p>:</span> File <span class=p>}) =&gt; {</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const</span> running <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>loaded<span class=p>,</span> setLoaded<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>File <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const </span><span class=p>[</span>saving<span class=p>,</span> setSaving<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> running<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), [</span>file<span class=p>]);</span>
 
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-    <span class=k>if </span><span class=p>(!</span>cropper<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>if </span><span class=p>(!</span>cropper<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+    running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
     <span class=k>const</span> result <span class=p>= </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>cropper<span class=p>.</span>current<span class=p>, {</span>
       type<span class=p>: </span><span class=s>"image/webp"</span><span class=p>,</span>
       maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>2048</span><span class=p>,</span> height<span class=p>: </span><span class=n>2048 </span><span class=p>},</span>
+      signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
     <span class=p>}).</span><span class=t>catch</span><span class=p>((</span>error<span class=p>:</span> unknown<span class=p>) =&gt; {</span>
-      console<span class=p>.</span><span class=t>error</span><span class=p>(</span>error<span class=p>);</span>
+      <span class=k>if </span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>)</span> console<span class=p>.</span><span class=t>error</span><span class=p>(</span>error<span class=p>);</span>
       <span class=k>return null</span><span class=p>;</span>
     <span class=p>});</span>
+    running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=k>if </span><span class=p>(!</span>result<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=k>const </span><span class=p>{</span> blob<span class=p>,</span> type <span class=p>} =</span> result<span class=p>;</span>
     <span class=k>const</span> link <span class=p>=</span> document<span class=p>.</span><span class=t>createElement</span><span class=p>(</span><span class=s>"a"</span><span class=p>);</span>
@@ -2098,6 +2119,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
       <span class=p>&lt;</span><span class=t>button</span>
         <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
         <span class=a>disabled</span><span class=p>={</span>loaded <span class=p>!==</span> file<span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>saving<span class=p>}</span>
         <span class=a>onClick</span><span class=p>={</span>save<span class=p>}</span>
       <span class=p>&gt;</span>
         save
@@ -2824,6 +2846,9 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
     "<input
   type="file"
   accept="image/*"
+  onClick={(event) => {
+    event.currentTarget.value = "";
+  }}
   onChange={(event) => {
     setStatus("empty");
     setSaveFailed(false);
@@ -2834,6 +2859,9 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
     "<span class=p>&lt;</span><span class=t>input</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
   <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
+  <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+    event<span class=p>.</span>currentTarget<span class=p>.</span>value <span class=p>= </span><span class=s>""</span><span class=p>;</span>
+  <span class=p>}}</span>
   <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
     <span class=t>setStatus</span><span class=p>(</span><span class=s>"empty"</span><span class=p>);</span>
     <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
@@ -2899,16 +2927,27 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
     "avatar/avatar-picker.tsx",
     "const unsaved = "this crop did not save. try again.";
 
+const running = useRef<AbortController | null>(null);
+
+useEffect(() => () => running.current?.abort(), [picks]);
+
 const save = async () => {
-  if (!actions.current) return;
+  if (!actions.current || running.current) return;
+  const controller = new AbortController();
+  running.current = controller;
+  setSaving(true);
   try {
     const { blob } = await exportCrop(actions.current, {
       maxSize: { width: 512, height: 512 },
+      signal: controller.signal,
     });
     setSaveFailed(false);
     onSave(blob);
   } catch {
-    setSaveFailed(true);
+    setSaveFailed(!controller.signal.aborted);
+  } finally {
+    running.current = null;
+    setSaving(false);
   }
 };
 
@@ -2917,22 +2956,34 @@ const save = async () => {
 <button
   type="button"
   disabled={status !== "ready"}
+  aria-disabled={saving}
   onClick={save}
 >
   save
 </button>",
     "<span class=k>const</span> unsaved <span class=p>= </span><span class=s>"this crop did not save. try again."</span><span class=p>;</span>
 
+<span class=k>const</span> running <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
+<span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> running<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), [</span>picks<span class=p>]);</span>
+
 <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-  <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+  running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+  <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
       maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>},</span>
+      signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
     <span class=p>});</span>
     <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+    <span class=t>setSaveFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
+  <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+    running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=p>}</span>
 <span class=p>};</span>
 
@@ -2941,6 +2992,7 @@ const save = async () => {
 <span class=p>&lt;</span><span class=t>button</span>
   <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
   <span class=a>disabled</span><span class=p>={</span>status <span class=p>!== </span><span class=s>"ready"</span><span class=p>}</span>
+  <span class=a>aria-disabled</span><span class=p>={</span>saving<span class=p>}</span>
   <span class=a>onClick</span><span class=p>={</span>save<span class=p>}</span>
 <span class=p>&gt;</span>
   save
@@ -2955,7 +3007,7 @@ import { exportCrop } from "@zriz/core/dom";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = { onSave: (png: Blob) => void };
 type Status = "empty" | "ready" | "failed";
@@ -2969,18 +3021,29 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const [status, setStatus] = useState<Status>("empty");
   const [saveFailed, setSaveFailed] = useState(false);
   const [picks, setPicks] = useState(0);
+  const [saving, setSaving] = useState(false);
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+
+  useEffect(() => () => running.current?.abort(), [picks]);
 
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
+        signal: controller.signal,
       });
       setSaveFailed(false);
       onSave(blob);
     } catch {
-      setSaveFailed(true);
+      setSaveFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -2989,6 +3052,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <input
         type="file"
         accept="image/*"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
           setStatus("empty");
           setSaveFailed(false);
@@ -3019,6 +3085,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <button
         type="button"
         disabled={status !== "ready"}
+        aria-disabled={saving}
         onClick={save}
       >
         save
@@ -3032,7 +3099,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
 <span class=k>import type </span><span class=p>{</span> Cropper <span class=k>as</span> CropperApi <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
 <span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>
-<span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 
 <span class=k>type</span> Props <span class=p>= {</span> onSave<span class=p>: (</span>png<span class=p>:</span> Blob<span class=p>) =&gt;</span> void <span class=p>};</span>
 <span class=k>type</span> Status <span class=p>= </span><span class=s>"</span>empty<span class=s>" </span><span class=p>| </span><span class=s>"</span>ready<span class=s>" </span><span class=p>| </span><span class=s>"</span>failed<span class=s>"</span><span class=p>;</span>
@@ -3046,18 +3113,29 @@ export const AvatarPicker = ({ onSave }: Props) => {
   <span class=k>const </span><span class=p>[</span>status<span class=p>,</span> setStatus<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>Status<span class=p>&gt;(</span><span class=s>"empty"</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>saveFailed<span class=p>,</span> setSaveFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>picks<span class=p>,</span> setPicks<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>0</span><span class=p>);</span>
+  <span class=k>const </span><span class=p>[</span>saving<span class=p>,</span> setSaving<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const</span> actions <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const</span> running <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> running<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), [</span>picks<span class=p>]);</span>
 
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-    <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+    running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
         maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>},</span>
+        signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
       <span class=p>});</span>
       <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
       <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-      <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+      <span class=t>setSaveFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
+    <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+      running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
+      <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=p>}</span>
   <span class=p>};</span>
 
@@ -3066,6 +3144,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <span class=p>&lt;</span><span class=t>input</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
+        <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
+          event<span class=p>.</span>currentTarget<span class=p>.</span>value <span class=p>= </span><span class=s>""</span><span class=p>;</span>
+        <span class=p>}}</span>
         <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
           <span class=t>setStatus</span><span class=p>(</span><span class=s>"empty"</span><span class=p>);</span>
           <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
@@ -3096,6 +3177,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <span class=p>&lt;</span><span class=t>button</span>
         <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
         <span class=a>disabled</span><span class=p>={</span>status <span class=p>!== </span><span class=s>"ready"</span><span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>saving<span class=p>}</span>
         <span class=a>onClick</span><span class=p>={</span>save<span class=p>}</span>
       <span class=p>&gt;</span>
         save
@@ -3333,7 +3415,11 @@ const instructions = [
   [
     "full-editor",
     "full-editor/editor.tsx",
-    "const [ready, setReady] = useState(false);
+    "const running = useRef<AbortController | null>(null);
+
+const [saving, setSaving] = useState(false);
+
+const [ready, setReady] = useState(false);
 const [failed, setFailed] = useState(false);
 const [exportFailed, setExportFailed] = useState(false);
 const [shown, setShown] = useState(src);
@@ -3344,14 +3430,24 @@ if (shown !== src) {
   setExportFailed(false);
 }
 
+useEffect(() => () => running.current?.abort(), [src]);
+
 const save = async () => {
-  if (!actions.current) return;
+  if (!actions.current || running.current) return;
+  const controller = new AbortController();
+  running.current = controller;
+  setSaving(true);
   setExportFailed(false);
   try {
-    const { blob } = await exportCrop(actions.current);
+    const { blob } = await exportCrop(actions.current, {
+      signal: controller.signal,
+    });
     onSave(blob);
   } catch {
-    setExportFailed(true);
+    setExportFailed(!controller.signal.aborted);
+  } finally {
+    running.current = null;
+    setSaving(false);
   }
 };
 
@@ -3363,7 +3459,12 @@ const save = async () => {
   onError={() => setFailed(true)}
 >
 
-<button type="button" disabled={!ready} onClick={save}>
+<button
+  type="button"
+  disabled={!ready}
+  aria-disabled={saving}
+  onClick={save}
+>
   export
 </button>
 
@@ -3372,7 +3473,11 @@ const save = async () => {
 {exportFailed && (
   <p role="alert">this crop did not save. try again.</p>
 )}",
-    "<span class=k>const </span><span class=p>[</span>ready<span class=p>,</span> setReady<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+    "<span class=k>const</span> running <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
+<span class=k>const </span><span class=p>[</span>saving<span class=p>,</span> setSaving<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
+<span class=k>const </span><span class=p>[</span>ready<span class=p>,</span> setReady<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=k>const </span><span class=p>[</span>failed<span class=p>,</span> setFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=k>const </span><span class=p>[</span>exportFailed<span class=p>,</span> setExportFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=k>const </span><span class=p>[</span>shown<span class=p>,</span> setShown<span class=p>] = </span><span class=t>useState</span><span class=p>(</span>src<span class=p>);</span>
@@ -3383,14 +3488,24 @@ const save = async () => {
   <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=p>}</span>
 
+<span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> running<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), [</span>src<span class=p>]);</span>
+
 <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-  <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+  running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+  <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
   <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>try </span><span class=p>{</span>
-    <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>);</span>
+    <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
+      signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
+    <span class=p>});</span>
     <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=t>setExportFailed</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+    <span class=t>setExportFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
+  <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+    running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=p>}</span>
 <span class=p>};</span>
 
@@ -3402,7 +3517,12 @@ const save = async () => {
   <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setFailed</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
 <span class=p>&gt;</span>
 
-<span class=p>&lt;</span><span class=t>button </span><span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>" </span><span class=a>disabled</span><span class=p>={!</span>ready<span class=p>} </span><span class=a>onClick</span><span class=p>={</span>save<span class=p>}&gt;</span>
+<span class=p>&lt;</span><span class=t>button</span>
+  <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
+  <span class=a>disabled</span><span class=p>={!</span>ready<span class=p>}</span>
+  <span class=a>aria-disabled</span><span class=p>={</span>saving<span class=p>}</span>
+  <span class=a>onClick</span><span class=p>={</span>save<span class=p>}</span>
+<span class=p>&gt;</span>
   export
 <span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
 
@@ -3426,7 +3546,7 @@ import type {
 } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const handles = [
   "top-left",
@@ -3486,6 +3606,8 @@ type Props = { src: string; onSave: (jpeg: Blob) => void };
 
 export const Editor = ({ src, onSave }: Props) => {
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+  const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
@@ -3497,14 +3619,24 @@ export const Editor = ({ src, onSave }: Props) => {
     setExportFailed(false);
   }
 
+  useEffect(() => () => running.current?.abort(), [src]);
+
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     setExportFailed(false);
     try {
-      const { blob } = await exportCrop(actions.current);
+      const { blob } = await exportCrop(actions.current, {
+        signal: controller.signal,
+      });
       onSave(blob);
     } catch {
-      setExportFailed(true);
+      setExportFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -3563,7 +3695,12 @@ export const Editor = ({ src, onSave }: Props) => {
         {instructions}
       </Cropper.Instructions>
       <Cropper.Announcer announce={announce} />
-      <button type="button" disabled={!ready} onClick={save}>
+      <button
+        type="button"
+        disabled={!ready}
+        aria-disabled={saving}
+        onClick={save}
+      >
         export
       </button>
       {failed && <p role="alert">this photo does not open.</p>}
@@ -3584,7 +3721,7 @@ export const Editor = ({ src, onSave }: Props) => {
 <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
 <span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>
-<span class=k>import </span><span class=p>{</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
 
 <span class=k>const</span> handles <span class=p>= [</span>
   <span class=s>"top-left"</span><span class=p>,</span>
@@ -3644,6 +3781,8 @@ export const Editor = ({ src, onSave }: Props) => {
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src<span class=p>,</span> onSave <span class=p>}:</span> Props<span class=p>) =&gt; {</span>
   <span class=k>const</span> actions <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const</span> running <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+  <span class=k>const </span><span class=p>[</span>saving<span class=p>,</span> setSaving<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>ready<span class=p>,</span> setReady<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>failed<span class=p>,</span> setFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>exportFailed<span class=p>,</span> setExportFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
@@ -3655,14 +3794,24 @@ export const Editor = ({ src, onSave }: Props) => {
     <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=p>}</span>
 
+  <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> running<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), [</span>src<span class=p>]);</span>
+
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-    <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+    running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+    <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
     <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=k>try </span><span class=p>{</span>
-      <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>);</span>
+      <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
+        signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
+      <span class=p>});</span>
       <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-      <span class=t>setExportFailed</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+      <span class=t>setExportFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
+    <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+      running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
+      <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=p>}</span>
   <span class=p>};</span>
 
@@ -3721,7 +3870,12 @@ export const Editor = ({ src, onSave }: Props) => {
         <span class=p>{</span>instructions<span class=p>}</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Instructions</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Announcer </span><span class=a>announce</span><span class=p>={</span>announce<span class=p>} /&gt;</span>
-      <span class=p>&lt;</span><span class=t>button </span><span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>" </span><span class=a>disabled</span><span class=p>={!</span>ready<span class=p>} </span><span class=a>onClick</span><span class=p>={</span>save<span class=p>}&gt;</span>
+      <span class=p>&lt;</span><span class=t>button</span>
+        <span class=a>type</span><span class=p>="</span><span class=s>button</span><span class=p>"</span>
+        <span class=a>disabled</span><span class=p>={!</span>ready<span class=p>}</span>
+        <span class=a>aria-disabled</span><span class=p>={</span>saving<span class=p>}</span>
+        <span class=a>onClick</span><span class=p>={</span>save<span class=p>}</span>
+      <span class=p>&gt;</span>
         export
       <span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
       <span class=p>{</span>failed <span class=p>&amp;&amp; &lt;</span><span class=t>p </span><span class=a>role</span><span class=p>=</span><span class=s>"alert"</span><span class=p>&gt;</span>this photo does not open.<span class=p>&lt;/</span><span class=t>p</span><span class=p>&gt;}</span>
@@ -5081,12 +5235,15 @@ the demo runs on the page at https\\://zriz.dev/docs/avatar.
 
 \`src\` takes the \`File\` from the input as it is. picking a new file turns save off until that photo loads.
 
-each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo starts from the full frame. [loading images](https://zriz.dev/docs/loading-images.md) explains why.
+each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo starts from the full frame. [loading images](https://zriz.dev/docs/loading-images.md) explains why. safari fires no \`change\` for the same file twice, so \`onClick\` clears the input first.
 
 \`\`\`tsx
 <input
   type="file"
   accept="image/*"
+  onClick={(event) => {
+    event.currentTarget.value = "";
+  }}
   onChange={(event) => {
     setStatus("empty");
     setSaveFailed(false);
@@ -5140,19 +5297,32 @@ const unreadable =
 
 an export can still fail on a very large photo, so \`save\` shows its own alert when it does.
 
+\`running\` holds the export in flight. a second click does nothing, and the button keeps focus because \`saving\` sets \`aria-disabled\` and leaves it enabled. a new pick aborts the export, so an old crop never lands on the next photo. if an export finishes between two clicks, \`onSave\` runs twice, so keep it safe to repeat.
+
 \`\`\`tsx
 const unsaved = "this crop did not save. try again.";
 
+const running = useRef<AbortController | null>(null);
+
+useEffect(() => () => running.current?.abort(), [picks]);
+
 const save = async () => {
-  if (!actions.current) return;
+  if (!actions.current || running.current) return;
+  const controller = new AbortController();
+  running.current = controller;
+  setSaving(true);
   try {
     const { blob } = await exportCrop(actions.current, {
       maxSize: { width: 512, height: 512 },
+      signal: controller.signal,
     });
     setSaveFailed(false);
     onSave(blob);
   } catch {
-    setSaveFailed(true);
+    setSaveFailed(!controller.signal.aborted);
+  } finally {
+    running.current = null;
+    setSaving(false);
   }
 };
 
@@ -5161,6 +5331,7 @@ const save = async () => {
 <button
   type="button"
   disabled={status !== "ready"}
+  aria-disabled={saving}
   onClick={save}
 >
   save
@@ -5178,7 +5349,7 @@ import { exportCrop } from "@zriz/core/dom";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = { onSave: (png: Blob) => void };
 type Status = "empty" | "ready" | "failed";
@@ -5192,18 +5363,29 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const [status, setStatus] = useState<Status>("empty");
   const [saveFailed, setSaveFailed] = useState(false);
   const [picks, setPicks] = useState(0);
+  const [saving, setSaving] = useState(false);
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+
+  useEffect(() => () => running.current?.abort(), [picks]);
 
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
+        signal: controller.signal,
       });
       setSaveFailed(false);
       onSave(blob);
     } catch {
-      setSaveFailed(true);
+      setSaveFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -5212,6 +5394,9 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <input
         type="file"
         accept="image/*"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
         onChange={(event) => {
           setStatus("empty");
           setSaveFailed(false);
@@ -5242,6 +5427,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
       <button
         type="button"
         disabled={status !== "ready"}
+        aria-disabled={saving}
         onClick={save}
       >
         save
@@ -6330,21 +6516,31 @@ pass a ref to \`actionsRef\` on \`Root\`, and pass \`cropper.current\` to \`expo
 import { exportCrop } from "@zriz/core/dom";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const SaveCrop = ({ file }: { file: File }) => {
   const cropper = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
   const [loaded, setLoaded] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => () => running.current?.abort(), [file]);
 
   const save = async () => {
-    if (!cropper.current) return;
+    if (!cropper.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     const result = await exportCrop(cropper.current, {
       type: "image/webp",
       maxSize: { width: 2048, height: 2048 },
+      signal: controller.signal,
     }).catch((error: unknown) => {
-      console.error(error);
+      if (!controller.signal.aborted) console.error(error);
       return null;
     });
+    running.current = null;
+    setSaving(false);
     if (!result) return;
     const { blob, type } = result;
     const link = document.createElement("a");
@@ -6371,6 +6567,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
       <button
         type="button"
         disabled={loaded !== file}
+        aria-disabled={saving}
         onClick={save}
       >
         save
@@ -6380,7 +6577,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
 };
 \`\`\`
 
-an export can fail on a very large photo, so the snippet catches it. [errors](https://zriz.dev/docs/errors.md) lists the codes.
+an export can fail on a very large photo, so the snippet catches it. [errors](https://zriz.dev/docs/errors.md) lists the codes. \`running\` holds the export in flight. a second click does nothing, and a new file aborts it, so an old crop never downloads after the photo changed.
 
 the export draws from the original, not the preview on screen. without \`maxSize\`, the file has the crop's size in source pixels.
 
@@ -6751,7 +6948,13 @@ an export can still fail on a very large photo, so \`save\` shows its own alert 
 
 \`key={src}\` gives each photo a fresh cropper, and the check on \`shown\` turns the button off and hides both alerts when \`src\` changes.
 
+\`running\` holds the export in flight. a second click does nothing, and the button keeps focus because \`saving\` sets \`aria-disabled\` and leaves it enabled. a new \`src\` aborts the export, so an old crop never reaches \`onSave\` after the photo changed.
+
 \`\`\`tsx
+const running = useRef<AbortController | null>(null);
+
+const [saving, setSaving] = useState(false);
+
 const [ready, setReady] = useState(false);
 const [failed, setFailed] = useState(false);
 const [exportFailed, setExportFailed] = useState(false);
@@ -6763,14 +6966,24 @@ if (shown !== src) {
   setExportFailed(false);
 }
 
+useEffect(() => () => running.current?.abort(), [src]);
+
 const save = async () => {
-  if (!actions.current) return;
+  if (!actions.current || running.current) return;
+  const controller = new AbortController();
+  running.current = controller;
+  setSaving(true);
   setExportFailed(false);
   try {
-    const { blob } = await exportCrop(actions.current);
+    const { blob } = await exportCrop(actions.current, {
+      signal: controller.signal,
+    });
     onSave(blob);
   } catch {
-    setExportFailed(true);
+    setExportFailed(!controller.signal.aborted);
+  } finally {
+    running.current = null;
+    setSaving(false);
   }
 };
 
@@ -6782,7 +6995,12 @@ const save = async () => {
   onError={() => setFailed(true)}
 >
 
-<button type="button" disabled={!ready} onClick={save}>
+<button
+  type="button"
+  disabled={!ready}
+  aria-disabled={saving}
+  onClick={save}
+>
   export
 </button>
 
@@ -6809,7 +7027,7 @@ import type {
 } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const handles = [
   "top-left",
@@ -6869,6 +7087,8 @@ type Props = { src: string; onSave: (jpeg: Blob) => void };
 
 export const Editor = ({ src, onSave }: Props) => {
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+  const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
@@ -6880,14 +7100,24 @@ export const Editor = ({ src, onSave }: Props) => {
     setExportFailed(false);
   }
 
+  useEffect(() => () => running.current?.abort(), [src]);
+
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     setExportFailed(false);
     try {
-      const { blob } = await exportCrop(actions.current);
+      const { blob } = await exportCrop(actions.current, {
+        signal: controller.signal,
+      });
       onSave(blob);
     } catch {
-      setExportFailed(true);
+      setExportFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -6946,7 +7176,12 @@ export const Editor = ({ src, onSave }: Props) => {
         {instructions}
       </Cropper.Instructions>
       <Cropper.Announcer announce={announce} />
-      <button type="button" disabled={!ready} onClick={save}>
+      <button
+        type="button"
+        disabled={!ready}
+        aria-disabled={saving}
+        onClick={save}
+      >
         export
       </button>
       {failed && <p role="alert">this photo does not open.</p>}

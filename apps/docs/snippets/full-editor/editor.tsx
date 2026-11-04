@@ -9,7 +9,7 @@ import type {
 } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const handles = [
   "top-left",
@@ -69,6 +69,8 @@ type Props = { src: string; onSave: (jpeg: Blob) => void };
 
 export const Editor = ({ src, onSave }: Props) => {
   const actions = useRef<CropperApi>(null);
+  const running = useRef<AbortController | null>(null);
+  const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
@@ -80,14 +82,24 @@ export const Editor = ({ src, onSave }: Props) => {
     setExportFailed(false);
   }
 
+  useEffect(() => () => running.current?.abort(), [src]);
+
   const save = async () => {
-    if (!actions.current) return;
+    if (!actions.current || running.current) return;
+    const controller = new AbortController();
+    running.current = controller;
+    setSaving(true);
     setExportFailed(false);
     try {
-      const { blob } = await exportCrop(actions.current);
+      const { blob } = await exportCrop(actions.current, {
+        signal: controller.signal,
+      });
       onSave(blob);
     } catch {
-      setExportFailed(true);
+      setExportFailed(!controller.signal.aborted);
+    } finally {
+      running.current = null;
+      setSaving(false);
     }
   };
 
@@ -146,7 +158,12 @@ export const Editor = ({ src, onSave }: Props) => {
         {instructions}
       </Cropper.Instructions>
       <Cropper.Announcer announce={announce} />
-      <button type="button" disabled={!ready} onClick={save}>
+      <button
+        type="button"
+        disabled={!ready}
+        aria-disabled={saving}
+        onClick={save}
+      >
         export
       </button>
       {failed && <p role="alert">this photo does not open.</p>}

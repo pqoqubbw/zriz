@@ -87,9 +87,15 @@ const FULL_EDITOR_PAGE = defineDoc({
       p(
         "`key={src}` gives each photo a fresh cropper, and the check on `shown` turns the button off and hides both alerts when `src` changes."
       ),
+      p(
+        "`running` holds the export in flight. a second click does nothing, and the button keeps focus because `saving` sets `aria-disabled` and leaves it enabled. a new `src` aborts the export, so an old crop never reaches `onSave` after the photo changed."
+      ),
       excerpt(
         "full-editor/editor.tsx",
+        ["const running", null],
+        ["const [saving", null],
         ["const [ready", "}"],
+        ["useEffect(", null],
         ["const save", "};"],
         ["<Cropper.Root", ">"],
         ["<button", "</button>"],
