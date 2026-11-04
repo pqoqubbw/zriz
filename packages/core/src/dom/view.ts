@@ -1,4 +1,4 @@
-import type { Cropper } from "../cropper";
+import type { Cropper, CropperSnapshot } from "../cropper";
 import {
   applyHomography,
   invertMatrix3,
@@ -11,6 +11,7 @@ import {
 import { linearTransform } from "../geometry/state";
 import type { CropState, Matrix3, Point, Size } from "../geometry/types";
 import { spring } from "../motion";
+import type { Aspect } from "../value";
 import { claim, claimed } from "./input";
 
 export interface Inset {
@@ -331,6 +332,42 @@ const easeOut = (t: number): number => 1 - (1 - t) ** 3;
 const settled = (omega: number, ms: number): number => {
   const t = (omega * ms) / 1000;
   return 1 - (1 + t) * Math.exp(-t);
+};
+
+const flag = (on: boolean): string | undefined => (on ? "" : undefined);
+
+export const orientationOf = (
+  aspect: Aspect
+): "portrait" | "landscape" | "square" => {
+  if (typeof aspect !== "number" || aspect === 1) {
+    return "square";
+  }
+  return aspect > 1 ? "landscape" : "portrait";
+};
+
+export const stateAttributes = (
+  state: CropperSnapshot,
+  chrome: Chrome,
+  reducedMotion: boolean
+): Record<string, string | undefined> => {
+  const gesture = state.interacting;
+  return {
+    "data-changed": flag(!state.pristine),
+    "data-disabled": flag(state.disabled),
+    "data-grid": chrome.grid,
+    "data-interacting": flag(chrome.active),
+    "data-mirrored": flag(state.mirrored),
+    "data-orientation": orientationOf(state.aspect),
+    "data-overscroll": flag(chrome.overscroll),
+    "data-panning": flag(gesture === "pan"),
+    "data-pinching": flag(gesture === "pinch"),
+    "data-reduced-motion": flag(reducedMotion),
+    "data-resizing": flag(gesture === "resize"),
+    "data-rotating": flag(gesture === "dial"),
+    "data-settling": flag(state.settling),
+    "data-transition": chrome.transition ?? undefined,
+    "data-zooming": flag(gesture === "wheel" || gesture === "zoom-control"),
+  };
 };
 
 export const viewOf = (cropper: Cropper): View => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { orientationOf } from "@zriz/core/dom";
 import { forwardRef } from "react";
 
 import { useCropperContext } from "../context";
@@ -18,11 +19,8 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
     function Orientation(props, ref) {
       const cropper = useCropperContext();
       const aspect = useCropperState((s) => s.aspect);
-      let orientation: OrientationState["orientation"] = "square";
-      if (typeof aspect === "number" && aspect !== 1) {
-        orientation = aspect > 1 ? "landscape" : "portrait";
-      }
-      const disabled = typeof aspect !== "number" || aspect === 1;
+      const orientation = orientationOf(aspect);
+      const disabled = orientation === "square";
       const onClick = (event: React.MouseEvent): void => {
         const current = cropper.getValue().aspect;
         if (typeof current === "number") {

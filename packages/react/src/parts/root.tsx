@@ -7,6 +7,7 @@ import {
   attachImage,
   loadImage,
   setCropShape,
+  stateAttributes,
   viewOf,
 } from "@zriz/core/dom";
 import type { Chrome, LoadedImage } from "@zriz/core/dom";
@@ -112,13 +113,6 @@ const useBoxRef = (
       ),
     [box, theirs]
   );
-
-const orientationOf = (aspect: CropperSnapshot["aspect"]): string => {
-  if (typeof aspect !== "number" || aspect === 1) {
-    return "square";
-  }
-  return aspect > 1 ? "landscape" : "portrait";
-};
 
 export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
@@ -242,30 +236,14 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     () => ({ box, dir, instructions, locale, shape }),
     [box, dir, instructions, locale, shape]
   );
-  const gesture = snapshot.interacting;
   const part = usePart(
     "div",
     {
       "data-base-ui-swipe-ignore": "",
-      "data-changed": snapshot.pristine ? undefined : "",
-      "data-disabled": snapshot.disabled ? "" : undefined,
-      "data-grid": chrome.grid,
-      "data-interacting": chrome.active ? "" : undefined,
-      "data-mirrored": snapshot.mirrored ? "" : undefined,
-      "data-orientation": orientationOf(snapshot.aspect),
-      "data-overscroll": chrome.overscroll ? "" : undefined,
-      "data-panning": gesture === "pan" ? "" : undefined,
-      "data-pinching": gesture === "pinch" ? "" : undefined,
-      "data-reduced-motion": reducedMotion ? "" : undefined,
-      "data-resizing": gesture === "resize" ? "" : undefined,
-      "data-rotating": gesture === "dial" ? "" : undefined,
-      "data-settling": snapshot.settling ? "" : undefined,
       "data-shape": shape,
-      "data-transition": chrome.transition ?? undefined,
       "data-vaul-no-drag": "",
-      "data-zooming":
-        gesture === "wheel" || gesture === "zoom-control" ? "" : undefined,
       "data-zriz-item": "root",
+      ...stateAttributes(snapshot, chrome, reducedMotion),
       dir,
     },
     html,

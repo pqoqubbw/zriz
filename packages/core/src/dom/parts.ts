@@ -26,7 +26,7 @@ import {
 import type { PointerHandlers } from "./input";
 import { cropShapeOf, setCropShape } from "./shape";
 import { followDisabled } from "./slider";
-import { LAYER_BOX, cssMatrix, viewOf } from "./view";
+import { LAYER_BOX, cssMatrix, stateAttributes, viewOf } from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
 export type MaskShape = "rect" | "circle";
@@ -550,53 +550,20 @@ export const bindHandle = (
   };
 };
 
-const reasonAttribute: Partial<Record<string, string>> = {
-  dial: "rotating",
-  pan: "panning",
-  pinch: "pinching",
-  resize: "resizing",
-  wheel: "zooming",
-  "zoom-control": "zooming",
-};
-
 export const bindState = (
   cropper: Cropper,
   element: HTMLElement
 ): (() => void) => {
   const view = viewOf(cropper);
-  let gesture: string | undefined;
   const sync = (): void => {
-    const state = cropper.getState();
-    const chrome = view.chrome();
-    element.toggleAttribute("data-interacting", chrome.active);
-    element.toggleAttribute("data-settling", state.settling);
-    element.toggleAttribute("data-changed", !state.pristine);
-    element.toggleAttribute("data-mirrored", state.mirrored);
-    element.toggleAttribute("data-reduced-motion", view.reducedMotion());
-    element.toggleAttribute("data-overscroll", chrome.overscroll);
-    const { aspect } = state;
-    let orientation = "square";
-    if (typeof aspect === "number" && aspect !== 1) {
-      orientation = aspect > 1 ? "landscape" : "portrait";
-    }
-    element.dataset.orientation = orientation;
-    element.dataset.grid = chrome.grid;
-    if (chrome.transition) {
-      element.dataset.transition = chrome.transition;
-    } else {
-      delete element.dataset.transition;
-    }
-    const next = state.interacting
-      ? reasonAttribute[state.interacting]
-      : undefined;
-    if (next !== gesture) {
-      if (gesture !== undefined) {
-        element.removeAttribute(`data-${gesture}`);
+    for (const [name, value] of Object.entries(
+      stateAttributes(cropper.getState(), view.chrome(), view.reducedMotion())
+    )) {
+      if (value === undefined) {
+        element.removeAttribute(name);
+      } else if (element.getAttribute(name) !== value) {
+        element.setAttribute(name, value);
       }
-      if (next !== undefined) {
-        element.setAttribute(`data-${next}`, "");
-      }
-      gesture = next;
     }
   };
   sync();

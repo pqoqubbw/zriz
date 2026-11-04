@@ -9,6 +9,7 @@ import {
   bindHandle,
   bindMask,
   bindPhoto,
+  bindState,
   bindViewport,
   cropShapeOf,
   dialHandlers,
@@ -1454,5 +1455,39 @@ describe("the angle label", () => {
       stop();
     }
     cropper.destroy();
+  });
+});
+
+const bound = () => {
+  const cropper = createCropper({ image: { height: 3000, width: 4000 } });
+  const root = document.createElement("div");
+  const off = bindState(cropper, root);
+  cleanups.push(() => {
+    off();
+    viewOf(cropper).destroy();
+    cropper.destroy();
+  });
+  return { cropper, root };
+};
+
+describe("the state attributes on a root", () => {
+  it("follows a gesture and the orientation", () => {
+    const { cropper, root } = bound();
+    expect(root.dataset.orientation).toBe("square");
+    cropper.begin("resize");
+    expect(root.dataset.resizing).toBe("");
+    cropper.end();
+    expect(root.dataset.resizing).toBeUndefined();
+    cropper.setAspect(2);
+    expect(root.dataset.orientation).toBe("landscape");
+  });
+
+  it("marks a disabled cropper and clears the mark", () => {
+    const { cropper, root } = bound();
+    expect(root.dataset.disabled).toBeUndefined();
+    cropper.setOptions({ disabled: true });
+    expect(root.dataset.disabled).toBe("");
+    cropper.setOptions({ disabled: false });
+    expect(root.dataset.disabled).toBeUndefined();
   });
 });
