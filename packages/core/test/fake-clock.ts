@@ -1,24 +1,28 @@
 import type { Clock } from "../src";
 
-export interface FakeClock {
+export type FakeClock = {
   clock: Clock;
   frame: (ms?: number) => void;
   frames: (count: number, ms?: number) => void;
   pending: () => number;
-}
+};
 
 export const fakeClock = (): FakeClock => {
   let time = 0;
   let id = 0;
   const queue = new Map<number, (time: number) => void>();
+
   const frame = (ms = 1000 / 60): void => {
     time += ms;
     const steps = [...queue.values()];
+
     queue.clear();
+
     for (const step of steps) {
       step(time);
     }
   };
+
   return {
     clock: {
       cancel: (handle) => {
@@ -28,6 +32,7 @@ export const fakeClock = (): FakeClock => {
       request: (step) => {
         id += 1;
         queue.set(id, step);
+
         return id;
       },
     },

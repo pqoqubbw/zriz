@@ -18,6 +18,7 @@ let renderer: Lane<RenderKernel> | undefined;
 
 const rendering = (): Lane<RenderKernel> => {
   renderer ??= lane(renderKernel);
+
   return renderer;
 };
 
@@ -39,6 +40,7 @@ const firstScale = (
         options.maxSize.height / base.height
       )
     : 1;
+
   return Math.min(
     fit > 0 ? fit : 1,
     Math.sqrt(outputLimit() / (base.width * base.height)),
@@ -54,9 +56,11 @@ export const exportImage = async (
 ): Promise<ExportResult> => {
   const state = cropper.getCropState();
   const base = cropper.getPixelCrop(1);
+
   if (!state || !base) {
     throw new ZrizError("no-image", "zriz: nothing to export yet");
   }
+
   const type =
     options.type ?? (options.shape === "circle" ? "image/png" : "image/jpeg");
   const first = firstScale(base, options, type);
@@ -75,15 +79,19 @@ export const exportImage = async (
         )
       : null;
   let over = false;
+
   const work = async (): Promise<RenderReply> => {
     if ("width" in image.source && image.source.width === 0) {
       throw aborted();
     }
+
     const element = url === null ? null : await loadElement(url);
+
     try {
       if (over) {
         throw aborted();
       }
+
       const source = element
         ? {
             drawable: element,
@@ -92,6 +100,7 @@ export const exportImage = async (
           }
         : image.source;
       const render = element ? renderHere : renderOff;
+
       return await render({
         circle: options.shape === "circle",
         colorSpace: options.colorSpace ?? "srgb",
@@ -105,6 +114,7 @@ export const exportImage = async (
       element?.removeAttribute("src");
     }
   };
+
   try {
     const { blob, index } = await withTimeout(
       exportTurn(
@@ -116,6 +126,7 @@ export const exportImage = async (
       options.signal
     );
     const crop = crops[index] ?? base;
+
     return {
       blob,
       crop,
@@ -128,6 +139,7 @@ export const exportImage = async (
     throw toZriz(error, image.mime);
   } finally {
     over = true;
+
     if (url !== null) {
       URL.revokeObjectURL(url);
     }

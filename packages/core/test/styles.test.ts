@@ -26,7 +26,9 @@ describe("styles", () => {
       .replaceAll(/\s+/gu, " ")
       .split("{")
       .filter((selector) => selector.includes("data-edge"));
+
     expect(rules.length).toBeGreaterThan(0);
+
     for (const selector of rules) {
       expect(selector).toContain('[data-zriz-item="handle"]');
     }
@@ -34,13 +36,17 @@ describe("styles", () => {
 
   it("keeps colours when a consumer's bundler lowers light-dark()", () => {
     const css = lower();
+
     expect(css).toContain("var(--lightningcss-light");
+
     expect(css).toMatch(
       /:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light:initial;[^}]*--lightningcss-dark: ;/u
     );
+
     expect(css).toMatch(
       /@media[^{]*prefers-color-scheme:\s*dark[^{]*\{:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
     );
+
     expect(css).toMatch(
       /\[data-zriz-item\]:is\(\[data-theme=dark\],\.dark\)\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
     );
@@ -57,9 +63,11 @@ describe("styles", () => {
         safari: version(18),
       },
     }).code.toString();
+
     expect(css).toContain(
       "color-scheme:light dark;color-scheme:var(--zriz-scheme)"
     );
+
     expect(css).not.toContain("--lightningcss");
   });
 });

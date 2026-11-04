@@ -8,13 +8,10 @@ import { useIsomorphicLayoutEffect, useLatest, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface DialValueProps extends Omit<
-  PartProps<"span", object>,
-  "children" | "dangerouslySetInnerHTML"
-> {
+export type DialValueProps = {
   /** Text for an angle in degrees. @default the rounded number */
   format?: ((rotation: number) => string) | undefined;
-}
+} & Omit<PartProps<"span", object>, "children" | "dangerouslySetInnerHTML">;
 
 export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
   HTMLSpanElement,
@@ -31,20 +28,24 @@ export const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
   const own = useCallback(
     (span: HTMLSpanElement) => {
       node.current = span;
+
       return bindDialValue(cropper, span, text);
     },
     [cropper, text]
   );
+
   useIsomorphicLayoutEffect(() => {
     if (node.current) {
       bindDialValue(cropper, node.current, text)();
     }
   });
+
   const bare = {
     ...props,
     children: undefined,
     dangerouslySetInnerHTML: undefined,
   };
+
   return usePart(
     "span",
     { "aria-hidden": true, "data-zriz-item": "dial-value" },

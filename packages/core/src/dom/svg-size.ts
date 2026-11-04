@@ -24,22 +24,29 @@ const rootStart = (text: string): number => {
   const step =
     /\s*(?:(?<root><(?:[\w.-]+:)?svg[\s>])|(?<open><\?|<!--|<!doctype[^>[]*[>[]))/iuy;
   let at = 0;
+
   for (;;) {
     step.lastIndex = at;
     const { root, open } = step.exec(text)?.groups ?? {};
+
     if (root !== undefined) {
       return step.lastIndex - root.length;
     }
+
     if (open === undefined) {
       return -1;
     }
+
     at = step.lastIndex;
     const close = CLOSERS[open.slice(-1)];
+
     if (close) {
       close.lastIndex = at;
+
       if (!close.test(text)) {
         return -1;
       }
+
       at = close.lastIndex;
     }
   }
@@ -52,6 +59,7 @@ export const sniff = (
   bytes: Uint8Array
 ): { mime: string | null; animated: boolean } => {
   const known = raster(bytes);
+
   return known.mime === null && isSvg(bytes)
     ? { animated: false, mime: "image/svg+xml" }
     : known;
@@ -65,19 +73,25 @@ const svgLength = (value = ""): number => {
       .toLowerCase()
       .replace(/(?:px|in|cm|mm|pt|pc|q)$/u, (unit) => {
         scale = UNITS[unit] ?? 1;
+
         return "";
       })
   );
+
   return Number.isFinite(parsed) && parsed > 0 ? parsed * scale : 0;
 };
 
 const rootTag = (text: string): string => {
   const start = rootStart(text);
+
   if (start === -1) {
     return "";
   }
+
   const tag = /<(?:[\w.-]+:)?svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/iuy;
+
   tag.lastIndex = start;
+
   return tag.exec(text)?.[0] ?? "";
 };
 
@@ -101,6 +115,7 @@ export const svgSize = (text: string): Size => {
   const width = svgLength(attributes.get("width"));
   const height = svgLength(attributes.get("height"));
   let size = FALLBACK;
+
   if (width > 0 && height > 0) {
     size = { height, width };
   } else if (width > 0 && ratio > 0) {
@@ -110,6 +125,8 @@ export const svgSize = (text: string): Size => {
   } else if (ratio > 0) {
     size = { height: boxHeight, width: boxWidth };
   }
+
   const area = size.width * size.height;
+
   return area > 0 && area < Number.POSITIVE_INFINITY ? size : FALLBACK;
 };

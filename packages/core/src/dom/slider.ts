@@ -1,11 +1,11 @@
 import type { ChangeReason, Cropper } from "../cropper";
 
-export interface KeyHandlers {
+export type KeyHandlers = {
   onKeyDown: (event: KeyboardEvent) => void;
   onKeyUp: (event: KeyboardEvent) => void;
   onBlur: (event: FocusEvent) => void;
   release: () => void;
-}
+};
 
 export const numberFormat = (
   locale: string | undefined,
@@ -20,6 +20,7 @@ export const numberFormat = (
     ),
     ...format,
   };
+
   for (const [tag, options] of [
     [locale, merged],
     [undefined, merged],
@@ -31,6 +32,7 @@ export const numberFormat = (
       continue;
     }
   }
+
   return new Intl.NumberFormat(undefined, defaults);
 };
 
@@ -39,12 +41,14 @@ export const followDisabled = (
   element: Element
 ): (() => void) => {
   let wrote = false;
+
   const clear = (): void => {
     if (wrote) {
       wrote = false;
       element.removeAttribute("aria-disabled");
     }
   };
+
   const sync = (): void => {
     if (!cropper.getState().disabled) {
       clear();
@@ -53,8 +57,10 @@ export const followDisabled = (
       element.setAttribute("aria-disabled", "true");
     }
   };
+
   sync();
   const stop = cropper.subscribe(sync);
+
   return () => {
     stop();
     clear();
@@ -68,14 +74,17 @@ export const keyed = (
   busy: () => boolean = () => false
 ): KeyHandlers => {
   const held = new Set<string>();
+
   const release = (event?: Event): void => {
     if (held.size > 0) {
       held.clear();
+
       if (!busy()) {
         cropper.end(event, owner);
       }
     }
   };
+
   return {
     onBlur: release,
     onKeyDown(event) {
@@ -83,22 +92,28 @@ export const keyed = (
         event.ctrlKey || event.metaKey || !cropper.getCropState()
           ? null
           : plan(event);
+
       if (!run) {
         return;
       }
+
       if (busy()) {
         event.preventDefault();
+
         return;
       }
+
       if (!cropper.begin("keyboard", event, owner)) {
         return;
       }
+
       event.preventDefault();
       held.add(event.code || event.key);
       run();
     },
     onKeyUp(event) {
       const key = event.code || event.key;
+
       if (event.key === "Meta") {
         release(event);
       } else if (held.size > 1) {
@@ -130,6 +145,7 @@ export const sliderKey = (
     PageDown: value - 10 / steps,
     PageUp: value + 10 / steps,
   };
+
   return moves[event.key];
 };
 
@@ -142,6 +158,7 @@ export const sliderAria = (
   read: () => readonly [number, number, number, string]
 ): (() => void) => {
   const shown: unknown[] = [];
+
   const aria = (): void => {
     for (const [index, next] of read().entries()) {
       if (shown[index] !== next) {
@@ -150,6 +167,7 @@ export const sliderAria = (
       }
     }
   };
+
   aria();
   const off = [
     cropper.on("commit", aria),
@@ -161,12 +179,14 @@ export const sliderAria = (
     }),
     cropper.on("frame", () => {
       const { interacting, settling } = cropper.getState();
+
       if (interacting === null && !settling) {
         aria();
       }
     }),
     followDisabled(cropper, element),
   ];
+
   return () => {
     for (const stop of off) {
       stop();

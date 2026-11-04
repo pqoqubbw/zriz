@@ -4,7 +4,7 @@ import type { CropState, Point, QuarterTurns, Size } from "./geometry/types";
 
 export type Aspect = "free" | "original" | number;
 
-export interface CropValue {
+export type CropValue = {
   readonly center: Readonly<Point>;
   readonly size: Readonly<Size>;
   readonly rotation: number;
@@ -15,7 +15,7 @@ export interface CropValue {
     readonly horizontal: number;
   };
   readonly aspect: Aspect;
-}
+};
 
 export type ValueField = keyof CropValue;
 
@@ -30,6 +30,7 @@ export const seal = <T extends object>(target: T): T => {
       seal(item);
     }
   }
+
   return Object.freeze(target);
 };
 
@@ -61,10 +62,13 @@ export const aspectRatio = (
   if (aspect === "free") {
     return null;
   }
+
   if (aspect === "original") {
     const turned = turnedSize(image, turns);
+
     return turned.width / turned.height;
   }
+
   return aspect;
 };
 
@@ -83,6 +87,7 @@ export const valueToState = (
 ): CropState => {
   const turns = toQuarterTurns(Math.round(value.quarterTurns));
   const turned = turnedSize(image, turns);
+
   return {
     angle: value.rotation,
     aspect: aspectRatio(value.aspect, image, turns),
@@ -105,6 +110,7 @@ export const valueToState = (
 
 export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   const turned = turnedSize(state.image, state.turns);
+
   return seal({
     aspect,
     center: {
@@ -181,6 +187,7 @@ export const toAspect = (value: unknown): Aspect => {
   if (value === "free" || value === "original") {
     return value;
   }
+
   return typeof value === "number" &&
     value >= MIN_RATIO &&
     value <= 1 / MIN_RATIO
@@ -201,6 +208,7 @@ export const readValue = (
   const center = recordOf(raw.center);
   const size = recordOf(raw.size);
   const perspective = recordOf(raw.perspective);
+
   return seal({
     aspect: raw.aspect === undefined ? base.aspect : toAspect(raw.aspect),
     center: {
@@ -255,6 +263,7 @@ export const holdCrop = (
   const y = pixels / height;
   const angle = Math.min(1e-8, x + y);
   const ratio = next.size.height / next.size.width;
+
   return seal({
     ...next,
     center: {
@@ -286,6 +295,7 @@ export const serialize = (value: CropValue): string =>
 
 export const parse = (input: unknown): CropValue | null => {
   let raw: unknown = input;
+
   if (typeof input === "string") {
     try {
       raw = JSON.parse(input);
@@ -293,10 +303,13 @@ export const parse = (input: unknown): CropValue | null => {
       return null;
     }
   }
+
   if (!isRecord(raw)) {
     return null;
   }
+
   const read = readValue(raw, defaultValue);
+
   return seal({
     ...read,
     perspective: {

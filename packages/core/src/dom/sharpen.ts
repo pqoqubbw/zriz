@@ -26,6 +26,7 @@ const visibleRect = (frame: ViewFrame, image: LoadedImage): Region => {
     image.height,
     Math.ceil(Math.max(...corners.map((c) => c.y)))
   );
+
   return {
     height: Math.max(1, y1 - y0),
     width: Math.max(1, x1 - x0),
@@ -46,6 +47,7 @@ export const refine = async (
     Math.max(image.preview.width, image.preview.height) /
     Math.max(image.width, image.height);
   const ratio = devicePerSource / previewPerSource;
+
   if (ratio <= 1 / SHARPEN_RATIO) {
     const visible = visibleRect(frame, image);
     const kx = image.preview.width / image.width;
@@ -60,6 +62,7 @@ export const refine = async (
       image.preview.height - y,
       Math.max(1, Math.ceil((visible.y + visible.height) * ky) - y)
     );
+
     return {
       bitmap: await resampleOff(
         image.id,
@@ -75,8 +78,10 @@ export const refine = async (
       },
     };
   }
+
   if (ratio > SHARPEN_RATIO && previewPerSource < 1) {
     const region = visibleRect(frame, image);
+
     return {
       bitmap: await decodeTurn(
         async () =>
@@ -94,6 +99,7 @@ export const refine = async (
       region,
     };
   }
+
   return {
     bitmap: null,
     region: { height: image.height, width: image.width, x: 0, y: 0 },

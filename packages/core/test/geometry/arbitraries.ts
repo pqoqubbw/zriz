@@ -56,6 +56,7 @@ export const stateArb: Arbitrary<CropState> = record({
       x: pu * Math.max(box.x, 0) * 0.999,
       y: pv * Math.max(box.y, 0) * 0.999,
     });
+
     return {
       angle,
       aspect: locked ? width / height : null,

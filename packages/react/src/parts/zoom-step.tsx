@@ -8,22 +8,24 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface ZoomStepProps extends PartProps<"button", object> {
+export type ZoomStepProps = {
   /** Multiplies the zoom on each press, below 1 zooms out. */
   factor: number;
-}
+} & PartProps<"button", object>;
 
 export const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   ZoomStepProps
 >(function ZoomStep({ factor, ...props }, ref) {
   const cropper = useCropperContext();
+
   const onClick = (event: MouseEvent): void => {
     cropper.setZoom(cropper.getZoom() * factor, {
       event: event.nativeEvent,
       reason: "zoom-control",
     });
   };
+
   return usePart(
     "button",
     {

@@ -39,14 +39,17 @@ const corners = (r: PixelRect): [number, number][] => [
 
 const coordinateImage = (width: number, height: number): Sharp => {
   const buffer = Buffer.alloc(width * height * 3);
+
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const i = (y * width + x) * 3;
+
       buffer[i] = x % 256;
       buffer[i + 1] = y % 256;
       buffer[i + 2] = Math.floor(x / 256) + Math.floor(y / 256) * 16;
     }
   }
+
   return sharp(buffer, { raw: { channels: 3, height, width } });
 };
 
@@ -58,6 +61,7 @@ const blobImage = (
   sigma = 2
 ): Sharp => {
   const buffer = Buffer.alloc(width * height);
+
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       buffer[y * width + x] = Math.round(
@@ -68,6 +72,7 @@ const blobImage = (
       );
     }
   }
+
   return sharp(buffer, { raw: { channels: 1, height, width } });
 };
 
@@ -80,14 +85,17 @@ const centroid = async (
   let sum = 0;
   let sumX = 0;
   let sumY = 0;
+
   for (let y = 0; y < info.height; y += 1) {
     for (let x = 0; x < info.width; x += 1) {
       const value = data[(y * info.width + x) * info.channels] ?? 0;
+
       sum += value;
       sumX += value * (x + 0.5);
       sumY += value * (y + 0.5);
     }
   }
+
   return {
     height: info.height,
     width: info.width,
@@ -102,6 +110,7 @@ describe("export plan", () => {
       property(stateArb, constantFrom(1, 0.5, 0.25, 2), (s, scale) => {
         const plan = exportPlan(s, scale);
         const tol = 1e-7 * Math.max(s.image.width, s.image.height);
+
         for (const [x, y] of [
           [0, 0],
           [plan.width, 0],
@@ -109,6 +118,7 @@ describe("export plan", () => {
           [0, plan.height],
         ] as const) {
           const p = applyAffine(plan.inverse, { x, y });
+
           expect(p.x).toBeGreaterThanOrEqual(-tol);
           expect(p.y).toBeGreaterThanOrEqual(-tol);
           expect(p.x).toBeLessThanOrEqual(s.image.width + tol);
@@ -123,16 +133,21 @@ describe("export plan", () => {
       property(stateArb, (s0) => {
         const s = { ...s0, angle: 0 };
         const plan = exportPlan(s);
+
         expect(plan.pixelRect).not.toBeNull();
         const r = plan.pixelRect ?? { height: 0, left: 0, top: 0, width: 0 };
+
         for (const v of [r.left, r.top, r.width, r.height]) {
           expect(Number.isInteger(v)).toBeTruthy();
         }
+
         expect(r.left + r.width).toBeLessThanOrEqual(s.image.width);
         expect(r.top + r.height).toBeLessThanOrEqual(s.image.height);
         expect(r.width).toBeGreaterThanOrEqual(1);
+
         for (const [x, y] of corners(r)) {
           const o = applyAffine(plan.forward, { x, y });
+
           expect([0, plan.width]).toContain(Math.round(o.x * 1e9) / 1e9 + 0);
           expect([0, plan.height]).toContain(Math.round(o.y * 1e9) / 1e9 + 0);
         }
@@ -179,9 +194,11 @@ describe("export plan with perspective", () => {
       turns: 1,
     };
     const plan = exportPlan(state);
+
     if (!plan.homography) {
       throw new Error("no homography");
     }
+
     const centre = { x: 800.5, y: 600.5 };
     const whole = sourceToOutputMatrix(state, {
       ...plan,
@@ -198,6 +215,7 @@ describe("export plan with perspective", () => {
       y: centre.y + warped.y,
     });
     const expected = applyHomography(whole, point);
+
     expect(output.x).toBeCloseTo(expected.x, 6);
     expect(output.y).toBeCloseTo(expected.y, 6);
     const back = applyAffine(plan.inverse, output);
@@ -205,6 +223,7 @@ describe("export plan with perspective", () => {
       x: back.x - centre.x,
       y: back.y - centre.y,
     });
+
     expect(centre.x + unwarped.x).toBeCloseTo(point.x, 6);
     expect(centre.y + unwarped.y).toBeCloseTo(point.y, 6);
   });
@@ -240,10 +259,12 @@ describe(toSharp, () => {
           const { data, info } = await output
             .raw()
             .toBuffer({ resolveWithObject: true });
+
           expect([info.width, info.height]).toStrictEqual([
             plan.width,
             plan.height,
           ]);
+
           for (let y = 0; y < info.height; y += 1) {
             for (let x = 0; x < info.width; x += 1) {
               const p = applyAffine(plan.inverse, { x: x + 0.5, y: y + 0.5 });
@@ -251,6 +272,7 @@ describe(toSharp, () => {
               const high = data[i + 2] ?? 0;
               const sx = (data[i] ?? 0) + (high % 16) * 256;
               const sy = (data[i + 1] ?? 0) + Math.floor(high / 16) * 256;
+
               expect([sx, sy]).toStrictEqual([
                 Math.floor(p.x),
                 Math.floor(p.y),
@@ -265,6 +287,7 @@ describe(toSharp, () => {
 
   it("reproduces a straightened export to a twentieth of a pixel", async () => {
     let ran = 0;
+
     await assert(
       asyncProperty(
         stateArb,
@@ -300,12 +323,14 @@ describe(toSharp, () => {
             y: height / 2 + 3.3,
           };
           const want = applyAffine(plan.forward, source);
+
           pre(
             want.x > 8 * scale &&
               want.y > 8 * scale &&
               want.x < plan.width - 8 * scale &&
               want.y < plan.height - 8 * scale
           );
+
           ran += 1;
           const got = await centroid(
             await runSharp(
@@ -314,13 +339,16 @@ describe(toSharp, () => {
               s.image
             )
           );
+
           expect([got.width, got.height]).toStrictEqual([
             plan.width,
             plan.height,
           ]);
+
           expect(Math.abs(got.x - want.x)).toBeLessThan(
             0.05 * Math.max(1, scale)
           );
+
           expect(Math.abs(got.y - want.y)).toBeLessThan(
             0.05 * Math.max(1, scale)
           );
@@ -328,6 +356,7 @@ describe(toSharp, () => {
       ),
       { numRuns: 300 }
     );
+
     expect(ran).toBeGreaterThanOrEqual(30);
   });
 
@@ -350,6 +379,7 @@ describe(toSharp, () => {
             image,
           });
           const plan = cropper.getPixelCrop(scale);
+
           pre(plan !== null && plan.pixelRect === null);
           const output = await runSharp(
             sharp({
@@ -361,6 +391,7 @@ describe(toSharp, () => {
           const { info } = await output
             .raw()
             .toBuffer({ resolveWithObject: true });
+
           expect([info.width, info.height]).toStrictEqual([
             plan.width,
             plan.height,
@@ -392,6 +423,7 @@ describe(toSharp, () => {
             image,
           });
           const plan = cropper.getPixelCrop(scale);
+
           pre(plan !== null);
           expect(() => toSharp(plan, image)).not.toThrow();
         }
@@ -406,9 +438,11 @@ describe(toSharp, () => {
       image,
     });
     const plan = cropper.getPixelCrop();
+
     if (!plan) {
       throw new Error("no plan");
     }
+
     const refused: Record<string, unknown>[] = [
       { forward: [1, 0, 0, 1, 0] },
       { forward: 5 },
@@ -426,11 +460,14 @@ describe(toSharp, () => {
       { width: 10.5 },
       { height: Number.NaN },
     ];
+
     for (const forged of refused) {
       const changed = { ...plan, ...forged };
+
       if (!isPlan(changed)) {
         throw new Error("not a plan");
       }
+
       expect(() => toSharp(changed, image)).toThrow(RangeError);
     }
   });
@@ -453,9 +490,11 @@ describe(toSharp, () => {
           x: px - width / 2,
           y: py - height / 2,
         });
+
         return { got, out, v };
       })
     );
+
     for (const { got, out, v } of results) {
       expect([got.width, got.height]).toStrictEqual([out.width, out.height]);
       expect(Math.abs(got.x - (v.x + out.width / 2))).toBeLessThan(0.15);

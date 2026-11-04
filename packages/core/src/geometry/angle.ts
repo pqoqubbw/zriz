@@ -11,15 +11,19 @@ const rotateByQuarters = (
   turns: number
 ): { sin: number; cos: number } => {
   const quarter = toQuarterTurns(turns);
+
   if (quarter === 0) {
     return { cos, sin };
   }
+
   if (quarter === 1) {
     return { cos: -sin, sin: cos };
   }
+
   if (quarter === 2) {
     return { cos: -cos, sin: -sin };
   }
+
   return { cos: sin, sin: -cos };
 };
 
@@ -28,10 +32,13 @@ export const sinCosDegrees = (
 ): { sin: number; cos: number } => {
   const turns = Math.round(degrees / 90);
   const rest = degrees - 90 * turns;
+
   if (rest === -45) {
     return rotateByQuarters(-Math.SQRT1_2, Math.SQRT1_2, turns);
   }
+
   const radians = (rest * Math.PI) / 180;
+
   return rotateByQuarters(Math.sin(radians), Math.cos(radians), turns);
 };
 
@@ -39,6 +46,7 @@ export const splitAngle = (
   degrees: number
 ): { turns: QuarterTurns; angle: number } => {
   const turns = Math.round(degrees / 90);
+
   return { angle: degrees - 90 * turns, turns: toQuarterTurns(turns) };
 };
 

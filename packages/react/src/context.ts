@@ -9,8 +9,10 @@ export const CropperContext: Context<Cropper | null> =
 
 export const useCropperContext = (): Cropper => {
   const cropper = useContext(CropperContext);
+
   if (!cropper) {
     throw new Error("zriz: parts must be inside <Cropper.Root>");
   }
+
   return cropper;
 };

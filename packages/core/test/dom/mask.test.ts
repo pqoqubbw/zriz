@@ -22,17 +22,21 @@ const fakeElement = () => {
     },
   };
   const element = { style, toggleAttribute: () => false };
+
   if (!isElement(element)) {
     throw new Error("unreachable");
   }
+
   return { element, style, written };
 };
 
 const load = async (supports?: Supports) => {
   vi.resetModules();
+
   if (supports) {
     vi.stubGlobal("CSS", { supports });
   }
+
   const { createCropper } = await import("../../src");
   const { bindMask, maskClip, maskGradient, viewOf } =
     await import("../../src/dom");
@@ -40,12 +44,14 @@ const load = async (supports?: Supports) => {
     defaultValue: { aspect: 1 },
     image: { height: 300, width: 400 },
   });
+
   viewOf(cropper).setLayout({
     dpr: 2,
     height: 300,
     inset: { bottom: 0, left: 0, right: 0, top: 0 },
     width: 400,
   });
+
   return { bindMask, cropper, maskClip, maskGradient };
 };
 
@@ -56,11 +62,13 @@ describe("round mask", () => {
 
   it("cuts an even-odd hole with two half-circle arcs", async () => {
     const { maskClip } = await load();
+
     expect(maskClip(BOX, "circle")).toBe(CIRCLE);
   });
 
   it("ramps the fallback edge over one device pixel", async () => {
     const { maskGradient } = await load();
+
     expect(maskGradient(BOX, 2)).toBe(GRADIENT);
   });
 
@@ -68,6 +76,7 @@ describe("round mask", () => {
     const { bindMask, cropper } = await load(() => true);
     const { element, style, written } = fakeElement();
     const unbind = bindMask(cropper, element, "circle");
+
     expect(style.clipPath.startsWith("shape(evenodd from 0 0,")).toBeTruthy();
     expect(written.has("mask-image")).toBeFalsy();
     unbind();
@@ -77,10 +86,13 @@ describe("round mask", () => {
     const { bindMask, cropper } = await load(() => false);
     const { element, style, written } = fakeElement();
     const unbind = bindMask(cropper, element, "circle");
+
     expect(style.clipPath).toBe("");
+
     expect(
       written.get("mask-image")?.startsWith("radial-gradient(")
     ).toBeTruthy();
+
     expect(written.get("-webkit-mask-image")).toBe(written.get("mask-image"));
     unbind();
     expect(written.size).toBe(0);
@@ -90,6 +102,7 @@ describe("round mask", () => {
     const { bindMask, cropper } = await load();
     const { element, style, written } = fakeElement();
     const unbind = bindMask(cropper, element, "circle");
+
     expect(style.clipPath).toBe("");
     expect(written.has("mask-image")).toBeTruthy();
     unbind();
@@ -98,6 +111,7 @@ describe("round mask", () => {
   it("probes a literal shape() once and never for a rect", async () => {
     const supports = vi.fn<Supports>(() => true);
     const { bindMask, cropper } = await load(supports);
+
     bindMask(cropper, fakeElement().element, "rect")();
     expect(supports).not.toHaveBeenCalled();
     bindMask(cropper, fakeElement().element, "circle")();

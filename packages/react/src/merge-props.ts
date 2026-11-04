@@ -18,24 +18,31 @@ const steps = new WeakMap<Handler, Step>();
 
 const chain = (own: Handler, theirs: Handler): Handler => {
   const inner = steps.get(own);
+
   const step: Step = (args, vetoed) => {
     const event = new Object(args[0]);
     let prevented = vetoed;
+
     vetoes.set(event, () => {
       prevented = true;
     });
+
     theirs(...args);
     vetoes.delete(event);
+
     if (inner) {
       inner(args, prevented);
     } else if (!prevented) {
       own(...args);
     }
   };
+
   const handler: Handler = (...args) => {
     step(args, false);
   };
+
   steps.set(handler, step);
+
   return handler;
 };
 
@@ -51,18 +58,22 @@ export const attach = <T>(
 ): (() => unknown) | null => {
   if (typeof ref === "function") {
     const cleanup = ref(node);
+
     return typeof cleanup === "function"
       ? cleanup
       : () => {
           ref(null);
         };
   }
+
   if (ref && typeof ref === "object") {
     ref.current = node;
+
     return () => {
       ref.current = null;
     };
   }
+
   return null;
 };
 
@@ -76,16 +87,22 @@ export const mergeRefs = <T>(
   ...refs: (Ref<T> | undefined)[]
 ): ((node: T | null) => (() => void) | undefined) => {
   let cleanups: ((() => unknown) | null)[] | null = null;
+
   return (node) => {
     const previous = cleanups;
+
     cleanups = null;
+
     if (previous) {
       run(previous);
     } else if (node === null) {
       refs.map((ref) => attach(ref, null));
     }
+
     const mine = node === null ? null : refs.map((ref) => attach(ref, node));
+
     cleanups = mine;
+
     return mine === null || legacy
       ? undefined
       : () => {
@@ -102,8 +119,10 @@ export const mergeProps = (
   theirs: object
 ): Record<string, unknown> => {
   const merged: Record<string, unknown> = { ...ours };
+
   for (const [key, value] of Object.entries<unknown>({ ...theirs })) {
     const own = merged[key];
+
     if (isHandler(key, value) && isHandler(key, own)) {
       merged[key] = chain(own, value);
     } else if (key === "style" && isStyle(own) && isStyle(value)) {
@@ -118,5 +137,6 @@ export const mergeProps = (
       merged[key] = value;
     }
   }
+
   return merged;
 };

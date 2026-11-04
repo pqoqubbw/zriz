@@ -15,57 +15,57 @@ import { sameFields } from "../same-fields";
 import type { Aspect } from "../value";
 import { claim, claimed } from "./input";
 
-export interface Inset {
+export type Inset = {
   top: number;
   right: number;
   bottom: number;
   left: number;
-}
+};
 
-export interface Layout {
+export type Layout = {
   width: number;
   height: number;
   inset: Inset;
   dpr: number;
-}
+};
 
-export interface Box {
+export type Box = {
   x: number;
   y: number;
   width: number;
   height: number;
-}
+};
 
-export interface Placement {
+export type Placement = {
   scale: number;
   offset: Point;
-}
+};
 
-export interface ViewFrame {
+export type ViewFrame = {
   rect: Box;
   matrix: Matrix3;
   scale: number;
   state: CropState;
   layout: Layout;
-}
+};
 
 export type Transition = "recentre" | "rotate" | "flip" | "morph";
 
 export type Grid = "none" | "coarse" | "fine";
 
-export interface Chrome {
+export type Chrome = {
   grid: Grid;
   active: boolean;
   transition: Transition | null;
   overscroll: boolean;
-}
+};
 
-export interface ViewOptions {
+export type ViewOptions = {
   motion?: "auto" | "always" | "reduce" | undefined;
   recentreDelay?: number | undefined;
-}
+};
 
-export interface View {
+export type View = {
   frame: () => ViewFrame | null;
   chrome: () => Chrome;
   onChrome: (listener: () => void) => () => void;
@@ -85,7 +85,7 @@ export interface View {
   onFrame: (listener: (frame: ViewFrame) => void) => () => void;
   onEmpty: (listener: () => void) => () => void;
   destroy: () => void;
-}
+};
 
 export const LAYER_BOX: Record<string, string> = {
   border: "0",
@@ -108,6 +108,7 @@ export const fitPlacement = (layout: Layout, state: CropState): Placement => {
   const width = Math.max(layout.width - inset.left - inset.right, 1);
   const height = Math.max(layout.height - inset.top - inset.bottom, 1);
   const scale = Math.min(width / state.crop.width, height / state.crop.height);
+
   return {
     offset: {
       x: inset.left + width / 2 - scale * state.crop.x,
@@ -151,6 +152,7 @@ export const imageMatrix = (
   const keystone = isFlatPerspective(state.perspective)
     ? centre
     : multiplyMatrix3(perspectiveHomography(state.perspective), centre);
+
   return multiplyMatrix3(affine, keystone);
 };
 
@@ -158,6 +160,7 @@ export const cssMatrix = (m: Matrix3): string => {
   if (m[6] === 0 && m[7] === 0 && m[8] === 1) {
     return `matrix(${m[0]},${m[3]},${m[1]},${m[4]},${m[2]},${m[5]})`;
   }
+
   return `matrix3d(${m[0]},${m[3]},0,${m[6]},${m[1]},${m[4]},0,${m[7]},0,0,1,0,${m[2]},${m[5]},0,${m[8]})`;
 };
 
@@ -183,6 +186,7 @@ export const localOf = (
 ): ((event: { clientX: number; clientY: number }) => Point) => {
   const box = element.getBoundingClientRect();
   const scale = scaleOf(element, box);
+
   return (event) => ({
     x: (event.clientX - box.left) / scale.x - element.clientLeft,
     y: (event.clientY - box.top) / scale.y - element.clientTop,
@@ -213,7 +217,7 @@ const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
   "rotate-90": "rotate",
 };
 
-interface Pose {
+type Pose = {
   rect: Box;
   centre: Point;
   anchor: Point;
@@ -221,7 +225,7 @@ interface Pose {
   mirror: number;
   sx: number;
   sy: number;
-}
+};
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
@@ -237,6 +241,7 @@ const snapBox = (box: Box, dpr: number): Box => {
   const y0 = Math.ceil(box.y * dpr - 1e-6) / dpr;
   const x1 = Math.max(Math.floor((box.x + box.width) * dpr + 1e-6) / dpr, x0);
   const y1 = Math.max(Math.floor((box.y + box.height) * dpr + 1e-6) / dpr, y0);
+
   return { height: y1 - y0, width: x1 - x0, x: x0, y: y0 };
 };
 
@@ -253,6 +258,7 @@ const exactBox = (state: CropState, placement: Placement): Box => ({
 
 const pinnedPlacement = (rect: Box, state: CropState): Placement => {
   const scale = rect.width / state.crop.width;
+
   return {
     offset: {
       x: rect.x + rect.width / 2 - scale * state.crop.x,
@@ -266,11 +272,13 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
   if (matrix[6] !== 0 || matrix[7] !== 0) {
     return null;
   }
+
   const centre = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   const [a, b, , c, d] = matrix;
   const det = a * d - b * c;
   const mirror = det < 0 ? -1 : 1;
   const sx = Math.hypot(a, c);
+
   return {
     anchor: applyHomography(invertMatrix3(matrix), centre),
     angle: Math.atan2(c, mirror * a),
@@ -284,7 +292,9 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
 
 const blendPose = (from: Pose, to: Pose, t: number): Pose => {
   let turn = to.angle - from.angle;
+
   turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
+
   return {
     anchor: {
       x: lerp(from.anchor.x, to.anchor.x, t),
@@ -316,6 +326,7 @@ const poseMatrix = ({
   const b = -mirror * sy * sin;
   const c = sx * sin;
   const d = sy * cos;
+
   return [
     a,
     b,
@@ -333,6 +344,7 @@ const subscribe =
   <T>(set: Set<T>) =>
   (listener: T): (() => void) => {
     set.add(listener);
+
     return () => {
       set.delete(listener);
     };
@@ -342,6 +354,7 @@ const easeOut = (t: number): number => 1 - (1 - t) ** 3;
 
 const springProgress = (omega: number, ms: number): number => {
   const t = (omega * ms) / 1000;
+
   return 1 - (1 + t) * Math.exp(-t);
 };
 
@@ -353,6 +366,7 @@ export const orientationOf = (
   if (typeof aspect !== "number" || aspect === 1) {
     return "square";
   }
+
   return aspect > 1 ? "landscape" : "portrait";
 };
 
@@ -362,6 +376,7 @@ export const stateAttributes = (
   reducedMotion: boolean
 ): Record<string, string | undefined> => {
   const gesture = state.interacting;
+
   return {
     "data-changed": flag(!state.pristine),
     "data-disabled": flag(state.disabled),
@@ -383,9 +398,11 @@ export const stateAttributes = (
 
 export const viewOf = (cropper: Cropper): View => {
   const existing = views.get(cropper);
+
   if (existing) {
     return existing;
   }
+
   let options: ViewOptions = {};
   let layout: Layout | null = null;
   let held: Placement | null = null;
@@ -431,9 +448,11 @@ export const viewOf = (cropper: Cropper): View => {
 
   const setChrome = (next: Partial<Chrome>): void => {
     const merged = { ...chrome, ...next };
+
     if (sameFields(merged, chrome)) {
       return;
     }
+
     chrome = merged;
     notifyChrome();
   };
@@ -442,6 +461,7 @@ export const viewOf = (cropper: Cropper): View => {
     if (held) {
       return held;
     }
+
     return pinned
       ? pinnedPlacement(pinned, state)
       : fitPlacement(current, state);
@@ -456,25 +476,30 @@ export const viewOf = (cropper: Cropper): View => {
 
   const followPhoto = (): void => {
     const size = cropper.getCropState()?.image;
+
     if (photo && size && !sameFields(photo, size)) {
       held = null;
       pinned = null;
       last = null;
       endTransition();
+
       if (recentreTimer !== null) {
         clearTimeout(recentreTimer);
         recentreTimer = null;
       }
     }
+
     photo = size ?? photo;
   };
 
   const compute = (): ViewFrame | null => {
     followPhoto();
     const state = cropper.getCropState();
+
     if (!layout || !state) {
       return null;
     }
+
     const placement = placementOf(state, layout);
     const matrix = imageMatrix(
       state,
@@ -495,9 +520,11 @@ export const viewOf = (cropper: Cropper): View => {
     );
     const exact = exactBox(state, placement);
     const to = blend && pose(exact, matrix);
+
     if (blend && to) {
       shown = blendPose(blend.from, to, blend.t);
     }
+
     return {
       layout,
       matrix: to && shown ? poseMatrix(shown) : matrix,
@@ -509,44 +536,57 @@ export const viewOf = (cropper: Cropper): View => {
 
   const publish = (): void => {
     last = compute();
+
     if (last) {
       for (const listener of listeners) {
         listener(last);
       }
     }
+
     const gone = !cropper.getCropState();
+
     if (gone && !empty) {
       for (const listener of emptyListeners) {
         listener();
       }
     }
+
     empty = gone;
   };
 
   const finishTransition = (): false => {
     stopTransition = null;
     setChrome({ transition: null });
+
     return false;
   };
 
   const recentre = (): void => {
     recentreTimer = null;
     const from = pinned;
+
     if (!from) {
       return;
     }
+
     const omega = reduced() ? REDUCED_OMEGA : RECENTRE_OMEGA;
     let elapsed = 0;
+
     setChrome({ transition: "recentre" });
+
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
       const state = cropper.getCropState();
       const t = springProgress(omega, elapsed);
+
       if (!layout || !state || t > SETTLED_PROGRESS) {
         pinned = null;
+
         return finishTransition();
       }
+
       pinned = lerpBox(from, exactBox(state, fitPlacement(layout, state)), t);
+
       return true;
     }, false);
   };
@@ -555,6 +595,7 @@ export const viewOf = (cropper: Cropper): View => {
     if (recentreTimer !== null) {
       clearTimeout(recentreTimer);
     }
+
     recentreTimer = pinned
       ? setTimeout(recentre, options.recentreDelay ?? RECENTRE_DELAY_MS)
       : null;
@@ -562,14 +603,18 @@ export const viewOf = (cropper: Cropper): View => {
 
   const animate = (kind: Transition, from: ViewFrame): void => {
     const start = (blend && shown) ?? pose(from.rect, from.matrix);
+
     endTransition();
+
     if (!start) {
       return;
     }
+
     blend = { from: start, t: 0 };
     setChrome({ transition: kind });
     let elapsed = 0;
     const quick = reduced();
+
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
       const t =
@@ -579,11 +624,15 @@ export const viewOf = (cropper: Cropper): View => {
               kind === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA,
               elapsed
             );
+
       if (t >= SETTLED_PROGRESS || !blend) {
         blend = null;
+
         return finishTransition();
       }
+
       blend.t = t;
+
       return true;
     }, false);
   };
@@ -601,10 +650,13 @@ export const viewOf = (cropper: Cropper): View => {
     stopShift?.();
     stopShift = null;
     const from = overscrollShift;
+
     if (from.x === 0 && from.y === 0) {
       return;
     }
+
     let elapsed = 0;
+
     stopShift = cropper.run((_, delta) => {
       elapsed += delta;
       const x = spring(from.x, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed);
@@ -614,11 +666,14 @@ export const viewOf = (cropper: Cropper): View => {
         Math.abs(y.value) < 0.1 &&
         Math.abs(x.velocity) < 1 &&
         Math.abs(y.velocity) < 1;
+
       overscrollShift = done ? { x: 0, y: 0 } : { x: x.value, y: y.value };
+
       if (done) {
         stopShift = null;
         markOverscroll();
       }
+
       return !done;
     }, false);
   };
@@ -627,21 +682,27 @@ export const viewOf = (cropper: Cropper): View => {
     stopZoom?.();
     stopZoom = null;
     const from = Math.log(overscrollScale);
+
     if (from === 0) {
       return;
     }
+
     let elapsed = 0;
+
     stopZoom = cropper.run((_, delta) => {
       elapsed += delta;
       const z = quick
         ? spring(from, 0, OVERSCROLL_OMEGA, OVERSCROLL_ZETA, elapsed)
         : spring(from, 0, ZOOM_OMEGA, 1, elapsed);
       const done = Math.abs(z.value) < 1e-4 && Math.abs(z.velocity) < 1e-2;
+
       overscrollScale = done ? 1 : Math.exp(z.value);
+
       if (done) {
         stopZoom = null;
         markOverscroll();
       }
+
       return !done;
     }, false);
   };
@@ -651,6 +712,7 @@ export const viewOf = (cropper: Cropper): View => {
       clearTimeout(recentreTimer);
       recentreTimer = null;
     }
+
     if (chromeTimer !== null) {
       clearTimeout(chromeTimer);
       chromeTimer = null;
@@ -661,6 +723,7 @@ export const viewOf = (cropper: Cropper): View => {
   const offChange = cropper.on("accept", (_, details) => {
     const kind = TRANSITION_BY_REASON[details.reason];
     const from = last;
+
     if (kind && from) {
       pinned = null;
       animate(kind, from);
@@ -668,13 +731,16 @@ export const viewOf = (cropper: Cropper): View => {
   });
   const offStart = cropper.on("gesturestart", (reason) => {
     const moving = blend;
+
     clearTimers();
     endTransition();
     const grids: Partial<Record<string, Grid>> = {
       dial: "fine",
       keyboard: chrome.grid,
     };
+
     setChrome({ active: true, grid: grids[reason] ?? "coarse" });
+
     if (moving) {
       publish();
     }
@@ -697,10 +763,12 @@ export const viewOf = (cropper: Cropper): View => {
     if (chrome.grid === "fine") {
       setChrome({ grid: "none" });
     }
+
     chromeTimer = setTimeout(() => {
       chromeTimer = null;
       setChrome({ active: false, grid: "none" });
     }, CHROME_HOLD_MS);
+
     scheduleRecentre();
   });
 
@@ -725,15 +793,19 @@ export const viewOf = (cropper: Cropper): View => {
     },
     frame() {
       followPhoto();
+
       return last?.state === cropper.getCropState() ? last : compute();
     },
     hold() {
       followPhoto();
       const state = cropper.getCropState();
+
       if (!layout || !state) {
         return null;
       }
+
       held ??= placementOf(state, layout);
+
       return held;
     },
     local(event) {
@@ -745,9 +817,12 @@ export const viewOf = (cropper: Cropper): View => {
       if (chromeListeners.size === 0) {
         reduceQuery?.addEventListener("change", notifyChrome);
       }
+
       chromeListeners.add(listener);
+
       return () => {
         chromeListeners.delete(listener);
+
         if (chromeListeners.size === 0) {
           reduceQuery?.removeEventListener("change", notifyChrome);
         }
@@ -761,9 +836,11 @@ export const viewOf = (cropper: Cropper): View => {
     release() {
       followPhoto();
       const state = cropper.getCropState();
+
       if (held && state && layout && cropper.getState().interacting) {
         const box = exactBox(state, held);
         const fit = exactBox(state, fitPlacement(layout, state));
+
         pinned =
           Math.abs(box.x - fit.x) +
             Math.abs(box.y - fit.y) +
@@ -773,6 +850,7 @@ export const viewOf = (cropper: Cropper): View => {
             ? null
             : box;
       }
+
       held = null;
       cropper.invalidate();
     },
@@ -782,7 +860,9 @@ export const viewOf = (cropper: Cropper): View => {
       } else {
         surfaces.delete(surface);
       }
+
       const top = [...surfaces].at(-1);
+
       target = top?.[0];
       layout = top?.[1] ?? null;
       last = compute();
@@ -790,7 +870,9 @@ export const viewOf = (cropper: Cropper): View => {
     },
     setOptions(next) {
       const before = reduced();
+
       options = next;
+
       if (reduced() !== before) {
         notifyChrome();
       }
@@ -801,12 +883,14 @@ export const viewOf = (cropper: Cropper): View => {
         stopShift = null;
         overscrollShift = offset;
       }
+
       if (scale !== undefined) {
         stopZoom?.();
         stopZoom = null;
         overscrollScale = scale;
         overscrollAnchor = anchor ?? overscrollAnchor;
       }
+
       markOverscroll();
       cropper.invalidate();
     },
@@ -816,9 +900,12 @@ export const viewOf = (cropper: Cropper): View => {
     },
     settleZoom,
   };
+
   views.set(cropper, view);
+
   cropper.on("destroy", () => {
     view.destroy();
   });
+
   return view;
 };

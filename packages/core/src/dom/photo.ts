@@ -10,17 +10,17 @@ import { LAYER_BOX, cssMatrix, viewOf } from "./view";
 import type { ViewFrame } from "./view";
 import { motionOff } from "./worker";
 
-interface Drawn {
+type Drawn = {
   matrix: Matrix3;
   width: number;
   height: number;
   dpr: number;
-}
+};
 
-interface MotionFile {
+type MotionFile = {
   url: Promise<string>;
   users: number;
-}
+};
 
 const files = new WeakMap<LoadedImage, MotionFile>();
 const MATRIX_TOLERANCE = 1e-6;
@@ -49,15 +49,19 @@ const takeFile = async (image: LoadedImage): Promise<string> => {
     ),
     users: 0,
   };
+
   file.users += 1;
   files.set(image, file);
+
   return await file.url;
 };
 
 const dropFile = (image: LoadedImage): void => {
   const file = files.get(image);
+
   if (file) {
     file.users -= 1;
+
     if (file.users === 0) {
       files.delete(image);
       file.url.then(URL.revokeObjectURL.bind(URL)).catch(() => null);
@@ -70,11 +74,15 @@ const childOf = <K extends "img" | "canvas">(
   tag: K
 ): HTMLElementTagNameMap[K] => {
   const found = container.querySelector(tag);
+
   if (found) {
     return found;
   }
+
   const made = container.ownerDocument.createElement(tag);
+
   container.append(made);
+
   return made;
 };
 
@@ -85,6 +93,7 @@ export const bindPhoto = (
   const view = viewOf(cropper);
   const motion = childOf(container, "img");
   const rest = childOf(container, "canvas");
+
   container.style.position = "absolute";
   container.style.inset = "0";
   container.style.pointerEvents = "none";
@@ -94,6 +103,7 @@ export const bindPhoto = (
   motion.draggable = false;
   motion.decoding = "async";
   const layer = { ...LAYER_BOX, transition: "none", visibility: "hidden" };
+
   Object.assign(rest.style, layer);
   Object.assign(motion.style, layer, { transformOrigin: "0 0" });
   let image: LoadedImage | null = null;
@@ -112,11 +122,14 @@ export const bindPhoto = (
   let held: LoadedImage | null = null;
 
   let shown = "";
+
   const show = (canvas: boolean, fallback = canvas): void => {
     const next = `${canvas}${fallback}${motionReady}`;
+
     if (next === shown) {
       return;
     }
+
     shown = next;
     rest.style.visibility = fallback ? "visible" : "hidden";
     motion.style.visibility = fallback || !motionReady ? "hidden" : "visible";
@@ -125,6 +138,7 @@ export const bindPhoto = (
 
   const isIdle = (): boolean => {
     const state = cropper.getState();
+
     return state.interacting === null && !state.settling;
   };
 
@@ -132,12 +146,15 @@ export const bindPhoto = (
     const { dpr, width, height } = frame.layout;
     const w = Math.max(1, Math.round(width * dpr));
     const h = Math.max(1, Math.round(height * dpr));
+
     if (rest.width !== w || rest.height !== h) {
       rest.width = w;
       rest.height = h;
     }
+
     rest.style.width = `${w / dpr}px`;
     rest.style.height = `${h / dpr}px`;
+
     return rest.getContext("2d");
   };
 
@@ -147,19 +164,24 @@ export const bindPhoto = (
     region: Region
   ): void => {
     const context = backing(frame);
+
     if (!context || !isAffine(frame.matrix) || context.isContextLost?.()) {
       blank = true;
+
       return;
     }
+
     blank = false;
     const { dpr } = frame.layout;
     const [a, c, e, b, d, f] = frame.matrix;
     const sx = region.width / bitmap.width;
     const sy = region.height / bitmap.height;
+
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, rest.width, rest.height);
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
+
     context.setTransform(
       dpr * a * sx,
       dpr * b * sx,
@@ -168,6 +190,7 @@ export const bindPhoto = (
       dpr * (a * region.x + c * region.y + e),
       dpr * (b * region.x + d * region.y + f)
     );
+
     context.drawImage(bitmap, 0, 0);
   };
 
@@ -180,33 +203,44 @@ export const bindPhoto = (
     if (!image || !boxed || !isAffine(frame.matrix)) {
       return;
     }
+
     const current = image;
     const { refine } = await import("./sharpen");
+
     if (ticket !== token) {
       return;
     }
+
     const fine = await refine(frame, current, () => ticket === token).catch(
       () => null
     );
     const bitmap = fine?.bitmap;
+
     if (ticket !== token || !isIdle()) {
       bitmap?.close();
+
       return;
     }
+
     const source = bitmap ?? current.preview;
+
     paint(frame, source, fine?.region ?? whole(current));
     bitmap?.close();
+
     if (blank || !fine) {
       drawn = null;
       show(false, !blank);
+
       return;
     }
+
     drawn = {
       dpr: frame.layout.dpr,
       height: frame.layout.height,
       matrix: frame.matrix,
       width: frame.layout.width,
     };
+
     reuse();
   };
 
@@ -214,18 +248,25 @@ export const bindPhoto = (
     if (running || !waiting) {
       return;
     }
+
     const { frame, ticket } = waiting;
+
     waiting = null;
+
     if (ticket !== token) {
       return;
     }
+
     running = true;
+
     withTimeout(sharpen(frame, ticket), TIMEOUT, undefined)
       .finally(() => {
         running = false;
+
         if (!moving) {
           motion.style.willChange = "";
         }
+
         drain();
       })
       .catch(() => null);
@@ -233,6 +274,7 @@ export const bindPhoto = (
 
   const cancel = (): void => {
     token += 1;
+
     if (pending !== null) {
       clearTimeout(pending);
       pending = null;
@@ -242,6 +284,7 @@ export const bindPhoto = (
   const schedule = (frame: ViewFrame, delay = 0): void => {
     cancel();
     const ticket = token;
+
     pending = setTimeout(() => {
       pending = null;
       waiting = { frame, ticket };
@@ -260,25 +303,32 @@ export const bindPhoto = (
     if (!image || !boxed) {
       return;
     }
+
     const { layout } = frame;
     const resized =
       seen !== null &&
       (seen.width !== layout.width ||
         seen.height !== layout.height ||
         seen.dpr !== layout.dpr);
+
     seen = layout;
     const next = cssMatrix(frame.matrix);
+
     if (next !== transform) {
       transform = next;
       motion.style.transform = next;
     }
+
     if (isDrawn(frame)) {
       cancel();
+
       if (isIdle()) {
         reuse();
       }
+
       return;
     }
+
     if (motionReady) {
       show(false);
     } else {
@@ -286,6 +336,7 @@ export const bindPhoto = (
       drawn = null;
       show(false, !blank);
     }
+
     if (isIdle()) {
       schedule(frame, resized ? LAYOUT_IDLE : 0);
     }
@@ -293,6 +344,7 @@ export const bindPhoto = (
 
   const refresh = (): void => {
     const frame = view.frame();
+
     if (frame) {
       write(frame);
     }
@@ -300,13 +352,17 @@ export const bindPhoto = (
 
   const prepare = async (next: LoadedImage, ticket: number): Promise<void> => {
     const url = await takeFile(next);
+
     if (ticket !== loading) {
       return;
     }
+
     motion.src = url;
     await motion.decode();
+
     if (ticket === loading) {
       motionReady = true;
+
       if (drawn === null && (blank || !isIdle())) {
         show(false);
       }
@@ -325,14 +381,17 @@ export const bindPhoto = (
       dropFile(held);
       held = null;
     }
+
     motion.removeAttribute("src");
   };
 
   const load = (): void => {
     const next = imageOf(cropper);
+
     if (next === image) {
       return;
     }
+
     image = next;
     drawn = null;
     motionReady = false;
@@ -340,11 +399,14 @@ export const bindPhoto = (
     clearMotion();
     show(false);
     loading += 1;
+
     if (!next) {
       rest.width = 0;
       rest.height = 0;
+
       return;
     }
+
     motion.style.width = `${next.width}px`;
     motion.style.height = `${next.height}px`;
     ensure();
@@ -353,18 +415,23 @@ export const bindPhoto = (
 
   const sync = (): void => {
     const next = !isIdle();
+
     if (next === moving) {
       return;
     }
+
     moving = next;
+
     if (moving) {
       token += 1;
       motion.style.willChange = "transform";
+
       if (motionReady) {
         show(false);
       }
     } else {
       const frame = view.frame();
+
       if (frame && isDrawn(frame)) {
         reuse();
       } else if (frame) {
@@ -388,6 +455,7 @@ export const bindPhoto = (
 
   const onBox = (): void => {
     const next = container.clientWidth > 0;
+
     if (next !== boxed) {
       boxed = next;
       wake();
@@ -398,12 +466,15 @@ export const bindPhoto = (
   rest.addEventListener("contextlost", lost);
   rest.addEventListener("contextrestored", wake);
   const observer = new (windowOf(container).ResizeObserver)(onBox);
+
   observer.observe(container);
   load();
   const offImage = onImage(cropper, load);
   const offFrame = view.onFrame(write);
   const offState = cropper.subscribe(sync);
+
   sync();
+
   return () => {
     offImage();
     offFrame();

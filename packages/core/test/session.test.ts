@@ -85,6 +85,7 @@ const steps = oneof(
 
 const finite = (cropper: Cropper): boolean => {
   const { center, rotation, size } = cropper.getValue();
+
   return [center.x, center.y, rotation, size.width, size.height].every((n) =>
     Number.isFinite(n)
   );
@@ -97,44 +98,56 @@ const session = (image: { height: number; width: number }, run: Step[]) => {
   let open = 0;
   let settled = 0;
   let wasSettling = false;
+
   cropper.on("gesturestart", () => {
     open += 1;
   });
+
   cropper.on("gestureend", () => {
     open -= 1;
   });
+
   cropper.on("settle", () => {
     settled += 1;
   });
+
   cropper.subscribe(() => {
     wasSettling ||= cropper.getState().settling;
   });
+
   cropper.on("change", (value, details) => {
     if (details.changed.length === 0) {
       broken.push("a change with no fields");
     }
+
     if (details.previous === value) {
       broken.push("a change that moved nothing");
     }
   });
+
   cropper.on("commit", (value) => {
     if (cropper.getState().committed !== value) {
       broken.push("a commit that reads an old snapshot");
     }
+
     if (cropper.getState().interacting !== null && open === 0) {
       broken.push("a commit with a gesture no one opened");
     }
   });
+
   for (const step of run) {
     step(cropper);
     time.frame();
+
     if (!finite(cropper)) {
       broken.push("a value that is not finite");
     }
+
     if ((cropper.getState().interacting === null) !== (open === 0)) {
       broken.push("gesture events that disagree with interacting");
     }
   }
+
   cropper.end(undefined, OWNER);
   time.frames(240);
   const end = {
@@ -143,7 +156,9 @@ const session = (image: { height: number; width: number }, run: Step[]) => {
     pending: time.pending(),
     settling: cropper.getState().settling,
   };
+
   cropper.destroy();
+
   return { end, settled, time, wasSettling };
 };
 
@@ -154,12 +169,15 @@ describe("a session of random writes and frames", () => {
       clock: time.clock,
       image: { height: 3000, width: 4000 },
     });
+
     cropper.setAspect(0.5);
     time.frame();
     const seen: boolean[] = [];
+
     cropper.on("commit", (value) => {
       seen.push(cropper.getState().committed === value);
     });
+
     cropper.begin("pan", undefined, OWNER);
     cropper.setImage({ height: 100, width: 100 });
     time.frames(2);
@@ -177,19 +195,24 @@ describe("a session of random writes and frames", () => {
     });
     const { committed } = cropper.getState();
     const before: unknown[] = [];
+
     cropper.subscribe(() => {
       if (before.length === 0 && cropper.getState().committed !== committed) {
         before.push([cropper.getValue(), cropper.getPixelCrop()]);
         cropper.setZoom(3);
       }
     });
+
     const sent: unknown[] = [];
+
     cropper.on("commit", (value, { pixelCrop }) => {
       sent.push([value, pixelCrop]);
     });
+
     cropper.setZoom(2);
     time.frames(2);
     expect(sent[0]).toStrictEqual(before[0]);
+
     expect(sent.at(-1)).toStrictEqual([
       cropper.getValue(),
       cropper.getPixelCrop(),
@@ -202,22 +225,27 @@ describe("a session of random writes and frames", () => {
       clock: time.clock,
       image: { height: 3000, width: 4000 },
     });
+
     cropper.setAspect(0.5);
     time.frame();
     const { committed } = cropper.getState();
     const before: unknown[] = [];
+
     cropper.subscribe(() => {
       if (before.length === 0 && cropper.getState().committed !== committed) {
         before.push([cropper.getValue(), cropper.getPixelCrop()]);
         cropper.setZoom(3);
       }
     });
+
     const sent: unknown[] = [];
     const read: boolean[] = [];
+
     cropper.on("commit", (value, { pixelCrop }) => {
       sent.push([value, pixelCrop]);
       read.push(cropper.getState().committed === value);
     });
+
     cropper.begin("pan", undefined, OWNER);
     cropper.setImage({ height: 100, width: 100 });
     expect(sent).toStrictEqual(before);
@@ -225,6 +253,7 @@ describe("a session of random writes and frames", () => {
     cropper.end(undefined, OWNER);
     time.frames(2);
     expect(cropper.getState().committed).toStrictEqual(cropper.getValue());
+
     expect(sent.at(-1)).toStrictEqual([
       cropper.getValue(),
       cropper.getPixelCrop(),
@@ -239,6 +268,7 @@ describe("a session of random writes and frames", () => {
     });
     const { committed } = cropper.getState();
     let wrote = false;
+
     cropper.subscribe(() => {
       if (!wrote && cropper.getState().committed !== committed) {
         wrote = true;
@@ -246,11 +276,14 @@ describe("a session of random writes and frames", () => {
         cropper.stop();
       }
     });
+
     const sent: unknown[] = [];
+
     cropper.on("commit", (value) => {
       sent.push(value);
       expect(cropper.getState().committed).toBe(value);
     });
+
     cropper.setZoom(2);
     time.frames(2);
     expect(sent.at(-1)).toStrictEqual(cropper.getValue());
@@ -277,23 +310,28 @@ describe("a session of random writes and frames", () => {
         clock: time.clock,
         image: { height: 3000, width: 4000 },
       });
+
       cropper.setAspect(0.5);
       time.frame();
       const { committed } = cropper.getState();
+
       wire(cropper, () => {
         if (cropper.getState().committed !== committed) {
           act(cropper);
         }
       });
+
       cropper.begin("pan", undefined, OWNER);
       cropper.setImage({ height: 100, width: 100 });
       expect(cropper.getState().interacting).toBeNull();
       time.frames(2);
       cropper.destroy();
     };
+
     swap((cropper, run) => {
       cropper.subscribe(run);
     });
+
     swap((cropper, run) => {
       cropper.on("commit", run);
     });
@@ -305,6 +343,7 @@ describe("a session of random writes and frames", () => {
       clock: time.clock,
       image: { height: 3000, width: 4000 },
     });
+
     cropper.setAspect(0.5);
     time.frame();
     const off = cropper.on("change", () => {
@@ -312,9 +351,11 @@ describe("a session of random writes and frames", () => {
       cropper.setZoom(3);
     });
     const sent: unknown[] = [];
+
     cropper.on("commit", (value, { pixelCrop }) => {
       sent.push([value, pixelCrop]);
     });
+
     cropper.begin("pan", undefined, OWNER);
     cropper.setImage({ height: 100, width: 100 });
     expect(sent).toStrictEqual([[cropper.getValue(), cropper.getPixelCrop()]]);
@@ -324,6 +365,7 @@ describe("a session of random writes and frames", () => {
 
   it("refuses a gesture after destroy", () => {
     const cropper = createCropper({ image: { height: 300, width: 400 } });
+
     cropper.destroy();
     expect(cropper.begin("pan")).toBeFalsy();
   });
@@ -338,12 +380,14 @@ describe("a session of random writes and frames", () => {
         array(steps, { maxLength: 40 }),
         (image, run) => {
           const { end, settled, time, wasSettling } = session(image, run);
+
           expect(end).toStrictEqual({
             broken: [],
             open: 0,
             pending: 0,
             settling: false,
           });
+
           expect(settled > 0 || !wasSettling).toBeTruthy();
           expect(time.pending()).toBe(0);
         }

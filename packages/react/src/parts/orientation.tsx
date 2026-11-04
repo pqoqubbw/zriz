@@ -9,9 +9,9 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface OrientationState {
+export type OrientationState = {
   orientation: "portrait" | "landscape" | "square";
-}
+};
 
 export type OrientationProps = PartProps<"button", OrientationState>;
 
@@ -22,8 +22,10 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
       const aspect = useCropperState((s) => s.aspect);
       const orientation = orientationOf(aspect);
       const disabled = orientation === "square";
+
       const onClick = (event: MouseEvent): void => {
         const current = cropper.getValue().aspect;
+
         if (typeof current === "number") {
           cropper.setAspect(1 / current, {
             event: event.nativeEvent,
@@ -31,6 +33,7 @@ export const Orientation: Part<OrientationProps, HTMLButtonElement> =
           });
         }
       };
+
       return usePart(
         "button",
         {

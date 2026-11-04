@@ -14,15 +14,15 @@ export type ImageSource =
   | OffscreenCanvas
   | ImageBitmap;
 
-export interface LoadOptions {
+export type LoadOptions = {
   previewEdge?: number | undefined;
   crossOrigin?: "anonymous" | "use-credentials" | undefined;
   signal?: AbortSignal | undefined;
   timeout?: number | undefined;
   decode?: ((blob: Blob) => Promise<ImageBitmap>) | undefined;
-}
+};
 
-export interface LoadedImage {
+export type LoadedImage = {
   id: number;
   width: number;
   height: number;
@@ -30,25 +30,25 @@ export interface LoadedImage {
   source: Blob | ImageBitmap;
   mime: string | null;
   animated: boolean;
-}
+};
 
-export interface ExportOptions {
+export type ExportOptions = {
   type?: "image/png" | "image/jpeg" | "image/webp" | undefined;
   quality?: number | undefined;
   maxSize?: Size | undefined;
   colorSpace?: "srgb" | "display-p3" | undefined;
   shape?: "rect" | "circle" | undefined;
   signal?: AbortSignal | undefined;
-}
+};
 
-export interface ExportResult {
+export type ExportResult = {
   blob: Blob;
   type: string;
   width: number;
   height: number;
   scaled: boolean;
   crop: ExportPlan;
-}
+};
 
 let nextId = 0;
 const TOUCH_AREA = 16_777_216;
@@ -69,18 +69,23 @@ const uint32 = (bytes: Uint8Array, at: number): number =>
 
 const hasAnimationChunk = (bytes: Uint8Array): boolean => {
   let at = 8;
+
   while (at + 8 <= bytes.length) {
     const chunk = ascii(bytes, at + 4, at + 8);
+
     if (chunk === "acTL" || chunk === "IDAT") {
       return chunk === "acTL";
     }
+
     at += 12 + uint32(bytes, at);
   }
+
   return false;
 };
 
 const isoBrands = (bytes: Uint8Array): string[] => {
   const end = Math.min(uint32(bytes, 0), bytes.length);
+
   return (ascii(bytes, 8, 12) + ascii(bytes, 16, end)).match(/.{4}/gsu) ?? [];
 };
 
@@ -90,38 +95,48 @@ export const raster = (
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) {
     return { animated: false, mime: "image/jpeg" };
   }
+
   if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47])) {
     return { animated: hasAnimationChunk(bytes), mime: "image/png" };
   }
+
   if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 12) === "WEBP") {
     return {
       animated: ascii(bytes, 12, 16) === "VP8X" && (bytes[20] ?? 0) % 4 >= 2,
       mime: "image/webp",
     };
   }
+
   if (ascii(bytes, 0, 4) === "GIF8") {
     return { animated: true, mime: "image/gif" };
   }
+
   if (ascii(bytes, 4, 8) === "ftyp") {
     const brands = isoBrands(bytes);
     const has = (pattern: RegExp): boolean =>
       brands.some((brand) => pattern.test(brand));
+
     if (has(/^avi[fs]$/u)) {
       return { animated: brands.includes("avis"), mime: "image/avif" };
     }
+
     if (has(/^(?:hei[cxms]|hev[cxms]|m[is]f1)$/u)) {
       return { animated: has(/^(?:hev[cxms]|msf1)$/u), mime: "image/heic" };
     }
   }
+
   if (startsWith(bytes, [0xff, 0x0a]) || ascii(bytes, 4, 8) === "JXL ") {
     return { animated: false, mime: "image/jxl" };
   }
+
   if (ascii(bytes, 0, 2) === "BM") {
     return { animated: false, mime: "image/bmp" };
   }
+
   if (ascii(bytes, 0, 4) === "II*\0" || ascii(bytes, 0, 4) === "MM\0*") {
     return { animated: false, mime: "image/tiff" };
   }
+
   return { animated: false, mime: null };
 };
 
@@ -137,6 +152,7 @@ export const defaultPreviewEdge = (): number => {
     typeof screen === "undefined"
       ? 1280
       : Math.max(screen.width, screen.height);
+
   return Math.min(
     Math.ceil(viewport * dpr * 2),
     hasTouchScreen() ? 4096 : 8192
@@ -148,9 +164,11 @@ const resizeBitmap = async (
   edge: number
 ): Promise<ImageBitmap> => {
   const size = fitEdge(bitmap, edge);
+
   if (size.width === bitmap.width && size.height === bitmap.height) {
     return bitmap;
   }
+
   return await createImageBitmap(bitmap, {
     resizeHeight: size.height,
     resizeQuality: "medium",
@@ -170,20 +188,24 @@ const toBlob = async (
       mode: "cors",
       signal,
     });
+
     if (!response.ok) {
       throw new ZrizError(
         "decode",
         `zriz: ${response.status} for ${src.replace(/[?#].*/su, "").slice(0, 80)}`
       );
     }
+
     return await response.blob();
   } catch (error) {
     if (error instanceof ZrizError) {
       throw error;
     }
+
     if (signal.aborted) {
       throw aborted();
     }
+
     throw new ZrizError(
       "cross-origin",
       /^(?:blob|data):/u.test(src)
@@ -200,10 +222,12 @@ export const toZriz = (
   if (error instanceof ZrizError) {
     return error;
   }
+
   const message = error instanceof Error ? error.message : String(error);
   const match = /^zriz:(?<code>[\w-]+):(?<detail>.*)$/u.exec(message);
   const code = match?.groups?.code ?? "decode";
   const detail = match?.groups?.detail ?? message;
+
   if (
     code === "undecodable" &&
     mime !== null &&
@@ -214,6 +238,7 @@ export const toZriz = (
       `zriz: could not decode this ${mime} file. It may be unsupported or damaged. A decode function adds a decoder.`
     );
   }
+
   return new ZrizError(
     code === "blank" ? "blank" : "decode",
     `zriz: ${detail}`
@@ -223,6 +248,7 @@ export const toZriz = (
 export const freeImage = (image: LoadedImage): void => {
   void releaseOff(image.id);
   image.preview.close();
+
   if (image.source instanceof ImageBitmap && image.source !== image.preview) {
     image.source.close();
   }
@@ -234,6 +260,7 @@ export const loadImage = async (
 ): Promise<LoadedImage> => {
   const asked = options.previewEdge ?? 0;
   const edge = asked > 0 ? asked : defaultPreviewEdge();
+
   nextId += 1;
   const id = nextId;
   const cancel = new AbortController();
@@ -244,17 +271,21 @@ export const loadImage = async (
   const ms = options.timeout ?? TIMEOUT;
   const limit = deadline(ms, options.signal);
   let inHook = false;
+
   const own = (bitmap: ImageBitmap): ImageBitmap => {
     if (bitmap !== src) {
       held.push(bitmap);
     }
+
     return bitmap;
   };
+
   const checkpoint = (): void => {
     if (signal.aborted) {
       throw aborted();
     }
   };
+
   const work = async (): Promise<LoadedImage> => {
     let mime: string | null = null;
     let animated = false;
@@ -271,9 +302,12 @@ export const loadImage = async (
       source,
       width,
     });
+
     checkpoint();
+
     if (typeof src === "string" || "arrayBuffer" in src) {
       let blob: Blob;
+
       if (typeof src === "string") {
         blob = await toBlob(src, options.crossOrigin, signal);
       } else {
@@ -281,7 +315,9 @@ export const loadImage = async (
           ? src
           : new Blob([src], { type: src.type });
       }
+
       const head = new Uint8Array(await blob.slice(0, HEAD).arrayBuffer());
+
       checkpoint();
       ({ mime, animated } = raster(head));
       const typed = blob.type.startsWith("image/svg+xml");
@@ -289,16 +325,21 @@ export const loadImage = async (
         mime === null && (typed || /<svg/iu.test(textOf(head)))
           ? await import("./svg")
           : null;
+
       if (vector && (typed || vector.isSvg(head))) {
         mime = "image/svg+xml";
         const preview = own(await vector.fromSvg(blob, edge));
+
         await keepOff(id, preview);
+
         return loaded(preview, preview, preview);
       }
+
       const resume = limit.pause();
       const decoded = await decodeTurn(
         async () => {
           resume();
+
           return await decodeOff(blob, edge, id);
         },
         ms,
@@ -307,28 +348,38 @@ export const loadImage = async (
         if (!options.decode) {
           throw toZriz(error, mime);
         }
+
         checkpoint();
         inHook = true;
         const full = own(await options.decode(blob));
+
         inHook = false;
         const { assertReadable } = await import("./source");
+
         assertReadable(full);
         const preview = own(await resizeBitmap(full, edge));
+
         await keepOff(id, preview);
+
         return { full, height: full.height, preview, width: full.width };
       });
+
       return loaded(
         decoded.preview,
         "full" in decoded ? decoded.full : blob,
         decoded
       );
     }
+
     const { fromElement } = await import("./source");
     const source = own(await fromElement(src, outputLimit()));
     const preview = own(await resizeBitmap(source, edge));
+
     await keepOff(id, preview);
+
     return loaded(preview, source, source);
   };
+
   const guarded = async (): Promise<LoadedImage> => {
     try {
       return await work();
@@ -336,10 +387,13 @@ export const loadImage = async (
       for (const bitmap of held) {
         bitmap.close();
       }
+
       throw error;
     }
   };
+
   const pending = guarded();
+
   try {
     return await Promise.race([pending, limit.promise]);
   } catch (error) {

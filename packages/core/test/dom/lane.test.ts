@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { via } from "../../src/dom/worker";
 import type { Lane } from "../../src/dom/worker";
 
-interface Local {
+type Local = {
   run: () => Promise<number>;
-}
+};
 
 const answering = (call: Lane<Local>["call"]): Lane<Local> => ({
   call,
@@ -24,6 +24,7 @@ describe("worker replies", () => {
         )
       )
     ).resolves.toBe(7);
+
     await expect(
       run(
         answering(async () => await Promise.reject(new Error("zriz:decode:x")))

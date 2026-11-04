@@ -1,30 +1,30 @@
 import type { Point } from "./types";
 
-export interface ViewTransform {
+export type ViewTransform = {
   scale: number;
   translateX: number;
   translateY: number;
-}
+};
 
-export interface ScreenRect {
+export type ScreenRect = {
   centerX: number;
   centerY: number;
   width: number;
   height: number;
-}
+};
 
-export interface RecentreFrame {
+export type RecentreFrame = {
   rect: ScreenRect;
   view: ViewTransform;
   scale: number;
-}
+};
 
-export interface RecentrePlan {
+export type RecentrePlan = {
   factor: number;
   center: Point;
   at: (lambda: number) => RecentreFrame;
   origin: Point | null;
-}
+};
 
 export const recentrePlan = (
   rect: ScreenRect,
@@ -39,11 +39,13 @@ export const recentrePlan = (
     x: (rect.centerX - view.translateX) / view.scale,
     y: (rect.centerY - view.translateY) / view.scale,
   };
+
   const at = (lambda: number): RecentreFrame => {
     const sigma = 1 + (factor - 1) * lambda;
     const centerX = rect.centerX + (target.centerX - rect.centerX) * lambda;
     const centerY = rect.centerY + (target.centerY - rect.centerY) * lambda;
     const scale = view.scale * sigma;
+
     return {
       rect: {
         centerX,
@@ -59,6 +61,7 @@ export const recentrePlan = (
       },
     };
   };
+
   const origin =
     factor === 1
       ? null
@@ -66,6 +69,7 @@ export const recentrePlan = (
           x: (target.centerX - factor * rect.centerX) / (1 - factor),
           y: (target.centerY - factor * rect.centerY) / (1 - factor),
         };
+
   return { at, center, factor, origin };
 };
 

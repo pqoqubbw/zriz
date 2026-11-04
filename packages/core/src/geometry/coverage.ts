@@ -7,6 +7,7 @@ type Row = readonly [number, number, number];
 
 const absSinCos = (degrees: number): { sin: number; cos: number } => {
   const { sin, cos } = sinCosDegrees(degrees);
+
   return { cos: Math.abs(cos), sin: Math.abs(sin) };
 };
 
@@ -17,6 +18,7 @@ export const panBox = (
   height: number
 ): Point => {
   const { sin, cos } = absSinCos(angle);
+
   return {
     x: (image.width - (width * cos + height * sin)) / 2,
     y: (image.height - (width * sin + height * cos)) / 2,
@@ -39,9 +41,11 @@ export const clampPan = (
     x: clamp(straightened.x, box.x),
     y: clamp(straightened.y, box.y),
   };
+
   if (clamped.x === straightened.x && clamped.y === straightened.y) {
     return centre;
   }
+
   return applyMatrix2(rotationMatrix(angle), clamped);
 };
 
@@ -53,6 +57,7 @@ export const coverScaleAt = (
 ): number => {
   const { sin, cos } = absSinCos(angle);
   const straightened = applyMatrix2(rotationMatrix(-angle), centre);
+
   return Math.max(
     (view.width * cos + view.height * sin) /
       (image.width - 2 * Math.abs(straightened.x)),
@@ -69,6 +74,7 @@ export const minScaleAt = (
   Math.max(
     ...planes.map((plane) => {
       const room = plane.d - (plane.nx * centre.x + plane.ny * centre.y);
+
       return room > 0
         ? planeSupport(plane, view.width, view.height) / room
         : Number.POSITIVE_INFINITY;
@@ -88,9 +94,11 @@ const withColumn = (row: Row, column: number, value: number): Row => [
 
 const solve3 = (a: Row, b: Row, c: Row, rhs: Row): Row | null => {
   const det = determinant3(a, b, c);
+
   if (Math.abs(det) < 1e-14) {
     return null;
   }
+
   const solveColumn = (column: number): number =>
     positiveZero(
       determinant3(
@@ -99,6 +107,7 @@ const solve3 = (a: Row, b: Row, c: Row, rhs: Row): Row | null => {
         withColumn(c, column, rhs[2])
       ) / det
     );
+
   return [solveColumn(0), solveColumn(1), solveColumn(2)];
 };
 
@@ -107,6 +116,7 @@ const flatFit = (
   view: Size
 ): { center: Point; scale: number } | null => {
   const [a, b, c, d] = planes;
+
   if (
     !a ||
     !b ||
@@ -123,14 +133,18 @@ const flatFit = (
   ) {
     return null;
   }
+
   const room = (one: HalfPlane, other: HalfPlane): number => {
     const support = planeSupport(one, view.width, view.height);
+
     return support > 0
       ? (one.d + other.d) / (2 * support)
       : Number.POSITIVE_INFINITY;
   };
+
   const u = (a.d - b.d) / 2;
   const v = (c.d - d.d) / 2;
+
   return {
     center: { x: u * a.nx + v * c.nx, y: u * a.ny + v * c.ny },
     scale: 1 / Math.min(room(a, b), room(c, d)),
@@ -142,9 +156,11 @@ export const largestFit = (
   view: Size
 ): { center: Point; scale: number } => {
   const flat = flatFit(planes, view);
+
   if (flat) {
     return flat;
   }
+
   const rows = planes.map((plane) => ({
     d: plane.d,
     row: [
@@ -155,10 +171,12 @@ export const largestFit = (
   }));
   const tolerance = 1e-9 + 1e-12 * Math.max(...planes.map(({ d }) => d));
   let best = { center: { x: 0, y: 0 }, t: Number.NEGATIVE_INFINITY };
+
   for (const [i, a] of rows.entries()) {
     for (const [j, b] of rows.slice(i + 1).entries()) {
       for (const c of rows.slice(i + j + 2)) {
         const solution = solve3(a.row, b.row, c.row, [a.d, b.d, c.d]);
+
         if (
           solution &&
           solution[2] > best.t &&
@@ -175,6 +193,7 @@ export const largestFit = (
       }
     }
   }
+
   return { center: best.center, scale: 1 / best.t };
 };
 
@@ -190,5 +209,6 @@ export const largestCropAt = (
     (image.width - 2 * Math.abs(straightened.x)) / (aspect * cos + sin),
     (image.height - 2 * Math.abs(straightened.y)) / (aspect * sin + cos)
   );
+
   return { height, width: aspect * height };
 };

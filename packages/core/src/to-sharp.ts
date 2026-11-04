@@ -1,14 +1,14 @@
 import type { ExportPlan } from "./geometry/export-plan";
 import type { AffineMatrix, PixelRect, Size } from "./geometry/types";
 
-export interface SharpExtractRecipe {
+export type SharpExtractRecipe = {
   readonly kind: "extract";
   readonly extract: PixelRect;
   readonly flop: boolean;
   readonly rotate: number;
-}
+};
 
-export interface SharpAffineRecipe {
+export type SharpAffineRecipe = {
   readonly kind: "affine";
   readonly extend: {
     readonly top: number;
@@ -27,7 +27,7 @@ export interface SharpAffineRecipe {
     readonly interpolator: "bicubic";
   };
   readonly extract: PixelRect;
-}
+};
 
 export type SharpRecipe = SharpExtractRecipe | SharpAffineRecipe;
 
@@ -41,12 +41,14 @@ const affineOrigin = (
 ): { x: number; y: number } => {
   const xs: number[] = [];
   const ys: number[] = [];
+
   for (const x of [0, image.width]) {
     for (const y of [0, image.height]) {
       xs.push(m[0] * x + m[1] * y);
       ys.push(m[2] * x + m[3] * y);
     }
   }
+
   return { x: Math.round(Math.min(...xs)), y: Math.round(Math.min(...ys)) };
 };
 
@@ -59,13 +61,17 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
       rotate: Math.round(plan.rotateExpand.degrees / 90) * 90,
     };
   }
+
   const { forward, height, width } = plan;
+
   if (!Array.isArray(forward)) {
     throw new RangeError(NOT_A_PLAN);
   }
+
   const [a, b, c, d, e0, f0]: AffineMatrix = forward;
   const across = Math.hypot(a, b);
   const pad = Math.ceil(MARGIN / Math.min(1, across));
+
   if (
     forward.length !== 6 ||
     !forward.every(Number.isFinite) ||
@@ -78,6 +84,7 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
   ) {
     throw new RangeError(NOT_A_PLAN);
   }
+
   const e = e0 - (a + c) * pad;
   const f = f0 - (b + d) * pad;
   const bx = a * 0.5 + c * 0.5 + e - 0.5;
@@ -88,6 +95,7 @@ export const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     height: image.height + 2 * pad,
     width: image.width + 2 * pad,
   });
+
   return {
     affine: [
       [a, c],

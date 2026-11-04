@@ -13,6 +13,7 @@ export const exportImage = async (
   if (options.signal?.aborted === true) {
     throw aborted();
   }
+
   const attached = imageOf(cropper);
   const render = await withTimeout(
     import("./render").catch((error: unknown) => {
@@ -21,9 +22,11 @@ export const exportImage = async (
     TIMEOUT * 2,
     options.signal
   );
+
   if (imageOf(cropper) !== attached) {
     throw aborted();
   }
+
   return await render.exportImage(cropper, image, options);
 };
 
@@ -32,9 +35,11 @@ export const exportCrop = async (
   options?: ExportOptions
 ): Promise<ExportResult> => {
   const image = imageOf(cropper);
+
   if (!image) {
     throw new ZrizError("no-image", "zriz: load a photo before exporting");
   }
+
   return await exportImage(cropper, image, {
     ...options,
     shape: options?.shape ?? cropShapeOf(cropper),

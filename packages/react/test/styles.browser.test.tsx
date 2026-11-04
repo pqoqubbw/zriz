@@ -20,6 +20,7 @@ const frames = async (n = 2): Promise<void> => {
 };
 
 const user = document.createElement("style");
+
 user.textContent =
   ".user-scrim { background: rgb(255 0 0); } .user-tick > * { background: rgb(0 128 0); }";
 
@@ -50,9 +51,11 @@ const Editor = ({ api }: { api: React.Ref<CropperApi> }) => (
 
 const pick = (selector: string): HTMLElement => {
   const element = document.querySelector<HTMLElement>(selector);
+
   if (!element) {
     throw new Error(`missing ${selector}`);
   }
+
   return element;
 };
 
@@ -64,14 +67,17 @@ describe("default styles", () => {
 
   it("paints the frame, corner arms, edge bars and ticks", async () => {
     const api = createRef<CropperApi>();
+
     await render(<Editor api={api} />);
     await frames(3);
     const frame = getComputedStyle(pick('[data-zriz-item="area"]'), "::after");
+
     expect(frame.outlineWidth).toBe("1px");
     const corner = getComputedStyle(
       pick('[data-edge="bottom-right"]'),
       "::before"
     );
+
     expect(corner.width).toBe("20px");
     expect(corner.scale).toBe("-1");
   });
@@ -89,11 +95,14 @@ describe("default styles", () => {
         </Cropper.Root>
       </div>
     );
+
     await frames(3);
     const viewport = getComputedStyle(pick('[data-zriz-item="viewport"]'));
+
     expect(viewport.position).toBe("relative");
     expect(viewport.overflow).toBe("clip");
     const dial = pick('[data-zriz-item="dial"]');
+
     expect(dial.getBoundingClientRect().height).toBe(40);
     expect(getComputedStyle(dial).overflowX).toBe("clip");
     expect(getComputedStyle(dial).overflowY).toBe("visible");
@@ -101,20 +110,25 @@ describe("default styles", () => {
 
   it("paints edge bars and ticks", async () => {
     const api = createRef<CropperApi>();
+
     await render(<Editor api={api} />);
     await frames(3);
     const bar = getComputedStyle(pick('[data-edge="top"]'), "::before");
+
     expect(bar.width).toBe("25px");
     expect(bar.height).toBe("3px");
     const tick = pick('[data-zriz-item="dial-ticks"] > [data-zero]');
+
     expect(tick.getBoundingClientRect().height).toBe(10);
   });
 
   it("shows the grid only while it is on", async () => {
     const api = createRef<CropperApi>();
+
     await render(<Editor api={api} />);
     await frames(2);
     const grid = pick('[data-zriz-item="grid"]');
+
     expect(getComputedStyle(grid).opacity).toBe("0");
     api.current?.begin("pan");
     await frames(2);
@@ -126,11 +140,14 @@ describe("default styles", () => {
   it("loses to a plain class from the user", async () => {
     document.head.append(user);
     const api = createRef<CropperApi>();
+
     await render(<Editor api={api} />);
     await frames(2);
+
     expect(
       getComputedStyle(pick('[data-zriz-item="mask"]')).backgroundColor
     ).toBe("rgb(255, 0, 0)");
+
     expect(
       getComputedStyle(pick('[data-zriz-item="dial-ticks"] > [data-major]'))
         .backgroundColor
@@ -139,6 +156,7 @@ describe("default styles", () => {
 
   it("keeps a circle round: aspect 1, other ratios off, no corner handles", async () => {
     const api = createRef<CropperApi>();
+
     await render(
       <Cropper.Root
         actionsRef={api}
@@ -160,16 +178,20 @@ describe("default styles", () => {
         </Cropper.AspectGroup>
       </Cropper.Root>
     );
+
     await frames(2);
     expect(api.current?.getValue().aspect).toBe(1);
     const [square, wide] = document.querySelectorAll<HTMLButtonElement>(
       '[data-zriz-item="aspect-item"]'
     );
+
     expect(square?.disabled).toBeFalsy();
     expect(wide?.disabled).toBeTruthy();
+
     expect(getComputedStyle(pick('[data-edge="top-left"]')).display).toBe(
       "none"
     );
+
     expect(getComputedStyle(pick('[data-edge="top"]')).display).not.toBe(
       "none"
     );
@@ -177,9 +199,11 @@ describe("default styles", () => {
 
   it("keeps every dial tick under a page-wide percentage max-width", async () => {
     const page = document.createElement("style");
+
     page.textContent = "* { max-width: 100%; }";
     document.head.append(page);
     const api = createRef<CropperApi>();
+
     await render(<Editor api={api} />);
     await frames(3);
     const widths = new Set(
@@ -187,6 +211,7 @@ describe("default styles", () => {
         (tick) => tick.getBoundingClientRect().width
       )
     );
+
     page.remove();
     expect(widths).toStrictEqual(new Set([1]));
   });
@@ -206,17 +231,21 @@ describe("default styles", () => {
         </Cropper.Viewport>
       </Cropper.Root>
     );
+
     await frames(2);
     const mask = pick('[data-zriz-item="mask"]');
+
     expect(mask.style.clipPath).toContain("shape(");
     mask.style.pointerEvents = "auto";
     const { left, top } = mask.getBoundingClientRect();
+
     expect(document.elementFromPoint(left + 200, top + 150)).not.toBe(mask);
     expect(document.elementFromPoint(left + 55, top + 5)).toBe(mask);
   });
 
   it("writes a fallback gradient the engine accepts", () => {
     const box = { height: 200, width: 200, x: 10, y: 10 };
+
     expect(CSS.supports("mask-image", maskGradient(box, 2))).toBeTruthy();
   });
 
@@ -229,10 +258,13 @@ describe("default styles", () => {
         </Cropper.Root>
       </div>
     );
+
     await frames();
+
     expect(getComputedStyle(pick('[data-zriz-item="dial"]')).colorScheme).toBe(
       "light"
     );
+
     expect(getComputedStyle(pick('[data-zriz-item="zoom"]')).colorScheme).toBe(
       "dark"
     );
@@ -241,8 +273,10 @@ describe("default styles", () => {
 
 const serve = (tree: React.ReactElement): HTMLElement => {
   const host = document.createElement("div");
+
   host.innerHTML = renderToString(tree);
   document.body.append(host);
+
   return host;
 };
 
@@ -251,7 +285,9 @@ const hydrate = async (
 ): Promise<{ api: React.RefObject<CropperApi | null>; root: Root }> => {
   const api = createRef<CropperApi>();
   const root = hydrateRoot(serve(tree(api)), tree(api));
+
   await expect.poll(() => api.current).not.toBeNull();
+
   return { api, root };
 };
 
@@ -260,6 +296,7 @@ const insideViewport = (selector: string): boolean => {
   const box = pick(selector).getBoundingClientRect();
   const x = box.left + box.width / 2;
   const y = box.top + box.height / 2;
+
   return (
     x >= bounds.left &&
     x <= bounds.right &&
@@ -316,13 +353,16 @@ describe("before the photo is placed", () => {
     serve(noPhoto());
     await frames();
     const { documentElement: page } = document;
+
     expect(painted('[data-zriz-item="area"]', "::after")).toBeFalsy();
     expect(painted('[data-edge="top-left"]', "::before")).toBeFalsy();
+
     expect(
       ['[data-edge="top-left"]', '[data-edge="bottom-right"]'].map(
         insideViewport
       )
     ).toStrictEqual([true, true]);
+
     expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
     expect(page.scrollHeight).toBeLessThanOrEqual(page.clientHeight);
   });
@@ -332,6 +372,7 @@ describe("before the photo is placed", () => {
     const handle = getComputedStyle(pick('[data-zriz-item="handle"]'));
     const { position, touchAction } = handle;
     const { overflow } = getComputedStyle(pick('[data-zriz-item="announcer"]'));
+
     root.unmount();
     expect(position).toBe("fixed");
     expect(touchAction).toBe("manipulation");
@@ -340,8 +381,10 @@ describe("before the photo is placed", () => {
 
   it("paints no corner marks after hydration while there is no photo", async () => {
     const { root } = await hydrate(noPhoto);
+
     await frames();
     const marks = painted('[data-edge="top-left"]', "::before");
+
     root.unmount();
     expect(marks).toBeFalsy();
   });
@@ -349,15 +392,19 @@ describe("before the photo is placed", () => {
   it("paints the frame and the corners once a photo is placed, and drops them with the photo", async () => {
     const { api, root } = await hydrate(withPhoto);
     const area = pick('[data-zriz-item="area"]');
+
     await expect
       .poll(() => area.getBoundingClientRect().width)
       .toBeGreaterThan(10);
+
     expect(painted('[data-zriz-item="area"]', "::after")).toBeTruthy();
     expect(painted('[data-edge="bottom-right"]', "::before")).toBeTruthy();
     api.current?.setImage(null);
+
     await expect
       .poll(() => painted('[data-zriz-item="area"]', "::after"))
       .toBeFalsy();
+
     expect(painted('[data-edge="bottom-right"]', "::before")).toBeFalsy();
     root.unmount();
   });
@@ -365,10 +412,13 @@ describe("before the photo is placed", () => {
 
 const system = (name: string): string => {
   const probe = document.createElement("div");
+
   probe.style.background = name;
   document.body.append(probe);
   const colour = getComputedStyle(probe).backgroundColor;
+
   probe.remove();
+
   return colour;
 };
 
@@ -377,6 +427,7 @@ const background = (selector: string, pseudo?: string): string =>
 
 const placeRotated = async (): Promise<void> => {
   const api = createRef<CropperApi>();
+
   await render(<Editor api={api} />);
   api.current?.setRotation(5);
   await frames(3);
@@ -423,6 +474,7 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
       [data-zriz-item="grid"] > *, [data-zriz-item="dial-ticks"] > * {
         --zriz-line: #0a84ff; --zriz-grid: #0a84ff; --zriz-tick: #0a84ff; --zriz-accent: #0a84ff;
       }`;
+
     document.head.append(page);
     await commands.forcedColors("active");
     await placeRotated();
@@ -448,12 +500,16 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
           pointerType: "mouse",
         })
       );
+
     hold("pointerdown", 50);
     hold("pointermove", 80);
+
     await expect
       .poll(() => Object.hasOwn(dial.dataset, "dragging"))
       .toBeTruthy();
+
     const colour = background('[data-zriz-item="dial"]', "::after");
+
     hold("pointerup", 80);
     expect(colour).toBe(system("Highlight"));
   });
@@ -463,6 +519,7 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
     document.head.append(page);
     const mine = document.createElement("div");
     const plain = document.createElement("div");
+
     mine.className = "mine";
     plain.className = "mine";
     mine.dataset.zero = "";
@@ -471,6 +528,7 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
     const colours = [mine, plain].map(
       (element) => getComputedStyle(element, "::before").backgroundColor
     );
+
     mine.remove();
     plain.remove();
     expect(colours[0]).toBe(colours[1]);
@@ -481,6 +539,7 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
     document.head.append(page);
     await commands.forcedColors("active");
     await placeRotated();
+
     expect(background('[data-zriz-item="dial-ticks"] > *')).toBe(
       system("Highlight")
     );

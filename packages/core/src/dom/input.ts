@@ -22,26 +22,34 @@ export const stopAtZoomCeiling = (
   const allowed = (crop: Crop): boolean =>
     largestFit(planes, crop).scale * maxZoom >= 1 &&
     insidePlanes(panPlanes(planes, crop.width, crop.height), crop, 1e-9);
+
   if (allowed(to)) {
     return to;
   }
+
   const reach = (crop: (share: number) => Crop): number => {
     let low = 0;
     let high = 1;
+
     for (let step = 0; step < 30; step += 1) {
       const middle = (low + high) / 2;
+
       if (allowed(crop(middle))) {
         low = middle;
       } else {
         high = middle;
       }
     }
+
     return low;
   };
+
   if (locked) {
     const share = reach((s) => at(s, s));
+
     return at(share, share);
   }
+
   const x1 = reach((s) => at(s, 0));
   const xFirst = at(
     x1,
@@ -54,16 +62,17 @@ export const stopAtZoomCeiling = (
   );
   const missed = (crop: Crop): number =>
     Math.abs(crop.width - to.width) + Math.abs(crop.height - to.height);
+
   return missed(xFirst) < missed(yFirst) ? xFirst : yFirst;
 };
 
-export interface PointerHandlers {
+export type PointerHandlers = {
   onPointerDown: (event: PointerEvent) => void;
   onPointerMove: (event: PointerEvent) => void;
   onPointerUp: (event: PointerEvent) => void;
   onPointerCancel: (event: PointerEvent) => void;
   onLostPointerCapture: (event: PointerEvent) => void;
-}
+};
 
 export const capture = (element: Element, id: number): void => {
   try {
@@ -91,11 +100,14 @@ export const claimTouch = (
   touch: string
 ): (() => void) => {
   style.touchAction = touch;
+
   for (const [name, value] of TOUCH_STYLES) {
     style.setProperty(name, value);
   }
+
   return () => {
     style.touchAction = "";
+
     for (const [name] of TOUCH_STYLES) {
       style.removeProperty(name);
     }
@@ -131,6 +143,7 @@ const closedRoot = (node: Node): node is ShadowRoot =>
 
 const within = (node: Element, path: EventTarget[]): boolean => {
   const root = node.getRootNode();
+
   return path.includes(node) || (closedRoot(root) && within(root.host, path));
 };
 
@@ -146,24 +159,30 @@ export const watchLoss = (
 ): (() => void) => {
   const win = windowOf(element);
   const doc = win.document;
+
   const onHidden = (event: Event): void => {
     if (doc.visibilityState === "hidden") {
       lost(event);
     }
   };
+
   const onPointer = (event: PointerEvent): void => {
     if (held(event.pointerId) && outside(element, event)) {
       lost(event);
     }
   };
+
   const onStop = (): void => {
     lost();
   };
+
   const off = cropper.on("stop", onStop);
+
   doc.addEventListener("visibilitychange", onHidden);
   win.addEventListener("blur", lost);
   win.addEventListener("pointerup", onPointer, true);
   win.addEventListener("pointercancel", onPointer, true);
+
   return () => {
     off();
     doc.removeEventListener("visibilitychange", onHidden);
@@ -184,9 +203,11 @@ export const bindPointers = (
     ["pointercancel", handlers.onPointerCancel],
     ["lostpointercapture", handlers.onLostPointerCapture],
   ] as const;
+
   for (const [type, handler] of events) {
     element.addEventListener(type, handler);
   }
+
   return () => {
     for (const [type, handler] of events) {
       element.removeEventListener(type, handler);

@@ -12,6 +12,7 @@ const OUTSIDE_ROOT = "zriz: pass a cropper or render inside <Cropper.Root>";
 
 const HookProbe = ({ hook }: { hook: () => unknown }) => {
   hook();
+
   return null;
 };
 
@@ -19,10 +20,13 @@ const LostCropper = () => {
   const [cropper, setCropper] = useState<CropperInstance | undefined>(
     createCropper
   );
+
   if (cropper) {
     setCropper(undefined);
   }
+
   useCropper({ cropper });
+
   return null;
 };
 

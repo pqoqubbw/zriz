@@ -11,11 +11,11 @@ import {
 import { dialHandlers, dialState, tickData } from "../../src/dom/dial";
 import { fakeClock } from "../fake-clock";
 
-interface KeyInit {
+type KeyInit = {
   altKey?: boolean;
   key: string;
   shiftKey?: boolean;
-}
+};
 
 const isObject = (value: unknown): boolean =>
   typeof value === "object" && value !== null;
@@ -28,6 +28,7 @@ const cast = <T>(value: unknown, is: (value: unknown) => value is T): T => {
   if (!is(value)) {
     throw new Error("unreachable");
   }
+
   return value;
 };
 
@@ -70,6 +71,7 @@ const setup = (options: CropperOptions = {}) => {
     image: { height: 300, width: 400 },
     ...options,
   });
+
   return { cropper, time };
 };
 
@@ -87,6 +89,7 @@ describe("area keys", () => {
     const keys = areaKeyHandlers(cropper);
     const width = (): number => cropper.getValue().size.width;
     const start = width();
+
     press(keys, { altKey: true, key: "ArrowLeft" });
     expect(width()).toBeCloseTo(start / 1.01, 9);
     press(keys, { altKey: true, key: "ArrowUp" });
@@ -99,21 +102,26 @@ describe("area keys", () => {
 
   it("keeps the centre and a locked ratio while it resizes", () => {
     const { cropper } = setup({ defaultValue: { aspect: 1 } });
+
     cropper.setZoom(2);
     const keys = areaKeyHandlers(cropper);
     const { center } = cropper.getValue();
+
     press(keys, { altKey: true, key: "ArrowLeft" });
     press(keys, { altKey: true, key: "ArrowRight" });
     expect(cropper.getValue().center).toStrictEqual(center);
     const crop = cropper.getCropState()?.crop;
+
     expect(crop?.width).toBeCloseTo(crop?.height ?? 0, 6);
   });
 
   it("stops growing rather than move the centre at the photo's edge", () => {
     const { cropper } = setup({ defaultValue: { aspect: 1 } });
+
     cropper.setZoom(2);
     cropper.panBy(1, 1);
     const before = cropper.getValue();
+
     press(areaKeyHandlers(cropper), { altKey: true, key: "ArrowRight" });
     expect(cropper.getValue().center.x).toBeCloseTo(before.center.x, 9);
     expect(cropper.getValue().center.y).toBeCloseTo(before.center.y, 9);
@@ -122,10 +130,13 @@ describe("area keys", () => {
 
   it("resizes one side of a free crop", () => {
     const { cropper } = setup();
+
     cropper.setZoom(2);
     const before = cropper.getValue().size;
+
     press(areaKeyHandlers(cropper), { altKey: true, key: "ArrowLeft" });
     const after = cropper.getValue().size;
+
     expect(after.width).toBeCloseTo(before.width / 1.01, 9);
     expect(after.height).toBe(before.height);
   });
@@ -135,6 +146,7 @@ describe("focus loss", () => {
   it("ends a held Area key when focus leaves", () => {
     const { cropper } = setup();
     const keys = areaKeyHandlers(cropper);
+
     keys.onKeyDown(key({ key: "=" }));
     expect(cropper.getState().interacting).toBe("keyboard");
     keys.onBlur(blur());
@@ -145,6 +157,7 @@ describe("focus loss", () => {
   it("ends a held Zoom key when focus leaves", () => {
     const { cropper } = setup();
     const keys = zoomHandlers(cropper);
+
     keys.onKeyDown(key({ key: "End" }));
     expect(cropper.getState().interacting).toBe("keyboard");
     keys.onBlur(blur());
@@ -154,6 +167,7 @@ describe("focus loss", () => {
   it("ends a held Dial key when focus leaves", () => {
     const { cropper } = setup();
     const keys = dialHandlers(cropper);
+
     keys.onKeyDown(key({ key: "ArrowRight" }));
     expect(cropper.getState().interacting).toBe("keyboard");
     keys.onBlur(blur());
@@ -163,10 +177,12 @@ describe("focus loss", () => {
 
 const pastTheStop = (cropper: Cropper) => {
   const handlers = dialHandlers(cropper, {}, () => track);
+
   handlers.onPointerDown(pointer(0, 0));
   handlers.onPointerMove(pointer(30, 8));
   handlers.onPointerMove(pointer(300, 16));
   handlers.onPointerUp(pointer(300, 200));
+
   return handlers;
 };
 
@@ -183,6 +199,7 @@ describe("dial bounce", () => {
 
   it("stops at the limit, overshoots and springs back", () => {
     const { cropper, time } = setup();
+
     pastTheStop(cropper);
     expect(cropper.getValue().rotation).toBe(45);
     expect(dialState(cropper).overshoot()).toBeGreaterThan(0);
@@ -195,15 +212,19 @@ describe("dial bounce", () => {
     const commit = vi.fn<() => void>();
     const { cropper, time } = setup({ onValueCommit: commit });
     const handlers = dialHandlers(cropper, {}, () => track);
+
     handlers.onPointerDown(pointer(0, 0));
+
     for (let i = 1; i <= 8; i += 1) {
       handlers.onPointerMove(pointer(15 + i * 15, i * 8));
     }
+
     handlers.onPointerUp(pointer(135, 66));
     time.frames(3);
     expect(commit).not.toHaveBeenCalled();
     handlers.onKeyDown(key({ key: "ArrowLeft" }));
     const held = cropper.getValue().rotation;
+
     time.frames(5);
     expect(cropper.getValue().rotation).toBe(held);
     handlers.onKeyUp(key({ key: "ArrowLeft" }));
@@ -216,6 +237,7 @@ describe("dial bounce", () => {
   it("still springs back when a key lands during the bounce", () => {
     const { cropper, time } = setup();
     const keys = pastTheStop(cropper);
+
     time.frames(2);
     expect(dialState(cropper).overshoot()).toBeGreaterThan(0);
     keys.onKeyDown(key({ key: "ArrowLeft" }));
@@ -236,6 +258,7 @@ describe("pure control helpers", () => {
     expect([1, 0.5, 15, 30].map((zoom) => zoomProgress(zoom))).toStrictEqual([
       0, 0, 1, 1,
     ]);
+
     expect(zoomProgress(2, 1)).toBe(0);
     expect([zoomAt(-1), zoomAt(2)]).toStrictEqual([1, 15]);
   });

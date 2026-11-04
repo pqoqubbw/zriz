@@ -19,19 +19,20 @@ const refOf = (element: ReactElement): Ref<HTMLElement> | undefined => {
     typeof holder === "object" && holder !== null && "ref" in holder
       ? holder.ref
       : undefined;
+
   return isRef(ref) ? ref : undefined;
 };
 
 export type ClassName<S> = string | ((state: S) => string | undefined);
 
-export interface RenderOptions<S> {
+export type RenderOptions<S> = {
   tag: keyof JSX.IntrinsicElements;
   state: S;
   props: object;
   ref?: Ref<Element> | undefined;
   render?: RenderProp<S> | undefined;
   className?: ClassName<S> | undefined;
-}
+};
 
 export const usePart = <S>(
   tag: keyof JSX.IntrinsicElements,
@@ -55,9 +56,11 @@ export const usePart = <S>(
     [ref, elementRef]
   );
   const own = { ...mergeProps(ours, theirs), className: resolved, ref: merged };
+
   if (typeof render === "function") {
     return render(own, state);
   }
+
   if (isValidElement<Record<string, unknown>>(render)) {
     return createElement(render.type, {
       ...mergeProps(own, render.props),
@@ -65,6 +68,7 @@ export const usePart = <S>(
       ref: merged,
     });
   }
+
   return createElement(tag, own);
 };
 
@@ -89,8 +93,10 @@ export const useRender = <S>({
     if (!isRef(inner)) {
       return outer;
     }
+
     return outer ? mergeRefs(outer, inner) : inner;
   }, [inner, outer]);
+
   return usePart(
     tag,
     rest,

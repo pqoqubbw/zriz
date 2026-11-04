@@ -18,7 +18,7 @@ import type {
   Size,
 } from "./types";
 
-export interface ExportPlan {
+export type ExportPlan = {
   width: number;
   height: number;
   forward: AffineMatrix;
@@ -26,7 +26,7 @@ export interface ExportPlan {
   homography: Matrix3 | null;
   pixelRect: PixelRect | null;
   rotateExpand: { flop: boolean; degrees: number; dx: number; dy: number };
-}
+};
 
 export const quantise = (value: number): number =>
   Math.round(value * 1024) / 1024;
@@ -65,6 +65,7 @@ export const sourceToOutputMatrix = (
     0,
     1,
   ];
+
   return multiplyMatrix3(output, multiplyMatrix3(homography, centre));
 };
 
@@ -91,20 +92,24 @@ const snappedCrop = (
   let sourceHeight =
     Math.min(state.image.height, Math.max(top + 1, snapEdge(Math.max(...ys)))) -
     top;
+
   if (state.aspect !== null) {
     const ratio = turned ? 1 / state.aspect : state.aspect;
     const fitHeight = Math.max(1, Math.round(sourceWidth / ratio));
     const fitWidth = Math.max(1, Math.round(sourceHeight * ratio));
+
     if (fitHeight < sourceHeight) {
       sourceHeight = fitHeight;
     } else if (fitWidth < sourceWidth) {
       sourceWidth = fitWidth;
     }
   }
+
   const centre = sourceToWorking(state, {
     x: left + sourceWidth / 2,
     y: top + sourceHeight / 2,
   });
+
   return {
     crop: {
       height: turned ? sourceWidth : sourceHeight,
@@ -124,9 +129,11 @@ export const exportPlan = (
   const hasPerspective = !isFlatPerspective(state.perspective);
   let pixelRect: PixelRect | null = null;
   let { crop } = state;
+
   if (state.angle === 0 && !hasPerspective) {
     ({ pixelRect, crop } = snappedCrop(state));
   }
+
   const scale = Math.max(
     positive(requestedScale, 1),
     1 / crop.width,
@@ -146,6 +153,7 @@ export const exportPlan = (
     -scale * (centre.x + crop.x) + width / 2,
     -scale * (centre.y + crop.y) + height / 2,
   ];
+
   return {
     forward,
     height,
@@ -166,6 +174,7 @@ export const exportPlan = (
 
 export const rotatedBox = (image: Size, degrees: number): Size => {
   const { sin, cos } = sinCosDegrees(degrees);
+
   return {
     height: image.width * Math.abs(sin) + image.height * Math.abs(cos),
     width: image.width * Math.abs(cos) + image.height * Math.abs(sin),

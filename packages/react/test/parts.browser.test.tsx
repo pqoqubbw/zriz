@@ -27,22 +27,29 @@ const mount = async (children: ReactNode, props: Partial<RootProps> = {}) => {
       {children}
     </Cropper.Root>
   );
+
   await frames();
+
   const pick = (item: string): HTMLElement => {
     const found = screen.container.querySelector<HTMLElement>(
       `[data-zriz-item="${item}"]`
     );
+
     if (!found) {
       throw new Error(`missing ${item}`);
     }
+
     return found;
   };
+
   const api = (): CropperApi => {
     if (!ref.current) {
       throw new Error("no cropper");
     }
+
     return ref.current;
   };
+
   return { api, pick, root: pick("root"), screen };
 };
 
@@ -93,15 +100,18 @@ describe("buttons and state attributes", () => {
       pressed: "false",
       root: false,
     };
+
     expect(read()).toStrictEqual(off);
     button.click();
     await frames();
+
     expect(read()).toStrictEqual({
       button: true,
       mirrored: true,
       pressed: "true",
       root: true,
     });
+
     button.click();
     await frames();
     expect(read()).toStrictEqual(off);
@@ -112,6 +122,7 @@ describe("buttons and state attributes", () => {
       <Cropper.Flip axis="y">flip</Cropper.Flip>
     );
     const before = api().getValue().quarterTurns;
+
     pick("flip").click();
     await frames();
     expect(api().getValue().mirrored).toBeTruthy();
@@ -129,14 +140,17 @@ describe("buttons and state attributes", () => {
       pristine: on(button, "data-pristine"),
     });
     const clean = { changed: false, hidden: true, pristine: true };
+
     expect(read()).toStrictEqual(clean);
     api().setRotation(9);
     await frames();
+
     expect(read()).toStrictEqual({
       changed: true,
       hidden: false,
       pristine: false,
     });
+
     button.click();
     await frames();
     expect(api().getValue().rotation).toBe(0);
@@ -159,6 +173,7 @@ describe("buttons and state attributes", () => {
     const [zoomIn, zoomOut] = screen.container.querySelectorAll<HTMLElement>(
       '[data-zriz-item="zoom-step"]'
     );
+
     zoomIn?.click();
     await frames();
     expect(api().getZoom()).toBeCloseTo(2, 6);
@@ -181,6 +196,7 @@ describe("buttons and state attributes", () => {
       tabIndex: item.getAttribute("tabindex"),
     });
     const plain = { checked: null, role: null, tabIndex: null };
+
     expect(read()).toStrictEqual({ ...plain, marked: false, pressed: "false" });
     item.click();
     await frames();
@@ -196,6 +212,7 @@ describe("buttons and state attributes", () => {
       grid: grid.dataset.grid,
       lines: grid.children.length,
     });
+
     expect(grid.children).toHaveLength(4);
     api().begin("dial");
     await frames();
@@ -215,6 +232,7 @@ describe("buttons and state attributes", () => {
       <Cropper.Dial aria-label="Straighten" />
     );
     const dial = pick("dial");
+
     pointer(dial, "pointerdown", 100);
     await frames();
     expect(on(dial, "data-dragging")).toBeFalsy();
@@ -230,6 +248,7 @@ describe("buttons and state attributes", () => {
   it("Zoom shows data-dragging only while a pointer holds it", async () => {
     const { pick, root } = await mount(<Cropper.Zoom aria-label="Zoom" />);
     const zoom = pick("zoom");
+
     expect(on(zoom, "data-dragging")).toBeFalsy();
     pointer(zoom, "pointerdown", 100);
     await frames();
@@ -243,12 +262,14 @@ describe("buttons and state attributes", () => {
 
   it.each(GESTURES)("Root reason %s turns on %s", async (reason, attribute) => {
     const { api, root } = await mount(null);
+
     expect(on(root, attribute)).toBeFalsy();
     api().begin(reason);
     await frames();
     const seen = new Set(
       GESTURES.map(([, name]) => name).filter((name) => on(root, name))
     );
+
     expect([...seen]).toStrictEqual([attribute]);
     api().end();
     await frames();
@@ -257,6 +278,7 @@ describe("buttons and state attributes", () => {
 
   it("Root shows data-interacting during a gesture and its hold", async () => {
     const { api, root } = await mount(null);
+
     expect(on(root, "data-interacting")).toBeFalsy();
     api().begin("resize");
     await frames();
@@ -264,6 +286,7 @@ describe("buttons and state attributes", () => {
     api().end();
     await frames();
     expect(on(root, "data-interacting")).toBeTruthy();
+
     await expect
       .poll(() => on(root, "data-interacting"), { timeout: 5000 })
       .toBeFalsy();
@@ -271,8 +294,10 @@ describe("buttons and state attributes", () => {
 
   it("Root shows data-settling while an animation runs", async () => {
     const { api, root } = await mount(null);
+
     expect(on(root, "data-settling")).toBeFalsy();
     let running = true;
+
     api().run(() => running);
     await frames();
     expect(on(root, "data-settling")).toBeTruthy();
@@ -282,6 +307,7 @@ describe("buttons and state attributes", () => {
 
   it("Root shows data-overscroll while the view is pulled past an edge", async () => {
     const { api, root } = await mount(null);
+
     expect(on(root, "data-overscroll")).toBeFalsy();
     viewOf(api()).setOverscroll({ x: 8, y: 0 });
     await frames();
@@ -293,6 +319,7 @@ describe("buttons and state attributes", () => {
 
   it('Root shows data-reduced-motion for motion="reduce", from mount', async () => {
     const { root } = await mount(null, { motion: "reduce" });
+
     expect(on(root, "data-reduced-motion")).toBeTruthy();
   });
 });

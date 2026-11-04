@@ -8,14 +8,14 @@ import { useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface DialTicksState {
+export type DialTicksState = {
   count: number;
-}
+};
 
-export interface DialTicksProps extends PartProps<"div", DialTicksState> {
+export type DialTicksProps = {
   /** Number of ticks across ±45°. @default 41 */
   count?: number | undefined;
-}
+} & PartProps<"div", DialTicksState>;
 
 export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
@@ -30,6 +30,7 @@ export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
     () =>
       Array.from({ length: count }, (_, i) => {
         const data = tickData(i, count);
+
         return (
           <span
             data-fade={data.fade ?? undefined}
@@ -41,6 +42,7 @@ export const DialTicks: Part<DialTicksProps, HTMLDivElement> = forwardRef<
       }),
     [count]
   );
+
   return usePart(
     "div",
     { "aria-hidden": true, children: ticks, "data-zriz-item": "dial-ticks" },

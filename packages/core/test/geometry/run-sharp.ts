@@ -10,12 +10,14 @@ export const runSharp = async (
   image: Size
 ): Promise<Sharp> => {
   const recipe = toSharp(plan, image);
+
   if (recipe.kind === "extract") {
     return input
       .extract(recipe.extract)
       .flop(recipe.flop)
       .rotate(recipe.rotate);
   }
+
   const padded = await input
     .extend(recipe.extend)
     .raw()
@@ -31,5 +33,6 @@ export const runSharp = async (
     )
     .raw()
     .toBuffer({ resolveWithObject: true });
+
   return sharp(affined.data, { raw: affined.info }).extract(recipe.extract);
 };

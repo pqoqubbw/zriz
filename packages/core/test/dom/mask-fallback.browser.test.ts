@@ -21,8 +21,10 @@ describe("a circle mask without css shape()", () => {
   it("clears its gradient when the photo leaves and draws it for the next one", async () => {
     vi.spyOn(CSS, "supports").mockReturnValue(false);
     const viewport = document.createElement("div");
+
     viewport.style.cssText = "position:relative;width:400px;height:300px;";
     const mask = document.createElement("div");
+
     viewport.append(mask);
     document.body.append(viewport);
     const cropper = createCropper({ image: photo });
@@ -30,6 +32,7 @@ describe("a circle mask without css shape()", () => {
       bindViewport(cropper, viewport),
       bindMask(cropper, mask, "circle"),
     ];
+
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).not.toBe("");
     cropper.setImage(null);
@@ -39,9 +42,11 @@ describe("a circle mask without css shape()", () => {
     cropper.setImage(photo);
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).not.toBe("");
+
     for (const stop of off) {
       stop();
     }
+
     cropper.destroy();
     viewport.remove();
   });
@@ -49,12 +54,15 @@ describe("a circle mask without css shape()", () => {
   it("swaps clip and gradient when the shape changes on a live bind", async () => {
     vi.spyOn(CSS, "supports").mockReturnValue(false);
     const viewport = document.createElement("div");
+
     viewport.style.cssText = "position:relative;width:400px;height:300px;";
     const mask = document.createElement("div");
+
     viewport.append(mask);
     document.body.append(viewport);
     const cropper = createCropper({ image: photo });
     const off = [bindViewport(cropper, viewport), bindMask(cropper, mask)];
+
     await frames();
     expect(mask.style.clipPath).not.toBe("");
     setCropShape(cropper, "circle");
@@ -67,9 +75,11 @@ describe("a circle mask without css shape()", () => {
     await frames();
     expect(mask.style.getPropertyValue("mask-image")).toBe("");
     expect(mask.style.clipPath).not.toBe("");
+
     for (const stop of off) {
       stop();
     }
+
     cropper.destroy();
     viewport.remove();
   });

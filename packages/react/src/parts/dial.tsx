@@ -26,14 +26,14 @@ import type { Part, PartProps } from "../part";
 import { firstCommitted, useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface DialState {
+export type DialState = {
   dragging: boolean;
-}
+};
 
-export interface DialProps extends PartProps<"div", DialState> {
+export type DialProps = {
   /** Formatting of the spoken value. @default degrees, long unit */
   format?: Intl.NumberFormatOptions | undefined;
-}
+} & PartProps<"div", DialState>;
 
 const STYLE = {
   WebkitTapHighlightColor: "transparent",
@@ -56,11 +56,14 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     () => dialHandlers(cropper, { dir }, box.get),
     [box, cropper, dir]
   );
+
   useRelease(handlers);
   const state = dialState(cropper);
+
   useEffect(() => {
     state.setOptions({ ...state.options(), dir });
   }, [state, dir]);
+
   const dragging = useSyncExternalStore(
     state.onChange,
     state.dragging,
@@ -73,9 +76,11 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     (node: HTMLDivElement) => {
       keep(node);
       const clear = box.set(node);
+
       warnUnlabelled("Dial", node);
       warnFormat("Dial", locale, spoken);
       const off = dialAria(cropper, node, { format: spoken, locale });
+
       return () => {
         clear();
         off();
@@ -83,6 +88,7 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     },
     [box, cropper, spoken, locale]
   );
+
   return usePart(
     "div",
     {

@@ -55,8 +55,10 @@ describe("accessibility", () => {
   it("has no axe violations", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);
+
     await frames(3);
     const result = await axe.run(screen.container);
+
     expect(result.violations.map((v) => v.id)).toStrictEqual([]);
   });
 
@@ -68,7 +70,9 @@ describe("accessibility", () => {
         </Cropper.Viewport>
       </Cropper.Root>
     );
+
     await frames(2);
+
     await expect
       .element(screen.getByRole("img", { name: "A dog on a beach" }))
       .toBeInTheDocument();
@@ -77,22 +81,27 @@ describe("accessibility", () => {
   it("speaks the same message again after a second commit", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);
+
     await frames(3);
     const region = (): string =>
       screen.container.querySelector('[data-zriz-item="announcer"]')
         ?.textContent ?? "";
+
     api.current?.rotate90();
     await frames(4);
     const first = region();
+
     api.current?.rotate90();
     await frames(4);
     const second = region();
+
     expect(first.trim()).toBe("Saved");
     expect(second.trim()).toBe("Saved");
     expect(second).not.toBe(first);
     api.current?.rotate90();
     await frames(4);
     const third = region();
+
     expect(third.trim()).toBe("Saved");
     expect(third).not.toBe(second);
   });
@@ -100,10 +109,12 @@ describe("accessibility", () => {
   it("exposes the zoom slider with keys and percent text", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);
+
     await frames(2);
     const zoom = screen.container.querySelector<HTMLElement>(
       '[data-zriz-item="zoom"]'
     );
+
     zoom?.focus();
     await userEvent.keyboard("{End}");
     await frames(3);
@@ -125,12 +136,14 @@ describe("accessibility", () => {
         </Cropper.AspectGroup>
       </Cropper.Root>
     );
+
     await frames(2);
     const items = [
       ...screen.container.querySelectorAll<HTMLButtonElement>(
         '[data-zriz-item="aspect-item"]'
       ),
     ];
+
     expect(items.map((item) => item.tabIndex)).toStrictEqual([0, -1, -1]);
     items[0]?.focus();
     await userEvent.keyboard("{ArrowRight}");
@@ -151,12 +164,14 @@ describe("accessibility", () => {
         </Cropper.AspectGroup>
       </Cropper.Root>
     );
+
     await frames(2);
     const items = [
       ...screen.container.querySelectorAll<HTMLButtonElement>(
         '[data-zriz-item="aspect-item"]'
       ),
     ];
+
     items[0]?.focus();
     await userEvent.keyboard("{ArrowLeft}");
     await frames(2);
@@ -180,23 +195,27 @@ describe("accessibility", () => {
         </Cropper.AspectGroup>
       </Cropper.Root>
     );
+
     await frames(2);
     const items = [
       ...screen.container.querySelectorAll<HTMLButtonElement>(
         '[data-zriz-item="aspect-item"]'
       ),
     ];
+
     expect(items.map((item) => item.tabIndex)).toStrictEqual([0, -1]);
   });
 
   it("warns once when a part has no name", async () => {
     const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+
     await render(
       <Cropper.Root image={{ height: 300, width: 400 }}>
         <Cropper.Dial />
         <Cropper.Dial />
       </Cropper.Root>
     );
+
     expect(warn).toHaveBeenCalledOnce();
     warn.mockRestore();
   });
@@ -209,13 +228,16 @@ describe("accessibility", () => {
         <Cropper.Zoom aria-label="zoom" />
       </Cropper.Root>
     );
+
     expect(
       screen.container.querySelector('[data-zriz-item="dial"]')
     ).not.toBeNull();
+
     expect(warn.mock.calls.map((call) => String(call[0]))).toStrictEqual([
       expect.stringContaining("Cropper.Dial"),
       expect.stringContaining("Cropper.Zoom"),
     ]);
+
     warn.mockRestore();
   });
 });
@@ -227,6 +249,7 @@ const stops = (container: Element): string[] =>
 
 const Items = () => {
   const [first, setFirst] = useState(true);
+
   return (
     <>
       <button
@@ -257,8 +280,10 @@ describe("part states", () => {
         </Cropper.AspectGroup>
       </Cropper.Root>
     );
+
     expect(stops(screen.container)).toStrictEqual(["Square"]);
     document.querySelector<HTMLElement>("#drop-first")?.click();
+
     await vi.waitFor(() => {
       expect(stops(screen.container)).toStrictEqual(["Wide"]);
     });
@@ -274,10 +299,13 @@ describe("part states", () => {
       </Cropper.Root>
     );
     const first = screen.container.querySelector<HTMLElement>('[role="radio"]');
+
     first?.focus();
+
     first?.dispatchEvent(
       new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })
     );
+
     expect(document.activeElement).toBe(first);
   });
 
@@ -290,6 +318,7 @@ describe("part states", () => {
     );
     const area = screen.container.querySelector('[data-zriz-item="area"]');
     const link = area?.getAttribute("aria-describedby") ?? "";
+
     expect(document.querySelector(`[id="${link}"]`)?.textContent).toBe("help");
   });
 
@@ -301,9 +330,11 @@ describe("part states", () => {
       </Cropper.Root>
     );
     const status = screen.container.querySelector('[role="status"]');
+
     api.current?.setRotation(1);
     await frames(2);
     const said = status?.textContent;
+
     api.current?.setRotation(2);
     await frames(2);
     expect(status?.textContent).not.toBe(said);
@@ -318,9 +349,11 @@ describe("part states", () => {
       </Cropper.Root>
     );
     const { container } = screen;
+
     expect(
       container.querySelector('[data-zriz-item="orientation"]')
     ).toHaveProperty("dataset.disabled", "");
+
     expect(
       [...container.querySelectorAll('[role="slider"]')].map((slider) =>
         slider.getAttribute("aria-disabled")
@@ -335,9 +368,11 @@ const item = (container: Element, name: string): HTMLElement => {
   const node = container.querySelector<HTMLElement>(
     `[data-zriz-item="${name}"]`
   );
+
   if (!node) {
     throw new Error(`no ${name}`);
   }
+
   return node;
 };
 
@@ -455,21 +490,26 @@ describe("focus when Reset hides", () => {
         <Cropper.Reset>Reset</Cropper.Reset>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = item(screen.container, "reset");
+
     reset.focus();
     await userEvent.keyboard("{Enter}");
+
     await vi.waitFor(() => {
       expect(reset.hidden).toBeTruthy();
     });
+
     expect(document.activeElement).toBe(item(screen.container, "area"));
   });
 
   it("moves focus on a reset from outside and finds Area from a portal", async () => {
     const api = createRef<CropperApi>();
     const away = document.createElement("div");
+
     document.body.append(away);
     const screen = await render(
       <Cropper.Root actionsRef={api} image={PHOTO}>
@@ -479,16 +519,20 @@ describe("focus when Reset hides", () => {
         {createPortal(<Cropper.Reset id="away">Reset</Cropper.Reset>, away)}
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = away.querySelector<HTMLElement>("#away");
+
     reset?.focus();
     expect(document.activeElement).toBe(reset);
     api.current?.reset();
+
     await vi.waitFor(() => {
       expect(reset?.hidden).toBeTruthy();
     });
+
     expect(document.activeElement).toBe(item(screen.container, "area"));
     await cleanup();
     away.remove();
@@ -502,15 +546,19 @@ describe("focus when Reset hides", () => {
         <Cropper.Rotate>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = item(screen.container, "reset");
+
     reset.focus();
     reset.click();
+
     await vi.waitFor(() => {
       expect(reset.hidden).toBeTruthy();
     });
+
     expect(document.activeElement).toBe(item(screen.container, "rotate"));
   });
 
@@ -525,15 +573,19 @@ describe("focus when Reset hides", () => {
         <Cropper.Rotate>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = item(screen.container, "reset");
+
     reset.focus();
     reset.click();
+
     await vi.waitFor(() => {
       expect(reset.hidden).toBeTruthy();
     });
+
     expect(document.activeElement).toBe(item(screen.container, "rotate"));
   });
 
@@ -545,15 +597,19 @@ describe("focus when Reset hides", () => {
         <Cropper.Rotate>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = item(screen.container, "reset");
+
     reset.focus();
     reset.click();
+
     await vi.waitFor(() => {
       expect(reset.hidden).toBeTruthy();
     });
+
     expect(document.activeElement).toBe(item(screen.container, "rotate"));
   });
 
@@ -568,15 +624,19 @@ describe("focus when Reset hides", () => {
         <Cropper.Rotate>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const rotate = item(screen.container, "rotate");
+
     rotate.focus();
     api.current?.reset();
+
     await vi.waitFor(() => {
       expect(item(screen.container, "reset").hidden).toBeTruthy();
     });
+
     await frames();
     expect(document.activeElement).toBe(rotate);
   });
@@ -592,15 +652,19 @@ describe("focus when Reset hides", () => {
         <Cropper.Rotate>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     await frames();
     api.current?.setRotation(10);
     await frames(3);
     const reset = item(screen.container, "reset");
+
     reset.focus();
     reset.click();
+
     await vi.waitFor(() => {
       expect(reset.dataset.pristine).toBe("");
     });
+
     expect(document.activeElement).toBe(reset);
   });
 });
@@ -612,12 +676,15 @@ describe("what the warnings count", () => {
 
   it("warns for a slider with text inside and no name, and accepts title", async () => {
     const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+
     await render(
       <Cropper.Root image={PHOTO}>
         <Cropper.Area title="Crop" />
       </Cropper.Root>
     );
+
     expect(warn).not.toHaveBeenCalled();
+
     await render(
       <Cropper.Root image={PHOTO}>
         <Cropper.Zoom>
@@ -625,6 +692,7 @@ describe("what the warnings count", () => {
         </Cropper.Zoom>
       </Cropper.Root>
     );
+
     expect(warn).toHaveBeenCalledOnce();
     expect(warn.mock.calls[0]?.[0]).toContain("Cropper.Zoom");
     warn.mockRestore();
@@ -640,9 +708,11 @@ describe("what the warnings count", () => {
         />
       </Cropper.Root>
     );
+
     expect(item(screen.container, "dial").getAttribute("aria-valuetext")).toBe(
       "0 Grad"
     );
+
     expect(
       item(screen.container, "zoom").getAttribute("aria-valuetext")
     ).toMatch(/^100\s%$/u);
@@ -655,9 +725,11 @@ describe("what the warnings count", () => {
         <Cropper.Zoom aria-label="Zoom" format={{ minimumFractionDigits: 1 }} />
       </Cropper.Root>
     );
+
     expect(item(screen.container, "dial").getAttribute("aria-valuetext")).toBe(
       "0.00 degrees"
     );
+
     expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
       "100.0%"
     );
@@ -672,6 +744,7 @@ describe("what the warnings count", () => {
         />
       </Cropper.Root>
     );
+
     expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
       "100%"
     );
@@ -683,6 +756,7 @@ describe("what the warnings count", () => {
         <Cropper.Zoom aria-label="Zoom" format={{ style: "decimal" }} />
       </Cropper.Root>
     );
+
     expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
       "1"
     );
@@ -700,6 +774,7 @@ describe("aspect items that are not buttons", () => {
     const radios = [
       ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
     ];
+
     expect(
       radios.map((radio) => radio.getAttribute("aria-disabled"))
     ).toStrictEqual([null, "true", null]);
@@ -713,6 +788,7 @@ describe("aspect items that are not buttons", () => {
         </Cropper.AspectItem>
       </Cropper.Root>
     );
+
     expect(
       item(screen.container, "aspect-item").getAttribute("aria-disabled")
     ).toBe("true");
@@ -720,12 +796,15 @@ describe("aspect items that are not buttons", () => {
 
   it("moves the tab stop when an item that hides the attribute turns disabled", async () => {
     const screen = await render(<QuietItem off={false} />);
+
     await frames();
     const radios = [
       ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
     ];
+
     expect(radios[1]?.tabIndex).toBe(-1);
     await screen.rerender(<QuietItem off />);
+
     await vi.waitFor(() => {
       expect(radios[1]?.tabIndex).toBe(0);
     });
@@ -734,10 +813,12 @@ describe("aspect items that are not buttons", () => {
   it("moves with arrows and skips a disabled item", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Group api={api} />);
+
     await frames();
     const radios = [
       ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
     ];
+
     radios[0]?.focus();
     await userEvent.keyboard("{ArrowRight}");
     await frames();
@@ -749,10 +830,13 @@ describe("aspect items that are not buttons", () => {
   it("ignores a click on a disabled item", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Group api={api} />);
+
     await frames();
+
     screen.container
       .querySelectorAll<HTMLElement>('[role="radio"]')[1]
       ?.click();
+
     await frames();
     expect(api.current?.getValue().aspect).toBe(1);
   });
@@ -771,6 +855,7 @@ describe("a disabled AspectItem", () => {
         <Cropper.AspectItem
           className={(state) => {
             seen.push(state.disabled);
+
             return "";
           }}
           disabled
@@ -781,6 +866,7 @@ describe("a disabled AspectItem", () => {
       </Cropper.Root>
     );
     const button = item(screen.container, "aspect-item");
+
     expect(button.dataset.disabled).toBe("");
     expect(seen.at(-1)).toBeTruthy();
     button.click();
@@ -798,6 +884,7 @@ describe("a disabled AspectItem", () => {
       </Cropper.Root>
     );
     const button = item(screen.container, "aspect-item");
+
     expect(button.hasAttribute("disabled")).toBeTruthy();
     expect(button.dataset.disabled).toBe("");
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -813,13 +900,16 @@ describe("a disabled Root", () => {
 
   it("tells assistive tech on every control, and takes it back", async () => {
     const screen = await render(<Parts disabled />);
+
     expect(
       NAMES.map((name) =>
         item(screen.container, name).getAttribute("aria-disabled")
       )
     ).toStrictEqual(NAMES.map(() => "true"));
+
     await screen.rerender(<Parts disabled={false} />);
     await frames();
+
     expect(
       NAMES.map((name) =>
         item(screen.container, name).hasAttribute("aria-disabled")
@@ -833,6 +923,7 @@ describe("a disabled Root", () => {
         <Cropper.Rotate aria-disabled={false}>Rotate</Cropper.Rotate>
       </Cropper.Root>
     );
+
     expect(item(screen.container, "rotate").getAttribute("aria-disabled")).toBe(
       "false"
     );
@@ -846,9 +937,11 @@ describe("an aria-disabled from the caller", () => {
 
   it("survives Root leaving disabled on every part", async () => {
     const screen = await render(<CallerDisabled off />);
+
     await frames();
     await screen.rerender(<CallerDisabled off={false} />);
     await frames();
+
     for (const name of ["area", "dial", "zoom", "rotate"]) {
       expect(item(screen.container, name).getAttribute("aria-disabled")).toBe(
         "true"
@@ -858,16 +951,20 @@ describe("an aria-disabled from the caller", () => {
 
   it("leaves the attribute off a part once Root is enabled again", async () => {
     const screen = await render(<RootDisabled off={false} />);
+
     await frames();
     await screen.rerender(<RootDisabled off />);
     await frames();
+
     for (const name of ["area", "dial", "zoom"]) {
       expect(item(screen.container, name).getAttribute("aria-disabled")).toBe(
         "true"
       );
     }
+
     await screen.rerender(<RootDisabled off={false} />);
     await frames();
+
     for (const name of ["area", "dial", "zoom"]) {
       expect(
         item(screen.container, name).hasAttribute("aria-disabled")
@@ -884,15 +981,20 @@ describe("slider values follow every move", () => {
   it("reads a new value prop and marks the zero again", async () => {
     const screen = await render(<Sliders value={value(0)} />);
     const dial = item(screen.container, "dial");
+
     await screen.rerender(<Sliders value={value(12)} />);
+
     await vi.waitFor(() => {
       expect(dial.getAttribute("aria-valuenow")).toBe("12");
     });
+
     expect("snapped" in dial.dataset).toBeFalsy();
     await screen.rerender(<Sliders value={value(0)} />);
+
     await vi.waitFor(() => {
       expect(dial.getAttribute("aria-valuenow")).toBe("0");
     });
+
     expect("snapped" in dial.dataset).toBeTruthy();
   });
 
@@ -900,6 +1002,7 @@ describe("slider values follow every move", () => {
     const screen = await render(
       <Sliders defaultValue={{ size: { height: 0.25, width: 0.25 } }} />
     );
+
     await vi.waitFor(() => {
       expect(item(screen.container, "zoom").getAttribute("aria-valuenow")).toBe(
         "4"
@@ -910,15 +1013,18 @@ describe("slider values follow every move", () => {
   it("follows a new limit with no change to the crop", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Sliders api={api} maxZoom={15} />);
+
     await frames();
     api.current?.setZoom(3);
     await frames(3);
     await screen.rerender(<Sliders api={api} maxZoom={5} />);
+
     await vi.waitFor(() => {
       expect(item(screen.container, "zoom").getAttribute("aria-valuemax")).toBe(
         "5"
       );
     });
+
     expect(
       Number(
         item(screen.container, "zoom-thumb").style.insetInlineStart.replace(
@@ -927,9 +1033,11 @@ describe("slider values follow every move", () => {
         )
       )
     ).toBeCloseTo(68.26, 1);
+
     await screen.rerender(
       <Sliders api={api} maxZoom={5} minSize={{ height: 290, width: 290 }} />
     );
+
     await vi.waitFor(() => {
       expect(
         Number(item(screen.container, "dial").getAttribute("aria-valuemax"))
@@ -940,13 +1048,16 @@ describe("slider values follow every move", () => {
   it("leaves the marks alone through a dial gesture until it ends", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Sliders api={api} />);
+
     await frames();
     const dial = item(screen.container, "dial");
+
     api.current?.begin("dial");
     api.current?.setRotation(5);
     await frames(3);
     expect("snapped" in dial.dataset).toBeTruthy();
     api.current?.end();
+
     await vi.waitFor(() => {
       expect("snapped" in dial.dataset).toBeFalsy();
     });

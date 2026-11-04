@@ -53,6 +53,7 @@ describe("state", () => {
         const p = { x: u * s.image.width, y: v * s.image.height };
         const back = workingToSource(s, sourceToWorking(s, p));
         const tol = 4e-16 * 8 * Math.max(s.image.width, s.image.height);
+
         expectClose(back.x, p.x, tol);
         expectClose(back.y, p.y, tol);
       })
@@ -64,6 +65,7 @@ describe("state", () => {
       property(stateArb, nat(), nat(), (s0, i, j) => {
         const s = { ...s0, angle: 0 };
         const p = { x: i % (s.image.width + 1), y: j % (s.image.height + 1) };
+
         expect(workingToSource(s, sourceToWorking(s, p))).toStrictEqual(p);
       })
     );
@@ -84,6 +86,7 @@ describe("state", () => {
       const { sin, cos } = sinCosDegrees(k * 45);
       const quarter = k % 2 === 0;
       const sine = quarter ? ((k / 2) % 2) ** 2 : Math.SQRT1_2;
+
       expect(Math.abs(sin)).toBe(sine);
       expect(Math.abs(cos)).toBe(quarter ? 1 - sine : Math.SQRT1_2);
     }
@@ -97,7 +100,9 @@ describe("state", () => {
       sinCosDegrees(180).sin,
       sinCosDegrees(180).cos,
     ].map((value) => value + 0);
+
     expect(exact).toStrictEqual([0, 1, 0, 0, -1]);
+
     assert(
       property(double({ max: 45, min: -45, noNaN: true }), (a) => {
         expect(sinCosDegrees(-a).sin + 0).toBe(-sinCosDegrees(a).sin + 0);
@@ -110,12 +115,14 @@ describe("state", () => {
     assert(
       property(double({ max: 1000, min: -1000, noNaN: true }), (d) => {
         const { turns, angle } = splitAngle(d);
+
         expect(Math.abs(angle)).toBeLessThanOrEqual(45);
         const a = multiplyMatrix2(
           rotationMatrix(angle),
           quarterTurnMatrix(turns)
         );
         const b = rotationMatrix(d);
+
         for (const [i, value] of a.entries()) {
           expectClose(value, b[i] ?? Number.NaN, 1e-12);
         }
@@ -133,18 +140,23 @@ describe("state", () => {
       [mirrorX, [-1, 0, 0, 1]],
       [mirrorY, [1, 0, 0, -1]],
     ];
+
     assert(
       property(stateArb, (s) => {
         const tol = 1e-9 * Math.max(s.image.width, s.image.height);
         const source = cropCorners(s.crop).map((q) => workingToSource(s, q));
+
         for (const [action, g] of actions) {
           const t = action(s);
+
           expectSameRegion(
             source,
             cropCorners(t.crop).map((q) => workingToSource(t, q)),
             tol
           );
+
           const want = multiplyMatrix2(g, linearTransform(s));
+
           for (const [i, value] of linearTransform(t).entries()) {
             expectClose(value, want[i] ?? Number.NaN, 1e-15);
           }
@@ -157,6 +169,7 @@ describe("state", () => {
     assert(
       property(stateArb, (s) => {
         const turned = rotateRight(rotateRight(rotateRight(rotateRight(s))));
+
         expect({ ...turned, aspect: s.aspect }).toStrictEqual(s);
         expect(turned.aspect ?? 0).toBeCloseTo(s.aspect ?? 0, 9);
         expect(mirrorX(mirrorX(s))).toStrictEqual(s);
@@ -167,6 +180,7 @@ describe("state", () => {
 
   it("makes flipY equal flipX plus a half turn", () => {
     const m = orientationMatrix(2, true);
+
     expect([m[0], m[1] === 0, m[2] === 0, m[3]]).toStrictEqual([
       1,
       true,
@@ -182,6 +196,7 @@ describe("state", () => {
         const t = setAngle(s, a);
         const after = workingToSource(t, { x: t.crop.x, y: t.crop.y });
         const tol = 1e-9 * Math.max(s.image.width, s.image.height);
+
         expectClose(after.x, before.x, tol);
         expectClose(after.y, before.y, tol);
       })
@@ -194,19 +209,23 @@ describe("state", () => {
         .map((v) => v + 0)
         .join(",")
     );
+
     expect(new Set(matrices).size).toBe(8);
+
     expect(
       orientationMatrix(
         exifOrientations[5].turns,
         exifOrientations[5].flip
       ).map((v) => v + 0)
     ).toStrictEqual([0, 1, 1, 0]);
+
     expect(
       orientationMatrix(
         exifOrientations[7].turns,
         exifOrientations[7].flip
       ).map((v) => v + 0)
     ).toStrictEqual([0, -1, -1, 0]);
+
     expect(
       applyMatrix2(
         orientationMatrix(exifOrientations[6].turns, exifOrientations[6].flip),

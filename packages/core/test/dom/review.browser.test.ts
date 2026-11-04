@@ -37,9 +37,11 @@ const cleanups: (() => void)[] = [];
 
 const mount = () => {
   const viewport = document.createElement("div");
+
   viewport.style.cssText = "position:relative;width:400px;height:300px;";
   const area = document.createElement("div");
   const handle = document.createElement("div");
+
   area.append(handle);
   viewport.append(area);
   document.body.append(viewport);
@@ -49,14 +51,17 @@ const mount = () => {
     bindArea(cropper, area),
     bindHandle(cropper, handle, "bottom-right"),
   ];
+
   cleanups.push(() => {
     for (const stop of off) {
       stop();
     }
+
     viewOf(cropper).destroy();
     cropper.destroy();
     viewport.remove();
   });
+
   return { cropper, handle, viewport };
 };
 
@@ -82,30 +87,39 @@ describe("review regressions in the browser", () => {
 
   it("keeps a resize going when the wheel turns", async () => {
     const { cropper, handle, viewport } = mount();
+
     await frames();
     const box = handle.getBoundingClientRect();
+
     pointer(handle, "pointerdown", box.x, box.y);
+
     viewport.dispatchEvent(
       new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 30 })
     );
+
     await new Promise((resolve) => {
       setTimeout(resolve, 250);
     });
+
     expect(cropper.getState().interacting).toBe("resize");
     pointer(handle, "pointerup", box.x, box.y);
   });
 
   it("cancels a resize with Escape", async () => {
     const { cropper, handle } = mount();
+
     await frames();
     const before = cropper.getValue();
     const box = handle.getBoundingClientRect();
+
     pointer(handle, "pointerdown", box.x, box.y);
     pointer(handle, "pointermove", box.x - 80, box.y - 60);
     expect(cropper.getValue()).not.toBe(before);
+
     document.body.dispatchEvent(
       new KeyboardEvent("keydown", { bubbles: true, key: "Escape" })
     );
+
     expect(cropper.getValue()).toStrictEqual(before);
     expect(cropper.getState().interacting).toBeNull();
   });
@@ -113,6 +127,7 @@ describe("review regressions in the browser", () => {
   it("exports a photo whose corners are transparent", async () => {
     const canvas = new OffscreenCanvas(40, 40);
     const context = canvas.getContext("2d");
+
     context?.fillRect(15, 15, 10, 10);
     const image = await loadImage(
       await canvas.convertToBlob({ type: "image/png" })
@@ -120,6 +135,7 @@ describe("review regressions in the browser", () => {
     const result = await exportImage(createCropper({ image }), image, {
       type: "image/png",
     });
+
     expect(result.width).toBe(40);
   });
 });
@@ -127,16 +143,21 @@ describe("review regressions in the browser", () => {
 const rig = (options: Parameters<typeof bindViewport>[2] = {}) => {
   const time = fakeClock();
   const viewport = document.createElement("div");
+
   viewport.style.cssText =
     "position:relative;width:400px;height:300px;cursor:grab;";
+
   const area = document.createElement("div");
   const handle = document.createElement("div");
+
   handle.style.cssText = "width:20px;height:20px;cursor:ew-resize;";
   area.append(handle);
   viewport.append(area);
   const dial = document.createElement("div");
+
   dial.style.cssText = "width:300px;height:40px;cursor:grab;";
   const zoom = document.createElement("div");
+
   zoom.style.cssText = "width:300px;height:20px;";
   document.body.append(viewport, dial, zoom);
   const commits: string[] = [];
@@ -156,11 +177,13 @@ const rig = (options: Parameters<typeof bindViewport>[2] = {}) => {
     bindPointers(zoom, zoomers),
     zoomers.release,
   ];
+
   const unbind = () => {
     for (const stop of off.splice(0)) {
       stop();
     }
   };
+
   cleanups.push(() => {
     unbind();
     viewOf(cropper).destroy();
@@ -169,7 +192,9 @@ const rig = (options: Parameters<typeof bindViewport>[2] = {}) => {
     dial.remove();
     zoom.remove();
   });
+
   time.frames(2);
+
   return { commits, cropper, dial, handle, time, unbind, viewport, zoom };
 };
 
@@ -202,6 +227,7 @@ const safari = (
   fields: { rotation?: number; scale?: number } = {}
 ): boolean => {
   const event = new Event(type, { bubbles: true, cancelable: true });
+
   return (
     target.dispatchEvent(
       Object.assign(event, {
@@ -221,7 +247,9 @@ const wheel = (target: EventTarget, init: WheelEventInit): WheelEvent => {
     cancelable: true,
     ...init,
   });
+
   target.dispatchEvent(event);
+
   return event;
 };
 
@@ -229,6 +257,7 @@ const hideTab = () => {
   const spy = vi
     .spyOn(document, "visibilityState", "get")
     .mockReturnValue("hidden");
+
   document.dispatchEvent(new Event("visibilitychange"));
   spy.mockRestore();
 };
@@ -265,16 +294,21 @@ const stamped = (type: string, clientX: number, timeStamp: number) => {
     composed: true,
     pointerId: 2,
   });
+
   Object.defineProperty(event, "timeStamp", { value: timeStamp });
+
   return event;
 };
 
 const throwDial = (r: Rig): void => {
   const handlers = dialHandlers(r.cropper);
+
   handlers.onPointerDown(stamped("pointerdown", 100, 0));
+
   for (let i = 1; i <= 5; i += 1) {
     handlers.onPointerMove(stamped("pointermove", 100 + i * 15, i * 16));
   }
+
   handlers.onPointerUp(stamped("pointerup", 175, 80));
   r.time.frames(2);
 };
@@ -282,6 +316,7 @@ const throwDial = (r: Rig): void => {
 describe("gesture lifetime", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
@@ -291,6 +326,7 @@ describe("gesture lifetime", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const sheets = document.adoptedStyleSheets.length;
+
       drag(r, pick(r));
       r.unbind();
       expect(r.cropper.getState().interacting).toBeNull();
@@ -301,6 +337,7 @@ describe("gesture lifetime", () => {
         cancelable: true,
         key: "Escape",
       });
+
       document.body.dispatchEvent(escape);
       expect(escape.defaultPrevented).toBeFalsy();
       expect(r.cropper.begin("pan", undefined, {})).toBeTruthy();
@@ -310,6 +347,7 @@ describe("gesture lifetime", () => {
   it("a held key ends when its handlers are released", () => {
     const r = rig();
     const keys = areaKeyHandlers(r.cropper);
+
     keys.onKeyDown(new KeyboardEvent("keydown", { key: "ArrowRight" }));
     expect(r.cropper.getState().interacting).toBe("keyboard");
     keys.release();
@@ -321,9 +359,11 @@ describe("gesture lifetime", () => {
       for (const [, pick] of parts) {
         const r = rig();
         const part = pick(r);
+
         drag(r, part);
         lose();
         const held = r.cropper.getValue();
+
         expect(r.cropper.getState().interacting).toBeNull();
         fire(part, "pointermove", 220, 80);
         expect(r.cropper.getValue()).toBe(held);
@@ -335,9 +375,11 @@ describe("gesture lifetime", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const part = pick(r);
+
       drag(r, part);
       r.cropper.stop();
       const held = r.cropper.getValue();
+
       fire(part, "pointermove", 220, 80);
       fire(part, "pointerup", 220, 80);
       r.time.frames(5);
@@ -351,8 +393,10 @@ describe("gesture lifetime", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const part = pick(r);
+
       drag(r, part);
       const held = r.cropper.getValue();
+
       fire(part, "pointermove", 220, 80, { buttons: 0 });
       expect(r.cropper.getState().interacting).toBeNull();
       expect(r.cropper.getValue()).toBe(held);
@@ -361,8 +405,10 @@ describe("gesture lifetime", () => {
 
   it("ctrl and press starts nothing on a mac, and still starts elsewhere", () => {
     const platform = vi.spyOn(navigator, "platform", "get");
+
     for (const [, pick, reason] of parts) {
       const r = rig();
+
       platform.mockReturnValue("MacIntel");
       fire(pick(r), "pointerdown", 100, 10, { ctrlKey: true });
       expect(r.cropper.getState().interacting).toBeNull();
@@ -376,8 +422,10 @@ describe("gesture lifetime", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const part = pick(r);
+
       drag(r, part);
       const held = r.cropper.getValue();
+
       part.style.display = "none";
       fire(part, "pointermove", 20, 200);
       expect(r.cropper.getValue()).toBe(held);
@@ -390,10 +438,12 @@ describe("gesture lifetime", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const part = pick(r);
+
       drag(r, part);
       fire(document.body, "pointerup", 160, 40);
       expect(r.cropper.getState().interacting).toBeNull();
       const held = r.cropper.getValue();
+
       fire(part, "pointermove", 220, 80, { buttons: 0 });
       expect(r.cropper.getValue()).toBe(held);
     }
@@ -402,6 +452,7 @@ describe("gesture lifetime", () => {
   it("a press on a child control starts no pan and keeps its own click", () => {
     const r = rig();
     const button = document.createElement("button");
+
     r.viewport.append(button);
     fire(button, "pointerdown", 50);
     expect(r.cropper.getState().interacting).toBeNull();
@@ -413,7 +464,9 @@ describe("gesture lifetime", () => {
   it("a press inside a nested cropper leaves the outer cropper alone", () => {
     const outer = rig();
     const inner = rig();
+
     outer.viewport.append(inner.viewport, inner.dial, inner.zoom);
+
     for (const [, pick, reason] of parts) {
       fire(pick(inner), "pointerdown", 50);
       expect(outer.cropper.getState().interacting).toBeNull();
@@ -430,10 +483,12 @@ describe("gesture lifetime", () => {
     ] as const) {
       const r = rig();
       const sheets = document.adoptedStyleSheets.length;
+
       fire(r.viewport, "pointerdown", 50, 10, { pointerType });
       expect(document.adoptedStyleSheets.length - sheets).toBe(added);
       fire(r.viewport, "pointerup", 50, 10, { pointerType });
       const press = r.handle.getBoundingClientRect();
+
       fire(r.handle, "pointerdown", press.x, press.y, { pointerType });
       expect(document.adoptedStyleSheets.length - sheets).toBe(added);
       fire(r.handle, "pointerup", press.x, press.y, { pointerType });
@@ -444,6 +499,7 @@ describe("gesture lifetime", () => {
 describe("wheel and pinch on the photo", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
@@ -451,36 +507,44 @@ describe("wheel and pinch on the photo", () => {
 
   it("a press right after the wheel keeps its gesture past the idle timer", async () => {
     const r = rig();
+
     r.cropper.setZoom(2, { emit: false });
     r.time.frames(1);
     wheel(r.viewport, { deltaY: 30 });
     fire(r.viewport, "pointerdown", 50);
+
     await new Promise((resolve) => {
       setTimeout(resolve, 200);
     });
+
     expect(r.cropper.getState().interacting).toBe("pan");
     fire(r.viewport, "pointerup", 50);
   });
 
   it("a safari pinch right after the wheel outlives the idle timer", async () => {
     const r = rig();
+
     r.cropper.setZoom(2, { emit: false });
     r.time.frames(1);
     wheel(r.viewport, { deltaY: 30 });
     safari(r.viewport, "gesturestart");
+
     await new Promise((resolve) => {
       setTimeout(resolve, 200);
     });
+
     expect(r.cropper.getState().interacting).toBe("pinch");
     safari(r.viewport, "gestureend");
   });
 
   it("ctrl and wheel past a limit does not move the crop", () => {
     const r = rig();
+
     r.cropper.setOptions({ maxZoom: 4 });
     r.cropper.setZoom(4);
     r.time.frames(1);
     const { x, y } = r.cropper.getValue().center;
+
     for (let i = 0; i < 4; i += 1) {
       wheel(r.viewport, {
         clientX: 390,
@@ -488,45 +552,56 @@ describe("wheel and pinch on the photo", () => {
         ctrlKey: true,
         deltaY: -50,
       });
+
       r.time.frames(1);
     }
+
     expect(r.cropper.getValue().center.x).toBeCloseTo(x, 9);
     expect(r.cropper.getValue().center.y).toBeCloseTo(y, 9);
   });
 
   it("a pinch out at zoom 1 on a square crop keeps the centre", () => {
     const r = rig();
+
     r.cropper.setAspect(1, { emit: false });
     r.time.frames(1);
+
     wheel(r.viewport, {
       clientX: 390,
       clientY: 150,
       ctrlKey: true,
       deltaY: 50,
     });
+
     expect(r.cropper.getValue().center.x).toBeCloseTo(0.5, 9);
   });
 
   it("a twist back through its start angle never jumps", () => {
     const r = rig();
+
     safari(r.viewport, "gesturestart");
     let last = 0;
     let worst = 0;
+
     for (const rotation of [2, 6, 8, 6, 3, 1, 0.5, -0.5, -1, -3, -6, -8]) {
       safari(r.viewport, "gesturechange", { rotation });
       const now = r.cropper.getValue().rotation;
+
       worst = Math.max(worst, Math.abs(now - last));
       last = now;
     }
+
     expect(worst).toBeLessThanOrEqual(3);
     safari(r.viewport, "gestureend");
   });
 
   it("two fingers turning past 180 degrees stay at the limit", () => {
     const r = rig();
+
     const finger = (id: number, type: string, angle: number) => {
       const radians = (angle * Math.PI) / 180;
       const side = id === 1 ? -1 : 1;
+
       fire(
         r.viewport,
         type,
@@ -535,12 +610,15 @@ describe("wheel and pinch on the photo", () => {
         { pointerId: id, pointerType: "touch" }
       );
     };
+
     finger(1, "pointerdown", 0);
     finger(2, "pointerdown", 0);
+
     for (let angle = 10; angle <= 200; angle += 10) {
       finger(1, "pointermove", angle);
       finger(2, "pointermove", angle);
     }
+
     expect(r.cropper.getValue().rotation).toBe(45);
     finger(1, "pointerup", 200);
     finger(2, "pointerup", 200);
@@ -548,25 +626,33 @@ describe("wheel and pinch on the photo", () => {
 
   it("the finger left after a pinch reports a pan", () => {
     const r = rig();
+
     r.cropper.setZoom(2, { emit: false });
+
     fire(r.viewport, "pointerdown", 100, 100, {
       pointerId: 1,
       pointerType: "touch",
     });
+
     fire(r.viewport, "pointerdown", 200, 100, {
       pointerId: 2,
       pointerType: "touch",
     });
+
     expect(r.cropper.getState().interacting).toBe("pinch");
+
     fire(r.viewport, "pointerup", 200, 100, {
       pointerId: 2,
       pointerType: "touch",
     });
+
     fire(r.viewport, "pointermove", 110, 100, {
       pointerId: 1,
       pointerType: "touch",
     });
+
     expect(r.cropper.getState().interacting).toBe("pan");
+
     fire(r.viewport, "pointerup", 110, 100, {
       pointerId: 1,
       pointerType: "touch",
@@ -577,9 +663,11 @@ describe("wheel and pinch on the photo", () => {
     const r = rig();
     const view = viewOf(r.cropper);
     const touch = { pointerType: "touch" };
+
     fire(r.viewport, "pointerdown", 50, 150, { pointerId: 1, ...touch });
     fire(r.viewport, "pointermove", 350, 150, { pointerId: 1, ...touch });
     const shift = view.overscroll().x;
+
     expect(shift).toBeGreaterThan(50);
     fire(r.viewport, "pointerdown", 200, 150, { pointerId: 2, ...touch });
     fire(r.viewport, "pointerup", 200, 150, { pointerId: 2, ...touch });
@@ -592,20 +680,25 @@ describe("wheel and pinch on the photo", () => {
     const r = rig();
     const log: string[] = [];
     const touch = { pointerType: "touch" };
+
     fire(r.viewport, "pointerdown", 50, 150, { pointerId: 1, ...touch });
     fire(r.viewport, "pointermove", 350, 150, { pointerId: 1, ...touch });
     r.time.frames(1);
+
     r.cropper.on("settle", () => {
       log.push("settle");
     });
+
     r.cropper.subscribe(() => {
       if (r.cropper.getState().settling) {
         log.push("settling");
       }
     });
+
     fire(r.viewport, "pointerdown", 200, 150, { pointerId: 2, ...touch });
     r.time.frames(1);
     const shift = viewOf(r.cropper).overscroll().x;
+
     fire(r.viewport, "pointerup", 200, 150, { pointerId: 2, ...touch });
     r.time.frames(2);
     expect(log).toStrictEqual([]);
@@ -618,9 +711,11 @@ describe("wheel and pinch on the photo", () => {
     const view = viewOf(r.cropper);
     const touch = { pointerType: "touch" };
     let settles = 0;
+
     r.cropper.on("settle", () => {
       settles += 1;
     });
+
     fire(r.viewport, "pointerdown", 100, 150, { pointerId: 1, ...touch });
     fire(r.viewport, "pointerdown", 300, 150, { pointerId: 2, ...touch });
     fire(r.viewport, "pointermove", 150, 150, { pointerId: 1, ...touch });
@@ -637,9 +732,11 @@ describe("wheel and pinch on the photo", () => {
   it("a wheel zoom reports the wheel on change and on commit", () => {
     const r = rig();
     const reasons: string[] = [];
+
     r.cropper.on("change", (_, details) => {
       reasons.push(details.reason);
     });
+
     wheel(r.viewport, { ctrlKey: true, deltaY: -50 });
     r.time.frames(1);
     expect(reasons).toStrictEqual(["wheel"]);
@@ -647,8 +744,10 @@ describe("wheel and pinch on the photo", () => {
 
   it("a disabled wheel zoom leaves the page its scroll, and blocks page zoom", () => {
     const r = rig({ wheel: "zoom" });
+
     r.cropper.setOptions({ disabled: true });
     expect(wheel(r.viewport, { deltaY: 40 }).defaultPrevented).toBeFalsy();
+
     expect(
       wheel(r.viewport, { ctrlKey: true, deltaY: 40 }).defaultPrevented
     ).toBeTruthy();
@@ -656,8 +755,10 @@ describe("wheel and pinch on the photo", () => {
 
   it("a sideways wheel in zoom mode stays with the page", () => {
     const r = rig({ wheel: "zoom" });
+
     expect(wheel(r.viewport, { deltaX: 40 }).defaultPrevented).toBeFalsy();
     expect(r.cropper.getState().interacting).toBeNull();
+
     expect(
       wheel(r.viewport, { ctrlKey: true, deltaX: 40 }).defaultPrevented
     ).toBeTruthy();
@@ -665,15 +766,19 @@ describe("wheel and pinch on the photo", () => {
 
   it("ctrl and wheel during a drag stays away from the browser", () => {
     const r = rig();
+
     fire(r.viewport, "pointerdown", 50);
+
     expect(
       wheel(r.viewport, { ctrlKey: true, deltaY: 40 }).defaultPrevented
     ).toBeTruthy();
+
     fire(r.viewport, "pointerup", 50);
   });
 
   it("safari gestures stay with the page on an inert cropper", () => {
     const r = rig();
+
     r.cropper.setOptions({ disabled: true });
     expect(safari(r.viewport, "gesturestart")).toBeTruthy();
     expect(safari(r.viewport, "gesturechange")).toBeTruthy();
@@ -689,10 +794,12 @@ describe("wheel and pinch on the photo", () => {
 
   it("a press takes over from a safari gesture", () => {
     const r = rig();
+
     safari(r.viewport, "gesturestart");
     safari(r.viewport, "gesturechange", { scale: 2 });
     fire(r.viewport, "pointerdown", 100, 100);
     const held = r.cropper.getValue();
+
     safari(r.viewport, "gesturechange", { scale: 1.2 });
     expect(r.cropper.getValue()).toBe(held);
     fire(r.viewport, "pointerup", 100, 100);
@@ -702,9 +809,12 @@ describe("wheel and pinch on the photo", () => {
     const ratios = [1, 0.9, 0.800000011920929, 1.1, 1.5].map((dpr) => {
       vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(dpr);
       const r = rig();
+
       wheel(r.viewport, { ctrlKey: true, deltaY: -100 / dpr });
+
       return r.cropper.getZoom();
     });
+
     for (const ratio of ratios) {
       expect(ratio).toBeCloseTo(ratios[0] ?? 0, 6);
     }
@@ -712,6 +822,7 @@ describe("wheel and pinch on the photo", () => {
 
   it("a drag on a cropper disabled mid-drag does not rubber-band", () => {
     const r = rig();
+
     fire(r.viewport, "pointerdown", 50, 150);
     r.cropper.setOptions({ disabled: true });
     fire(r.viewport, "pointermove", 250, 150);
@@ -729,6 +840,7 @@ describe("writes during a held gesture", () => {
 
   it("a flip, a turn and a reset mid-pan survive the next move", () => {
     const r = rig();
+
     r.cropper.setZoom(2, { emit: false });
     r.time.frames(1);
     fire(r.viewport, "pointerdown", 100, 100);
@@ -748,13 +860,16 @@ describe("writes during a held gesture", () => {
 
   it("a canceled change mid-pan does not make the photo slip from the finger", () => {
     const r = rig();
+
     r.cropper.setZoom(2, { emit: false });
     r.time.frames(1);
+
     r.cropper.on("change", (next, details) => {
       if (next.center.x < 0.45) {
         details.cancel();
       }
     });
+
     fire(r.viewport, "pointerdown", 100, 100);
     fire(r.viewport, "pointermove", 180, 100);
     r.time.frames(1);
@@ -768,17 +883,20 @@ describe("writes during a held gesture", () => {
     for (const [, pick] of parts) {
       const r = rig();
       const part = pick(r);
+
       drag(r, part);
       r.cropper.setImage({ height: 900, width: 300 });
       fire(part, "pointermove", 170, 45);
       r.time.frames(1);
       const moved = r.cropper.getValue();
+
       fire(part, "pointermove", 150, 25);
       expect(r.cropper.getValue()).not.toBe(moved);
       fire(part, "pointerup", 150, 25);
       r.time.frames(2);
       expect(r.cropper.getCropState()?.image.width).toBe(300);
       const plan = r.cropper.getPixelCrop();
+
       expect(plan?.pixelRect?.width ?? 0).toBeLessThanOrEqual(300);
       expect(r.cropper.getValue().size.width).toBeGreaterThan(0.2);
     }
@@ -786,6 +904,7 @@ describe("writes during a held gesture", () => {
 
   it("escape after a swap keeps the new photo, and after detach stays empty", () => {
     const r = rig();
+
     drag(r, r.viewport);
     r.cropper.setImage({ height: 900, width: 300 });
     pressEscape();
@@ -798,16 +917,19 @@ describe("writes during a held gesture", () => {
 
   it("a held handle drops the old photo's placement when a new photo lands", () => {
     const r = rig();
+
     drag(r, r.handle);
     r.cropper.setImage({ height: 900, width: 300 });
     r.time.frames(1);
     const rect = viewOf(r.cropper).frame()?.rect;
+
     expect(rect?.height).toBeLessThanOrEqual(300);
     fire(r.handle, "pointerup", 160, 40);
   });
 
   it("a handle released just before a swap does not blow up the new photo", () => {
     const r = rig();
+
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", 0);
     fire(r.handle, "pointerup", 0);
@@ -819,28 +941,35 @@ describe("writes during a held gesture", () => {
   it("a state from the old photo is dropped", () => {
     const r = rig();
     const old = r.cropper.getCropState();
+
     r.cropper.setImage({ height: 900, width: 300 });
     const fresh = r.cropper.getCropState();
+
     if (old) {
       r.cropper.setCropState(old);
     }
+
     expect(r.cropper.getCropState()).toBe(fresh);
   });
 
   it("a handle tap that moved nothing runs no recentre", async () => {
     const r = rig();
+
     viewOf(r.cropper).setOptions({ recentreDelay: 0 });
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointerup", 10);
+
     await new Promise((resolve) => {
       setTimeout(resolve, 20);
     });
+
     expect(viewOf(r.cropper).chrome().transition).toBeNull();
   });
 
   it("a photo removed under a held handle ends the drag and frees the page", () => {
     const r = rig();
     const sheets = document.adoptedStyleSheets.length;
+
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", 0);
     r.cropper.setImage(null);
@@ -858,18 +987,23 @@ describe("writes during a held gesture", () => {
   it("hiding the tab leaves an idle cropper and its running tasks alone", () => {
     const r = rig();
     const events: string[] = [];
+
     for (const type of ["stop", "frame"] as const) {
       r.cropper.on(type, () => {
         events.push(type);
       });
     }
+
     hideTab();
     expect(events).toStrictEqual([]);
     let calls = 0;
+
     r.cropper.run(() => {
       calls += 1;
+
       return calls < 5;
     }, false);
+
     r.time.frames(2);
     hideTab();
     r.time.frames(3);
@@ -879,10 +1013,12 @@ describe("writes during a held gesture", () => {
   it("a throw on the dial finishes through a hidden tab and reports settle", () => {
     const r = rig();
     const settle = vi.fn<() => void>();
+
     r.cropper.on("settle", settle);
     throwDial(r);
     expect(r.cropper.getState().interacting).toBe("dial");
     const at = r.cropper.getValue().rotation;
+
     hideTab();
     expect(r.cropper.getState().interacting).toBe("dial");
     r.time.frames(240);
@@ -898,10 +1034,12 @@ describe("writes during a held gesture", () => {
       dialHandlers(r.cropper),
       zoomHandlers(r.cropper),
     ];
+
     for (const keys of handlers) {
       keys.onKeyDown(
         new KeyboardEvent("keydown", { code: "ArrowUp", key: "ArrowUp" })
       );
+
       keys.onKeyDown(
         new KeyboardEvent("keydown", {
           code: "MetaLeft",
@@ -909,13 +1047,17 @@ describe("writes during a held gesture", () => {
           metaKey: true,
         })
       );
+
       keys.onKeyUp(
         new KeyboardEvent("keyup", { code: "ShiftLeft", key: "Shift" })
       );
+
       expect(r.cropper.getState().interacting).toBe("keyboard");
+
       keys.onKeyUp(
         new KeyboardEvent("keyup", { code: "MetaLeft", key: "Meta" })
       );
+
       expect(r.cropper.getState().interacting).toBeNull();
       r.time.frames(1);
     }
@@ -923,6 +1065,7 @@ describe("writes during a held gesture", () => {
 
   it("a safari pinch with its photo removed still ends on gestureend", () => {
     const r = rig();
+
     safari(r.viewport, "gesturestart");
     r.cropper.setImage(null);
     safari(r.viewport, "gesturechange", { scale: 1.2 });
@@ -933,6 +1076,7 @@ describe("writes during a held gesture", () => {
   it("a new photo during the recentre stops the spring and fits the photo", async () => {
     const r = rig();
     const view = viewOf(r.cropper);
+
     view.setOptions({ recentreDelay: 0 });
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", -120, -80);
@@ -944,6 +1088,7 @@ describe("writes during a held gesture", () => {
     r.time.frames(2);
     expect(view.chrome().transition).toBeNull();
     const rect = view.frame()?.rect;
+
     expect(rect?.height).toBeLessThanOrEqual(300);
     expect(rect?.y).toBeGreaterThanOrEqual(0);
   });
@@ -954,15 +1099,20 @@ describe("writes during a held gesture", () => {
       [{ height: 2000, width: 1000 }],
       [null, { height: 3000, width: 4000 }],
     ];
+
     for (const swap of swaps) {
       const r = rig();
+
       throwDial(r);
       expect(r.cropper.getState().interacting).toBe("dial");
+
       for (const image of swap) {
         r.cropper.setImage(image);
       }
+
       expect(r.cropper.getState().interacting).toBeNull();
       const at = r.cropper.getValue().rotation;
+
       r.time.frames(30);
       expect(r.cropper.getValue().rotation).toBe(at);
     }
@@ -971,6 +1121,7 @@ describe("writes during a held gesture", () => {
   it("escape right after a flip mid-pan or mid-resize keeps the flip", () => {
     for (const part of [(r: Rig) => r.viewport, (r: Rig) => r.handle]) {
       const r = rig();
+
       fire(part(r), "pointerdown", 100);
       fire(part(r), "pointermove", 110);
       r.cropper.flip("x");
@@ -984,23 +1135,31 @@ describe("writes during a held gesture", () => {
     for (const mode of ["open", "closed"] as const) {
       const r = rig();
       const host = document.createElement("div");
+
       document.body.append(host);
       const dial = document.createElement("div");
+
       dial.style.cssText = "width:300px;height:40px;";
       host.attachShadow({ mode }).append(dial);
+
       cleanups.push(bindDial(r.cropper, dial), () => {
         host.remove();
       });
+
       const press = (end: EventTarget): void => {
         const from = performance.now();
+
         dial.dispatchEvent(stamped("pointerdown", 100, from));
+
         for (let i = 1; i <= 5; i += 1) {
           dial.dispatchEvent(
             stamped("pointermove", 100 + i * 15, from + i * 16)
           );
         }
+
         end.dispatchEvent(stamped("pointerup", 175, from + 80));
       };
+
       press(dial);
       expect(r.cropper.getState().interacting).toBe("dial");
       r.time.frames(240);
@@ -1012,10 +1171,12 @@ describe("writes during a held gesture", () => {
 
   it("a write mid-resize survives the next move", () => {
     const r = rig();
+
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", 0);
     r.cropper.setZoom(2);
     const { height, width } = r.cropper.getValue().size;
+
     fire(r.handle, "pointermove", 1);
     expect(r.cropper.getValue().size.width).toBeCloseTo(width, 1);
     expect(r.cropper.getValue().size.height).toBeCloseTo(height, 1);
@@ -1024,6 +1185,7 @@ describe("writes during a held gesture", () => {
 
   it("a write mid safari pinch survives the next change", () => {
     const r = rig();
+
     safari(r.viewport, "gesturestart");
     safari(r.viewport, "gesturechange", { scale: 1.1 });
     r.cropper.setZoom(3);
@@ -1034,6 +1196,7 @@ describe("writes during a held gesture", () => {
 
   it("a new photo during a safari pinch keeps pinching the new photo", () => {
     const r = rig();
+
     safari(r.viewport, "gesturestart");
     r.cropper.setImage(null);
     safari(r.viewport, "gesturechange", { scale: 1.2 });
@@ -1049,13 +1212,16 @@ describe("writes during a held gesture", () => {
   it("blur and teardown end a safari pinch", () => {
     for (const lose of ["blur", "unbind"]) {
       const r = rig();
+
       safari(r.viewport, "gesturestart");
       expect(r.cropper.getState().interacting).toBe("pinch");
+
       if (lose === "blur") {
         blurWindow();
       } else {
         r.unbind();
       }
+
       expect(r.cropper.getState().interacting).toBeNull();
     }
   });
@@ -1063,18 +1229,24 @@ describe("writes during a held gesture", () => {
   it("stop mid-resize and before a recentre puts the crop back in the middle", () => {
     for (const released of [false, true]) {
       const r = rig();
+
       fire(r.handle, "pointerdown", 10);
       fire(r.handle, "pointermove", -120, -80);
       r.time.frames(1);
+
       if (released) {
         fire(r.handle, "pointerup", -120, -80);
       }
+
       const rect = viewOf(r.cropper).frame()?.rect;
+
       expect(
         Math.abs((rect?.x ?? 0) + (rect?.width ?? 0) / 2 - 200)
       ).toBeGreaterThan(5);
+
       r.cropper.stop();
       const fit = viewOf(r.cropper).frame()?.rect;
+
       expect((fit?.x ?? 0) + (fit?.width ?? 0) / 2).toBeCloseTo(200, 0);
       expect((fit?.y ?? 0) + (fit?.height ?? 0) / 2).toBeCloseTo(150, 0);
     }
@@ -1082,15 +1254,19 @@ describe("writes during a held gesture", () => {
 
   it("a second flip starts from the exact pose the first one reached", () => {
     const r = rig();
+
     r.cropper.setRotation(7, { emit: false });
     r.time.frames(2);
     r.cropper.flip("x");
     r.time.frames(3);
     const before = viewOf(r.cropper).frame()?.matrix;
+
     r.cropper.flip("x");
     r.time.frame(0);
     const after = viewOf(r.cropper).frame()?.matrix;
+
     expect(viewOf(r.cropper).chrome().transition).toBe("flip");
+
     for (const [index, value] of (before ?? []).entries()) {
       expect(after?.[index]).toBeCloseTo(value, 6);
     }
@@ -1098,16 +1274,21 @@ describe("writes during a held gesture", () => {
 
   it("a press from a portal reaches the viewport handler and starts no pan", () => {
     const r = rig();
+
     r.unbind();
     const portal = document.createElement("div");
+
     document.body.append(portal);
     const controller = viewportController(r.cropper);
+
     controller.setElement(r.viewport);
     portal.addEventListener("pointerdown", controller.handlers.onPointerDown);
+
     cleanups.push(() => {
       controller.destroy();
       portal.remove();
     });
+
     fire(portal, "pointerdown", 50);
     expect(r.cropper.getState().interacting).toBeNull();
   });
@@ -1115,9 +1296,11 @@ describe("writes during a held gesture", () => {
   it("a second finger on dial handlers inside the photo starts no pinch", () => {
     const r = rig();
     const ruler = document.createElement("div");
+
     r.viewport.append(ruler);
     cleanups.push(bindPointers(ruler, dialHandlers(r.cropper)));
     const touch = { pointerId: 2, pointerType: "touch" };
+
     fire(r.viewport, "pointerdown", 100, 100, { pointerType: "touch" });
     fire(ruler, "pointerdown", 200, 100, touch);
     expect(r.cropper.getState().interacting).toBe("pan");
@@ -1127,6 +1310,7 @@ describe("writes during a held gesture", () => {
 
   it("escape after a write mid-resize leaves the crop fitted, with no pin", () => {
     const r = rig();
+
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", 0);
     r.cropper.setZoom(2);
@@ -1134,6 +1318,7 @@ describe("writes during a held gesture", () => {
     r.time.frames(1);
     expect(r.cropper.getZoom()).toBeCloseTo(2, 3);
     const rect = viewOf(r.cropper).frame()?.rect;
+
     expect(rect?.height).toBe(300);
     expect((rect?.x ?? 0) + (rect?.width ?? 0) / 2).toBeCloseTo(200, 0);
   });
@@ -1144,25 +1329,31 @@ const keyDown = (name: string): KeyboardEvent =>
 
 const twoBindArea = () => {
   const viewport = document.createElement("div");
+
   viewport.style.cssText = "position:relative;width:400px;height:300px;";
   const area = document.createElement("div");
+
   viewport.append(area);
   document.body.append(viewport);
   const cropper = createCropper({ image: { height: 3000, width: 4000 } });
   const stopView = bindViewport(cropper, viewport);
+
   const done = (): void => {
     stopView();
     cropper.destroy();
     viewport.remove();
   };
+
   return { area, cropper, done };
 };
 
 describe("binding twice", () => {
   it("a mask with no shape keeps the shape set before it", () => {
     const cropper = createCropper();
+
     setCropShape(cropper, "circle");
     const off = bindMask(cropper, document.createElement("div"));
+
     expect(cropShapeOf(cropper)).toBe("circle");
     off();
     cropper.destroy();
@@ -1170,39 +1361,47 @@ describe("binding twice", () => {
 
   it("a second mask with no shape draws the first one's circle", async () => {
     const viewport = document.createElement("div");
+
     viewport.style.cssText = "position:relative;width:400px;height:300px;";
     document.body.append(viewport);
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const first = document.createElement("div");
     const second = document.createElement("div");
+
     viewport.append(first, second);
     const off = [
       bindViewport(cropper, viewport),
       bindMask(cropper, first, "circle"),
       bindMask(cropper, second),
     ];
+
     await frames();
     expect(cropShapeOf(cropper)).toBe("circle");
     expect(second.style.clipPath).toBe(first.style.clipPath);
+
     for (const stop of off) {
       stop();
     }
+
     cropper.destroy();
     viewport.remove();
   });
 
   it("an unbound mask leaves no clip, gradient or area radius behind", async () => {
     const viewport = document.createElement("div");
+
     viewport.style.cssText = "position:relative;width:400px;height:300px;";
     document.body.append(viewport);
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const mask = document.createElement("div");
     const area = document.createElement("div");
+
     mask.style.setProperty("mask-image", "none");
     viewport.append(mask, area);
     const stopView = bindViewport(cropper, viewport);
     const stopMask = bindMask(cropper, mask, "rect");
     const stopArea = bindArea(cropper, area, { shape: "circle" });
+
     await frames();
     expect(mask.style.clipPath).not.toBe("");
     expect(area.style.borderRadius).toBe("50%");
@@ -1220,8 +1419,10 @@ describe("binding twice", () => {
     it("keeps the frame while the newer bind lives", async () => {
       const { area, cropper, done } = twoBindArea();
       const stopOld = bindArea(cropper, area);
+
       await frames();
       const stopNew = bindArea(cropper, area);
+
       await frames();
       stopOld();
       expect(Object.hasOwn(area.dataset, "visible")).toBeTruthy();
@@ -1233,9 +1434,11 @@ describe("binding twice", () => {
     it("hides the frame when the newer bind's cropper has no photo", async () => {
       const { area, cropper, done } = twoBindArea();
       const stopOld = bindArea(cropper, area);
+
       await frames();
       const empty = createCropper();
       const stopNew = bindArea(empty, area);
+
       await frames();
       stopOld();
       expect(Object.hasOwn(area.dataset, "visible")).toBeFalsy();
@@ -1251,12 +1454,14 @@ describe("binding twice", () => {
     const second = document.createElement("div");
     const stopFirst = bindDial(cropper, first, { gain: 2 });
     const stopSecond = bindDial(cropper, second, { gain: 2 });
+
     stopFirst();
     stopFirst();
     expect(dialState(cropper).options().gain).toBe(2);
     stopSecond();
     expect(dialState(cropper).options().gain).toBeUndefined();
     const stopLast = bindDial(cropper, first, { gain: 3 });
+
     stopLast();
     expect(dialState(cropper).options().gain).toBeUndefined();
     cropper.destroy();
@@ -1266,15 +1471,18 @@ describe("binding twice", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const first = document.createElement("div");
     const second = document.createElement("div");
+
     document.body.append(first, second);
     const stopFirst = bindDial(cropper, first, { dir: "rtl" });
     const stopSecond = bindDial(cropper, second);
+
     expect(dialState(cropper).options().dir).toBe("rtl");
     stopSecond();
     expect(dialState(cropper).options().dir).toBe("rtl");
     stopFirst();
     expect(dialState(cropper).options().dir).toBeUndefined();
     const stopAgain = bindDial(cropper, first);
+
     first.dispatchEvent(keyDown("ArrowRight"));
     expect(cropper.getValue().rotation).toBeGreaterThan(0);
     stopAgain();
@@ -1291,8 +1499,10 @@ describe("slider attributes", () => {
       minSize: { height: 90, width: 90 },
     });
     const element = document.createElement("div");
+
     document.body.append(element);
     const off = bindDial(cropper, element, { locale: "en" });
+
     cropper.setRotation(-0.04);
     cropper.stop();
     expect(element.getAttribute("aria-valuetext")).toBe("0 degrees");
@@ -1307,6 +1517,7 @@ describe("slider attributes", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const element = document.createElement("div");
     const off = zoomAria(cropper, element, { locale: "en", max: 5 });
+
     cropper.setZoom(10);
     cropper.stop();
     expect(element.getAttribute("aria-valuenow")).toBe("5");
@@ -1318,11 +1529,14 @@ describe("slider attributes", () => {
   it("keys past the slider's end do not zoom out to it", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const handlers = zoomHandlers(cropper, { max: 5 });
+
     cropper.setZoom(10);
+
     const press = (name: string): void => {
       handlers.onKeyDown(keyDown(name));
       handlers.onKeyUp(new KeyboardEvent("keyup", { code: name, key: name }));
     };
+
     press("ArrowUp");
     expect(cropper.getZoom()).toBeCloseTo(10, 6);
     press("ArrowDown");
@@ -1345,6 +1559,7 @@ describe("slider attributes", () => {
     const element = document.createElement("div");
     const off = bindDial(cropper, element);
     let running = true;
+
     cropper.run(() => running);
     time.frames(1);
     cropper.setRotation(5, { emit: false });
@@ -1364,15 +1579,19 @@ describe("slider attributes", () => {
     const element = document.createElement("div");
     const off = zoomAria(cropper, element, { locale: "en" });
     const write = vi.spyOn(element, "setAttribute");
+
     cropper.begin("zoom-control");
+
     for (const zoom of [2, 3, 4]) {
       cropper.setZoom(zoom, { reason: "zoom-control" });
       await frames(1);
     }
+
     expect(write).toHaveBeenCalledWith("aria-valuenow", "3");
     const bounds = write.mock.calls.filter(([name]) =>
       ["aria-valuemin", "aria-valuemax"].includes(name)
     );
+
     expect(bounds).toStrictEqual([]);
     cropper.end();
     off();
@@ -1389,17 +1608,23 @@ describe("slider attributes", () => {
       zoomAria(cropper, zoom),
       bindArea(cropper, area),
     ];
+
     cropper.setOptions({ disabled: true });
+
     for (const element of [dial, zoom, area]) {
       expect(element.getAttribute("aria-disabled")).toBe("true");
     }
+
     cropper.setOptions({ disabled: false });
+
     for (const element of [dial, zoom, area]) {
       expect(element.hasAttribute("aria-disabled")).toBeFalsy();
     }
+
     for (const stop of off) {
       stop();
     }
+
     cropper.destroy();
   });
 });
@@ -1418,6 +1643,7 @@ describe("aria-disabled from a binder", () => {
     });
     const element = document.createElement("div");
     const off = bind(cropper, element);
+
     expect(element.getAttribute("aria-disabled")).toBe("true");
     off();
     expect(element.hasAttribute("aria-disabled")).toBeFalsy();
@@ -1427,8 +1653,10 @@ describe("aria-disabled from a binder", () => {
   it.each(binders)("%s keeps the value a caller set", (_, bind) => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const element = document.createElement("div");
+
     element.setAttribute("aria-disabled", "false");
     const off = bind(cropper, element);
+
     cropper.setOptions({ disabled: true });
     expect(element.getAttribute("aria-disabled")).toBe("false");
     cropper.setOptions({ disabled: false });
@@ -1444,11 +1672,14 @@ describe("the angle label", () => {
     const cropper = createCropper({ image: { height: 3000, width: 4000 } });
     const label = document.createElement("span");
     const off = bindDialValue(cropper, label);
+
     const read = (rotation: number): string | null => {
       cropper.setRotation(rotation);
       cropper.stop();
+
       return label.textContent;
     };
+
     expect(read(7.5)).toBe("8");
     expect(read(-7.5)).toBe("-8");
     expect(read(-0.25)).toBe("0");
@@ -1460,6 +1691,7 @@ describe("the angle label", () => {
     const cropper = createCropper();
     const label = document.createElement("span");
     const named = document.createElement("span");
+
     named.setAttribute("aria-hidden", "false");
     const box = document.createElement("div");
     const off = [
@@ -1467,14 +1699,18 @@ describe("the angle label", () => {
       bindDialValue(cropper, named),
       bindPhoto(cropper, box),
     ];
+
     expect(label.getAttribute("aria-hidden")).toBe("true");
     expect(named.getAttribute("aria-hidden")).toBe("false");
+
     expect(box.querySelector("canvas")?.getAttribute("aria-hidden")).toBe(
       "true"
     );
+
     for (const stop of off) {
       stop();
     }
+
     cropper.destroy();
   });
 });
@@ -1487,17 +1723,20 @@ const bound = () => {
   });
   const root = document.createElement("div");
   const off = bindState(cropper, root);
+
   cleanups.push(() => {
     off();
     viewOf(cropper).destroy();
     cropper.destroy();
   });
+
   return { cropper, root, time };
 };
 
 describe("the state attributes on a root", () => {
   it("follows a gesture and the orientation", () => {
     const { cropper, root } = bound();
+
     expect(root.dataset.orientation).toBe("square");
     cropper.begin("resize");
     expect(root.dataset.resizing).toBe("");
@@ -1509,11 +1748,13 @@ describe("the state attributes on a root", () => {
 
   it("marks a gesture as interacting until the hold after it ends", async () => {
     const { cropper, root } = bound();
+
     expect(root.dataset.interacting).toBeUndefined();
     cropper.begin("resize");
     expect(root.dataset.interacting).toBe("");
     cropper.end();
     expect(root.dataset.interacting).toBe("");
+
     await expect
       .poll(() => root.dataset.interacting, { timeout: 5000 })
       .toBeUndefined();
@@ -1521,12 +1762,16 @@ describe("the state attributes on a root", () => {
 
   it("marks settling while an animation runs", () => {
     const { cropper, root, time } = bound();
+
     expect(root.dataset.settling).toBeUndefined();
     let left = 2;
+
     cropper.run(() => {
       left -= 1;
+
       return left > 0;
     });
+
     expect(root.dataset.settling).toBe("");
     time.frames(2);
     expect(root.dataset.settling).toBeUndefined();
@@ -1534,6 +1779,7 @@ describe("the state attributes on a root", () => {
 
   it("marks a disabled cropper and clears the mark", () => {
     const { cropper, root } = bound();
+
     expect(root.dataset.disabled).toBeUndefined();
     cropper.setOptions({ disabled: true });
     expect(root.dataset.disabled).toBe("");

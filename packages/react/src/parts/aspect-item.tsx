@@ -12,15 +12,15 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface AspectItemState {
+export type AspectItemState = {
   checked: boolean;
   disabled: boolean;
-}
+};
 
-export interface AspectItemProps extends PartProps<"button", AspectItemState> {
+export type AspectItemProps = {
   /** The aspect this item selects: a ratio, "free" or "original". */
   value: Aspect;
-}
+} & PartProps<"button", AspectItemState>;
 
 export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
@@ -32,15 +32,19 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   const disabled = off === true || (shape === "circle" && value !== 1);
   const checked = useCropperState((s) => sameAspect(s.aspect, value));
   const rootDisabled = useAriaDisabled();
+
   const onClick = (event: MouseEvent): void => {
     if (!disabled) {
       cropper.setAspect(value, { event: event.nativeEvent });
     }
   };
+
   let tabStop: number | undefined;
+
   if (inGroup) {
     tabStop = checked ? 0 : -1;
   }
+
   return usePart(
     "button",
     {

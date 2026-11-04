@@ -5,11 +5,13 @@ export const IDENTITY_MATRIX3: Readonly<Matrix3> = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 export const rotationMatrix = (degrees: number): Matrix2 => {
   const { sin, cos } = sinCosDegrees(degrees);
+
   return [cos, -sin, sin, cos];
 };
 
 export const quarterTurnMatrix = (turns: number): Matrix2 => {
   const { sin, cos } = sinCosDegrees(90 * toQuarterTurns(turns));
+
   return [cos + 0, 0 - sin, sin + 0, cos + 0];
 };
 
@@ -56,6 +58,7 @@ export const invertMatrix3 = (m: Readonly<Matrix3>): Matrix3 => {
   const cofactorB = -(d * i - f * g);
   const cofactorC = d * h - e * g;
   const det = a * cofactorA + b * cofactorB + c * cofactorC;
+
   return [
     cofactorA / det,
     -(b * i - c * h) / det,
@@ -71,6 +74,7 @@ export const invertMatrix3 = (m: Readonly<Matrix3>): Matrix3 => {
 
 export const applyHomography = (h: Readonly<Matrix3>, point: Point): Point => {
   const w = h[6] * point.x + h[7] * point.y + h[8];
+
   return {
     x: (h[0] * point.x + h[1] * point.y + h[2]) / w,
     y: (h[3] * point.x + h[4] * point.y + h[5]) / w,
@@ -84,6 +88,7 @@ export const invertAffine = (a: AffineMatrix): AffineMatrix => {
   const i01 = -m01 / det;
   const i10 = -m10 / det;
   const i11 = m00 / det;
+
   return [i00, i10, i01, i11, -(i00 * tx + i01 * ty), -(i10 * tx + i11 * ty)];
 };
 

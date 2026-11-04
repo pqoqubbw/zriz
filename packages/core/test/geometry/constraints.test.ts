@@ -72,6 +72,7 @@ const limitsFor = (
 } => {
   const turned = turnedSize(s.image, s.turns);
   const minWidth = Math.min(s.crop.width, s.crop.height) * minFraction;
+
   return {
     minHeight: minWidth,
     minWidth,
@@ -108,11 +109,14 @@ describe("handle drag constraints", () => {
             { x: u * turned.width, y: v * turned.height },
             { aspect: null, minHeight, minWidth, planes }
           );
+
           for (const p of rectPoints(r)) {
             expect(insidePlanes(planes, p, tolerance)).toBeTruthy();
           }
+
           expect(r.x1 - r.x0).toBeGreaterThanOrEqual(minWidth - tolerance);
           expect(r.y1 - r.y0).toBeGreaterThanOrEqual(minHeight - tolerance);
+
           expect([r.x0, r.x1, r.y0, r.y1]).toStrictEqual([
             pick(h, "w", r.x0, start.x0),
             pick(h, "e", r.x1, start.x1),
@@ -143,6 +147,7 @@ describe("handle drag constraints", () => {
           minWidth: 0,
           planes,
         });
+
         expect(r.x1).toBe(pick(h, "e", p.x, r.x1));
         expect(r.x0).toBe(pick(h, "w", p.x, r.x0));
         expect(r.y1).toBe(pick(h, "s", p.y, r.y1));
@@ -174,12 +179,15 @@ describe("handle drag constraints", () => {
           );
           const width = r.x1 - r.x0;
           const height = r.y1 - r.y0;
+
           expect(Math.abs(width - aspect * height)).toBeLessThanOrEqual(
             tolerance + 1e-12 * width
           );
+
           for (const p of rectPoints(r)) {
             expect(insidePlanes(planes, p, tolerance)).toBeTruthy();
           }
+
           expect(height).toBeGreaterThanOrEqual(minHeight - tolerance);
           const cx = (start.x0 + start.x1) / 2;
           const cy = (start.y0 + start.y1) / 2;
@@ -195,6 +203,7 @@ describe("handle drag constraints", () => {
             sw: [r.x1 === start.x1, r.y0 === start.y0],
             w: [r.x1 === start.x1, onCentre(r.y0, r.y1, cy)],
           };
+
           expect(anchors[h].every(Boolean)).toBeTruthy();
         }
       )
@@ -233,17 +242,20 @@ describe("handle drag constraints", () => {
               : edge,
             limits
           );
+
           for (const key of ["x0", "x1", "y0", "y1"] as const) {
             expect(Math.abs(still[key] - start[key])).toBeLessThanOrEqual(
               tolerance
             );
           }
+
           const r = dragHandle(
             start,
             h,
             { x: u * turned.width, y: v * turned.height },
             limits
           );
+
           expect(r.x1 - r.x0).toBeGreaterThanOrEqual(s.crop.width - tolerance);
           expect(r.y1 - r.y0).toBeGreaterThanOrEqual(s.crop.height - tolerance);
         }
@@ -288,12 +300,14 @@ describe("handle drag constraints", () => {
           y: start.y0 + (h.includes("n") ? -1e9 : 1e9),
         };
         const r = dragHandle(start, h, far, limits);
+
         expect(r.y1 - r.y0).toBeCloseTo(max, 6);
         const slack = Math.min(
           ...rectPoints(r).flatMap((p) =>
             planes.map((plane) => plane.d - (plane.nx * p.x + plane.ny * p.y))
           )
         );
+
         expect(slack).toBeLessThanOrEqual(tolerance * 10);
       })
     );
@@ -307,8 +321,10 @@ describe("handle drag constraints", () => {
         const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
         const edges = Array.from({ length: 51 }, (_, i) => {
           const x = start.x1 + (i / 50) * s.image.width * 2;
+
           return dragHandle(start, "e", { x, y: 0 }, limits).x1;
         });
+
         for (const [i, edge] of edges.entries()) {
           expect(edge).toBeGreaterThanOrEqual(
             (edges[i - 1] ?? Number.NEGATIVE_INFINITY) - 1e-9 * s.image.width
@@ -331,6 +347,7 @@ describe("handle drag constraints", () => {
     const { planes } = limitsFor(s, 0);
     const start = toRect(s);
     const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
+
     expect(dragHandle(start, "e", { x: 3000, y: 0 }, limits).x1).toBeCloseTo(
       3000,
       6
@@ -353,11 +370,13 @@ describe("handle drag constraints", () => {
     const edges = [1.05, 1.5, 2.01, 2.05].map(
       (x) => dragHandle(start, "e", { x, y: 0 }, limits).x1
     );
+
     for (const [i, edge] of edges.entries()) {
       expect(edge).toBeGreaterThanOrEqual(
         edges[i - 1] ?? Number.NEGATIVE_INFINITY
       );
     }
+
     expect(dragHandle(start, "e", { x: 2.05, y: 0 }, limits).x1).toBeCloseTo(
       1.05,
       6
@@ -389,6 +408,7 @@ describe("handle drag constraints", () => {
       { x: 0, y: 0 },
       { aspect: null, minHeight, minWidth, planes }
     );
+
     expect(r.x1 - r.x0).toBeGreaterThanOrEqual(minWidth - tolerance);
     expect(r.y1 - r.y0).toBeGreaterThanOrEqual(minHeight - tolerance);
   });
@@ -402,8 +422,10 @@ describe("handle drag constraints", () => {
         (width, height, minPx) => {
           const image = { height, width };
           const limit = straightenLimit(image, minPx, minPx);
+
           pre(limit > 0 && limit < 45);
           const ok = largestCropAt(image, limit * 0.999, 1, { x: 0, y: 0 });
+
           expect(ok.height).toBeGreaterThanOrEqual(minPx * (1 - 1e-6));
           const bad = largestCropAt(
             image,
@@ -411,10 +433,12 @@ describe("handle drag constraints", () => {
             1,
             { x: 0, y: 0 }
           );
+
           expect(bad.height).toBeLessThan(minPx);
         }
       )
     );
+
     expect(straightenLimit({ height: 10_000, width: 1 }, 1, 1)).toBe(0);
     expect(straightenLimit({ height: 3000, width: 4000 }, 1, 1)).toBe(45);
   });
@@ -432,7 +456,9 @@ describe("handle limits", () => {
       turns: 0,
     });
     const project = vi.mocked(planesModule.projectOntoPlanes);
+
     project.mockClear();
+
     dragHandle(
       { x0: -500, x1: 500, y0: -500, y1: 500 },
       "se",
@@ -450,8 +476,10 @@ describe("handle limits", () => {
         ],
       }
     );
+
     const planes = project.mock.calls[0]?.[0] ?? [];
     const keys = planes.map(({ d, nx, ny }) => `${d} ${nx} ${ny}`);
+
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys.length).toBeLessThan(22);
   });

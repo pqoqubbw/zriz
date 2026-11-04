@@ -8,10 +8,10 @@ import { useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface ZoomThumbProps extends PartProps<"div", object> {
+export type ZoomThumbProps = {
   /** Must match the Zoom max. @default maxZoom on Root */
   max?: number | undefined;
-}
+} & PartProps<"div", object>;
 
 export const ZoomThumb: Part<ZoomThumbProps, HTMLDivElement> = forwardRef<
   HTMLDivElement,
@@ -22,6 +22,7 @@ export const ZoomThumb: Part<ZoomThumbProps, HTMLDivElement> = forwardRef<
     (node: HTMLDivElement) => bindZoomThumb(cropper, node, { max }),
     [cropper, max]
   );
+
   return usePart(
     "div",
     { "aria-hidden": true, "data-zriz-item": "zoom-thumb" },

@@ -7,6 +7,7 @@ export const isFlatPerspective = (perspective?: Perspective): boolean =>
 export const perspectiveHomography = (perspective: Perspective): Matrix3 => {
   const vertical = sinCosDegrees(perspective.vertical);
   const horizontal = sinCosDegrees(perspective.horizontal);
+
   return [
     horizontal.cos,
     horizontal.sin * vertical.sin,
@@ -26,6 +27,7 @@ export const isPerspectiveValid = (
   margin = 0.1
 ): boolean => {
   const h = perspectiveHomography(perspective);
+
   return [
     [-1, -1],
     [1, -1],

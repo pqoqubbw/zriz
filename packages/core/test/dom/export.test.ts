@@ -31,6 +31,7 @@ describe("export without a photo", () => {
     ],
   ])("rejects %s", async (_name, run) => {
     const attempt = run();
+
     await expect(attempt).rejects.toBeInstanceOf(ZrizError);
     await expect(attempt).rejects.toMatchObject({ code: "no-image" });
     await expect(attempt).rejects.toThrow(/^zriz: /u);

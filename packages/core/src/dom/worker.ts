@@ -2,21 +2,21 @@ import { imageKernel } from "./kernel";
 import type { DecodeReply, Kernel, Region } from "./kernel";
 import { MAX_DELAY, aborted, noop, withTimeout } from "./turn";
 
-interface Waiting {
+type Waiting = {
   resolve: (value: never) => void;
   reject: (error: Error) => void;
-}
+};
 
-interface Reply {
+type Reply = {
   id: number;
   result: never;
   error?: string;
-}
+};
 
-export interface Lane<K> {
+export type Lane<K> = {
   call: <T>(op: string, args: readonly unknown[]) => Promise<T>;
   here: () => K;
-}
+};
 
 const program = (kernel: string): string =>
   `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:error instanceof ReferenceError?"zriz:worker:failed":String(error&&error.message||error)})}finally{for(const arg of args){const held=arg&&arg.source||arg;if(held instanceof ImageBitmap)held.close()}}}`;
@@ -31,7 +31,9 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
     if (worker !== undefined) {
       return worker;
     }
+
     worker = null;
+
     if (
       typeof Worker !== "function" ||
       typeof OffscreenCanvas !== "function" ||
@@ -39,48 +41,60 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
     ) {
       return worker;
     }
+
     try {
       const url = URL.createObjectURL(
         new Blob([program(kernel.toString())], { type: "text/javascript" })
       );
       const created = new Worker(url);
+
       created.addEventListener("message", (event: MessageEvent<Reply>) => {
         URL.revokeObjectURL(url);
         const reply = event.data;
         const entry = waiting.get(reply.id);
+
         waiting.delete(reply.id);
+
         if (reply.error === undefined) {
           entry?.resolve(reply.result);
         } else {
           entry?.reject(new Error(reply.error));
         }
       });
+
       const failed = (): void => {
         URL.revokeObjectURL(url);
         created.terminate();
         worker = null;
+
         for (const entry of waiting.values()) {
           entry.reject(new Error("zriz:worker:failed"));
         }
+
         waiting.clear();
       };
+
       created.addEventListener("error", failed);
       created.addEventListener("messageerror", failed);
       worker = created;
     } catch {
       worker = null;
     }
+
     return worker;
   };
 
   return {
     call: async <T>(op: string, args: readonly unknown[]): Promise<T> => {
       const target = spawn();
+
       if (!target) {
         throw new Error("zriz:worker:none");
       }
+
       next += 1;
       const id = next;
+
       return await new Promise<T>((resolve, reject) => {
         target.postMessage({ args, id, op }, []);
         waiting.set(id, { reject, resolve });
@@ -88,6 +102,7 @@ export const lane = <K>(kernel: () => K): Lane<K> => {
     },
     here: () => {
       local ??= kernel();
+
       return local;
     },
   };
@@ -113,6 +128,7 @@ export const via = async <
       throw error;
     }
   }
+
   return await target.here()[op](...args);
 };
 
@@ -125,41 +141,52 @@ export type Turn = <T>(
 export const gate = (size: number): Turn => {
   let free = size;
   const turns: (() => void)[] = [];
+
   const leave = (): void => {
     const first = turns.shift();
+
     if (first) {
       first();
     } else {
       free += 1;
     }
   };
+
   return async (start, ms, signal) => {
     let enter = noop;
     const turn = new Promise<void>((resolve) => {
       enter = resolve;
     });
+
     if (free > 0) {
       free -= 1;
       enter();
     } else {
       turns.push(enter);
     }
+
     try {
       await withTimeout(turn, MAX_DELAY, signal);
+
       if (signal?.aborted === true) {
         throw aborted();
       }
     } catch (error) {
       const at = turns.indexOf(enter);
+
       if (at === -1) {
         leave();
       } else {
         turns.splice(at, 1);
       }
+
       throw error;
     }
+
     const job = start();
+
     withTimeout(job, ms, undefined).finally(leave).catch(noop);
+
     return await job;
   };
 };
@@ -170,6 +197,7 @@ let decoder: Lane<Kernel> | undefined;
 
 const decoding = (): Lane<Kernel> => {
   decoder ??= lane(imageKernel);
+
   return decoder;
 };
 

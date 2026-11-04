@@ -39,7 +39,9 @@ const setup = (dial?: DialOptions, image: CropperOptions["image"] = PHOTO) => {
       commit(value, details);
     },
   });
+
   time.frame();
+
   return { commit, cropper, handlers: dialHandlers(cropper, dial), time };
 };
 
@@ -75,6 +77,7 @@ describe("dial handlers", () => {
     (key, shift, dir, rotation) => {
       const { cropper, handlers } = setup({ dir });
       const event = press(key, shift);
+
       handlers.onKeyDown(event);
       expect(cropper.getValue().rotation).toBe(rotation);
       expect(event.defaultPrevented).toBeTruthy();
@@ -83,6 +86,7 @@ describe("dial handlers", () => {
 
   it("stops a big step at the limit", () => {
     const { cropper, handlers } = setup();
+
     cropper.setRotation(40);
     handlers.onKeyDown(press("ArrowRight", true));
     expect(cropper.getValue().rotation).toBe(45);
@@ -93,6 +97,7 @@ describe("dial handlers", () => {
     (key) => {
       const { commit, cropper, handlers, time } = setup();
       const event = press(key);
+
       handlers.onKeyDown(event);
       expect(event.defaultPrevented).toBeFalsy();
       expect(cropper.getState().interacting).toBeNull();
@@ -103,6 +108,7 @@ describe("dial handlers", () => {
 
   it("does not turn by key while another gesture holds the cropper", () => {
     const { cropper, handlers } = setup();
+
     cropper.begin("pan", undefined, "other");
     handlers.onKeyDown(press("ArrowRight"));
     expect(cropper.getValue().rotation).toBe(0);
@@ -111,6 +117,7 @@ describe("dial handlers", () => {
 
   it("ends the gesture on a tap without a turn or a commit", () => {
     const { commit, cropper, handlers, time } = setup();
+
     handlers.onPointerDown(down());
     expect(cropper.getState().interacting).toBe("dial");
     handlers.onPointerUp(down());
@@ -122,6 +129,7 @@ describe("dial handlers", () => {
 
   it.each([1, 2, 3, 4])("ignores mouse button %d", (button) => {
     const { cropper, handlers } = setup();
+
     handlers.onPointerDown(down({ button }));
     expect(cropper.getState().interacting).toBeNull();
     handlers.onPointerMove(down({ clientX: 200 }));
@@ -130,6 +138,7 @@ describe("dial handlers", () => {
 
   it("keeps the first pointer when a second one presses", () => {
     const { cropper, handlers } = setup();
+
     handlers.onPointerDown(down());
     handlers.onPointerDown(down({ clientX: 300, pointerId: 2 }));
     handlers.onPointerMove(down({ clientX: 400, pointerId: 2 }));
@@ -142,6 +151,7 @@ describe("dial handlers", () => {
 
   it("ignores a press before an image is there", () => {
     const { cropper, handlers } = setup({}, null);
+
     handlers.onPointerDown(down());
     expect(cropper.getState().interacting).toBeNull();
   });
@@ -174,9 +184,11 @@ const pointer = (clientX: number, timeStamp: number): PointerEvent => {
     target: null,
     timeStamp,
   };
+
   if (!isPointerEvent(event)) {
     throw new TypeError("not a pointer event");
   }
+
   return event;
 };
 
@@ -187,9 +199,11 @@ const stubElement = (): Element => {
     ownerDocument: {},
     setPointerCapture: () => null,
   };
+
   if (!isElement(element)) {
     throw new TypeError("not an element");
   }
+
   return element;
 };
 
@@ -206,24 +220,30 @@ const throwSlowly = (hz: number) => {
   const frame = 1000 / hz;
   let x = 100;
   let time = 0;
+
   handlers.onPointerDown(pointer(x, time));
+
   for (let i = 0; i < MOVES; i += 1) {
     x += STEP;
     time += INTERVAL;
     handlers.onPointerMove(pointer(x, time));
     fake.frame(INTERVAL);
   }
+
   handlers.onPointerUp(pointer(x, time));
   const released = cropper.getValue().rotation;
   const gliding = cropper.getState().interacting;
   const trace: number[] = [];
   let commitsWhileGliding = 0;
+
   while (cropper.getState().settling && trace.length < 1000) {
     commitsWhileGliding = commit.mock.calls.length;
     fake.frame(frame);
     trace.push(cropper.getValue().rotation);
   }
+
   const rested = cropper.getState().interacting;
+
   fake.frame(frame);
   const result = {
     commit,
@@ -241,7 +261,9 @@ const throwSlowly = (hz: number) => {
     rested,
     settled: !cropper.getState().settling,
   };
+
   cropper.destroy();
+
   return result;
 };
 
@@ -258,6 +280,7 @@ describe("a thrown dial that stops before the limit", () => {
 
   it.each([60, 120])("follows the decay curve at %d Hz", (hz) => {
     const { error, released, rest } = throwSlowly(hz);
+
     expect(released).toBeCloseTo(RELEASED, 9);
     expect(error).toBeLessThan(1e-6);
     expect(rest).toBeCloseTo(REST, 1);
@@ -267,6 +290,7 @@ describe("a thrown dial that stops before the limit", () => {
   it("commits once when it stops and frees the cropper", () => {
     const { commit, commitsWhileGliding, gliding, nextGesture, rested } =
       throwSlowly(60);
+
     expect(gliding).toBe("dial");
     expect(commitsWhileGliding).toBe(0);
     expect(commit).toHaveBeenCalledOnce();
@@ -276,6 +300,7 @@ describe("a thrown dial that stops before the limit", () => {
 
   it("leaves no frame running once it has stopped", () => {
     const { pending, settled } = throwSlowly(60);
+
     expect(settled).toBeTruthy();
     expect(pending).toBe(0);
   });

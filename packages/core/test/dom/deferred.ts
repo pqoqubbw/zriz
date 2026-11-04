@@ -8,6 +8,7 @@ export const deferred = <T>(): {
   const promise = new Promise<T>((resolve) => {
     done = resolve;
   });
+
   return {
     promise,
     resolve: (value: T) => {

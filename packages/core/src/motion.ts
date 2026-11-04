@@ -1,19 +1,19 @@
-export interface Clock {
+export type Clock = {
   now: () => number;
   request: (step: (time: number) => void) => number;
   cancel: (handle: number) => void;
-}
+};
 
-export interface Motion {
+export type Motion = {
   value: number;
   velocity: number;
-}
+};
 
-export interface VelocityTracker {
+export type VelocityTracker = {
   push: (time: number, value: number) => void;
   velocity: (time: number) => number;
   reset: () => void;
-}
+};
 
 const FALLBACK_FRAME_MS = 1000 / 60;
 const MIN_FIT_SPAN = 10;
@@ -23,6 +23,7 @@ export const frameClock = (): Clock => {
   const hasFrames = typeof globalThis.requestAnimationFrame === "function";
   const pending = new Map<number, () => void>();
   let id = 0;
+
   return {
     cancel: (handle) => {
       pending.get(handle)?.();
@@ -31,10 +32,12 @@ export const frameClock = (): Clock => {
     request: (step) => {
       id += 1;
       const key = id;
+
       const run = (time: number): void => {
         pending.get(key)?.();
         step(time);
       };
+
       const timer = setTimeout(
         () => {
           run(performance.now());
@@ -42,13 +45,16 @@ export const frameClock = (): Clock => {
         hasFrames ? BACKUP_FRAME : FALLBACK_FRAME_MS
       );
       const frame = hasFrames ? globalThis.requestAnimationFrame(run) : 0;
+
       pending.set(key, () => {
         pending.delete(key);
         clearTimeout(timer);
+
         if (hasFrames) {
           globalThis.cancelAnimationFrame(frame);
         }
       });
+
       return key;
     },
   };
@@ -64,14 +70,17 @@ export const spring = (
   const t = time / 1000;
   const x0 = displacement;
   const v0 = velocity;
+
   if (zeta === 1) {
     const b = v0 + omega * x0;
     const e = Math.exp(-omega * t);
+
     return {
       value: (x0 + b * t) * e,
       velocity: (v0 - omega * b * t) * e,
     };
   }
+
   const root = omega * Math.sqrt(zeta * zeta - 1);
   const r1 = -zeta * omega + root;
   const r2 = -zeta * omega - root;
@@ -79,6 +88,7 @@ export const spring = (
   const c1 = x0 - c2;
   const e1 = Math.exp(r1 * t);
   const e2 = Math.exp(r2 * t);
+
   return {
     value: c1 * e1 + c2 * e2,
     velocity: c1 * r1 * e1 + c2 * r2 * e2,
@@ -87,6 +97,7 @@ export const spring = (
 
 export const decay = (velocity: number, tau: number, time: number): Motion => {
   const e = Math.exp(-time / tau);
+
   return { value: (velocity / 1000) * tau * (1 - e), velocity: velocity * e };
 };
 
@@ -97,15 +108,19 @@ export const velocityTracker = (
 ): VelocityTracker => {
   let times: number[] = [];
   let values: number[] = [];
+
   return {
     push(time, value) {
       const previous = times.at(-1);
+
       if (previous !== undefined && time - previous > stale) {
         times = [];
         values = [];
       }
+
       times.push(time);
       values.push(value);
+
       while (
         times.length > limit ||
         (times.length > 2 && time - (times[0] ?? time) > window)
@@ -122,6 +137,7 @@ export const velocityTracker = (
       const n = times.length;
       const [first] = times;
       const last = times[n - 1];
+
       if (
         first === undefined ||
         last === undefined ||
@@ -130,21 +146,27 @@ export const velocityTracker = (
       ) {
         return 0;
       }
+
       let st = 0;
       let sv = 0;
+
       for (let i = 0; i < n; i += 1) {
         st += times[i] ?? 0;
         sv += values[i] ?? 0;
       }
+
       const mt = st / n;
       const mv = sv / n;
       let num = 0;
       let den = 0;
+
       for (let i = 0; i < n; i += 1) {
         const dt = (times[i] ?? 0) - mt;
+
         num += dt * ((values[i] ?? 0) - mv);
         den += dt * dt;
       }
+
       return (num / den) * 1000;
     },
   };

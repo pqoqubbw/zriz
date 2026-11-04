@@ -47,12 +47,14 @@ export const sourceToWorking = (state: CropState, point: Point): Point => {
     x: point.x - state.image.width / 2,
     y: point.y - state.image.height / 2,
   };
+
   if (!isFlatPerspective(state.perspective)) {
     centred = applyHomography(
       perspectiveHomography(state.perspective),
       centred
     );
   }
+
   return applyMatrix2(
     rotationMatrix(state.angle),
     applyMatrix2(orientationMatrix(state.turns, state.flip), centred)
@@ -64,12 +66,14 @@ export const workingToSource = (state: CropState, point: Point): Point => {
     transposeMatrix2(orientationMatrix(state.turns, state.flip)),
     applyMatrix2(rotationMatrix(-state.angle), point)
   );
+
   if (!isFlatPerspective(state.perspective)) {
     keystoned = applyHomography(
       invertMatrix3(perspectiveHomography(state.perspective)),
       keystoned
     );
   }
+
   return {
     x: keystoned.x + state.image.width / 2,
     y: keystoned.y + state.image.height / 2,
@@ -118,6 +122,7 @@ export const mirrorY = (state: CropState): CropState => ({
 
 export const setAngle = (state: CropState, angle: number): CropState => {
   const centre = applyMatrix2(rotationMatrix(angle - state.angle), state.crop);
+
   return {
     ...state,
     angle: positiveZero(angle),
@@ -147,5 +152,6 @@ const isCropState = (value: unknown): value is CropState =>
 
 export const deserialiseState = (json: string): CropState | null => {
   const value: unknown = JSON.parse(json);
+
   return isCropState(value) ? value : null;
 };

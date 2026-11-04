@@ -8,9 +8,9 @@ import { RootContext, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface MaskState {
+export type MaskState = {
   shape: "rect" | "circle";
-}
+};
 
 export type MaskProps = PartProps<"div", MaskState>;
 
@@ -24,6 +24,7 @@ export const Mask: Part<MaskProps, HTMLDivElement> = forwardRef<
     (element: HTMLDivElement) => bindMask(cropper, element, shape),
     [cropper, shape]
   );
+
   return usePart(
     "div",
     { "aria-hidden": true, "data-shape": shape, "data-zriz-item": "mask" },

@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { imageKernel } from "../../src/dom/kernel";
 
-interface Bitmap {
+type Bitmap = {
   closed: number;
   width: number;
   height: number;
   close: () => void;
-}
+};
 
 const bitmapOf = (width = 8, height = 8): Bitmap => {
   const bitmap: Bitmap = {
@@ -18,6 +18,7 @@ const bitmapOf = (width = 8, height = 8): Bitmap => {
     height,
     width,
   };
+
   return bitmap;
 };
 
@@ -51,12 +52,15 @@ describe("image kernel", () => {
     decoded.length = 0;
     canvases.length = 0;
     vi.stubGlobal("OffscreenCanvas", FakeCanvas);
+
     vi.stubGlobal(
       "createImageBitmap",
       async (): Promise<Bitmap> =>
         await Promise.resolve().then(() => {
           const bitmap = bitmapOf();
+
           decoded.push(bitmap);
+
           return bitmap;
         })
     );
@@ -68,9 +72,11 @@ describe("image kernel", () => {
 
   it("rejects motion and resample for a preview id it no longer keeps", async () => {
     const kernel = imageKernel();
+
     await kernel.keep(1, bitmapOf());
     await kernel.release(1);
     const released = "zriz:decode:the preview was released";
+
     await expect(kernel.motion(1, "image/png")).rejects.toThrow(released);
     await expect(kernel.resample(1, RECT, 8, 8)).rejects.toThrow(released);
     await expect(kernel.motion(2, "image/png")).rejects.toThrow(released);
@@ -78,6 +84,7 @@ describe("image kernel", () => {
 
   it("closes the kept copy on release and on a second keep", async () => {
     const kernel = imageKernel();
+
     await kernel.keep(1, bitmapOf());
     await kernel.keep(1, bitmapOf());
     expect(decoded.map((bitmap) => bitmap.closed)).toStrictEqual([1, 0]);
@@ -88,6 +95,7 @@ describe("image kernel", () => {
   it("leaves a bitmap source open and frees its canvas after a region", async () => {
     const kernel = imageKernel();
     const source = bitmapOf();
+
     await kernel.region(source, rect, 4, 4);
     expect(source.closed).toBe(0);
     expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);
@@ -95,6 +103,7 @@ describe("image kernel", () => {
 
   it("closes what it decoded from a blob after a region", async () => {
     const kernel = imageKernel();
+
     await kernel.region(new Blob(["x"]), rect, 4, 4);
     expect(decoded[0]?.closed).toBe(1);
   });
@@ -102,9 +111,11 @@ describe("image kernel", () => {
   it("frees the canvas and the decode when there is no 2D context", async () => {
     blind = true;
     const kernel = imageKernel();
+
     await expect(kernel.region(new Blob(["x"]), rect, 4, 4)).rejects.toThrow(
       "zriz:decode:no 2D canvas"
     );
+
     expect(decoded[0]?.closed).toBe(1);
     expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);
   });

@@ -55,11 +55,14 @@ describe("view geometry", () => {
           layout.width - layout.inset.left - layout.inset.right;
         const innerHeight =
           layout.height - layout.inset.top - layout.inset.bottom;
+
         expect(box.width).toBeLessThanOrEqual(innerWidth * (1 + 1e-9));
         expect(box.height).toBeLessThanOrEqual(innerHeight * (1 + 1e-9));
+
         expect(
           Math.max(box.width / innerWidth, box.height / innerHeight)
         ).toBeCloseTo(1, 6);
+
         expect(box.x + box.width / 2).toBeCloseTo(
           layout.inset.left + innerWidth / 2,
           4
@@ -93,6 +96,7 @@ describe("view geometry", () => {
             { x: box.x + box.width, y: box.y + box.height },
             { x: box.x, y: box.y + box.height },
           ];
+
           for (const [i, corner] of cropCorners(state.crop).entries()) {
             const screen = applyHomography(
               matrix,
@@ -100,6 +104,7 @@ describe("view geometry", () => {
             );
             const want = expected[i] ?? { x: 0, y: 0 };
             const tolerance = 1e-6 * Math.max(layout.width, layout.height);
+
             expect(Math.abs(screen.x - want.x)).toBeLessThan(tolerance);
             expect(Math.abs(screen.y - want.y)).toBeLessThan(tolerance);
           }
@@ -122,16 +127,20 @@ describe("view", () => {
       image: { height: 777, width: 1001 },
     });
     const view = viewOf(cropper);
+
     view.setLayout({
       dpr: 3,
       height: 500.3,
       inset: { bottom: 11.1, left: 13.7, right: 7.2, top: 9.9 },
       width: 333.3,
     });
+
     const box = view.frame()?.rect;
+
     if (!box) {
       throw new Error("no frame");
     }
+
     for (const v of [box.x, box.y, box.x + box.width, box.y + box.height]) {
       expect(Math.abs(v * 3 - Math.round(v * 3))).toBeLessThan(1e-9);
     }
@@ -145,27 +154,33 @@ describe("view", () => {
     });
     const view = viewOf(cropper);
     const frames: number[] = [];
+
     view.onFrame((frame) => {
       frames.push(frame.matrix[2]);
     });
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frame();
     expect(frames).toHaveLength(1);
     const rest = frames[0] ?? 0;
+
     view.setOverscroll({ x: 40, y: 0 });
     time.frame();
     expect(frames.at(-1)).toBeCloseTo(rest + 40, 9);
     view.settleOverscroll();
     time.frames(7);
+
     expect(view.overscroll().x).toBeCloseTo(
       spring(40, 0, 42, 1.4, 6000 / 60).value,
       6
     );
+
     time.frames(53);
     expect(frames.at(-1)).toBeCloseTo(rest, 9);
     expect(time.pending()).toBe(0);
@@ -179,12 +194,14 @@ describe("view", () => {
       image: { height: 3000, width: 4000 },
     });
     const view = viewOf(cropper);
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frame();
     view.setOverscroll({ x: 40, y: -30 });
     view.settleOverscroll();
@@ -206,12 +223,14 @@ describe("view", () => {
       image: { height: 3000, width: 4000 },
     });
     const view = viewOf(cropper);
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frame();
     view.setOverscroll({ x: 40, y: -30 }, 0.8, { x: 200, y: 150 });
     view.settleOverscroll();
@@ -232,12 +251,14 @@ describe("view", () => {
       image: { height: 3000, width: 4000 },
     });
     const view = viewOf(cropper);
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frame();
     view.setOverscroll({ x: 0, y: 60 });
     view.settleOverscroll();
@@ -256,42 +277,54 @@ describe("view", () => {
       image: { height: 3000, width: 4000 },
     });
     const view = viewOf(cropper);
+
     view.setOptions({ motion: "always" });
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frame();
     const rest = view.frame()?.matrix[0] ?? 1;
     const widths = new Map<number, number>();
+
     view.onFrame((frame) => {
       widths.set(Math.round(time.clock.now()), frame.matrix[0] / rest);
     });
+
     cropper.flip();
     const start = time.clock.now();
+
     time.frames(60, 1000 / 240);
+
     const at = (ms: number): number => {
       let best = 0;
       let gap = Number.POSITIVE_INFINITY;
+
       for (const [t, w] of widths) {
         if (Math.abs(t - start - ms) < gap) {
           gap = Math.abs(t - start - ms);
           best = w;
         }
       }
+
       return best;
     };
+
     expect(Math.abs(at(65 / 1.35) - 0.3)).toBeLessThan(0.17);
     expect(Math.abs(at(148 / 1.35) + 0.51)).toBeLessThan(0.12);
     expect(Math.abs(at(250 / 1.35) + 0.87)).toBeLessThan(0.06);
+
     for (const [i, width] of [...widths.values()].entries()) {
       expect(width).toBeCloseTo(
         2 * spring(1, 0, 17.6 * 1.35, 1, (i * 1000) / 240).value - 1,
         6
       );
     }
+
     view.destroy();
   });
 
@@ -304,29 +337,38 @@ describe("view", () => {
         image: { height: 3000, width: 4000 },
       });
       const view = viewOf(cropper);
+
       view.setOptions({ motion: "always" });
+
       view.setLayout({
         dpr: 2,
         height: 300,
         inset: { bottom: 0, left: 0, right: 0, top: 0 },
         width: 400,
       });
+
       for (let i = 0; i < turns; i += 1) {
         cropper.rotate90("cw");
       }
+
       time.frames(120);
       const rest = view.frame()?.matrix ?? [];
       const rows: number[][] = [];
+
       view.onFrame((frame) => {
         rows.push([...frame.matrix]);
       });
+
       cropper.flip();
       time.frames(120, 1000 / 120);
+
       for (const m of rows) {
         expect(m[3]).toBeCloseTo(rest[3] ?? 0, 6);
         expect(m[4]).toBeCloseTo(rest[4] ?? 0, 6);
       }
+
       const end = rows.at(-1) ?? [];
+
       expect(end[0]).toBeCloseTo(-(rest[0] ?? 0), 6);
       expect(end[1]).toBeCloseTo(-(rest[1] ?? 0), 6);
       view.destroy();
@@ -347,12 +389,14 @@ describe("view lifetime", () => {
       image: { height: 100, width: 100 },
     });
     const view = viewOf(cropper);
+
     view.setLayout({
       dpr: 1,
       height: 600,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 800,
     });
+
     cropper.begin("resize");
     view.hold();
     view.release();
@@ -380,6 +424,7 @@ const photoCropper = (options: CropperOptions = {}) => {
     image: { height: 3000, width: 4000 },
     ...options,
   });
+
   return { cropper, time };
 };
 
@@ -400,6 +445,7 @@ describe("a rejected change", () => {
         first ? { onValueChange: limitAngle } : {}
       );
       const attrs = new Map<string, string>();
+
       Reflect.apply(dialAria, undefined, [
         cropper,
         {
@@ -409,10 +455,13 @@ describe("a rejected change", () => {
           toggleAttribute: () => {},
         },
       ]);
+
       if (!first) {
         cropper.on("change", limitAngle);
       }
+
       const dial = dialHandlers(cropper);
+
       cropper.setRotation(10);
       time.frames(3);
       pressKey(dial.onKeyDown, "ArrowRight");
@@ -431,20 +480,26 @@ describe("a rejected change", () => {
       },
     });
     const view = viewOf(cropper);
+
     view.setOptions({ motion: "always" });
+
     view.setLayout({
       dpr: 2,
       height: 300,
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width: 400,
     });
+
     time.frames(3);
     const settle = vi.fn<() => void>();
     const settling: boolean[] = [];
+
     cropper.on("settle", settle);
+
     cropper.subscribe(() => {
       settling.push(cropper.getState().settling);
     });
+
     cropper.flip();
     time.frames(30);
     expect(cropper.getValue().mirrored).toBeFalsy();
@@ -462,10 +517,12 @@ const minCropper = (
   vi.stubGlobal("addEventListener", () => {});
   vi.stubGlobal("removeEventListener", () => {});
   vi.stubGlobal("Element", Object);
+
   vi.stubGlobal("document", {
     addEventListener: () => {},
     removeEventListener: () => {},
   });
+
   const time = fakeClock();
   const cropper = createCropper({
     clock: time.clock,
@@ -474,12 +531,14 @@ const minCropper = (
     value: { ...defaultValue, aspect },
     ...options,
   });
+
   viewOf(cropper).setLayout({
     dpr: 1,
     height: viewport,
     inset: { bottom: 0, left: 0, right: 0, top: 0 },
     width: viewport,
   });
+
   return { cropper, time };
 };
 
@@ -487,6 +546,7 @@ const edgeShare = (edge: HandleEdge, before: string, after: string): number => {
   if (edge.includes(before)) {
     return 0;
   }
+
   return edge.includes(after) ? 1 : 0.5;
 };
 
@@ -513,6 +573,7 @@ const dragEdge = (
   const y =
     (rect?.y ?? 0) + (rect?.height ?? 0) * edgeShare(edge, "top", "bottom");
   const handlers = handleHandlers(cropper, edge);
+
   Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
   Reflect.apply(handlers.onPointerMove, undefined, pointerAt(x + dx, y + dy));
   time.frame();
@@ -530,6 +591,7 @@ describe("a handle at minSize", () => {
     [512, 500],
   ])("stops at a minimum of %s in a %s px viewport", (min, viewport) => {
     const context = minCropper(min, viewport);
+
     dragEdge(context, "right", -viewport);
     expect(context.cropper.getPixelCrop()?.pixelRect?.width).toBe(min);
   });
@@ -541,8 +603,10 @@ describe("a handle at minSize", () => {
     "stops the %s handle at the minimum height with the far edge in place",
     (edge, dy, top) => {
       const context = minCropper(200);
+
       context.cropper.setValue({ size: { height: 0.6, width: 0.6 } });
       dragEdge(context, edge, 0, dy);
+
       expect(context.cropper.getPixelCrop()?.pixelRect).toStrictEqual({
         height: 200,
         left: 200,
@@ -584,11 +648,14 @@ describe("a handle at minSize", () => {
       const { cropper } = context;
       const before = cropper.getCropState()?.crop;
       const scale = viewOf(cropper).frame()?.scale ?? 1;
+
       dragEdge(context, edge, inward, inward);
       const after = cropper.getCropState()?.crop;
+
       expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeLessThan(
         2 / scale
       );
+
       expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(
         2 / scale
       );
@@ -597,8 +664,10 @@ describe("a handle at minSize", () => {
 
   it("keeps the other side and the opposite edge where they were", () => {
     const context = minCropper(200);
+
     context.cropper.setValue({ size: { height: 0.3, width: 0.6 } });
     dragEdge(context, "right", -2000);
+
     expect(context.cropper.getPixelCrop()?.pixelRect).toStrictEqual({
       height: 300,
       left: 200,
@@ -620,8 +689,10 @@ const held = (
   const y =
     (rect?.y ?? 0) + (rect?.height ?? 0) * edgeShare(edge, "top", "bottom");
   const handlers = handleHandlers(cropper, edge);
+
   Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
   Reflect.apply(handlers.onPointerMove, undefined, pointerAt(x + dx, y + dy));
+
   return cropper.getCropState()?.crop ?? { height: 0, width: 0, x: 0, y: 0 };
 };
 
@@ -648,6 +719,7 @@ describe("a handle on a crop under the 88 px floor", () => {
     ["past the far edge", { height: 100, width: 2000 }, 400, 400],
   ])("keeps the crop whole when pulled %s", (_, image, viewport, dy) => {
     const crop = held(thinCropper(image, viewport), "top", 0, dy);
+
     expect(crop).toStrictEqual({
       height: image.height,
       width: image.width,
@@ -659,6 +731,7 @@ describe("a handle on a crop under the 88 px floor", () => {
   it("keeps a corner inside the photo", () => {
     const context = thinCropper({ height: 1500, width: 8000 }, 382);
     const crop = held(context, "top-left", 400, 400);
+
     expect(crop.width).toBeLessThanOrEqual(8000);
     expect(crop.width * (382 / 8000)).toBeGreaterThanOrEqual(88 - 1e-6);
     expect(crop.height).toBe(1500);
@@ -682,18 +755,24 @@ describe("a handle on a crop under the 88 px floor", () => {
     (_, image, viewport, aspect, zoom, edge) => {
       const context = thinCropper(image, viewport, { aspect });
       const { cropper, time } = context;
+
       if (aspect === "free") {
         cropper.setValue({ size: { height: 0.12, width: 1 } });
       }
+
       cropper.setZoom(zoom);
       time.frames(2);
       const onCommit = vi.fn<CropperEvents["commit"]>();
+
       cropper.on("commit", (...args) => {
         onCommit(...args);
       });
+
       const before = cropper.getCropState()?.crop;
+
       dragEdge(context, edge, 0);
       const crop = cropper.getCropState()?.crop;
+
       expect(crop?.width).toBeCloseTo(before?.width ?? 0, 6);
       expect(crop?.height).toBeCloseTo(before?.height ?? 0, 6);
       expect(crop?.x).toBeCloseTo(before?.x ?? 0, 6);
@@ -707,6 +786,7 @@ describe("a handle on a crop under the 88 px floor", () => {
     ["cannot shrink", -30, 240],
   ])("%s", (_, dy, height) => {
     const context = thinCropper({ height: 2000, width: 2000 }, 400);
+
     context.cropper.setValue({ size: { height: 0.12, width: 1 } });
     context.time.frames(2);
     expect(held(context, "bottom", 0, dy).height).toBeCloseTo(height);
@@ -720,9 +800,11 @@ const atCeiling = (
   const context = thinCropper({ height: 3000, width: 4000 }, 400, {
     maxZoom,
   });
+
   context.cropper.setValue({ size });
   context.cropper.setZoom(maxZoom);
   context.time.frames(2);
+
   return context;
 };
 
@@ -744,14 +826,17 @@ describe("a handle at the zoom ceiling", () => {
       });
       const before = context.cropper.getCropState()?.crop;
       const crop = held(context, "bottom-right", inward, inward);
+
       expect(crop.x - crop.width / 2).toBeCloseTo(
         (before?.x ?? 0) - (before?.width ?? 0) / 2,
         6
       );
+
       expect(crop.y - crop.height / 2).toBeCloseTo(
         (before?.y ?? 0) - (before?.height ?? 0) / 2,
         6
       );
+
       expect(context.cropper.getZoom()).toBeCloseTo(maxZoom, 6);
     }
   );
@@ -760,7 +845,9 @@ describe("a handle at the zoom ceiling", () => {
     const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
     const before = context.cropper.getCropState()?.crop;
     const crop = held(context, "right", -50);
+
     expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
+
     expect(crop.x - crop.width / 2).toBeCloseTo(
       (before?.x ?? 0) - (before?.width ?? 0) / 2,
       6
@@ -776,12 +863,15 @@ describe("a handle at the zoom ceiling", () => {
       const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
       const before = context.cropper.getCropState()?.crop;
       const crop = held(context, "bottom-right", -50, dy);
+
       expect(crop.height).toBeCloseTo(height, 2);
       expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
+
       expect(crop.y - crop.height / 2).toBeCloseTo(
         (before?.y ?? 0) - (before?.height ?? 0) / 2,
         6
       );
+
       expect(context.cropper.getZoom()).toBeCloseTo(15, 6);
     }
   );
@@ -820,13 +910,16 @@ describe("a handle at the zoom ceiling", () => {
     ],
   ])("ends a corner drag on the same crop after %s", (_, moves) => {
     const context = atCeiling(4, { height: 0.5, width: 1 });
+
     context.cropper.setZoom(3.5);
     context.time.frames(2);
     const rect = viewOf(context.cropper).frame()?.rect;
     const x = (rect?.x ?? 0) + (rect?.width ?? 0);
     const y = (rect?.y ?? 0) + (rect?.height ?? 0);
     const handlers = handleHandlers(context.cropper, "bottom-right");
+
     Reflect.apply(handlers.onPointerDown, undefined, pointerAt(x, y));
+
     for (const [dx, dy] of moves) {
       Reflect.apply(
         handlers.onPointerMove,
@@ -834,7 +927,9 @@ describe("a handle at the zoom ceiling", () => {
         pointerAt(x + dx, y + dy)
       );
     }
+
     const crop = context.cropper.getCropState()?.crop;
+
     expect(crop?.width).toBeCloseTo(1000, 4);
     expect(crop?.height).toBeCloseTo(257.143, 2);
   });
@@ -846,9 +941,11 @@ describe("a handle at the zoom ceiling", () => {
     "gives back the smaller share of %s when both sides could set the zoom",
     (_, dx, dy, width, height) => {
       const context = atCeiling(4, { height: 1, width: 1 });
+
       context.cropper.setZoom(3);
       context.time.frames(2);
       const crop = held(context, "bottom-right", dx, dy);
+
       expect(crop.width).toBeCloseTo(width, 2);
       expect(crop.height).toBeCloseTo(height, 2);
     }
@@ -861,6 +958,7 @@ describe("a handle at the zoom ceiling", () => {
     "keeps the far corner on a straightened crop against the %s of the photo",
     (_, angle, panX, panY) => {
       const context = atCeiling(4, { height: 0.5, width: 1 });
+
       context.cropper.setRotation(angle);
       context.cropper.setZoom(4);
       context.time.frames(2);
@@ -868,10 +966,12 @@ describe("a handle at the zoom ceiling", () => {
       context.time.frames(2);
       const before = context.cropper.getCropState()?.crop;
       const crop = held(context, "bottom-right", -60, 80);
+
       expect(crop.x - crop.width / 2).toBeCloseTo(
         (before?.x ?? 0) - (before?.width ?? 0) / 2,
         6
       );
+
       expect(crop.y - crop.height / 2).toBeCloseTo(
         (before?.y ?? 0) - (before?.height ?? 0) / 2,
         6
@@ -884,9 +984,11 @@ describe("a handle at the zoom ceiling", () => {
       aspect: 2,
       maxZoom: 4,
     });
+
     context.cropper.setZoom(3.5);
     context.time.frames(2);
     const crop = held(context, "bottom-right", -100, -100);
+
     expect(crop.width / crop.height).toBeCloseTo(2, 6);
     expect(crop.width).toBeCloseTo(1000, 4);
   });
@@ -895,6 +997,7 @@ describe("a handle at the zoom ceiling", () => {
     const context = atCeiling(15, { height: 1 / 30, width: 1 / 15 });
     const before = context.cropper.getCropState()?.crop;
     const crop = held(context, "bottom", 0, -5);
+
     expect(crop.height).toBeLessThan(before?.height ?? 0);
     expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
   });
@@ -902,6 +1005,7 @@ describe("a handle at the zoom ceiling", () => {
 
 const keyboard = (context: ReturnType<typeof minCropper>) => {
   const keys = areaKeyHandlers(context.cropper);
+
   return (key: string, times = 1, shiftKey = false): CropState["crop"] => {
     for (let index = 0; index < times; index += 1) {
       const event = {
@@ -910,11 +1014,13 @@ const keyboard = (context: ReturnType<typeof minCropper>) => {
         preventDefault: () => {},
         shiftKey,
       };
+
       Reflect.apply(keys.onKeyDown, undefined, [event]);
       context.time.frame();
       Reflect.apply(keys.onKeyUp, undefined, [event]);
       context.time.frames(2);
     }
+
     return (
       context.cropper.getCropState()?.crop ?? {
         height: 0,
@@ -935,9 +1041,11 @@ describe("alt arrows on a free crop", () => {
 
   it("changes only the pressed side with room to grow", () => {
     const context = thinCropper(photo, 1000);
+
     context.cropper.setZoom(2);
     context.time.frames(2);
     const crop = keyboard(context)("ArrowRight");
+
     expect(crop.width).toBeCloseTo(2020, 6);
     expect(crop.height).toBeCloseTo(1500, 6);
     expect(crop.x).toBe(0);
@@ -948,25 +1056,30 @@ describe("alt arrows on a free crop", () => {
     ["ArrowDown", { height: 3000, width: 4000 }],
   ])("leaves a full crop alone on %s", (key, size) => {
     const crop = keyboard(thinCropper(photo, 1000))(key, 10);
+
     expect(crop.width).toBeCloseTo(size.width, 6);
     expect(crop.height).toBeCloseTo(size.height, 6);
   });
 
   it("stops the pressed side at the photo edge and holds the other", () => {
     const context = thinCropper(photo, 1000);
+
     context.cropper.setZoom(2);
     context.time.frames(2);
     const crop = keyboard(context)("ArrowRight", 80);
+
     expect(crop.width).toBeCloseTo(4000, 6);
     expect(crop.height).toBeCloseTo(1500, 6);
   });
 
   it("keeps the other side and the centre on a straightened crop", () => {
     const context = thinCropper(photo, 1000);
+
     context.cropper.setRotation(10);
     context.time.frames(2);
     const before = context.cropper.getCropState()?.crop;
     const crop = keyboard(context)("ArrowRight", 10);
+
     expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
     expect(crop.x).toBeCloseTo(before?.x ?? 0, 6);
     expect(crop.y).toBeCloseTo(before?.y ?? 0, 6);
@@ -976,18 +1089,22 @@ describe("alt arrows on a free crop", () => {
     const context = thinCropper(photo, 1000, {
       minSize: { height: 512, width: 512 },
     });
+
     expect(keyboard(context)("ArrowLeft", 60, true).width).toBeCloseTo(512, 6);
     expect(keyboard(context)("ArrowUp", 60, true).height).toBeCloseTo(512, 6);
   });
 
   it("leaves a crop already under the 88 px floor alone on a shrink key", () => {
     const context = thinCropper({ height: 2000, width: 2000 }, 400);
+
     context.cropper.setValue({ size: { height: 0.1, width: 0.5 } });
     context.time.frames(2);
     const before = context.cropper.getCropState()?.crop;
     const scale = viewOf(context.cropper).frame()?.scale ?? 1;
+
     expect((before?.height ?? 0) * scale).toBeLessThan(88);
     const crop = keyboard(context)("ArrowUp", 3, true);
+
     expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
     expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
   });
@@ -996,17 +1113,20 @@ describe("alt arrows on a free crop", () => {
     const context = thinCropper(photo, 800);
     const crop = keyboard(context)("ArrowLeft", 60, true);
     const scale = viewOf(context.cropper).frame()?.scale ?? 1;
+
     expect(crop.width * scale).toBeGreaterThanOrEqual(88 - 1e-6);
     expect(crop.height).toBeCloseTo(3000, 6);
   });
 
   it("holds the other side at the zoom ceiling", () => {
     const context = thinCropper(photo, 400, { maxZoom: 15 });
+
     context.cropper.setValue({ size: { height: 1 / 30, width: 1 / 15 } });
     context.cropper.setZoom(15);
     context.time.frames(2);
     const before = context.cropper.getCropState()?.crop;
     const crop = keyboard(context)("ArrowLeft", 5);
+
     expect(crop.height).toBeCloseTo(before?.height ?? 0, 6);
     expect(crop.width).toBeCloseTo(before?.width ?? 0, 6);
   });
@@ -1017,6 +1137,7 @@ describe("alt arrows on a free crop", () => {
       minSize: { height: 512, width: 512 },
     });
     const crop = keyboard(context)("ArrowLeft", 60, true);
+
     expect(crop.width).toBeCloseTo(512, 6);
     expect(crop.height).toBeCloseTo(512, 6);
   });
@@ -1025,6 +1146,7 @@ describe("alt arrows on a free crop", () => {
 describe("zoom thumb", () => {
   it("does not write the style while the zoom stands still", () => {
     const { cropper, time } = photoCropper();
+
     cropper.setZoom(2);
     time.frames(2);
     const writes: string[] = [];
@@ -1037,12 +1159,15 @@ describe("zoom thumb", () => {
       },
       position: "",
     };
+
     Reflect.apply(bindZoomThumb, undefined, [cropper, { style }]);
     writes.length = 0;
+
     for (let step = 0; step < 100; step += 1) {
       cropper.panBy(Math.sin(step / 7) * 0.01, Math.cos(step / 11) * 0.01);
       time.frame();
     }
+
     expect(writes).toStrictEqual([]);
   });
 });
@@ -1051,12 +1176,15 @@ const stateRig = () => {
   vi.stubGlobal("addEventListener", () => {});
   vi.stubGlobal("removeEventListener", () => {});
   vi.stubGlobal("Element", Object);
+
   vi.stubGlobal("document", {
     addEventListener: () => {},
     removeEventListener: () => {},
   });
+
   const { cropper, time } = photoCropper();
   const view = viewOf(cropper);
+
   const place = (width: number, height: number): void => {
     view.setLayout({
       dpr: 1,
@@ -1064,19 +1192,25 @@ const stateRig = () => {
       inset: { bottom: 0, left: 0, right: 0, top: 0 },
       width,
     });
+
     time.frame();
   };
+
   place(400, 300);
   const handle = handleHandlers(cropper, "bottom-right");
+
   const dragIn = (): void => {
     Reflect.apply(handle.onPointerDown, undefined, pointerAt(400, 300));
     Reflect.apply(handle.onPointerMove, undefined, pointerAt(250, 200));
     time.frame();
   };
+
   const letGo = (): void => {
     Reflect.apply(handle.onPointerUp, undefined, pointerAt(250, 200));
   };
+
   const scaleOf = (): number | undefined => view.frame()?.scale;
+
   return { cropper, dragIn, letGo, place, scaleOf, time, view };
 };
 
@@ -1084,9 +1218,11 @@ const fitScale = (width: number): number => width / 4000;
 
 const fittedScale = (view: ReturnType<typeof viewOf>): number => {
   const frame = view.frame();
+
   if (!frame) {
     throw new Error("no frame");
   }
+
   return fitPlacement(frame.layout, frame.state).scale;
 };
 
@@ -1100,15 +1236,19 @@ describe("a press during a transition", () => {
     ["rotate", "rotate90"],
   ] as const)("ends a %s on the resting pose", (_, action) => {
     const { cropper, time, view } = stateRig();
+
     cropper[action]();
     time.frames(4);
     const frames: Box[] = [];
+
     view.onFrame((frame) => {
       frames.push(frame.rect);
     });
+
     cropper.begin("pan", undefined, "pan");
     time.frame();
     const painted = view.frame()?.matrix;
+
     expect(view.chrome().transition).toBeNull();
     expect(frames.length).toBeGreaterThan(0);
     cropper.end(undefined, "pan");
@@ -1119,14 +1259,17 @@ describe("a press during a transition", () => {
 
   it("stop ends a flip on the resting pose at once", () => {
     const { cropper, time, view } = stateRig();
+
     cropper.flip();
     time.frames(4);
     cropper.stop();
     const stopped = view.frame()?.matrix;
+
     cropper.flip();
     time.frames(120);
     cropper.flip();
     time.frames(120);
+
     expect(stopped?.map((v) => Math.round(v * 1e6))).toStrictEqual(
       view.frame()?.matrix.map((v) => Math.round(v * 1e6))
     );
@@ -1142,6 +1285,7 @@ describe("stop", () => {
   it("returns a pinned crop to the fit on the next layout", () => {
     vi.useFakeTimers();
     const { cropper, dragIn, letGo, place, scaleOf, time, view } = stateRig();
+
     dragIn();
     letGo();
     time.frames(2);
@@ -1155,11 +1299,14 @@ describe("stop", () => {
 
   it("publishes the resting frame with no frame left pending", () => {
     const { cropper, dragIn, time, view } = stateRig();
+
     dragIn();
     const frames: number[] = [];
+
     view.onFrame((frame) => {
       frames.push(frame.scale);
     });
+
     cropper.stop();
     expect(frames.length).toBeGreaterThan(0);
     time.frames(2);
@@ -1170,6 +1317,7 @@ describe("stop", () => {
 const escapeDrag = () => {
   const escapes: ((event: KeyboardEvent) => void)[] = [];
   const rig = stateRig();
+
   vi.stubGlobal(
     "addEventListener",
     (type: string, listener: (event: KeyboardEvent) => void) => {
@@ -1178,12 +1326,15 @@ const escapeDrag = () => {
       }
     }
   );
+
   rig.dragIn();
+
   for (const onEscape of escapes) {
     Reflect.apply(onEscape, undefined, [
       { key: "Escape", preventDefault: () => {}, stopPropagation: () => {} },
     ]);
   }
+
   return rig;
 };
 
@@ -1196,6 +1347,7 @@ describe("escape on a handle drag", () => {
   it("keeps refitting a crop that was fitted", () => {
     vi.useFakeTimers();
     const { place, scaleOf, time } = escapeDrag();
+
     vi.advanceTimersByTime(5000);
     time.frames(60);
     place(800, 600);
@@ -1208,9 +1360,11 @@ describe("escape on a handle drag", () => {
     vi.useFakeTimers();
     const { time, view } = escapeDrag();
     const seen: (string | null)[] = [];
+
     view.onChrome(() => {
       seen.push(view.chrome().transition);
     });
+
     vi.advanceTimersByTime(5000);
     time.frames(60);
     expect(seen).not.toContain("recentre");
@@ -1229,16 +1383,19 @@ describe("a recentre that loses its view", () => {
   ] as const)("clears the transition on %s", (_, how) => {
     vi.useFakeTimers();
     const { cropper, dragIn, letGo, time, view } = stateRig();
+
     dragIn();
     letGo();
     vi.advanceTimersByTime(500);
     time.frames(2);
     expect(view.chrome().transition).toBe("recentre");
+
     if (how === "hide") {
       view.setLayout(null);
     } else {
       cropper.setImage(null);
     }
+
     time.frames(2);
     expect(view.chrome().transition).toBeNull();
     expect(time.pending()).toBe(0);
@@ -1252,6 +1409,7 @@ describe("the frame between two paints", () => {
 
   it("reads the scale of the current crop", () => {
     const { cropper, time, view } = stateRig();
+
     cropper.setValue({ size: { height: 0.5, width: 0.5 } });
     expect(view.frame()?.state).toBe(cropper.getCropState());
     expect(view.frame()?.scale).toBeCloseTo(fitScale(800), 9);
@@ -1262,6 +1420,7 @@ describe("the frame between two paints", () => {
   it("starts a transition from the pose on screen, not the current crop", () => {
     const { cropper, time, view } = stateRig();
     const shown = view.frame()?.matrix;
+
     cropper.flip();
     time.frame(0);
     expect(view.frame()?.matrix[0]).toBeCloseTo(shown?.[0] ?? 0, 6);
@@ -1277,18 +1436,23 @@ const tiltSetup = () => {
     image: { height: 3000, width: 4000 },
   });
   const view = viewOf(cropper);
+
   view.setOptions({ motion: "always" });
+
   view.setLayout({
     dpr: 2,
     height: 300,
     inset: { bottom: 0, left: 0, right: 0, top: 0 },
     width: 400,
   });
+
   time.frame();
   const transitions: (string | null)[] = [];
+
   view.onChrome(() => {
     transitions.push(view.chrome().transition);
   });
+
   return { cropper, time, transitions, view };
 };
 
@@ -1320,48 +1484,60 @@ describe("view under perspective", () => {
     ],
   ])("jumps on %s from a tilted photo, with no transition", (_, act) => {
     const { cropper, time, transitions, view } = tiltSetup();
+
     cropper.setValue({ perspective: TILT });
     time.frames(2);
     const tilted = view.frame()?.matrix ?? [];
+
     expect(tilted[6] !== 0 || tilted[7] !== 0).toBeTruthy();
     const frames: number[][] = [];
+
     view.onFrame((frame) => {
       frames.push([...frame.matrix]);
     });
+
     act(cropper);
     time.frames(120);
     expect(transitions).toStrictEqual([]);
     expect(time.pending()).toBe(0);
     const end = view.frame()?.matrix ?? [];
+
     for (const [i, value] of (frames[0] ?? []).entries()) {
       expect(value).toBeCloseTo(end[i] ?? 0, 9);
     }
+
     view.destroy();
   });
 
   it("clears the transition when a morph lands on a tilted photo", () => {
     const { cropper, time, transitions, view } = tiltSetup();
     const frames: number[][] = [];
+
     view.onFrame((frame) => {
       frames.push([...frame.matrix]);
     });
+
     cropper.setValue({ perspective: TILT }, { reason: "history" });
     time.frames(120);
     expect(transitions).toStrictEqual(["morph", null]);
     expect(time.pending()).toBe(0);
     const end = view.frame()?.matrix ?? [];
+
     expect(frames.length).toBeGreaterThan(1);
+
     for (const matrix of frames) {
       for (const [i, value] of matrix.entries()) {
         expect(value).toBeCloseTo(end[i] ?? 0, 9);
       }
     }
+
     view.destroy();
   });
 
   it("ends a running recentre when a rotate starts from a tilted photo", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     const { cropper, time, view } = tiltSetup();
+
     cropper.setValue({ perspective: TILT });
     time.frames(2);
     cropper.begin("resize", undefined, "handle");
@@ -1377,6 +1553,7 @@ describe("view under perspective", () => {
     cropper.rotate90("cw");
     time.frame();
     const fit = view.frame()?.rect;
+
     expect(view.chrome().transition).toBeNull();
     time.frame();
     expect(view.frame()?.rect).toStrictEqual(fit);

@@ -1,14 +1,14 @@
 import { coverScale } from "@zriz/core";
 import type { Size } from "@zriz/core";
 
-export interface UseCoverScaleOptions {
+export type UseCoverScaleOptions = {
   /** Natural image size in pixels. */
   image: Size;
   /** Crop size in image pixels. */
   crop: Size;
   /** Straighten angle in degrees. @default 0 */
   rotation?: number | undefined;
-}
+};
 
 export const useCoverScale = ({
   image,

@@ -18,15 +18,15 @@ import type { Part, PartProps } from "../part";
 import { useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface HandleState {
+export type HandleState = {
   position: HandleEdge;
   active: boolean;
-}
+};
 
-export interface HandleProps extends PartProps<"div", HandleState> {
+export type HandleProps = {
   /** Which corner or edge this handle drags. */
   position: HandleEdge;
-}
+} & PartProps<"div", HandleState>;
 
 const placement = (position: HandleEdge): CSSProperties => {
   const size = "var(--zriz-handle-size, 44px)";
@@ -39,6 +39,7 @@ const placement = (position: HandleEdge): CSSProperties => {
   };
   let tx = "-50%";
   let ty = "-50%";
+
   if (position.endsWith("left")) {
     style.left = 0;
   } else if (position.endsWith("right")) {
@@ -47,6 +48,7 @@ const placement = (position: HandleEdge): CSSProperties => {
   } else {
     style.left = "50%";
   }
+
   if (position.startsWith("top")) {
     style.top = 0;
   } else if (position.startsWith("bottom")) {
@@ -55,7 +57,9 @@ const placement = (position: HandleEdge): CSSProperties => {
   } else {
     style.top = "50%";
   }
+
   style.translate = `${tx} ${ty}`;
+
   return style;
 };
 
@@ -74,26 +78,33 @@ export const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
     () => handleHandlers(cropper, () => edge.current, box.get),
     [box, cropper, edge]
   );
+
   useRelease(handlers);
   const own = useCallback(
     (node: HTMLDivElement) => {
       restore(node, edge);
+
       return box.set(node);
     },
     [box, edge]
   );
   const [mine, setMine] = useState(false);
   const active = useCropperState((s) => mine && s.interacting === "resize");
+
   if (mine && !active) {
     setMine(false);
   }
+
   const onPointerDown = (event: PointerEvent): void => {
     const free = cropper.getState().interacting === null;
+
     handlers.onPointerDown(event.nativeEvent);
+
     if (free) {
       setMine(cropper.getState().interacting === "resize");
     }
   };
+
   return usePart(
     "div",
     {

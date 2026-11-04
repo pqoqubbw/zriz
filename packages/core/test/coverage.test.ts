@@ -15,6 +15,7 @@ describe(coverScale, () => {
       property(size, size, angle, (image, crop, a) => {
         const scale = coverScale(image, crop, a);
         const epsilon = 1e-6 * scale * Math.max(image.width, image.height);
+
         expect(covers(image, crop, a, scale, epsilon)).toBeTruthy();
       })
     );
@@ -45,6 +46,7 @@ describe(coverScale, () => {
     assert(
       property(size, size, (image, crop) => {
         const swapped = { height: image.width, width: image.height };
+
         expect(coverScale(image, crop, Math.PI / 2)).toBeCloseTo(
           coverScale(swapped, crop, 0),
           9

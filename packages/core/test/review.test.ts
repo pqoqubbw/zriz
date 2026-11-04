@@ -14,18 +14,22 @@ const setup = () => {
       commit(value, details);
     },
   });
+
   return { commit, cropper, time };
 };
 
 describe("review regressions", () => {
   it("ignores a stale controlled echo during a gesture and still commits", () => {
     const { commit, cropper, time } = setup();
+
     cropper.setZoom(2, { emit: false });
     const before = cropper.getValue();
+
     cropper.begin("pan");
     cropper.panBy(0.05, 0);
     time.frame();
     const stale = cropper.getValue();
+
     cropper.panBy(0.05, 0);
     cropper.setValue(stale, { emit: false, reason: "controlled" });
     expect(cropper.getValue().center.x).toBeCloseTo(before.center.x + 0.1, 9);
@@ -37,6 +41,7 @@ describe("review regressions", () => {
 
   it("stays not ready for a zero-size image", () => {
     const { cropper } = setup();
+
     cropper.setImage({ height: 0, width: 0 });
     expect(cropper.getState().ready).toBeFalsy();
     expect(cropper.getPixelCrop()).toBeNull();
@@ -44,6 +49,7 @@ describe("review regressions", () => {
 
   it("zooms back out to 1 after panning off-centre", () => {
     const { cropper } = setup();
+
     cropper.setZoom(2);
     cropper.panBy(0.2, 0);
     cropper.setZoom(1);
@@ -53,12 +59,14 @@ describe("review regressions", () => {
 
   it("keeps the new image when the coverage change is cancelled", () => {
     const { cropper, time } = setup();
+
     cropper.setOptions({ minSize: { height: 200, width: 200 } });
     cropper.setZoom(4);
     time.frame();
     const canceller = vi.fn<CropperEvents["change"]>((_, details) => {
       details.cancel();
     });
+
     cropper.on("change", canceller);
     cropper.setImage({ height: 400, width: 400 });
     time.frame();
@@ -71,6 +79,7 @@ describe("review regressions", () => {
     const listener = vi.fn<CropperEvents["change"]>((_, details) => {
       details.cancel();
     });
+
     cropper.setZoom(4);
     cropper.on("change", listener);
     cropper.setImage({ height: 400, width: 400 });
@@ -84,6 +93,7 @@ describe("review regressions", () => {
     const { cropper } = setup();
     const a = {};
     const b = {};
+
     expect(cropper.begin("resize", undefined, a)).toBeTruthy();
     expect(cropper.begin("pan", undefined, b)).toBeFalsy();
     cropper.end(undefined, b);
@@ -94,9 +104,11 @@ describe("review regressions", () => {
 
   it("cancels a gesture back to where it started", () => {
     const { commit, cropper, time } = setup();
+
     cropper.setZoom(2, { emit: false });
     const before = cropper.getValue();
     const change = vi.fn<CropperEvents["change"]>();
+
     cropper.on("change", change);
     cropper.begin("pan");
     cropper.panBy(0.1, 0);
@@ -106,6 +118,7 @@ describe("review regressions", () => {
     expect(cropper.getValue()).toStrictEqual(before);
     expect(commit).not.toHaveBeenCalled();
     expect(change.mock.calls.at(-1)?.[0]).toStrictEqual(before);
+
     expect(change.mock.calls.at(-1)?.[1]).toMatchObject({
       phase: "end",
       reason: "pan",
@@ -114,6 +127,7 @@ describe("review regressions", () => {
 
   it("puts the pixel crop on commit details", () => {
     const { commit, cropper, time } = setup();
+
     cropper.setZoom(2);
     time.frame();
     expect(commit.mock.calls[0]?.[1].pixelCrop?.width).toBeCloseTo(500, 0);
@@ -123,13 +137,17 @@ describe("review regressions", () => {
 describe("gesture and commit edges", () => {
   it("a gesture whose first frame nets out still logs start first", () => {
     const { cropper, time } = setup();
+
     cropper.setZoom(2);
     time.frame();
     const phases: string[] = [];
+
     cropper.on("change", (_, details) => {
       phases.push(details.phase);
     });
+
     const before = cropper.getValue();
+
     cropper.begin("pan");
     cropper.setValue({ ...before, center: { x: 0.6, y: 0.5 } });
     cropper.setValue(before);
@@ -143,9 +161,11 @@ describe("gesture and commit edges", () => {
   it("stop paints the value that was pending", () => {
     const { cropper } = setup();
     const painted: number[] = [];
+
     cropper.on("frame", ({ value }) => {
       painted.push(value.rotation);
     });
+
     cropper.setRotation(10);
     cropper.stop();
     expect(painted.at(-1)).toBe(10);
@@ -154,6 +174,7 @@ describe("gesture and commit edges", () => {
   it("an animation a new gesture stops still reports settle", () => {
     const { cropper, time } = setup();
     const settle = vi.fn<() => void>();
+
     cropper.on("settle", settle);
     cropper.run(() => true);
     time.frame();
@@ -165,6 +186,7 @@ describe("gesture and commit edges", () => {
 
   it("two gestures in one frame commit twice", () => {
     const { commit, cropper, time } = setup();
+
     cropper.begin("keyboard");
     cropper.setRotation(5);
     cropper.end();
@@ -179,11 +201,15 @@ describe("gesture and commit edges", () => {
   it("a cancel kept from a finished run does not stop a later one", () => {
     const { cropper, time } = setup();
     let calls = 0;
+
     const task = (): boolean => {
       calls += 1;
+
       return calls !== 1;
     };
+
     const stale = cropper.run(task);
+
     time.frame();
     cropper.run(task);
     stale();
@@ -194,9 +220,11 @@ describe("gesture and commit edges", () => {
 
   it("one cropper cannot reach another through the shared defaults", () => {
     const first = setup().cropper.getValue();
+
     expect(Reflect.set(first.center, "x", 0.9)).toBeFalsy();
     expect(Reflect.set(first.size, "width", 0.1)).toBeFalsy();
     const second = setup().cropper.getValue();
+
     expect(second.center.x).toBe(0.5);
     expect(second.size.width).toBe(1);
   });
@@ -207,6 +235,7 @@ describe("gesture and commit edges", () => {
     const release = vi.fn<() => void>(() => {
       cropper.end(undefined, owner);
     });
+
     cropper.begin("dial", undefined, owner);
     cropper.setRotation(5, { reason: "dial" });
     cropper.run(() => true);
@@ -223,6 +252,7 @@ describe("gesture and commit edges", () => {
   it("rebase tells a gesture about outside writes only once", () => {
     const { cropper, time } = setup();
     const owner = {};
+
     cropper.begin("pan", undefined, owner);
     cropper.panBy(0.01, 0, { reason: "pan" });
     expect(cropper.rebase(owner)).toBeFalsy();
@@ -231,6 +261,7 @@ describe("gesture and commit edges", () => {
     expect(cropper.rebase(owner)).toBeTruthy();
     expect(cropper.rebase(owner)).toBeFalsy();
     const zoomed = cropper.getValue();
+
     cropper.panBy(0.01, 0, { reason: "pan" });
     cropper.cancel(undefined, owner);
     expect(cropper.getValue()).toBe(zoomed);
@@ -240,6 +271,7 @@ describe("gesture and commit edges", () => {
   it("a swap under a held gesture commits the fit and rebases what comes after", () => {
     const { commit, cropper, time } = setup();
     const owner = {};
+
     cropper.setZoom(2);
     time.frame();
     cropper.begin("pan", undefined, owner);
@@ -248,8 +280,10 @@ describe("gesture and commit edges", () => {
     commit.mockClear();
     cropper.setImage({ height: 2000, width: 500 });
     const [fit] = commit.mock.calls;
+
     expect(fit?.[1].reason).toBe("coverage");
     const fitted = cropper.getValue();
+
     cropper.panBy(0, 0.01, { reason: "pan" });
     cropper.end(undefined, owner);
     time.frame();
@@ -264,6 +298,7 @@ describe("gesture and commit edges", () => {
       defaultValue: { aspect: 1 },
     });
     const owner = {};
+
     cropper.begin("pan", undefined, owner);
     cropper.setImage({ height: 1000, width: 2000 });
     cropper.setZoom(2);
@@ -275,12 +310,16 @@ describe("gesture and commit edges", () => {
   it("the same task run twice runs once a frame, and only the last cancel stops it", () => {
     const { cropper, time } = setup();
     let calls = 0;
+
     const task = (): boolean => {
       calls += 1;
+
       return true;
     };
+
     const first = cropper.run(task);
     const second = cropper.run(task);
+
     time.frame();
     expect(calls).toBe(1);
     first();
@@ -295,6 +334,7 @@ describe("gesture and commit edges", () => {
   it("stop forgets a settle owed to an animation a gesture dropped", () => {
     const { cropper, time } = setup();
     const settle = vi.fn<() => void>();
+
     cropper.on("settle", settle);
     cropper.run(() => true);
     cropper.begin("pan");

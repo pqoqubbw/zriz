@@ -11,14 +11,14 @@ import {
 
 import { useCropperState, useTarget } from "./use-cropper";
 
-export interface UseZoom {
+export type UseZoom = {
   value: number;
   min: number;
   max: number;
   dragging: boolean;
   onValueChange: (zoom: number) => void;
   onValueCommitted: () => void;
-}
+};
 
 const IDLE_MS = 150;
 
@@ -63,20 +63,25 @@ export const useZoom = (
       if (cropper.getState().interacting === null) {
         cropper.begin("zoom-control", undefined, held);
       }
+
       cropper.setZoom(zoom, { reason: "zoom-control" });
       clearTimeout(timer.current);
+
       if (held.size === 0) {
         timer.current = setTimeout(onValueCommitted, IDLE_MS);
       }
     },
     [cropper, held, onValueCommitted]
   );
+
   useEffect(() => {
     const press = (event: PointerEvent | KeyboardEvent): void => {
       held.add(heldBy(event));
     };
+
     const release = (event: PointerEvent | KeyboardEvent): void => {
       held.delete(heldBy(event));
+
       if ("key" in event && event.key === "Meta") {
         for (const key of held) {
           if (typeof key === "string") {
@@ -84,31 +89,40 @@ export const useZoom = (
           }
         }
       }
+
       if (held.size === 0) {
         onValueCommitted();
       }
     };
+
     const leave = (): void => {
       held.clear();
       onValueCommitted();
     };
+
     for (const type of PRESSES) {
       globalThis.addEventListener(type, press, true);
     }
+
     for (const type of RELEASES) {
       globalThis.addEventListener(type, release, true);
     }
+
     globalThis.addEventListener("blur", leave);
+
     return () => {
       for (const type of PRESSES) {
         globalThis.removeEventListener(type, press, true);
       }
+
       for (const type of RELEASES) {
         globalThis.removeEventListener(type, release, true);
       }
+
       globalThis.removeEventListener("blur", leave);
       onValueCommitted();
     };
   }, [held, onValueCommitted]);
+
   return { dragging, max, min: 1, onValueChange, onValueCommitted, value };
 };

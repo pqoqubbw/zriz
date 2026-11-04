@@ -53,11 +53,13 @@ describe("coverage with pan", () => {
         (s, u, v, side) => {
           const t = turnedSize(s.image, s.turns);
           const box = panBox(t, s.angle, s.crop.width, s.crop.height);
+
           pre(box.x > 1e-6 * t.width && box.y > 1e-6 * t.height);
           const m = applyMatrix2(rotationMatrix(s.angle), {
             x: u * box.x,
             y: v * box.y,
           });
+
           expect(isCropCovered(withCrop(s, m.x, m.y))).toBeTruthy();
           const outside: readonly [Point, Point, Point, Point] = [
             { x: box.x * 1.001 + 1e-3, y: v * box.y },
@@ -66,6 +68,7 @@ describe("coverage with pan", () => {
             { x: u * box.x, y: -box.y * 1.001 - 1e-3 },
           ];
           const mo = applyMatrix2(rotationMatrix(s.angle), outside[side]);
+
           expect(isCropCovered(withCrop(s, mo.x, mo.y), 0)).toBeFalsy();
         }
       )
@@ -78,14 +81,17 @@ describe("coverage with pan", () => {
         const t = turnedSize(s.image, s.turns);
         const want = { x: u * t.width, y: v * t.height };
         const c = clampPan(t, s.angle, s.crop.width, s.crop.height, want);
+
         expect(isCropCovered(withCrop(s, c.x, c.y))).toBeTruthy();
         const c2 = clampPan(t, s.angle, s.crop.width, s.crop.height, c);
         const tol = 1e-9 * Math.max(t.width, t.height);
+
         expect(Math.hypot(c2.x - c.x, c2.y - c.y)).toBeLessThanOrEqual(tol);
         const g = projectOntoPlanes(
           panPlanes(imagePlanes(s), s.crop.width, s.crop.height),
           want
         );
+
         expect(Math.hypot(g.x - c.x, g.y - c.y)).toBeLessThanOrEqual(
           1e-7 * Math.max(t.width, t.height)
         );
@@ -104,6 +110,7 @@ describe("coverage with pan", () => {
       ],
       { x: (5000 - 0.5) * n, y: (5000 + 0.5) * n }
     );
+
     expect((x + y) * n).toBeCloseTo(1, 6);
     expect((y - x) * n).toBeCloseTo(0.5, 6);
   });
@@ -121,11 +128,13 @@ describe("coverage with pan", () => {
           const c = clampPan(t, s.angle, s.crop.width, s.crop.height, want);
           const d = Math.hypot(c.x - want.x, c.y - want.y);
           const box = panBox(t, s.angle, s.crop.width, s.crop.height);
+
           for (const [p, q] of samples) {
             const m = applyMatrix2(rotationMatrix(s.angle), {
               x: p * box.x,
               y: q * box.y,
             });
+
             expect(
               Math.hypot(m.x - want.x, m.y - want.y)
             ).toBeGreaterThanOrEqual(d - 1e-9 * Math.max(t.width, t.height));
@@ -143,9 +152,11 @@ describe("coverage with pan", () => {
         const k = coverScaleAt(t, view, s.angle, m);
         const at = (scale: number): CropState =>
           withCrop(s, m.x, m.y, view.width / scale, view.height / scale);
+
         expect(isCropCovered(at(k), 1e-9)).toBeTruthy();
         expect(isCropCovered(at(k * 0.999), 0)).toBeFalsy();
         const g = minScaleAt(imagePlanes(s), view, m);
+
         expect(Math.abs(g - k) / k).toBeLessThan(1e-9);
       })
     );
@@ -155,6 +166,7 @@ describe("coverage with pan", () => {
     assert(
       property(sizeArb, sizeArb, angleArb, (image, view, a) => {
         const k = coverScaleAt(image, view, a, { x: 0, y: 0 });
+
         expect(
           Math.abs(k - coverScale(image, view, (a * Math.PI) / 180)) / k
         ).toBeLessThan(1e-12);
@@ -168,17 +180,21 @@ describe("coverage with pan", () => {
         const fit = largestFit(imagePlanes(s), view);
         const t = turnedSize(s.image, s.turns);
         const k = coverScaleAt(t, view, s.angle, { x: 0, y: 0 });
+
         expect(Math.abs(fit.scale - k) / k).toBeLessThan(1e-7);
         const big = largestCropAt(t, s.angle, view.width / view.height, {
           x: 0,
           y: 0,
         });
+
         expect(Math.abs(big.width - view.width / k) / big.width).toBeLessThan(
           1e-9
         );
+
         expect(
           isCropCovered(withCrop(s, 0, 0, big.width, big.height))
         ).toBeTruthy();
+
         expect(
           isCropCovered(
             withCrop(s, 0, 0, big.width * 1.001, big.height * 1.001),
@@ -211,8 +227,10 @@ describe("coverage with pan", () => {
           const planes = imagePlanes(s);
           const b = cropCorners(o.crop);
           const tol = 1e-9 * Math.max(t.width, t.height);
+
           for (const [i, a] of cropCorners(s.crop).entries()) {
             const bi = b[i] ?? a;
+
             expect(
               insidePlanes(
                 planes,
@@ -224,6 +242,7 @@ describe("coverage with pan", () => {
         }
       )
     );
+
     const s: CropState = {
       angle: 0,
       aspect: null,
@@ -240,18 +259,22 @@ describe("coverage with pan", () => {
       x: 0,
       y: 0,
     };
+
     expect(isCropCovered({ ...s, crop: c }, 0)).toBeFalsy();
   });
 
   it("needs an infinite scale at a centre with no room", () => {
     const planes = [{ d: 50, nx: 1, ny: 0 }];
     const view = { height: 10, width: 10 };
+
     expect(minScaleAt(planes, view, { x: 50, y: 0 })).toBe(
       Number.POSITIVE_INFINITY
     );
+
     expect(minScaleAt(planes, view, { x: 60, y: 0 })).toBe(
       Number.POSITIVE_INFINITY
     );
+
     expect(minScaleAt(planes, view, { x: 0, y: 0 })).toBe(0.1);
   });
 
@@ -267,6 +290,7 @@ describe("coverage with pan", () => {
       turns: 0,
     };
     const { center } = largestFit(imagePlanes(state), state.crop);
+
     expect(Object.is(center.x, -0)).toBeFalsy();
     expect(Object.is(center.y, -0)).toBeFalsy();
   });
@@ -292,6 +316,7 @@ describe("planes the cropper does not build", () => {
   ])("fits a view inside %s", (_, planes) => {
     const view = { height: 10, width: 10 };
     const { center, scale } = largestFit(planes, view);
+
     expect(
       insidePlanes(
         panPlanes(planes, view.width / scale, view.height / scale),
@@ -309,6 +334,7 @@ describe("planes the cropper does not build", () => {
 
   it("projects along the plane a point breaks", () => {
     const point = projectOntoPlanes(stretched, { x: 500, y: 0 });
+
     expect(point.x).toBeCloseTo(300, 9);
     expect(point.y).toBeCloseTo(0, 9);
   });
@@ -321,6 +347,7 @@ describe("planes the cropper does not build", () => {
       ],
       { x: 100, y: 0 }
     );
+
     expect(point.x).toBeCloseTo(64, 9);
     expect(point.y).toBeCloseTo(-48, 9);
   });
@@ -343,6 +370,7 @@ describe("largestFit on level planes", () => {
             [...planes, { ...(first ?? { d: 0, nx: 1, ny: 0 }) }],
             view
           );
+
           expect(level.scale).toBeCloseTo(solved.scale, 6);
         }
       )
@@ -363,6 +391,7 @@ describe("largestFit on level planes", () => {
       10,
       0
     );
+
     expect(largestFit(planes, { height: 1, width: 0 }).scale).toBeCloseTo(
       0.1,
       9

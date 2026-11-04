@@ -35,13 +35,13 @@ const wait = async (ms: number): Promise<void> => {
   });
 };
 
-interface Fixture {
+type Fixture = {
   id: string;
   cropper: Cropper;
   root: HTMLElement;
   changes: number;
   commits: number;
-}
+};
 
 const mount = (
   motion: "always" | "reduce" = "always",
@@ -50,15 +50,20 @@ const mount = (
   count += 1;
   const id = `motion-${count}`;
   const root = document.createElement("div");
+
   root.id = id;
+
   root.style.cssText =
     "position:relative;width:400px;height:300px;padding:20px;box-sizing:border-box;overflow:hidden;";
+
   const image = document.createElement("div");
   const mask = document.createElement("div");
   const area = document.createElement("div");
   const handle = document.createElement("div");
+
   handle.style.cssText =
     "position:absolute;right:-12px;bottom:-12px;width:24px;height:24px;";
+
   area.append(handle);
   root.append(image, mask, area);
   document.body.append(root);
@@ -79,6 +84,7 @@ const mount = (
     root,
   };
   const { cropper } = fixture;
+
   viewOf(cropper).setOptions({ motion });
   const unbind = [
     bindViewport(cropper, root),
@@ -88,14 +94,17 @@ const mount = (
     bindHandle(cropper, handle, "bottom-right"),
     bindState(cropper, root),
   ];
+
   cleanups.push(() => {
     for (const off of unbind) {
       off();
     }
+
     viewOf(cropper).destroy();
     cropper.destroy();
     root.remove();
   });
+
   return fixture;
 };
 
@@ -108,6 +117,7 @@ const shrinkFromCorner = async (fixture: Fixture): Promise<void> => {
   const rect = viewOf(fixture.cropper).frame()?.rect;
   const x = (rect?.x ?? 0) + (rect?.width ?? 0);
   const y = (rect?.y ?? 0) + (rect?.height ?? 0);
+
   await commands.drag(`#${fixture.id}`, [
     [x, y],
     [x - 60, y - 50],
@@ -116,11 +126,11 @@ const shrinkFromCorner = async (fixture: Fixture): Promise<void> => {
   ]);
 };
 
-interface Rest {
+type Rest = {
   ended: number;
   moved: number;
   offCentre: number;
-}
+};
 
 const shrinkAndWatch = async (fixture: Fixture): Promise<Rest> => {
   const view = viewOf(fixture.cropper);
@@ -138,8 +148,10 @@ const shrinkAndWatch = async (fixture: Fixture): Promise<Rest> => {
       rest.moved = performance.now();
     }
   });
+
   cleanups.push(offEnd, offFrame);
   await shrinkFromCorner(fixture);
+
   return rest;
 };
 
@@ -160,9 +172,11 @@ describe("view motion", () => {
 
   it("waits 0.5 s, then recentres with the same pixels under the crop", async () => {
     const fixture = mount();
+
     await frames();
     const view = viewOf(fixture.cropper);
     const rest = await shrinkAndWatch(fixture);
+
     expect(rest.offCentre).toBeLessThan(190);
     await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
     await frames();
@@ -171,6 +185,7 @@ describe("view motion", () => {
     const off = view.onFrame((frame) => {
       const back = invertMatrix3(frame.matrix);
       const { rect } = frame;
+
       corners.push([
         applyHomography(back, { x: rect.x, y: rect.y }),
         applyHomography(back, {
@@ -179,18 +194,23 @@ describe("view motion", () => {
         }),
       ]);
     });
+
     await centred(fixture);
     off();
+
     expect(rest.moved - rest.ended).toBeGreaterThanOrEqual(
       500 - TIMER_ROUNDING
     );
+
     expect(fixture.changes).toBe(changes);
     const [first] = corners;
     const tolerance = (1.25 * 4000) / 360;
+
     for (const pair of corners) {
       expect(Math.abs((pair[0]?.x ?? 0) - (first?.[0]?.x ?? 0))).toBeLessThan(
         tolerance
       );
+
       expect(Math.abs((pair[1]?.y ?? 0) - (first?.[1]?.y ?? 0))).toBeLessThan(
         tolerance
       );
@@ -199,11 +219,15 @@ describe("view motion", () => {
 
   it("waits as long as recentreDelay asks", async () => {
     const fixture = mount();
+
     await frames();
     const view = viewOf(fixture.cropper);
+
     view.setOptions({ recentreDelay: 1060 });
     const rest = await shrinkAndWatch(fixture);
+
     await centred(fixture);
+
     expect(rest.moved - rest.ended).toBeGreaterThanOrEqual(
       1060 - TIMER_ROUNDING
     );
@@ -211,14 +235,17 @@ describe("view motion", () => {
 
   it("cancels the wait when a new touch lands", async () => {
     const fixture = mount();
+
     await frames();
     const off = fixture.cropper.on("gestureend", () => {
       off();
+
       setTimeout(() => {
         fixture.cropper.begin("pan");
       }, 250);
     });
     const rest = await shrinkAndWatch(fixture);
+
     await wait(1150);
     expect(rest.moved).toBe(0);
     expect(fixture.cropper.getState().interacting).toBe("pan");
@@ -229,6 +256,7 @@ describe("view motion", () => {
   it("animates a quarter turn without change events in between", async () => {
     const time = fakeClock();
     const fixture = mount("always", time.clock);
+
     await frames();
     time.frames(2);
     const seen = new Set<string>();
@@ -236,6 +264,7 @@ describe("view motion", () => {
     const off = view.onFrame((frame) => {
       seen.add(Math.atan2(frame.matrix[3], frame.matrix[0]).toFixed(2));
     });
+
     fixture.cropper.rotate90();
     time.frames(2);
     expect(fixture.root.dataset.transition).toBe("rotate");
@@ -250,12 +279,14 @@ describe("view motion", () => {
   it("passes through zero width when flipping", async () => {
     const time = fakeClock();
     const fixture = mount("always", time.clock);
+
     await frames();
     time.frames(2);
     let narrowest = Number.POSITIVE_INFINITY;
     const off = viewOf(fixture.cropper).onFrame((frame) => {
       narrowest = Math.min(narrowest, Math.abs(frame.matrix[0]));
     });
+
     fixture.cropper.flip();
     time.frames(42);
     off();
@@ -266,17 +297,20 @@ describe("view motion", () => {
   it("morphs the crop to a new aspect", async () => {
     const time = fakeClock();
     const fixture = mount("always", time.clock);
+
     await frames();
     time.frames(2);
     const widths: number[] = [];
     const off = viewOf(fixture.cropper).onFrame((frame) => {
       widths.push(frame.rect.width);
     });
+
     fixture.cropper.setAspect(1);
     time.frames(42);
     off();
     const start = widths[0] ?? 0;
     const end = widths.at(-1) ?? 0;
+
     expect(end).toBeCloseTo(260, 0);
     expect(widths.some((w) => w < start - 10 && w > end + 10)).toBeTruthy();
     expect(fixture.root.dataset.transition).toBeUndefined();
@@ -285,6 +319,7 @@ describe("view motion", () => {
   it("finishes in about 150 ms under reduced motion", async () => {
     const time = fakeClock();
     const fixture = mount("reduce", time.clock);
+
     await frames();
     time.frames(2);
     fixture.cropper.rotate90();
@@ -298,6 +333,7 @@ describe("view motion", () => {
 
   it("shows the coarse grid while panning and holds it 1.38 s after", async () => {
     const fixture = mount();
+
     fixture.cropper.setZoom(2, { emit: false });
     await frames();
     fixture.cropper.begin("pan");
@@ -310,18 +346,24 @@ describe("view motion", () => {
         cleared = performance.now();
       }
     });
+
     observer.observe(fixture.root, {
       attributeFilter: ["data-grid"],
       attributes: true,
     });
+
     cleanups.push(() => {
       observer.disconnect();
     });
+
     const ended = performance.now();
+
     fixture.cropper.end();
+
     await expect
       .poll(() => fixture.root.dataset.grid, { timeout: 5000 })
       .toBe("none");
+
     expect(cleared - ended).toBeGreaterThanOrEqual(1380 - TIMER_ROUNDING);
     expect(Object.hasOwn(fixture.root.dataset, "interacting")).toBeFalsy();
   });
@@ -337,16 +379,21 @@ describe("a page where frames stop, as in a hidden tab", () => {
     const cropper = createCropper({ image: { height: 300, width: 400 } });
     const commits: number[] = [];
     let changes = 0;
+
     cropper.on("change", () => {
       changes += 1;
     });
+
     cropper.on("commit", (value) => {
       commits.push(value.rotation);
     });
+
     cropper.setRotation(5);
+
     await expect
       .poll(() => commits, { interval: 50, timeout: 2000 })
       .toStrictEqual([5]);
+
     expect(changes).toBe(1);
     expect(cropper.getState().committed.rotation).toBe(5);
     cropper.destroy();
@@ -356,18 +403,25 @@ describe("a page where frames stop, as in a hidden tab", () => {
     vi.stubGlobal("requestAnimationFrame", () => 0);
     const cropper = createCropper({ image: { height: 300, width: 400 } });
     const commits: number[] = [];
+
     cropper.on("commit", (value) => {
       commits.push(value.rotation);
     });
+
     let ticks = 0;
+
     cropper.setRotation(5);
+
     cropper.run(() => {
       ticks += 1;
+
       return ticks < 2;
     });
+
     await expect
       .poll(() => commits, { interval: 50, timeout: 3000 })
       .toStrictEqual([5]);
+
     expect(cropper.getState().settling).toBeFalsy();
     cropper.destroy();
   });
@@ -380,12 +434,15 @@ describe("a page with frames", () => {
     const handle = clock.request(() => {
       steps += 1;
     });
+
     clock.cancel(handle);
     await wait(300);
     expect(steps).toBe(0);
+
     clock.request(() => {
       steps += 1;
     });
+
     await wait(400);
     expect(steps).toBe(1);
   });

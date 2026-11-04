@@ -10,6 +10,7 @@ describe(useCoverScale, () => {
     const { result } = await renderHook(() =>
       useCoverScale({ crop: image, image })
     );
+
     expect(result.current).toBe(1);
   });
 
@@ -17,6 +18,7 @@ describe(useCoverScale, () => {
     const { result } = await renderHook(() =>
       useCoverScale({ crop: image, image, rotation: 7 })
     );
+
     expect(result.current).toBeGreaterThan(1.15);
     expect(result.current).toBeLessThan(1.16);
   });

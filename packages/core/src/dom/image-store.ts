@@ -21,8 +21,10 @@ export const onImage = (
   listener: () => void
 ): (() => void) => {
   const set = imageListeners.get(cropper) ?? new Set<() => void>();
+
   imageListeners.set(cropper, set);
   set.add(listener);
+
   return () => {
     set.delete(listener);
   };
@@ -30,7 +32,9 @@ export const onImage = (
 
 const release = (image: LoadedImage): void => {
   const left = (holders.get(image) ?? 1) - 1;
+
   holders.set(image, left);
+
   if (left === 0) {
     freed.add(image);
     freeImage(image);
@@ -52,36 +56,47 @@ export const attachImage = (
       "zriz: this image was freed when it left its last cropper. Load it again."
     );
   }
+
   const previous = attached.get(cropper);
+
   if (image && image !== previous) {
     holders.set(image, (holders.get(image) ?? 0) + 1);
   }
+
   if (previous && previous !== image) {
     release(previous);
   }
+
   if (image) {
     attached.set(cropper, image);
     cropper.setImage({ height: image.height, width: image.width });
+
     if (!cropper.getCropState()) {
       drop(cropper, image);
+
       return;
     }
   } else {
     attached.delete(cropper);
     cropper.setImage(null);
   }
+
   for (const listener of imageListeners.get(cropper) ?? []) {
     listener();
   }
+
   if (image && !watched.has(cropper)) {
     watched.add(cropper);
+
     cropper.on("destroy", () => {
       const held = attached.get(cropper);
+
       if (held) {
         drop(cropper, held);
       }
     });
   }
+
   if (image && !prefetched) {
     prefetched = true;
     afterPaint(async () => await import("./render"));

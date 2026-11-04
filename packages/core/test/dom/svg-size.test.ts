@@ -8,6 +8,7 @@ const SLOW = 1000;
 
 const quick = (run: () => void): void => {
   const start = performance.now();
+
   run();
   expect(performance.now() - start).toBeLessThan(SLOW);
 };
@@ -42,6 +43,7 @@ describe("sniffing svg text", () => {
 
   it("reads a prolog longer than the old head", () => {
     const text = `<?xml version="1.0"?><!-- ${"x".repeat(1000)} --><svg>`;
+
     expect(sniff(encode(text)).mime).toBe("image/svg+xml");
   });
 
@@ -63,6 +65,7 @@ describe("sniffing svg text", () => {
       0xff,
       ...[...encode(text)].flatMap((code) => [0, code]),
     ]);
+
     expect(sniff(le).mime).toBe("image/svg+xml");
     expect(sniff(be).mime).toBe("image/svg+xml");
   });
@@ -97,6 +100,7 @@ describe("the size of an svg", () => {
     ['<?xml version="1.0"?><s:svg viewBox="0 0 30 20"/>', 30, 20],
   ])("reads %s", (text, width, height) => {
     const size = svgSize(text);
+
     expect(size.width).toBeCloseTo(width);
     expect(size.height).toBeCloseTo(height);
   });
@@ -104,22 +108,26 @@ describe("the size of an svg", () => {
   it("skips a commented root", () => {
     const text =
       '<!-- <svg width="1" height="1"> --><svg viewBox="0 0 100 50"/>';
+
     expect(svgSize(text)).toStrictEqual({ height: 50, width: 100 });
   });
 
   it("skips a root inside a doctype", () => {
     const text =
       '<!DOCTYPE svg [ <!ENTITY a "<svg width=\'1\' height=\'1\'>"> ]><svg width="9" height="9"/>';
+
     expect(svgSize(text)).toStrictEqual({ height: 9, width: 9 });
   });
 
   it("reads past a closing bracket inside a value", () => {
     const text = '<svg data-note="a>b" width="100" height="50"/>';
+
     expect(svgSize(text)).toStrictEqual({ height: 50, width: 100 });
   });
 
   it("does not read an attribute out of another one's value", () => {
     const text = `<svg data-note=" width='999' height='999'" viewBox="0 0 10 10"/>`;
+
     expect(svgSize(text)).toStrictEqual({ height: 10, width: 10 });
   });
 
@@ -130,6 +138,7 @@ describe("the size of an svg", () => {
     '<svg width="1e308" height="1e400"/>',
   ])("falls back on the default for %s", (text) => {
     const { width, height } = svgSize(text);
+
     expect(Number.isFinite(width) && width > 0).toBeTruthy();
     expect(Number.isFinite(height) && height > 0).toBeTruthy();
   });
@@ -154,6 +163,7 @@ describe("the size of an svg", () => {
   ])("stays fast on a long run of %s in a tag", (unit, count) => {
     quick(() => {
       const value = unit.repeat(count);
+
       expect(svgSize(`<svg width="${value}" ${value}>`)).toStrictEqual({
         height: 150,
         width: 300,
@@ -163,6 +173,7 @@ describe("the size of an svg", () => {
 
   it("opens a root behind a huge comment", () => {
     const text = `<!--${"x".repeat(20_000_000)}--><svg width="4" height="2">`;
+
     expect(svgSize(text)).toStrictEqual({ height: 2, width: 4 });
   });
 });

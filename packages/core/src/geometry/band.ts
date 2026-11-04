@@ -19,6 +19,7 @@ export const inverseRubberBand = (
   if (shown <= 0) {
     return shown / coefficient;
   }
+
   return shown < distance
     ? (distance * shown) / (coefficient * (distance - shown))
     : Number.POSITIVE_INFINITY;
@@ -33,9 +34,12 @@ export const rubberBandPoint = (
   const ex = raw.x - clamped.x;
   const ey = raw.y - clamped.y;
   const length = Math.hypot(ex, ey);
+
   if (length === 0) {
     return raw;
   }
+
   const k = rubberBand(length, distance, coefficient) / length;
+
   return { x: clamped.x + ex * k, y: clamped.y + ey * k };
 };

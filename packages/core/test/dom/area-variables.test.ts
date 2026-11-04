@@ -37,9 +37,11 @@ const fakeArea = () => {
     },
     toggleAttribute: () => false,
   };
+
   if (!isElement(element)) {
     throw new Error("no style");
   }
+
   return { element, variables, writes };
 };
 
@@ -50,10 +52,12 @@ const mount = (liveVariables?: boolean) => {
     image: { height: 3000, width: 4000 },
   });
   const view = viewOf(cropper);
+
   view.setLayout(LAYOUT);
   time.frame();
   const area = fakeArea();
   const stop = bindArea(cropper, area.element, { liveVariables });
+
   return { ...area, cropper, stop, time, view };
 };
 
@@ -63,6 +67,7 @@ const read = (variables: Map<string, string>) =>
 describe("area live variables", () => {
   it("writes the five variables from the first frame, at rest", () => {
     const { variables, view } = mount(true);
+
     expect(read(variables)).toStrictEqual({
       "--zriz-overscroll": 0,
       "--zriz-rotation": 0,
@@ -70,32 +75,39 @@ describe("area live variables", () => {
       "--zriz-zoom": 1,
       "--zriz-zoom-progress": 0,
     });
+
     view.destroy();
   });
 
   it("follows rotation and zoom", () => {
     const { cropper, time, variables, view } = mount(true);
+
     cropper.setRotation(-10);
     cropper.setZoom(4);
     time.frame();
     const limit = cropper.getRotationLimit();
     const values = read(variables);
+
     expect(values["--zriz-rotation"]).toBeCloseTo(-10, 3);
     expect(values["--zriz-rotation-progress"]).toBeCloseTo(-10 / limit, 3);
     expect(values["--zriz-zoom"]).toBeCloseTo(4, 3);
+
     expect(values["--zriz-zoom-progress"]).toBeCloseTo(
       Math.log(4) / Math.log(cropper.getMaxZoom()),
       3
     );
+
     view.destroy();
   });
 
   it("reaches the ends of both progress ranges", () => {
     const { cropper, time, variables, view } = mount(true);
+
     cropper.setRotation(-cropper.getRotationLimit());
     cropper.setZoom(cropper.getMaxZoom());
     time.frame();
     const values = read(variables);
+
     expect(values["--zriz-rotation-progress"]).toBe(-1);
     expect(values["--zriz-zoom-progress"]).toBeCloseTo(1, 2);
     view.destroy();
@@ -103,6 +115,7 @@ describe("area live variables", () => {
 
   it("measures overscroll in px and returns to 0 at rest", () => {
     const { time, variables, view } = mount(true);
+
     view.setOverscroll({ x: 30, y: -40 });
     time.frame();
     expect(variables.get("--zriz-overscroll")).toBe("50");
@@ -114,6 +127,7 @@ describe("area live variables", () => {
 
   it("rounds to three decimals", () => {
     const { cropper, time, variables, view } = mount(true);
+
     cropper.setRotation(-4.56789);
     time.frame();
     expect(variables.get("--zriz-rotation")).toBe("-4.568");
@@ -123,6 +137,7 @@ describe("area live variables", () => {
   it("writes nothing when a value has not changed", () => {
     const { cropper, time, view, writes } = mount(true);
     const first = writes.length;
+
     cropper.invalidate();
     time.frame();
     expect(writes).toHaveLength(first);
@@ -131,14 +146,17 @@ describe("area live variables", () => {
 
   it("writes nothing without the prop, and stops after cleanup", () => {
     const off = mount();
+
     off.cropper.setRotation(-10);
     off.time.frame();
     expect(off.writes).toStrictEqual([]);
     off.view.destroy();
 
     const on = mount(true);
+
     on.stop();
     const count = on.writes.length;
+
     on.cropper.setRotation(-10);
     on.time.frame();
     expect(on.writes).toHaveLength(count);

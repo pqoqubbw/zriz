@@ -19,16 +19,16 @@ import type { Part, PartProps } from "../part";
 import { firstZoom, useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface ZoomState {
+export type ZoomState = {
   dragging: boolean;
-}
+};
 
-export interface ZoomProps extends PartProps<"div", ZoomState> {
+export type ZoomProps = {
   /** Highest zoom the slider reaches. @default maxZoom on Root */
   max?: number | undefined;
   /** Formatting of the spoken value. @default percent */
   format?: Intl.NumberFormatOptions | undefined;
-}
+} & PartProps<"div", ZoomState>;
 
 const STYLE = {
   WebkitTapHighlightColor: "transparent",
@@ -52,6 +52,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
     () => zoomHandlers(cropper, () => latest.current, box.get),
     [box, cropper, latest]
   );
+
   useRelease(handlers);
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
   const disabled = useAriaDisabled();
@@ -61,9 +62,11 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
     (node: HTMLDivElement) => {
       keep(node);
       const clear = box.set(node);
+
       warnUnlabelled("Zoom", node);
       warnFormat("Zoom", locale, spoken);
       const off = zoomAria(cropper, node, { format: spoken, locale, max });
+
       return () => {
         clear();
         off();
@@ -71,6 +74,7 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
     },
     [box, cropper, spoken, locale, max]
   );
+
   return usePart(
     "div",
     {

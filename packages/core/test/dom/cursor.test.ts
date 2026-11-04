@@ -15,9 +15,11 @@ const isElement = (value: unknown): value is Element =>
 
 const element = (): Element => {
   const fake: unknown = { getRootNode: () => ({}), ownerDocument: {} };
+
   if (!isElement(fake)) {
     throw new Error("no element");
   }
+
   return fake;
 };
 
@@ -26,9 +28,11 @@ const page = (cursor: {
 }): { adoptedStyleSheets: FakeSheet[] } => {
   const adoptedStyleSheets: FakeSheet[] = [];
   const doc = { adoptedStyleSheets };
+
   vi.stubGlobal("CSSStyleSheet", FakeSheet);
   vi.stubGlobal("document", doc);
   vi.stubGlobal("getComputedStyle", () => ({ cursor: cursor.value }));
+
   return doc;
 };
 
@@ -51,10 +55,12 @@ describe("cursor hold", () => {
     const doc = page({ value: "grab" });
     const first = holdCursor(element());
     const second = holdCursor(element());
+
     expect(doc.adoptedStyleSheets.map((sheet) => sheet.rule)).toStrictEqual([
       "*{cursor:grabbing!important}",
       "*{cursor:grabbing!important}",
     ]);
+
     first?.();
     expect(doc.adoptedStyleSheets).toHaveLength(1);
     second?.();
@@ -65,13 +71,17 @@ describe("cursor hold", () => {
     const cursor = { value: "grab" };
     const doc = page(cursor);
     const photo = holdCursor(element());
+
     cursor.value = "nwse-resize";
     const handle = holdCursor(element());
+
     expect(doc.adoptedStyleSheets).toHaveLength(2);
     photo?.();
+
     expect(doc.adoptedStyleSheets.map((sheet) => sheet.rule)).toStrictEqual([
       "*{cursor:nwse-resize!important}",
     ]);
+
     handle?.();
     expect(doc.adoptedStyleSheets).toHaveLength(0);
   });

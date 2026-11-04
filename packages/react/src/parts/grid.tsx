@@ -10,9 +10,9 @@ import { keepStyle, useKeptStyle } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface GridState {
+export type GridState = {
   grid: GridMode;
-}
+};
 
 export type GridProps = PartProps<"div", GridState>;
 
@@ -39,6 +39,7 @@ const line = (axis: "x" | "y", at: number, coarse: boolean): ReactElement => {
           right: 0,
           top: `${at * 100}%`,
         } as const);
+
   return (
     <span
       data-axis={axis}
@@ -52,6 +53,7 @@ const line = (axis: "x" | "y", at: number, coarse: boolean): ReactElement => {
 
 const linesFor = (mode: "coarse" | "fine"): ReactElement[] => {
   const count = mode === "fine" ? 9 : 3;
+
   return Array.from({ length: count - 1 }, (_, i) => i + 1).flatMap((k) => [
     line("x", k / count, mode === "coarse"),
     line("y", k / count, mode === "coarse"),
@@ -70,9 +72,11 @@ export const Grid: Part<GridProps, HTMLDivElement> = forwardRef<
     () => "none" as const
   );
   const [shown, setShown] = useState<"coarse" | "fine">("coarse");
+
   if (grid !== "none" && grid !== shown) {
     setShown(grid);
   }
+
   const children = useMemo(() => linesFor(shown), [shown]);
 
   return usePart(

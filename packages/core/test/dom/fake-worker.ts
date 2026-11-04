@@ -31,15 +31,20 @@ export class FakeWorker extends EventTarget {
         this.dispatchEvent(new MessageEvent("message", { data }));
       },
     });
+
     this.ready = (async () => {
       const source = (await blob?.text()) ?? "";
+
       try {
         vm.runInContext(source, context);
       } catch {
         this.dispatchEvent(new Event("error"));
+
         return null;
       }
+
       const handler: unknown = context.onmessage;
+
       return isHandler(handler) ? handler : null;
     })();
   }
@@ -47,13 +52,16 @@ export class FakeWorker extends EventTarget {
   postMessage(data: unknown): void {
     if (FakeWorker.silent) {
       structuredClone(data);
+
       return;
     }
+
     void this.deliver(data);
   }
 
   private async deliver(data: unknown): Promise<void> {
     const handler = await this.ready;
+
     if (!this.terminated) {
       handler?.({ data });
     }

@@ -5,6 +5,7 @@ import type { Crop, CropState, HalfPlane, Point } from "./types";
 
 export const imageQuad = (state: CropState): Point[] => {
   const { width, height } = state.image;
+
   return [
     { x: 0, y: 0 },
     { x: width, y: 0 },
@@ -18,19 +19,23 @@ export const polygonPlanes = (vertices: readonly Point[]): HalfPlane[] => {
     vertices.reduce((sum, vertex) => sum + vertex.x, 0) / vertices.length;
   const cy =
     vertices.reduce((sum, vertex) => sum + vertex.y, 0) / vertices.length;
+
   return vertices.map((vertex, index) => {
     const next = vertices[(index + 1) % vertices.length] ?? vertex;
     let nx = next.y - vertex.y;
     let ny = vertex.x - next.x;
     const length = Math.hypot(nx, ny);
+
     nx /= length;
     ny /= length;
     let d = nx * vertex.x + ny * vertex.y;
+
     if (nx * cx + ny * cy > d) {
       nx = -nx;
       ny = -ny;
       d = -d;
     }
+
     return { d, nx, ny };
   });
 };
@@ -39,10 +44,12 @@ export const imagePlanes = (state: CropState): HalfPlane[] => {
   if (!isFlatPerspective(state.perspective)) {
     return polygonPlanes(imageQuad(state));
   }
+
   const turned = turnedSize(state.image, state.turns);
   const { sin, cos } = sinCosDegrees(state.angle);
   const halfWidth = turned.width / 2;
   const halfHeight = turned.height / 2;
+
   return [
     { d: halfWidth, nx: cos, ny: sin },
     { d: halfWidth, nx: -cos, ny: -sin },
@@ -88,6 +95,7 @@ export const projectOntoPlanes = (
   ) {
     return given;
   }
+
   const reach = 1e6 * Math.max(1, ...planes.map(({ d }) => Math.abs(d)));
   const inReach = (side: number): number =>
     Math.min(Math.max(side, -reach), reach);
@@ -96,11 +104,14 @@ export const projectOntoPlanes = (
     const k =
       (plane.nx * point.x + plane.ny * point.y - plane.d) /
       (plane.nx * plane.nx + plane.ny * plane.ny);
+
     return { x: point.x - k * plane.nx, y: point.y - k * plane.ny };
   });
+
   for (const [index, a] of planes.entries()) {
     for (const b of planes.slice(index + 1)) {
       const det = a.nx * b.ny - a.ny * b.nx;
+
       if (Math.abs(det) >= 1e-14) {
         candidates.push({
           x: (a.d * b.ny - a.ny * b.d) / det,
@@ -109,9 +120,11 @@ export const projectOntoPlanes = (
       }
     }
   }
+
   let best = point;
   let bestExcess = Number.POSITIVE_INFINITY;
   let bestDistance = Number.POSITIVE_INFINITY;
+
   for (const candidate of candidates) {
     const excess = Math.max(
       epsilon * 10,
@@ -121,6 +134,7 @@ export const projectOntoPlanes = (
     );
     const distance =
       (candidate.x - point.x) ** 2 + (candidate.y - point.y) ** 2;
+
     if (
       excess < bestExcess ||
       (excess === bestExcess && distance < bestDistance)
@@ -130,6 +144,7 @@ export const projectOntoPlanes = (
       best = candidate;
     }
   }
+
   return best;
 };
 
@@ -143,8 +158,10 @@ export const cropCorners = (crop: Crop): Point[] => [
 export const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
   const turned = turnedSize(state.image, state.turns);
   const tolerance = epsilon * Math.max(turned.width, turned.height);
+
   return cropCorners(state.crop).every((corner) => {
     const source = workingToSource(state, corner);
+
     return (
       source.x >= -tolerance &&
       source.y >= -tolerance &&

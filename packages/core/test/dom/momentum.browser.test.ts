@@ -21,25 +21,30 @@ const raf = async (): Promise<number> =>
     requestAnimationFrame(resolve);
   });
 
-interface Stage {
+type Stage = {
   id: string;
   cropper: Cropper;
   element: HTMLElement;
   area: HTMLElement;
-}
+};
 
 const mount = (clock?: Clock): Stage => {
   count += 1;
   const id = `feel-${count}`;
   const element = document.createElement("div");
+
   element.id = id;
+
   element.style.cssText =
     "position:relative;width:400px;height:300px;padding:20px;box-sizing:border-box;overflow:hidden";
+
   const image = document.createElement("div");
   const area = document.createElement("div");
   const handle = document.createElement("div");
+
   handle.style.cssText =
     "position:absolute;right:-12px;bottom:-12px;width:24px;height:24px";
+
   area.append(handle);
   element.append(image, area);
   document.body.append(element);
@@ -53,14 +58,17 @@ const mount = (clock?: Clock): Stage => {
     bindArea(cropper, area),
     bindHandle(cropper, handle, "bottom-right"),
   ];
+
   cleanups.push(() => {
     for (const stop of off) {
       stop();
     }
+
     viewOf(cropper).destroy();
     cropper.destroy();
     element.remove();
   });
+
   return { area, cropper, element, id };
 };
 
@@ -69,16 +77,19 @@ const shrink = async (stage: Stage): Promise<void> => {
   const box = stage.area.getBoundingClientRect();
   const x = box.right - outer.left;
   const y = box.bottom - outer.top;
+
   await commands.drag(`#${stage.id}`, [
     [x, y],
     [x - 60, y - 40],
     [x - 120, y - 90],
   ]);
+
   await raf();
 };
 
 const wheel = (stage: Stage, init: WheelEventInit): void => {
   const box = stage.element.getBoundingClientRect();
+
   stage.element.dispatchEvent(
     new WheelEvent("wheel", {
       bubbles: true,
@@ -93,12 +104,12 @@ const wheel = (stage: Stage, init: WheelEventInit): void => {
 const WHEEL_IDLE = 150;
 const FRAME = 1000 / 60;
 
-interface Trace {
+type Trace = {
   peak: number;
   atRelease: number;
   settledAfter: number;
   biggestStep: number;
-}
+};
 
 const watch = async (
   stage: Stage,
@@ -113,22 +124,28 @@ const watch = async (
   let biggestStep = 0;
   const off = view.onFrame(() => {
     const now = size();
+
     peak = Math.max(peak, now);
     biggestStep = Math.max(biggestStep, Math.abs(now - previous));
     previous = now;
   });
+
   await drive();
   const atRelease = size();
   const released = performance.now();
   let settledAfter = Number.POSITIVE_INFINITY;
+
   for (let i = 0; i < 120; i += 1) {
     const time = await raf();
+
     if (size() < 1) {
       settledAfter = time - released;
       break;
     }
   }
+
   off();
+
   return { atRelease, biggestStep, peak, settledAfter };
 };
 
@@ -145,30 +162,39 @@ const watchWheel = async (
   const off = view.onFrame(() => {
     peak = Math.max(peak, size());
   });
+
   drive();
   const atRelease = size();
+
   await new Promise((resolve) => {
     setTimeout(resolve, WHEEL_IDLE);
   });
+
   let settledAfter = Number.POSITIVE_INFINITY;
+
   for (let i = 1; i <= 120; i += 1) {
     time.frame(FRAME);
+
     if (size() < 1) {
       settledAfter = WHEEL_IDLE + i * FRAME;
       break;
     }
   }
+
   off();
+
   return { atRelease, biggestStep: 0, peak, settledAfter };
 };
 
 const shrunkStage = async (): Promise<{ stage: Stage; time: FakeClock }> => {
   const time = fakeClock();
   const stage = mount(time.clock);
+
   await raf();
   time.frames(2);
   await shrink(stage);
   time.frames(2);
+
   return { stage, time };
 };
 
@@ -181,6 +207,7 @@ describe("feel at the limits, with a shrunk crop", () => {
 
   it("a mouse drag past the edge springs back on release", async () => {
     const stage = mount();
+
     await shrink(stage);
     const trace = await watch(stage, async () => {
       await commands.drag(`#${stage.id}`, [
@@ -190,6 +217,7 @@ describe("feel at the limits, with a shrunk crop", () => {
         [150, 299],
       ]);
     });
+
     expect(trace.peak).toBeGreaterThan(20);
     expect(trace.settledAfter).toBeLessThan(450);
   });
@@ -201,13 +229,16 @@ describe("feel at the limits, with a shrunk crop", () => {
         wheel(stage, { deltaY: 25 });
         time.frame(FRAME);
       }
+
       let delta = 30;
+
       while (delta > 0.5) {
         wheel(stage, { deltaY: delta });
         delta *= 0.94;
         time.frame(FRAME);
       }
     });
+
     expect(trace.peak).toBe(0);
   });
 
@@ -219,11 +250,13 @@ describe("feel at the limits, with a shrunk crop", () => {
         time.frames(4, FRAME);
       }
     });
+
     expect(trace.peak).toBe(0);
   });
 
   it("a trackpad pinch past the smallest zoom springs back after the fingers stop", async () => {
     const { stage, time } = await shrunkStage();
+
     stage.cropper.setZoom(1, { emit: false });
     time.frame(FRAME);
     const trace = await watchWheel(stage, time, () => {
@@ -232,12 +265,14 @@ describe("feel at the limits, with a shrunk crop", () => {
         time.frame(FRAME);
       }
     });
+
     expect(trace.peak).toBeGreaterThan(5);
     expect(trace.settledAfter).toBeLessThan(450);
   });
 
   it("a ctrl mouse wheel past the smallest zoom springs back", async () => {
     const { stage, time } = await shrunkStage();
+
     stage.cropper.setZoom(1, { emit: false });
     time.frame(FRAME);
     const trace = await watchWheel(stage, time, () => {
@@ -246,6 +281,7 @@ describe("feel at the limits, with a shrunk crop", () => {
         time.frames(4, FRAME);
       }
     });
+
     expect(trace.peak).toBeGreaterThan(5);
     expect(trace.settledAfter).toBeLessThan(800);
   });

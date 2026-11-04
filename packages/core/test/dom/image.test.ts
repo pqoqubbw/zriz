@@ -17,6 +17,7 @@ vi.mock(import("../../src/dom/source"), () => ({
     if (source instanceof ImageBitmap) {
       return await Promise.resolve(source);
     }
+
     throw new TypeError("not a bitmap");
   },
 }));
@@ -27,9 +28,9 @@ const FULL = { height: 3000, width: 4000 };
 
 let made = 0;
 
-interface Live {
+type Live = {
   realm: Realm;
-}
+};
 
 const open = new Set<Live>();
 
@@ -60,6 +61,7 @@ const deferred = <T>() => {
     yes = resolve;
     no = reject;
   });
+
   return {
     promise,
     reject: (reason: unknown) => {
@@ -78,7 +80,9 @@ let decodeFails = false;
 
 const hold = (): (() => void) => {
   const { promise, resolve } = deferred<undefined>();
+
   gate = promise;
+
   return () => {
     resolve(undefined);
   };
@@ -87,10 +91,10 @@ const hold = (): (() => void) => {
 const live = (realm: Realm): number =>
   [...open].filter((bitmap) => bitmap.realm === realm).length;
 
-interface Resize {
+type Resize = {
   resizeWidth?: number;
   resizeHeight?: number;
-}
+};
 
 const bitmapsIn =
   (realm: Realm) =>
@@ -98,15 +102,20 @@ const bitmapsIn =
     if (source instanceof Blob) {
       decodes += 1;
       await gate;
+
       if (decodeFails) {
         throw new Error("cannot decode");
       }
+
       return new FakeBitmap(FULL.width, FULL.height, realm);
     }
+
     await Promise.resolve();
+
     if (copyFails && realm === "worker" && options.resizeWidth === undefined) {
       throw new Error("no memory");
     }
+
     return new FakeBitmap(
       options.resizeWidth ?? FULL.width,
       options.resizeHeight ?? FULL.height,
@@ -127,6 +136,7 @@ const stub = (worker: boolean): void => {
     ImageBitmap: FakeBitmap,
     createImageBitmap: bitmapsIn("worker"),
   };
+
   FakeWorker.moved = moved;
   vi.stubGlobal("ImageBitmap", FakeBitmap);
   vi.stubGlobal("OffscreenCanvas", Map);
@@ -183,6 +193,7 @@ describe("a load that never reaches attachImage", () => {
     const release = hold();
     const controller = new AbortController();
     const load = loadImage(jpeg(), { signal: controller.signal });
+
     await decoding();
     controller.abort();
     expect(codeOf(await failure(load))).toBe("aborted");
@@ -193,6 +204,7 @@ describe("a load that never reaches attachImage", () => {
   it("frees the worker copy when the time limit passes during the decode", async () => {
     const release = hold();
     const load = loadImage(jpeg(), { timeout: 5 });
+
     expect(codeOf(await failure(load))).toBe("timeout");
     release();
     await noneLive();
@@ -202,6 +214,7 @@ describe("a load that never reaches attachImage", () => {
     const source = await createImageBitmap(jpeg());
     const controller = new AbortController();
     const load = loadImage(source, { signal: controller.signal });
+
     controller.abort();
     expect(codeOf(await failure(load))).toBe("aborted");
     await noneLive();
@@ -214,6 +227,7 @@ describe("a load that never reaches attachImage", () => {
     const release = hold();
     const controller = new AbortController();
     const load = fresh.loadImage(jpeg(), { signal: controller.signal });
+
     await decoding();
     controller.abort();
     await expect(load).rejects.toMatchObject({ code: "aborted" });
@@ -226,15 +240,20 @@ describe("a load that never reaches attachImage", () => {
     const loads = Array.from({ length: 5 }, () => {
       const controller = new AbortController();
       const load = loadImage(jpeg(), { signal: controller.signal });
+
       return { controller, load };
     });
+
     await decoding(3);
+
     for (const { controller } of loads) {
       controller.abort();
     }
+
     const errors = await Promise.all(
       loads.map(async ({ load }) => await failure(load))
     );
+
     expect(errors.map(codeOf)).toContain("aborted");
     release();
     await noneLive();
@@ -242,6 +261,7 @@ describe("a load that never reaches attachImage", () => {
 
   it("keeps a photo that reached the cropper until it leaves", async () => {
     const cropper = createCropper();
+
     attachImage(cropper, await loadImage(jpeg()));
     expect(live("main")).toBe(1);
     expect(live("worker")).toBe(1);
@@ -251,6 +271,7 @@ describe("a load that never reaches attachImage", () => {
 
   it("starts no decode on a signal that already fired", async () => {
     const load = loadImage(jpeg(), { signal: AbortSignal.abort() });
+
     expect(codeOf(await failure(load))).toBe("aborted");
     await delay(10);
     expect(decodes).toBe(0);
@@ -259,6 +280,7 @@ describe("a load that never reaches attachImage", () => {
   it("starts no decode for a load cancelled in the same tick", async () => {
     const controller = new AbortController();
     const load = loadImage(jpeg(), { signal: controller.signal });
+
     controller.abort();
     await failure(load);
     await delay(10);
@@ -267,8 +289,10 @@ describe("a load that never reaches attachImage", () => {
 
   it("closes what it made when the worker copy fails, and leaves the caller's bitmap open", async () => {
     const source = await createImageBitmap(jpeg());
+
     copyFails = true;
     const error = await failure(loadImage(source, { previewEdge: 10 }));
+
     expect(error).toBeInstanceOf(ZrizError);
     expect([...open]).toStrictEqual([source]);
   });
@@ -276,6 +300,7 @@ describe("a load that never reaches attachImage", () => {
   it("closes the preview in the worker when its copy fails", async () => {
     copyFails = true;
     const error = await failure(loadImage(jpeg(), { previewEdge: 10 }));
+
     expect(codeOf(error)).toBe("decode");
     await noneLive();
   });
@@ -303,15 +328,19 @@ describe("decoding in turn", () => {
       { length: 5 },
       async () => await loadImage(jpeg())
     );
+
     await decoding(3);
     await delay(10);
     expect(decodes).toBe(3);
     release();
     const images = await Promise.all(loads);
+
     expect(decodes).toBe(5);
+
     for (const image of images) {
       freeImage(image);
     }
+
     await noneLive();
   });
 
@@ -321,15 +350,20 @@ describe("decoding in turn", () => {
       { length: 3 },
       async () => await loadImage(jpeg())
     );
+
     await decoding(3);
     const waiting = loadImage(jpeg(), { timeout: 20 });
+
     await delay(60);
     release();
     const images = await Promise.all([...running, waiting]);
+
     expect(images).toHaveLength(4);
+
     for (const image of images) {
       freeImage(image);
     }
+
     await noneLive();
   });
 
@@ -339,18 +373,23 @@ describe("decoding in turn", () => {
       { length: 3 },
       async () => await loadImage(jpeg())
     );
+
     await decoding(3);
     const controller = new AbortController();
     const waiting = loadImage(jpeg(), { signal: controller.signal });
+
     await delay(5);
     controller.abort();
     expect(codeOf(await failure(waiting))).toBe("aborted");
     release();
     const images = await Promise.all(running);
+
     expect(decodes).toBe(3);
+
     for (const image of images) {
       freeImage(image);
     }
+
     await noneLive();
   });
 
@@ -360,11 +399,14 @@ describe("decoding in turn", () => {
     const running = controllers.map(
       async ({ signal }) => await failure(loadImage(jpeg(), { signal }))
     );
+
     await decoding(3);
     const waiting = loadImage(jpeg());
+
     for (const controller of controllers) {
       controller.abort();
     }
+
     await Promise.all(running);
     await delay(10);
     expect(decodes).toBe(3);
@@ -379,8 +421,10 @@ describe("decoding in turn", () => {
       { length: 3 },
       async () => await failure(loadImage(jpeg(), { timeout: 10 }))
     );
+
     await decoding(3);
     const waiting = loadImage(jpeg());
+
     await Promise.all(stuck);
     await decoding(4);
     expect(decodes).toBe(4);
@@ -407,6 +451,7 @@ describe("the decode function", () => {
 
   it("is not called once the load was cancelled", async () => {
     const bitmap = await createImageBitmap(jpeg());
+
     decodes = 0;
     decodeFails = true;
     const release = hold();
@@ -415,13 +460,16 @@ describe("the decode function", () => {
     );
     const controller = new AbortController();
     const load = loadImage(jpeg(), { decode, signal: controller.signal });
+
     await decoding();
     controller.abort();
     await failure(load);
     release();
+
     await vi.waitFor(() => {
       expect(decodes).toBe(1);
     });
+
     await delay(10);
     expect(decode).not.toHaveBeenCalled();
   });
@@ -434,11 +482,13 @@ describe("the decode function", () => {
         decode: async () => await Promise.reject(own),
       })
     );
+
     expect(error).toBe(own);
   });
 
   it("closes its bitmap when the load fails afterwards", async () => {
     const bitmap = await createImageBitmap(jpeg());
+
     decodeFails = true;
     copyFails = true;
     const error = await failure(
@@ -446,6 +496,7 @@ describe("the decode function", () => {
         decode: async () => await Promise.resolve(bitmap),
       })
     );
+
     expect(error).toBeInstanceOf(ZrizError);
     expect(open.size).toBe(0);
   });
@@ -468,33 +519,43 @@ describe("failures come back typed", () => {
 
   it("reports a file the browser cannot read as a decode error", async () => {
     const unreadable = jpeg();
+
     vi.spyOn(unreadable, "slice").mockImplementation(() => {
       const part = new Blob();
+
       vi.spyOn(part, "arrayBuffer").mockRejectedValue(
         new DOMException("gone", "NotReadableError")
       );
+
       return part;
     });
+
     const error = await failure(loadImage(unreadable));
+
     expect(error).toBeInstanceOf(ZrizError);
     expect(codeOf(error)).toBe("decode");
   });
 
   it("only blames the format when the browser refused the file", () => {
     const heic = "image/heic";
+
     expect(toZriz(new Error("zriz:undecodable:no"), heic).code).toBe(
       "unsupported-format"
     );
+
     expect(toZriz(new Error("out of memory"), heic)).toMatchObject({
       code: "decode",
       message: "zriz: out of memory",
     });
+
     expect(toZriz(new Error("zriz:decode:no 2D canvas"), heic).code).toBe(
       "decode"
     );
+
     expect(toZriz(new Error("zriz:undecodable:no"), "image/png").code).toBe(
       "decode"
     );
+
     expect(toZriz(new Error("zriz:undecodable:no"), heic).message).toContain(
       "damaged"
     );
@@ -503,6 +564,7 @@ describe("failures come back typed", () => {
 
 const fetchSignal = (spy: { mock: { calls: unknown[][] } }): unknown => {
   const init = spy.mock.calls[0]?.[1];
+
   return typeof init === "object" && init !== null && "signal" in init
     ? init.signal
     : null;
@@ -531,21 +593,27 @@ describe("fetching a url", () => {
       (url: string, init: RequestInit) => Promise<Response>
     >(async (_url, init) => {
       const { promise, reject } = deferred<Response>();
+
       init.signal?.addEventListener("abort", () => {
         reject(new DOMException("stopped", "AbortError"));
       });
+
       return await promise;
     });
+
     vi.stubGlobal("fetch", fetched);
     const error = await failure(loadImage("/slow.jpg", { timeout: 5 }));
+
     expect(codeOf(error)).toBe("timeout");
     expect(wasAborted(fetchSignal(fetched))).toBeTruthy();
   });
 
   it("starts no decode for a file that arrives after the limit", async () => {
     const { promise, resolve } = deferred<Response>();
+
     vi.stubGlobal("fetch", async () => await promise);
     const error = await failure(loadImage("/late.jpg", { timeout: 5 }));
+
     expect(codeOf(error)).toBe("timeout");
     resolve(new Response(jpeg()));
     await delay(20);
@@ -556,6 +624,7 @@ describe("fetching a url", () => {
     const fetched = vi.fn<() => Promise<Response>>(
       async () => await Promise.resolve(new Response("nope", { status: 500 }))
     );
+
     vi.stubGlobal("fetch", fetched);
     expect(codeOf(await failure(loadImage("/gone.jpg")))).toBe("decode");
     expect(wasAborted(fetchSignal(fetched))).toBeTruthy();
@@ -566,9 +635,11 @@ describe("fetching a url", () => {
       "fetch",
       async () => await Promise.resolve(new Response("", { status: 403 }))
     );
+
     const error = await failure(
       loadImage("https://cdn.example.com/p.jpg?key=hidden#part")
     );
+
     expect(messageOf(error)).toBe(
       "zriz: 403 for https://cdn.example.com/p.jpg"
     );
@@ -581,7 +652,9 @@ describe("fetching a url", () => {
         "fetch",
         async () => await Promise.reject(new TypeError("blocked"))
       );
+
       const error = await failure(loadImage(url));
+
       expect(codeOf(error)).toBe("cross-origin");
       expect(messageOf(error)).toContain("connect-src");
       expect(messageOf(error)).not.toContain("CORS");
@@ -593,7 +666,9 @@ describe("fetching a url", () => {
       "fetch",
       async () => await Promise.reject(new TypeError("blocked"))
     );
+
     const error = await failure(loadImage("https://cdn.example.com/p.jpg"));
+
     expect(codeOf(error)).toBe("cross-origin");
     expect(messageOf(error)).toContain("connect-src");
     expect(messageOf(error)).toContain("CORS");
@@ -615,12 +690,14 @@ describe("the time limit", () => {
         withTimeout(never, timeout, undefined).catch(() => "fired"),
         delay(20, "waiting"),
       ]);
+
       expect(result).toBe("waiting");
     }
   );
 
   it("names no step in its message", async () => {
     const error = await failure(withTimeout(never, 1, undefined));
+
     expect(messageOf(error)).toBe("zriz: timed out after 1 ms");
   });
 
@@ -628,17 +705,23 @@ describe("the time limit", () => {
     let now = 0;
     let fire = noop;
     const delays: number[] = [];
+
     vi.spyOn(performance, "now").mockImplementation(() => now);
     vi.stubGlobal("clearTimeout", () => null);
+
     vi.stubGlobal("setTimeout", (run: () => void, ms: number) => {
       fire = run;
       delays.push(ms);
+
       return 0;
     });
+
     const seen: unknown[] = [];
+
     const watch = async (): Promise<void> => {
       seen.push(codeOf(await failure(withTimeout(never, 1000, undefined))));
     };
+
     void watch();
     now = 18_000;
     fire();
@@ -647,6 +730,7 @@ describe("the time limit", () => {
     expect(delays).toStrictEqual([1000, 1000]);
     now = 19_000;
     fire();
+
     await vi.waitFor(() => {
       expect(seen).toStrictEqual(["timeout"]);
     });
@@ -672,6 +756,7 @@ describe("the preview edge", () => {
     "uses the default for %d",
     async (previewEdge) => {
       const { preview } = await loadImage(jpeg(), { previewEdge });
+
       expect(preview.width).toBe(2560);
     }
   );
@@ -680,6 +765,7 @@ describe("the preview edge", () => {
     const { preview } = await loadImage(jpeg(), {
       previewEdge: Number.POSITIVE_INFINITY,
     });
+
     expect(preview.width).toBe(FULL.width);
   });
 });
@@ -740,21 +826,25 @@ describe("reading the format", () => {
       pngChunk("iCCP", 400),
       pngChunk("acTL", 8)
     );
+
     expect(raster(bytes).animated).toBeTruthy();
   });
 
   it("does not read a png's text as an animation", () => {
     const text = [...uint32(4), ...ascii("tEXtacTL"), 0, 0, 0, 0];
+
     expect(raster(png(pngChunk("IHDR", 13), text)).animated).toBeFalsy();
   });
 
   it("stops at the image data of a png", () => {
     const bytes = png(pngChunk("IDAT", 13), pngChunk("acTL", 8));
+
     expect(raster(bytes).animated).toBeFalsy();
   });
 
   it("reads a webp's animation from its flags", () => {
     expect(raster(webp(0x22)).animated).toBeTruthy();
+
     expect(raster(webp(0x20))).toStrictEqual({
       animated: false,
       mime: "image/webp",
@@ -763,7 +853,9 @@ describe("reading the format", () => {
 
   it("prefers avif anywhere in the brand list", () => {
     const bytes = ftyp("mif1", "mif1", "miaf", "MA1A", "MA1B", "avif");
+
     expect(raster(bytes).mime).toBe("image/avif");
+
     expect(raster(ftyp("avis", "avif"))).toStrictEqual({
       animated: true,
       mime: "image/avif",
@@ -821,6 +913,7 @@ describe("limits a caller branches on", () => {
   it("rejects a load past its timeout", async () => {
     gate = new Promise(noop);
     const error = await failure(loadImage(jpeg(), { timeout: 0 }));
+
     expect(codeOf(error)).toBe("timeout");
   });
 
@@ -829,6 +922,7 @@ describe("limits a caller branches on", () => {
     vi.useFakeTimers();
     const settled = vi.fn<(error: unknown) => void>();
     const load = failure(loadImage(jpeg()));
+
     void load.then(settled);
     await vi.advanceTimersByTimeAsync(14_999);
     expect(settled).not.toHaveBeenCalled();
@@ -839,9 +933,11 @@ describe("limits a caller branches on", () => {
   it("clears its timer and listener when the work wins", async () => {
     vi.useFakeTimers();
     const { signal } = new AbortController();
+
     await expect(withTimeout(Promise.resolve(1), 1000, signal)).resolves.toBe(
       1
     );
+
     expect(vi.getTimerCount()).toBe(0);
     expect(listeners(signal)).toBe(0);
   });
@@ -852,6 +948,7 @@ describe("limits a caller branches on", () => {
     const error = await failure(
       withTimeout(Promise.reject(new Error("no")), 1000, signal)
     );
+
     expect(messageOf(error)).toBe("no");
     expect(vi.getTimerCount()).toBe(0);
     expect(listeners(signal)).toBe(0);
@@ -861,6 +958,7 @@ describe("limits a caller branches on", () => {
     vi.useFakeTimers();
     const controller = new AbortController();
     const work = failure(withTimeout(never, 1000, controller.signal));
+
     controller.abort();
     expect(codeOf(await work)).toBe("aborted");
     expect(vi.getTimerCount()).toBe(0);
@@ -871,6 +969,7 @@ describe("limits a caller branches on", () => {
     "keeps the %s code through toZriz, whatever the file",
     (code) => {
       const error = new ZrizError(code, "zriz: stop");
+
       expect(toZriz(error)).toBe(error);
       expect(toZriz(error, "image/heic")).toBe(error);
     }
@@ -885,6 +984,7 @@ describe("limits a caller branches on", () => {
         signal: controller.signal,
       })
     );
+
     controller.abort();
     expect(codeOf(await run)).toBe("aborted");
   });
@@ -895,6 +995,7 @@ describe("limits a caller branches on", () => {
     const image = heic();
     const settled = vi.fn<(error: unknown) => void>();
     const run = failure(exportImage(createCropper({ image }), image));
+
     void run.then(settled);
     await vi.advanceTimersByTimeAsync(29_999);
     expect(settled).not.toHaveBeenCalled();
@@ -922,6 +1023,7 @@ describe("releasing a separate source bitmap", () => {
     copyFails = false;
     gate = Promise.resolve();
     stub(false);
+
     vi.stubGlobal("OffscreenCanvas", () => ({
       getContext: () => ({
         drawImage: noop,
@@ -938,9 +1040,11 @@ describe("releasing a separate source bitmap", () => {
   it("closes the source and the preview when the photo is removed", async () => {
     const full = bitmap();
     const image = await hooked(full);
+
     expect(image.source).toBe(full);
     expect(image.preview).not.toBe(full);
     const cropper = createCropper();
+
     attachImage(cropper, image);
     attachImage(cropper, null);
     expect(open.has(full)).toBeFalsy();
@@ -953,6 +1057,7 @@ describe("releasing a separate source bitmap", () => {
     const old = await hooked(first);
     const next = await hooked(second);
     const cropper = createCropper();
+
     attachImage(cropper, old);
     attachImage(cropper, next);
     expect(open.has(first)).toBeFalsy();
@@ -966,6 +1071,7 @@ describe("releasing a separate source bitmap", () => {
     const full = bitmap();
     const image = await hooked(full);
     const cropper = createCropper();
+
     attachImage(cropper, image);
     attachImage(cropper, image);
     expect(open.has(full)).toBeTruthy();
@@ -977,6 +1083,7 @@ describe("releasing a separate source bitmap", () => {
     const full = bitmap();
     const image = await loadImage(full, { previewEdge: 100 });
     const cropper = createCropper();
+
     attachImage(cropper, image);
     attachImage(cropper, null);
     expect(open.has(full)).toBeFalsy();
@@ -990,11 +1097,13 @@ describe("releasing a separate source bitmap", () => {
       hooked(full, {
         decode: async () => {
           controller.abort();
+
           return await Promise.resolve(full);
         },
         signal: controller.signal,
       })
     );
+
     expect(codeOf(error)).toBe("aborted");
     await noneLive();
   });

@@ -53,6 +53,7 @@ describe("server rendering", () => {
         createElement(Cropper.Announcer, { announce: () => null })
       )
     );
+
     expect(html).toContain('data-zriz-item="root"');
     expect(html).toContain('data-zriz-item="dial-ticks"');
     expect(html.match(/<span/gu)?.length).toBeGreaterThan(41);
@@ -67,8 +68,10 @@ describe("server rendering", () => {
       createElement(Cropper.Viewport)
     );
     const plain = renderToString(tree);
+
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
     const reduced = renderToString(tree);
+
     vi.unstubAllGlobals();
     expect(reduced).toBe(plain);
   });
@@ -89,6 +92,7 @@ const fire = (handler: unknown, ...args: unknown[]): void => {
   if (!isHandler(handler)) {
     throw new Error("no handler");
   }
+
   handler(...args);
 };
 
@@ -98,6 +102,7 @@ const propsOf = (
 ): { cropper: ReturnType<typeof createCropper>; props: Captured } => {
   const cropper = createCropper({ image: { height: 600, width: 1000 } });
   let props: Captured = {};
+
   renderToString(
     createElement(
       Cropper.Root,
@@ -106,11 +111,13 @@ const propsOf = (
         ...extra,
         render: (own: Captured) => {
           props = own;
+
           return createElement("div");
         },
       })
     )
   );
+
   return { cropper, props };
 };
 
@@ -125,6 +132,7 @@ const handlerNames = (part: ElementType, extra?: Captured): string[] =>
 
 const Lost = (): null => {
   useZoom();
+
   return null;
 };
 
@@ -138,12 +146,16 @@ describe("part props", () => {
       "onPointerUp",
     ];
     const keys = ["onBlur", "onKeyDown", "onKeyUp"];
+
     expect(handlerNames(Cropper.Viewport)).toStrictEqual(pointer);
+
     expect(
       handlerNames(Cropper.Handle, { position: "top-left" })
     ).toStrictEqual([...pointer, "onPointerDownCapture"].toSorted());
+
     expect(handlerNames(Cropper.Area)).toStrictEqual(keys);
     const both = [...keys, ...pointer].toSorted();
+
     expect(handlerNames(Cropper.Dial)).toStrictEqual(both);
     expect(handlerNames(Cropper.Zoom)).toStrictEqual(both);
   });
@@ -155,6 +167,7 @@ describe("part props", () => {
       preventDefault: vi.fn<() => void>(),
       shiftKey: false,
     };
+
     fire(props.onKeyDown, { nativeEvent });
     expect(cropper.getValue().rotation).toBe(1);
     expect(nativeEvent.preventDefault).toHaveBeenCalledOnce();
@@ -162,9 +175,11 @@ describe("part props", () => {
 
   it("runs a user handler first and lets it veto the part's own", () => {
     const allowed = propsOf(Cropper.Flip, { onClick: vi.fn<() => void>() });
+
     click(allowed.props);
     expect(allowed.cropper.getValue().mirrored).toBeTruthy();
     const vetoed = propsOf(Cropper.Flip, { onClick: preventZrizHandler });
+
     click(vetoed.props);
     expect(vetoed.cropper.getValue().mirrored).toBeFalsy();
   });
@@ -176,6 +191,7 @@ describe("part props", () => {
       { onClick: ours, once: ours, onfocus: ours },
       { onClick: theirs, once: theirs, onfocus: theirs }
     );
+
     expect(merged.once).toBe(theirs);
     expect(merged.onfocus).toBe(theirs);
     fire(merged.onClick, {});
@@ -198,7 +214,9 @@ describe("part props", () => {
       }
     );
     const details = { reason: "keyboard" };
+
     fire(merged.onValueChange, 0.5, details);
+
     expect(calls).toStrictEqual([
       ["theirs", 0.5, details],
       ["ours", 0.5, details],
@@ -225,9 +243,11 @@ describe("part props", () => {
         preventZrizHandler(event);
       },
     });
+
     fire(veto.onClick, {});
     expect(calls).toStrictEqual(["element", "prop"]);
     calls.length = 0;
+
     fire(
       mergeProps(part, {
         onClick: () => {
@@ -236,11 +256,13 @@ describe("part props", () => {
       }).onClick,
       {}
     );
+
     expect(calls).toStrictEqual(["element", "prop", "zriz"]);
   });
 
   it("keeps a part's handler when the user passes null", () => {
     const { cropper, props } = propsOf(Cropper.Flip, { onClick: null });
+
     click(props);
     expect(cropper.getValue().mirrored).toBeTruthy();
   });
@@ -249,6 +271,7 @@ describe("part props", () => {
     const { props } = propsOf(Cropper.Flip, {
       className: (state: { mirrored: boolean }) => `mirrored-${state.mirrored}`,
     });
+
     expect(props.className).toBe("mirrored-false");
   });
 
@@ -260,6 +283,7 @@ describe("part props", () => {
         createElement(Cropper.Area, { "aria-label": "Crop" })
       )
     );
+
     expect(html).toMatch(
       /data-zriz-item="area"[^>]*style="position:absolute"/u
     );
@@ -271,6 +295,7 @@ describe("part props", () => {
       style: { color: "red" },
       tabIndex: -1,
     });
+
     expect(props).toMatchObject({
       "aria-label": "Straighten",
       "data-zriz-item": "dial",
@@ -291,6 +316,7 @@ describe("part props", () => {
         })
       )
     );
+
     expect(html).toMatch(/<a[^>]*data-zriz-item="rotate"/u);
     expect(html).toMatch(/class="ours mine"/u);
   });
@@ -305,11 +331,13 @@ describe("part props", () => {
 describe("plugins on the server", () => {
   it("does not start a plugin during render", () => {
     const init = vi.fn<() => void>();
+
     renderToString(
       createElement(Cropper.Root, {
         plugins: [{ init, name: "server" }],
       })
     );
+
     expect(init).not.toHaveBeenCalled();
   });
 });
@@ -327,6 +355,7 @@ describe("useRender options", () => {
     expect(
       renderToString(createElement(Own, { props: { className: "a" } }))
     ).toContain('class="a"');
+
     expect(
       renderToString(
         createElement(Own, { option: "b", props: { className: "a" } })
@@ -343,9 +372,12 @@ const warned = async (
   vi.resetModules();
   const { warnFormat } = await import("../src/warn");
   const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+
   warnFormat(part, locale, format);
   const count = warn.mock.calls.length;
+
   warn.mockRestore();
+
   return count;
 };
 
@@ -354,6 +386,7 @@ describe("format warnings", () => {
     await expect(
       warned("Dial", { style: "unit", unitDisplay: "short" })
     ).resolves.toBe(0);
+
     await expect(warned("Dial", { minimumFractionDigits: 2 })).resolves.toBe(0);
     await expect(warned("Zoom", { minimumFractionDigits: 1 })).resolves.toBe(0);
   });
@@ -361,9 +394,11 @@ describe("format warnings", () => {
   it("warns for a format that fails with the part's defaults", async () => {
     await expect(warned("Zoom", { style: "unit" })).resolves.toBe(1);
     await expect(warned("Dial", { style: "currency" })).resolves.toBe(1);
+
     await expect(
       warned("Zoom", { maximumFractionDigits: 1, minimumFractionDigits: 2 })
     ).resolves.toBe(1);
+
     await expect(warned("Zoom", {}, "en_US")).resolves.toBe(1);
   });
 });
@@ -378,6 +413,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Zoom, { "aria-label": "Zoom" })
       )
     );
+
     expect(html).toContain('aria-valuenow="7"');
     expect(html).toContain('aria-valuenow="1"');
     expect(html).not.toContain("data-snapped");
@@ -388,6 +424,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Dial, { "aria-label": "Dial" })
       )
     );
+
     expect(level).toContain('aria-valuenow="0"');
     expect(level).toContain("data-snapped");
   });
@@ -407,6 +444,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Zoom, { "aria-label": "Zoom", max: 2 })
       )
     );
+
     expect(html).toContain('aria-valuenow="7.2"');
     expect(html).toContain('aria-valuenow="2"');
     const free = renderToString(
@@ -422,6 +460,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Zoom, { "aria-label": "Zoom" })
       )
     );
+
     expect(free).toContain('aria-valuenow="2.88"');
     const nearly = renderToString(
       createElement(
@@ -433,6 +472,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Dial, { "aria-label": "Dial" })
       )
     );
+
     expect(nearly).toContain('aria-valuenow="0"');
     expect(nearly).not.toContain("data-snapped");
   });
@@ -448,6 +488,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.DialValue, loose)
       )
     );
+
     expect(html).not.toContain("<b>");
   });
 
@@ -459,6 +500,7 @@ describe("sliders on the server", () => {
         createElement(Cropper.Area, { "aria-label": "Crop" })
       )
     );
+
     expect(html).toContain('aria-disabled="true"');
   });
 });

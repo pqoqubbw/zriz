@@ -8,13 +8,10 @@ import { keepStyle, useKeptStyle, useLatest } from "../part";
 import type { Part, PartProps } from "../part";
 import { usePart } from "../use-render";
 
-export interface AnnouncerProps extends Omit<
-  PartProps<"div", object>,
-  "children"
-> {
+export type AnnouncerProps = {
   /** What to say after each commit. Return null to stay quiet. */
   announce: (value: CropValue, details: CommitDetails) => string | null;
-}
+} & Omit<PartProps<"div", object>, "children">;
 
 const STYLE = {
   clipPath: "inset(50%)",
@@ -34,20 +31,24 @@ export const Announcer: Part<AnnouncerProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const latest = useLatest(announce);
   const [message, setMessage] = useState("");
+
   useEffect(
     () =>
       cropper.on("commit", (value, details) => {
         const next = latest.current(value, details) ?? "";
         const clean = next.trimEnd();
+
         setMessage((last) => {
           if (next === "" || last.trimEnd() !== clean) {
             return next;
           }
+
           return last.endsWith("\u00A0") ? clean : `${clean}\u00A0`;
         });
       }),
     [cropper, latest]
   );
+
   return usePart(
     "div",
     {

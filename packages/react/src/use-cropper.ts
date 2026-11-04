@@ -22,7 +22,7 @@ import {
 import { CropperContext } from "./context";
 import { useHold, useIsomorphicLayoutEffect, useLatest } from "./part";
 
-export interface UseCropperOptions extends Omit<CropperOptions, "clock"> {
+export type UseCropperOptions = {
   /** Use this instance instead of creating one. */
   cropper?: Cropper | undefined;
   /** Controlled aspect: a ratio, "free" or "original". */
@@ -31,14 +31,14 @@ export interface UseCropperOptions extends Omit<CropperOptions, "clock"> {
   rotation?: number | undefined;
   /** Controlled zoom, 1 is the largest crop. */
   zoom?: number | undefined;
-}
+} & Omit<CropperOptions, "clock">;
 
-interface Slot {
+type Slot = {
   prop?: number | undefined;
   at?: number;
-}
+};
 
-interface Applied {
+type Applied = {
   had: boolean;
   busy: boolean;
   options: Set<string>;
@@ -47,15 +47,15 @@ interface Applied {
   zoom: Slot;
   width?: number | undefined;
   height?: number | undefined;
-}
+};
 
 type Callbacks = Pick<CropperOptions, "onValueChange" | "onValueCommit">;
 
-interface Controlled {
+type Controlled = {
   aspect: Aspect | undefined;
   rotation: number | undefined;
   zoom: number | undefined;
-}
+};
 
 const near = (a: number, b = 0): boolean => Math.abs(a - b) <= 1e-6;
 
@@ -67,14 +67,17 @@ const applyNumber = (
   forced: boolean
 ): void => {
   const now = read();
+
   if (
     prop !== undefined &&
     (prop !== slot.prop || forced || near(now, slot.at))
   ) {
     slot.prop = prop;
+
     if (!near(now, prop)) {
       write(prop);
     }
+
     slot.at = read();
   } else if (prop === undefined) {
     slot.prop = undefined;
@@ -88,26 +91,34 @@ const applyProps = (
   relaxed: boolean
 ): void => {
   const { disabled, ready } = cropper.getState();
+
   if (!ready) {
     mine.had = false;
+
     return;
   }
+
   if (disabled || mine.busy) {
     return;
   }
+
   mine.busy = true;
   const emit = mine.had;
   let reason: ChangeReason = "controlled";
   const aspectMoved =
     aspect !== undefined &&
     (mine.aspect === undefined || !sameAspect(aspect, mine.aspect));
+
   mine.aspect = aspect;
+
   if (aspectMoved && !sameAspect(cropper.getValue().aspect, aspect)) {
     cropper.setAspect(aspect, { emit, reason: "aspect" });
+
     if (cropper.getState().interacting === null) {
       reason = "aspect";
     }
   }
+
   if (rotation !== mine.rotation.prop || relaxed) {
     applyNumber(
       mine.rotation,
@@ -119,12 +130,16 @@ const applyProps = (
       false
     );
   }
+
   const photo = cropper.getCropState()?.image;
   const swapped = photo?.width !== mine.width || photo?.height !== mine.height;
+
   mine.width = photo?.width;
   mine.height = photo?.height;
+
   if (zoom !== mine.zoom.prop || relaxed || swapped) {
     const kept = zoom === mine.zoom.prop;
+
     applyNumber(
       mine.zoom,
       zoom,
@@ -138,6 +153,7 @@ const applyProps = (
       swapped
     );
   }
+
   mine.had = true;
   mine.busy = false;
 };
@@ -154,7 +170,9 @@ const appliedOf = (
     rotation: {},
     zoom: {},
   };
+
   memory.set(cropper, known);
+
   return known;
 };
 
@@ -183,6 +201,7 @@ const listen = (
   const offCommit = cropper.on("commit", (next, details) => {
     latest.current.onValueCommit?.(next, details);
   });
+
   return () => {
     offChange();
     offCommit();
@@ -197,6 +216,7 @@ const startPlugins = (
 ): void => {
   if (cropper && !started.has(cropper)) {
     started.add(cropper);
+
     for (const plugin of plugins ?? []) {
       plugin.init(cropper);
       cropper.on("destroy", () => plugin.destroy?.());
@@ -217,7 +237,9 @@ const firstValues = (
     cropper.getZoom(),
     cropper.getMaxZoom(),
   ];
+
   firstSnapshots.set(cropper, known);
+
   return known;
 };
 
@@ -226,6 +248,7 @@ const firstSnapshot = (cropper: Cropper): CropperSnapshot =>
 
 export const firstZoom = (cropper: Cropper, max?: number): number => {
   const [, zoom, top] = firstValues(cropper);
+
   return Math.round(Math.min(zoom, max ?? top) * 100) / 100;
 };
 
@@ -255,9 +278,11 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
         })
   );
   const cropper = external ?? own;
+
   if (!cropper) {
     throw new Error("zriz: no cropper");
   }
+
   firstSnapshot(cropper);
   const latest = useLatest({
     aspect,
@@ -274,19 +299,24 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     },
     [cropper, given, latest]
   );
+
   useEffect(
     () => () => {
       own?.stop();
     },
     [own]
   );
+
   useHold(useCallback(() => listen(cropper, latest), [cropper, latest]));
+
   useIsomorphicLayoutEffect(() => {
     startPlugins(own, plugins);
   }, [own, plugins]);
+
   useIsomorphicLayoutEffect(() => {
     const patch: Record<string, unknown> = {};
     const { options: set } = appliedOf(memory.current, cropper, given);
+
     for (const [key, option] of [
       ["disabled", rest.disabled],
       ["maxZoom", rest.maxZoom],
@@ -299,6 +329,7 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
         patch[key] = undefined;
       }
     }
+
     if (Object.keys(patch).length > 0) {
       cropper.setOptions(patch);
       sync(true);
@@ -312,17 +343,21 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
     rest.minSize?.height,
     sync,
   ]);
+
   useIsomorphicLayoutEffect(() => {
     if (value !== undefined && value !== cropper.getValue()) {
       cropper.setValue(value, { emit: false, reason: "controlled" });
     }
   }, [cropper, value]);
+
   useIsomorphicLayoutEffect(() => {
     const { aspect: first, rotation: angle } = latest.current;
+
     return given && (first !== undefined || angle !== undefined)
       ? cropper.retarget({ aspect: first, rotation: angle })
       : undefined;
   }, [cropper, given, latest]);
+
   useIsomorphicLayoutEffect(
     () =>
       cropper.subscribe(() => {
@@ -330,18 +365,22 @@ export const useCropper = (options: UseCropperOptions = {}): Cropper => {
       }),
     [cropper, sync]
   );
+
   useIsomorphicLayoutEffect(() => {
     sync();
   }, [aspect, rotation, sync, zoom]);
+
   return cropper;
 };
 
 export const useTarget = (cropper?: Cropper): Cropper => {
   const context = useContext(CropperContext);
   const target = cropper ?? context;
+
   if (!target) {
     throw new Error("zriz: pass a cropper or render inside <Cropper.Root>");
   }
+
   return target;
 };
 
@@ -350,6 +389,7 @@ export const useCropperState = <T>(
   cropper?: Cropper
 ): T => {
   const target = useTarget(cropper);
+
   return useSyncExternalStore(
     target.subscribe,
     () => selector(target.getState()),
@@ -375,6 +415,7 @@ export const useCropperValue = (cropper?: Cropper): CropValue => {
           listener();
         }
       });
+
       return () => {
         offCommit();
         offReady();
@@ -382,6 +423,7 @@ export const useCropperValue = (cropper?: Cropper): CropValue => {
     },
     [target]
   );
+
   return useSyncExternalStore(
     subscribe,
     () => target.getState().committed,
@@ -395,6 +437,7 @@ export const useCropperFrame = (
 ): void => {
   const target = useTarget(cropper);
   const latest = useLatest(listener);
+
   useEffect(
     () =>
       target.on("frame", (frame) => {

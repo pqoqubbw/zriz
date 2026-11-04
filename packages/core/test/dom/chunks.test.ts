@@ -28,6 +28,7 @@ const loaded: LoadedImage = {
 
 const zrizError = async (): Promise<unknown> => {
   const errors = await import("../../src/dom/error");
+
   return errors.ZrizError;
 };
 
@@ -50,6 +51,7 @@ describe("lazy chunk failures", () => {
     const error: unknown = await exportImage(createCropper(), loaded).catch(
       (error_: unknown) => error_
     );
+
     expect(error).toBeInstanceOf(await zrizError());
   });
 
@@ -58,10 +60,12 @@ describe("lazy chunk failures", () => {
     vi.doMock(import("../../src/dom/render"), pending);
     const { exportImage } = await import("../../src/dom/export");
     const controller = new AbortController();
+
     controller.abort();
     const error: unknown = await exportImage(createCropper(), loaded, {
       signal: controller.signal,
     }).catch((error_: unknown) => error_);
+
     expect(error).toBeInstanceOf(await zrizError());
     expect(error).toHaveProperty("code", "aborted");
   });
@@ -74,6 +78,7 @@ describe("lazy chunk failures", () => {
     const work = exportImage(createCropper(), loaded, {
       signal: controller.signal,
     });
+
     controller.abort();
     await expect(work).rejects.toHaveProperty("code", "aborted");
   });
@@ -82,10 +87,12 @@ describe("lazy chunk failures", () => {
     vi.resetModules();
     vi.doMock(import("../../src/dom/render"), pending);
     const { exportImage } = await import("../../src/dom/export");
+
     vi.useFakeTimers();
     const work = exportImage(createCropper(), loaded).catch(
       (error_: unknown) => error_
     );
+
     await vi.advanceTimersByTimeAsync(30_001);
     vi.useRealTimers();
     await expect(work).resolves.toHaveProperty("code", "timeout");
@@ -95,15 +102,19 @@ describe("lazy chunk failures", () => {
     vi.resetModules();
     const render = vi.fn<() => Promise<never>>();
     const { promise, resolve } = deferred<undefined>();
+
     vi.doMock(import("../../src/dom/render"), async () => {
       await promise;
+
       return { exportImage: render };
     });
+
     const { exportImage } = await import("../../src/dom/export");
     const controller = new AbortController();
     const work = exportImage(createCropper(), loaded, {
       signal: controller.signal,
     });
+
     await delay(1);
     controller.abort();
     await expect(work).rejects.toHaveProperty("code", "aborted");
@@ -117,15 +128,20 @@ describe("lazy chunk failures", () => {
     vi.stubGlobal("ImageBitmap", Map);
     const render = vi.fn<() => Promise<never>>();
     const { promise, resolve } = deferred<undefined>();
+
     vi.doMock(import("../../src/dom/render"), async () => {
       await promise;
+
       return { exportImage: render };
     });
+
     const { exportCrop } = await import("../../src/dom/export");
     const { attachImage } = await import("../../src/dom/image-store");
     const cropper = createCropper();
+
     attachImage(cropper, loaded);
     const work = exportCrop(cropper);
+
     await delay(1);
     attachImage(cropper, { ...loaded, height: 3, id: 2 });
     resolve(undefined);
@@ -143,6 +159,7 @@ describe("lazy chunk failures", () => {
     const error: unknown = await loadImage(svg).catch(
       (error_: unknown) => error_
     );
+
     expect(error).toBeInstanceOf(await zrizError());
   });
 
@@ -155,6 +172,7 @@ describe("lazy chunk failures", () => {
     const error: unknown = isElement(element)
       ? await loadImage(element).catch((error_: unknown) => error_)
       : null;
+
     expect(error).toBeInstanceOf(await zrizError());
   });
 });

@@ -22,6 +22,7 @@ const bitmap = (size: Size): ImageBitmap => {
   if (!isBitmap(size)) {
     throw new Error("not a bitmap");
   }
+
   return size;
 };
 
@@ -47,9 +48,11 @@ const refined = async (
     clock: fakeClock().clock,
     image: size,
   }).getCropState();
+
   if (!state) {
     throw new Error("no state");
   }
+
   const matrix: Matrix3 = [
     device,
     0,
@@ -73,6 +76,7 @@ const refined = async (
     scale: device,
     state,
   };
+
   return await refine(frame, image, live);
 };
 
@@ -103,6 +107,7 @@ describe(refine, () => {
 
   it("resamples only what the stage shows", async () => {
     await refined(2048, 1536, 0.5, { height: 100, width: 200 });
+
     expect(resampleOff).toHaveBeenCalledWith(
       1,
       { height: 200, width: 400, x: 0, y: 0 },
@@ -120,12 +125,14 @@ describe(refine, () => {
       undefined,
       { x: 800, y: 400 }
     );
+
     expect(resampleOff).toHaveBeenCalledWith(
       1,
       { height: 200, width: 400, x: 400, y: 200 },
       200,
       100
     );
+
     expect(region).toStrictEqual({ height: 400, width: 800, x: 800, y: 400 });
   });
 
@@ -136,13 +143,16 @@ describe(refine, () => {
 
   it("takes a decode turn for each region", async () => {
     const held = deferred<ImageBitmap>();
+
     vi.mocked(regionOff).mockImplementation(async () => await held.promise);
     const jobs = Array.from({ length: 5 }, async () => {
       await refined(4000, 3000, 0.6);
     });
+
     await vi.waitFor(() => {
       expect(regionOff).toHaveBeenCalledTimes(3);
     });
+
     await delay(10);
     expect(regionOff).toHaveBeenCalledTimes(3);
     held.resolve(bitmap({ height: 1, width: 1 }));

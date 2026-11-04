@@ -35,15 +35,12 @@ import { useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface RootState {
+export type RootState = {
   snapshot: CropperSnapshot;
   chrome: Chrome;
-}
+};
 
-export interface RootProps
-  extends
-    UseCropperOptions,
-    Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad"> {
+export type RootProps = {
   /** The photo: a URL, a Blob or File, or null while empty. */
   src?: string | Blob | null | undefined;
   /** CORS mode for a cross-origin URL. */
@@ -64,7 +61,8 @@ export interface RootProps
   onLoad?: ((image: LoadedImage) => void) | undefined;
   /** Called with a typed ZrizError when the photo cannot load. */
   onError?: ((error: ZrizError) => void) | undefined;
-}
+} & UseCropperOptions &
+  Omit<PartProps<"div", RootState>, "defaultValue" | "onError" | "onLoad">;
 
 const actionHolders = new WeakMap<object, () => unknown>();
 
@@ -75,7 +73,9 @@ const holdActions = (
   if (!ref) {
     return null;
   }
+
   let cleanup: ReturnType<RefCallback<Cropper>>;
+
   const release = (): void => {
     if (typeof cleanup === "function") {
       cleanup();
@@ -83,12 +83,15 @@ const holdActions = (
       attach(ref, null);
     }
   };
+
   actionHolders.set(ref, release);
+
   if (typeof ref === "function") {
     cleanup = ref(cropper);
   } else {
     ref.current = cropper;
   }
+
   return release;
 };
 
@@ -163,19 +166,25 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     value,
     zoom,
   });
+
   useHold(
     useCallback(() => holdActions(actionsRef, cropper), [actionsRef, cropper])
   );
+
   const view = viewOf(cropper);
+
   useIsomorphicLayoutEffect(() => {
     setCropShape(cropper, shape);
+
     return shape === "circle"
       ? cropper.retarget({ aspect: 1, lock: true })
       : undefined;
   }, [cropper, shape]);
+
   useIsomorphicLayoutEffect(() => {
     view.setOptions({ motion, recentreDelay });
   }, [view, motion, recentreDelay]);
+
   const reducedMotion = useSyncExternalStore(
     view.onChrome,
     view.reducedMotion,
@@ -186,17 +195,23 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   const instructions = useId();
   const latestLoad = useLatest(onLoad);
   const latestError = useLatest(onError);
+
   useEffect(() => {
     const controller = new AbortController();
+
     const run = async (): Promise<void> => {
       if (src === undefined) {
         return;
       }
+
       if (src === null) {
         attachImage(cropper, null);
+
         return;
       }
+
       let loaded: LoadedImage;
+
       try {
         loaded = await loadImage(src, {
           crossOrigin,
@@ -206,32 +221,43 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
         if (!controller.signal.aborted && error instanceof ZrizError) {
           latestError.current?.(error);
         }
+
         return;
       }
+
       if (controller.signal.aborted) {
         const scratch = createCropper();
+
         attachImage(scratch, loaded);
         attachImage(scratch, null);
+
         return;
       }
+
       attachImage(cropper, loaded);
       latestLoad.current?.(loaded);
     };
+
     void run();
+
     return () => {
       controller.abort();
     };
   }, [cropper, crossOrigin, latestError, latestLoad, src]);
+
   const box = useElementBox();
   const merged = useBoxRef(box, ref);
+
   useEffect(() => {
     const node = box.get();
+
     return () => {
       if (!external && node?.isConnected !== true) {
         attachImage(cropper, null);
       }
     };
   }, [box, cropper, external]);
+
   const context = useMemo<RootContextValue>(
     () => ({ box, dir, instructions, locale, shape }),
     [box, dir, instructions, locale, shape]
@@ -250,6 +276,7 @@ export const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     merged,
     { chrome, snapshot }
   );
+
   return (
     <CropperContext.Provider value={cropper}>
       <RootContext.Provider value={context}>{part}</RootContext.Provider>

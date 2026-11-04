@@ -33,9 +33,11 @@ const tree = (api: RefObject<CropperApi | null>, run: number): ReactElement => (
 
 const part = (host: Element, selector: string): HTMLElement => {
   const node = host.querySelector<HTMLElement>(selector);
+
   if (!node) {
     throw new Error(`missing ${selector}`);
   }
+
   return node;
 };
 
@@ -49,10 +51,13 @@ const hydrated = async () => {
   runs += 1;
   const api = createRef<CropperApi>();
   const host = document.createElement("div");
+
   host.innerHTML = renderToString(tree(api, runs));
   document.body.append(host);
   const root = hydrateRoot(host, tree(api, runs));
+
   await expect.poll(() => api.current).not.toBeNull();
+
   return { api, host, root };
 };
 
@@ -61,7 +66,9 @@ describe("server rendered parts under a strict style-src", () => {
     document.addEventListener("securitypolicyviolation", (event) => {
       refused.push(event.effectiveDirective);
     });
+
     const policy = document.createElement("meta");
+
     policy.httpEquiv = "Content-Security-Policy";
     policy.content = "style-src 'self'";
     document.head.append(policy);
@@ -73,13 +80,16 @@ describe("server rendered parts under a strict style-src", () => {
 
   it("keeps every part's own styles after hydration", async () => {
     const { host, root } = await hydrated();
+
     await expect
       .poll(() => refused.some((name) => name.startsWith("style-src")))
       .toBeTruthy();
+
     const handle = computed(host, '[data-zriz-item="handle"]');
     const edge = computed(host, '[data-edge="right"]');
     const dial = computed(host, '[data-zriz-item="dial"]');
     const zoom = computed(host, '[data-zriz-item="zoom"]');
+
     expect({
       area: computed(host, '[data-zriz-item="area"]').borderTopLeftRadius,
       dial: [dial.position, dial.touchAction],
@@ -97,6 +107,7 @@ describe("server rendered parts under a strict style-src", () => {
       line: "absolute",
       zoom: ["relative", "none"],
     });
+
     root.unmount();
   });
 
@@ -104,14 +115,18 @@ describe("server rendered parts under a strict style-src", () => {
     const { api, host, root } = await hydrated();
     const announcer = part(host, '[data-zriz-item="announcer"]');
     let rotation = 0;
+
     await expect
       .poll(() => {
         rotation += 1;
         api.current?.setRotation(rotation);
+
         return announcer.textContent;
       })
       .toBe("cropped");
+
     const { height, width } = announcer.getBoundingClientRect();
+
     expect(getComputedStyle(announcer).clipPath).toBe("inset(50%)");
     root.unmount();
     expect(height).toBeLessThanOrEqual(1);

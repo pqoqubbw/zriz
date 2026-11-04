@@ -44,17 +44,20 @@ const Probe = ({
   const own = useCallback(
     (node: HTMLDivElement) => {
       log.push(`bind ${tag} ${node.tagName}`);
+
       return () => {
         log.push(`unbind ${tag}`);
       };
     },
     [tag]
   );
+
   return <div ref={useMergedRef(own, held)} />;
 };
 
 const userRef = (node: HTMLElement | null) => {
   log.push(node ? "attach" : "null");
+
   return () => {
     log.push("cleanup");
   };
@@ -108,6 +111,7 @@ describe("refs on React 18 and 19", () => {
 
   it("binds once, rebinds on a new ref callback and unbinds on unmount", async () => {
     const screen = await render(<Probe tag="a" />);
+
     expect(log).toStrictEqual(["bind a DIV", "theirs+"]);
     log.length = 0;
     await screen.rerender(<Probe tag="b" />);
@@ -119,8 +123,10 @@ describe("refs on React 18 and 19", () => {
 
   it("stops updating a part after it unmounts", async () => {
     const api = createRef<CropperApi>();
+
     const Toggle = () => {
       const [shown, setShown] = useState(true);
+
       return (
         <Shell api={api}>
           {shown ? <Cropper.Zoom aria-label="Zoom" /> : null}
@@ -135,8 +141,10 @@ describe("refs on React 18 and 19", () => {
         </Shell>
       );
     };
+
     const screen = await render(<Toggle />);
     const zoom = screen.container.querySelector('[data-zriz-item="zoom"]');
+
     api.current?.setZoom(1.5);
     await frames(2);
     expect(zoom?.getAttribute("aria-valuenow")).toBe("1.5");
@@ -156,12 +164,15 @@ describe("refs on React 18 and 19", () => {
       </Shell>
     );
     const zoom = screen.container.querySelector('[data-zriz-item="zoom"]');
+
     expect(zoom?.getAttribute("aria-valuemax")).toBe("4");
+
     await screen.rerender(
       <Shell api={api}>
         <Cropper.Zoom aria-label="Zoom" max={8} />
       </Shell>
     );
+
     expect(zoom?.getAttribute("aria-valuemax")).toBe("8");
     api.current?.setZoom(2);
     await frames(2);
@@ -175,6 +186,7 @@ describe("refs on React 18 and 19", () => {
         <Cropper.Area aria-label="Crop" ref={userRef} />
       </Shell>
     );
+
     await frames(2);
     expect(log).toStrictEqual(["attach"]);
     await screen.unmount();
@@ -189,8 +201,10 @@ describe("refs on React 18 and 19", () => {
         <Cropper.Area aria-label="Crop" render={<div ref={mine} />} />
       </Shell>
     );
+
     await frames(2);
     const area = screen.container.querySelector('[data-zriz-item="area"]');
+
     expect(mine.current).toBe(area);
     await screen.unmount();
     expect(mine.current).toBeNull();
@@ -235,11 +249,14 @@ describe("refs on React 18 and 19", () => {
         <Cropper.Announcer announce={() => null} />
       </Shell>
     );
+
     await frames(2);
     expect(area.current?.tagName).toBe("SECTION");
+
     expect(
       [rotate, flip, plain].map((held) => held.current?.tagName)
     ).toStrictEqual(["BUTTON", "BUTTON", "DIV"]);
+
     rotate.current?.click();
     await frames(2);
     await screen.unmount();
@@ -252,6 +269,7 @@ describe("refs on React 18 and 19", () => {
     const object = createRef<HTMLDivElement>();
     const node = document.createElement("div");
     const merged = mergeRefs(object, userRef);
+
     merged(node);
     expect(object.current).toBe(node);
     merged(null);
@@ -277,6 +295,7 @@ describe("refs on React 18 and 19", () => {
         <OwnArea aria-label="Crop" ref={userRef} />
       </Shell>
     );
+
     await frames(2);
     expect(object.current?.dataset.zrizItem).toBe("area");
     await screen.unmount();
@@ -287,6 +306,7 @@ describe("refs on React 18 and 19", () => {
 
   it("attaches a ref given in useRender props", async () => {
     const mine = createRef<HTMLSpanElement>();
+
     await render(<OwnPart own={{ ref: mine }} />);
     expect(mine.current?.tagName).toBe("SPAN");
   });
@@ -307,6 +327,7 @@ describe("refs on React 18 and 19", () => {
     );
     const screen = await render(<Host own={false} />);
     const before = document.querySelector("#kept");
+
     await screen.rerender(<Host own />);
     expect(document.querySelector("#kept")).toBe(before);
   });
@@ -330,6 +351,7 @@ describe("refs on React 18 and 19", () => {
       </Cropper.Root>
     );
     const screen = await render(<Host tick={0} />);
+
     await frames(2);
     pointer("#view", "pointerdown");
     expect(api.current?.getState().interacting).toBe("pan");
@@ -356,6 +378,7 @@ describe("refs on React 18 and 19", () => {
       </Cropper.Root>
     );
     const screen = await render(<Host tick={0} />);
+
     await frames(2);
     pointer("#view", "pointerdown");
     expect(api.current?.getState().interacting).toBe("pan");
@@ -368,6 +391,7 @@ describe("refs on React 18 and 19", () => {
     const entry = (name: string) => (node: HTMLDivElement | null) => {
       log.push(`${name}${node ? "+" : "-"}`);
     };
+
     const first = entry("a");
     const second = entry("b");
     const api = createRef<CropperApi>();
@@ -377,6 +401,7 @@ describe("refs on React 18 and 19", () => {
       </Shell>
     );
     const screen = await render(<Host own={first} />);
+
     await frames(1);
     log.length = 0;
     await screen.rerender(<Host own={second} />);
@@ -393,18 +418,22 @@ describe("refs on React 18 and 19", () => {
       </Shell>
     );
     const zoom = screen.container.querySelector('[data-zriz-item="zoom"]');
+
     await screen.rerender(
       <Shell api={api}>
         <Cropper.Zoom aria-label="Zoom" max={4} ref={second} />
       </Shell>
     );
+
     expect(first.current).toBeNull();
     expect(second.current).toBe(zoom);
+
     await screen.rerender(
       <Shell api={api}>
         <Cropper.Zoom aria-label="Zoom" max={8} ref={second} />
       </Shell>
     );
+
     expect(first.current).toBeNull();
     expect(second.current).toBe(zoom);
     await screen.unmount();
@@ -414,6 +443,7 @@ describe("refs on React 18 and 19", () => {
   it("swaps a changed ref without rebinding the part", async () => {
     const next = createRef<HTMLDivElement>();
     const screen = await render(<Probe tag="a" />);
+
     log.length = 0;
     await screen.rerender(<Probe held={next} tag="a" />);
     expect(log).toStrictEqual(["theirs-"]);
@@ -441,6 +471,7 @@ describe("refs on React 18 and 19", () => {
     const flip = screen.container.querySelector<HTMLButtonElement>(
       '[data-zriz-item="flip"]'
     );
+
     expect(mine.current).toBe(flip);
     expect(flip?.title).toBe("plain");
     expect(flip?.className).toBe("off");
@@ -453,9 +484,11 @@ describe("refs on React 18 and 19", () => {
   it("runs the user's handlers first, then zriz's", async () => {
     const api = createRef<CropperApi>();
     const calls: string[] = [];
+
     const note = (who: string) => () => {
       calls.push(`${who} ${String(api.current?.getValue().mirrored)}`);
     };
+
     const screen = await render(
       <Shell api={api}>
         <Cropper.Flip
@@ -469,6 +502,7 @@ describe("refs on React 18 and 19", () => {
     const flip = screen.container.querySelector<HTMLButtonElement>(
       '[data-zriz-item="flip"]'
     );
+
     flip?.click();
     await frames(2);
     expect(calls).toStrictEqual(["element false", "part false"]);
@@ -483,12 +517,15 @@ describe("refs on React 18 and 19", () => {
       </Shell>
     );
     const grid = screen.container.querySelector('[data-zriz-item="grid"]');
+
     expect(grid?.className).toBe("a b");
+
     await screen.rerender(
       <Shell api={api}>
         <Cropper.Grid render={<section className="b" />} />
       </Shell>
     );
+
     expect(grid?.className).toBe("b");
   });
 
@@ -504,6 +541,7 @@ describe("refs on React 18 and 19", () => {
         </Shell>
       </StrictMode>
     );
+
     await frames(2);
     expect(object.current?.dataset.zrizItem).toBe("area");
     await screen.unmount();
@@ -551,6 +589,7 @@ const UnitHost = ({ unit }: { unit: string }) => (
 
 const ChildHost = ({ on }: { on: boolean }) => {
   const loose: Record<string, unknown> = { children: on ? <b>x</b> : null };
+
   return (
     <Cropper.Root image={{ height: 300, width: 400 }}>
       <Cropper.DialValue {...loose} />
@@ -585,6 +624,7 @@ describe("sliders across parent renders", () => {
     const screen = await render(
       <FormatHost digits={0} dial={dial} zoom={zoom} />
     );
+
     await frames();
     dial.mockClear();
     zoom.mockClear();
@@ -597,8 +637,10 @@ describe("sliders across parent renders", () => {
 
   it("writes the new text in the commit that changes the format", async () => {
     const screen = await render(<SpokenHost kind="percent" />);
+
     await frames();
     await screen.rerender(<SpokenHost kind="decimal" />);
+
     expect(
       screen.container
         .querySelector('[data-zriz-item="zoom"]')
@@ -617,18 +659,22 @@ describe("DialValue text", () => {
     const node = screen.container.querySelector(
       '[data-zriz-item="dial-value"]'
     );
+
     expect(node?.textContent).toBe("0deg");
     await screen.rerender(<UnitHost unit="grad" />);
     expect(node?.textContent).toBe("0grad");
     const first = node?.firstChild;
+
     await screen.rerender(<UnitHost unit="grad" />);
     expect(node?.firstChild).toBe(first);
   });
 
   it("shows the angle over children and survives removing them", async () => {
     const screen = await render(<ChildHost on />);
+
     await screen.rerender(<ChildHost on={false} />);
     await frames();
+
     expect(
       screen.container.querySelector('[data-zriz-item="dial-value"]')
         ?.textContent
@@ -645,10 +691,12 @@ describe("Mask and Area rebinding", () => {
   it("drops the gradient when a circle goes back to a rect without css shape()", async () => {
     vi.spyOn(CSS, "supports").mockReturnValue(false);
     const screen = await render(<MaskHost shape="circle" />);
+
     await frames(3);
     const mask = screen.container.querySelector<HTMLElement>(
       '[data-zriz-item="mask"]'
     );
+
     expect(mask?.style.getPropertyValue("mask-image")).not.toBe("");
     await screen.rerender(<MaskHost shape="rect" />);
     await frames(3);
@@ -658,10 +706,12 @@ describe("Mask and Area rebinding", () => {
 
   it("removes the live variables when they turn off", async () => {
     const screen = await render(<LiveHost live />);
+
     await frames(3);
     const area = screen.container.querySelector<HTMLElement>(
       '[data-zriz-item="area"]'
     );
+
     expect(area?.style.getPropertyValue("--zriz-zoom")).toBe("1");
     await screen.rerender(<LiveHost live={false} />);
     await frames(2);

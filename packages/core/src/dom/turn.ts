@@ -22,8 +22,10 @@ export const deadline = (
   const promise = new Promise<never>((_resolve, reject) => {
     let timer: ReturnType<typeof setTimeout>;
     let due = 0;
+
     const arm = (delay: number): void => {
       due = performance.now() + delay;
+
       timer = setTimeout(() => {
         if (performance.now() - due > SUSPENDED) {
           arm(delay);
@@ -32,26 +34,34 @@ export const deadline = (
         }
       }, delay);
     };
+
     arm(Math.min(ms, MAX_DELAY));
+
     const abort = (): void => {
       reject(aborted());
     };
+
     if (signal?.aborted === true) {
       abort();
     }
+
     signal?.addEventListener("abort", abort, { once: true });
+
     clear = () => {
       clearTimeout(timer);
       signal?.removeEventListener("abort", abort);
     };
+
     pause = () => {
       clearTimeout(timer);
       const left = Math.max(0, due - performance.now());
+
       return () => {
         arm(left);
       };
     };
   });
+
   return { clear, pause, promise };
 };
 
@@ -61,6 +71,7 @@ export const withTimeout = async <T>(
   signal: AbortSignal | undefined
 ): Promise<T> => {
   const limit = deadline(ms, signal);
+
   try {
     return await Promise.race([work, limit.promise]);
   } finally {

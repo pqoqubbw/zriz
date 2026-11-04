@@ -14,9 +14,9 @@ import type { Part, PartProps } from "../part";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
-export interface ResetState {
+export type ResetState = {
   pristine: boolean;
-}
+};
 
 export type ResetProps = PartProps<"button", ResetState>;
 
@@ -30,9 +30,11 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
   const { box: root } = useContext(RootContext);
   const box = useElementBox();
   const focused = box.get()?.matches(":focus") === true;
+
   useIsomorphicLayoutEffect(() => {
     if (pristine && focused && box.get()?.matches("[hidden]") === true) {
       const scope = root?.get();
+
       for (const selector of [
         '[data-zriz-item="area"]',
         '[tabindex="0"]:not([hidden]),button:enabled:not([hidden])',
@@ -40,6 +42,7 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
         for (const next of scope?.querySelectorAll<HTMLElement>(selector) ??
           []) {
           next.focus({ preventScroll: true });
+
           if (next.matches(":focus")) {
             return;
           }
@@ -47,9 +50,11 @@ export const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
       }
     }
   }, [box, focused, pristine, root]);
+
   const onClick = (event: MouseEvent): void => {
     cropper.reset({ event: event.nativeEvent });
   };
+
   return usePart(
     "button",
     {

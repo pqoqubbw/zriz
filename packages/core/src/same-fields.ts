@@ -4,5 +4,6 @@ export const sameFields = <T extends object>(a: T, b: T): boolean => {
       return false;
     }
   }
+
   return true;
 };

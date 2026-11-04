@@ -44,6 +44,7 @@ describe(parse, () => {
       rotation: 300,
       size: { height: -5, width: Number.NaN },
     });
+
     expect(value).toMatchObject({
       aspect: "free",
       perspective: { horizontal: 0, vertical: 30 },
@@ -55,6 +56,7 @@ describe(parse, () => {
 
   it("turns -0 into 0", () => {
     const value = parse({ center: { x: -0, y: 0.5 }, rotation: -0 });
+
     expect(Object.is(value?.rotation, 0)).toBeTruthy();
     expect(Object.is(value?.center.x, 0)).toBeTruthy();
   });
@@ -66,6 +68,7 @@ describe(parse, () => {
       mirrored: true,
       rotation: -12.25,
     };
+
     expect(serialize(value)).toContain('"v":1');
     expect(parse(serialize(value))).toStrictEqual(value);
   });
@@ -82,6 +85,7 @@ describe("value and state", () => {
         size: { height: 0.2, width: 0.25 },
       };
       const image = { height: 1080, width: 1920 };
+
       expect(
         stateToValue(valueToState(value, image), value.aspect)
       ).toStrictEqual(value);
@@ -92,6 +96,7 @@ describe("value and state", () => {
     const value = parse(
       '{"center":{"x":1e308,"y":-1e308},"size":{"width":1e308,"height":1e-320}}'
     );
+
     expect(value?.center).toStrictEqual({ x: 1e6, y: -1e6 });
     expect(value?.size).toStrictEqual({ height: 1e-100, width: 1e6 });
   });
@@ -104,6 +109,7 @@ describe("value and state", () => {
     for (const aspect of ["1e308", "5e-324", "1e14", "1e-14", "0", "-1"]) {
       expect(parse(`{"aspect":${aspect}}`)?.aspect).toBe("free");
     }
+
     expect(parse('{"aspect":1e6}')?.aspect).toBe(1e6);
   });
 
@@ -113,6 +119,7 @@ describe("value and state", () => {
       { ...state, crop: { ...state.crop, width: 0.2 } },
       "free"
     );
+
     expect(value.size.width).toBeGreaterThan(0);
   });
 });
@@ -129,6 +136,7 @@ describe(changedFields, () => {
       rotation: 3,
       size: { height: 0.5, width: 1 },
     };
+
     expect(changedFields(defaultValue, next).toSorted()).toStrictEqual([
       "aspect",
       "center",
@@ -138,6 +146,7 @@ describe(changedFields, () => {
       "rotation",
       "size",
     ]);
+
     expect(changedFields(next, { ...next })).toStrictEqual([]);
   });
 });
@@ -152,6 +161,7 @@ describe(valuesEqual, () => {
       size: { ...defaultValue.size },
     });
     const calls = keys.mock.calls.length;
+
     keys.mockRestore();
     expect(same).toBeTruthy();
     expect(calls).toBe(0);
@@ -161,6 +171,7 @@ describe(valuesEqual, () => {
 describe(aspectRatio, () => {
   it("reads original from the turned photo", () => {
     const image = { height: 1000, width: 2000 };
+
     expect(aspectRatio("free", image, 1)).toBeNull();
     expect(aspectRatio(1.5, image, 1)).toBe(1.5);
     expect(aspectRatio("original", image, 0)).toBe(2);

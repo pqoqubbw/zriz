@@ -27,34 +27,34 @@ import type { Layout, View } from "./view";
 
 export type WheelMode = "pan" | "zoom" | "none";
 
-export interface ViewportOptions {
+export type ViewportOptions = {
   wheel?: WheelMode | undefined;
   rotateGesture?: boolean | undefined;
-}
+};
 
 export type ViewportHandlers = PointerHandlers;
 
-export interface ViewportController {
+export type ViewportController = {
   handlers: ViewportHandlers;
   setElement: (element: HTMLElement | null) => void;
   setOptions: (options: ViewportOptions) => void;
   destroy: () => void;
-}
+};
 
-interface SafariGestureEvent extends UIEvent {
+type SafariGestureEvent = {
   scale: number;
   rotation: number;
   clientX: number;
   clientY: number;
-}
+} & UIEvent;
 
-interface Start {
+type Start = {
   state: CropState;
   scale: number;
   centroid: Point;
   distance: number;
   angle: number;
-}
+};
 
 const PAN_BAND = 125;
 const ZOOM_NOISE = 1e-6;
@@ -71,10 +71,12 @@ const CONTROLS =
 const centroidOf = (points: readonly Point[]): Point => {
   let x = 0;
   let y = 0;
+
   for (const point of points) {
     x += point.x;
     y += point.y;
   }
+
   return { x: x / points.length, y: y / points.length };
 };
 
@@ -82,9 +84,11 @@ const spread = (
   points: readonly Point[]
 ): { distance: number; angle: number } => {
   const [a, b] = points;
+
   if (!a || !b) {
     return { angle: 0, distance: 1 };
   }
+
   return {
     angle: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
     distance: Math.max(Math.hypot(b.x - a.x, b.y - a.y), 1),
@@ -100,6 +104,7 @@ const pixels = (value: string): number => Number(value.slice(0, -2)) || 0;
 
 const bandZoom = (excess: number): number => {
   const shown = 0.5 + 0.5 / (3 - 2 * Math.exp(-Math.abs(excess)));
+
   return excess < 0 ? shown : 1 / shown;
 };
 
@@ -108,6 +113,7 @@ const padZoom = (excess: number): number =>
 
 const unpadZoom = (zoom: number): number => {
   const shown = Math.log(zoom);
+
   return (
     Math.sign(shown) *
     inverseRubberBand(Math.min(Math.abs(shown), PAD_BAND * 0.999), PAD_BAND)
@@ -118,6 +124,7 @@ const unbandZoom = (zoom: number): number => {
   const shown = zoom < 1 ? zoom : 1 / zoom;
   const ratio = (3 - 0.5 / Math.max(shown - 0.5, 1e-9)) / 2;
   const excess = -Math.log(Math.min(Math.max(ratio, 1e-9), 1));
+
   return zoom < 1 ? -excess : excess;
 };
 
@@ -125,7 +132,9 @@ const absorb = (held: number, step: number): [number, number] => {
   if (held === 0 || Math.sign(step) === Math.sign(held)) {
     return [held, step];
   }
+
   const left = held + step;
+
   return Math.sign(left) === Math.sign(held) ? [left, 0] : [0, left];
 };
 
@@ -141,6 +150,7 @@ const canPan = (state: CropState, delta: Point, scale: number): boolean => {
   const step = 0.5 / scale;
   const x = -Math.sign(delta.x) * step;
   const y = -Math.sign(delta.y) * step;
+
   return [
     { x, y },
     { x, y: 0 },
@@ -162,25 +172,30 @@ const wheelDelta = (
   sideways = event.shiftKey
 ): Point => {
   let unit = 1;
+
   if (event.deltaMode === 1) {
     unit = LINE_HEIGHT;
   } else if (event.deltaMode === 2) {
     unit = page;
   }
+
   const dx = event.deltaX * unit;
   const dy = event.deltaY * unit;
+
   return sideways && dx === 0 ? { x: -dy, y: 0 } : { x: -dx, y: -dy };
 };
 
 const padStep = (event: WheelEvent): boolean => {
   const physical =
     event.deltaY * ((event.view ?? globalThis).devicePixelRatio || 1);
+
   return event.ctrlKey && Math.abs(physical - Math.round(physical)) > 1e-3;
 };
 
 const notPhoto = (event: Event, element: Element): boolean => {
   const path = event.composedPath();
   const at = path.indexOf(element);
+
   return (
     outside(element, event) ||
     path
@@ -218,6 +233,7 @@ export const transformAround = (
   const source = workingToSource(start, working);
   const turned = { ...start, angle: start.angle + turn };
   const centre = sourceToWorking(turned, source);
+
   return {
     ...turned,
     crop: {
@@ -257,12 +273,16 @@ export const viewportController = (
   const rebase = (): void => {
     const state = cropper.getCropState();
     const frame = view.frame();
+
     if (!state || !frame || pointers.size === 0) {
       start = null;
+
       return;
     }
+
     const points = [...pointers.values()];
     const { distance, angle } = spread(points);
+
     start = {
       angle,
       centroid: centroidOf(points),
@@ -270,6 +290,7 @@ export const viewportController = (
       scale: frame.scale,
       state,
     };
+
     twist = 0;
   };
 
@@ -277,11 +298,14 @@ export const viewportController = (
     if (!element) {
       return;
     }
+
     const style = getComputedStyle(element);
+
     if (style.position === "static") {
       element.style.position = "relative";
       positioned = true;
     }
+
     const layout: Layout = {
       dpr: win.devicePixelRatio || 1,
       height: element.clientHeight,
@@ -293,10 +317,12 @@ export const viewportController = (
       },
       width: element.clientWidth,
     };
+
     view.setLayout(
       layout.width > 0 && layout.height > 0 ? layout : null,
       element
     );
+
     if (view.frame()?.scale !== start?.scale) {
       rebase();
     }
@@ -304,9 +330,11 @@ export const viewportController = (
 
   const onDpr = (): void => {
     dprQuery?.removeEventListener("change", onDpr);
+
     dprQuery =
       win.matchMedia?.(`(resolution: ${win.devicePixelRatio || 1}dppx)`) ??
       null;
+
     dprQuery?.addEventListener("change", onDpr);
     measure();
   };
@@ -324,9 +352,11 @@ export const viewportController = (
   const offsetOf = (begin: Start): Point => {
     const frame = view.frame();
     const rect = frame?.rect;
+
     if (!rect) {
       return { x: 0, y: 0 };
     }
+
     return {
       x: rect.x + rect.width / 2 - begin.scale * begin.state.crop.x,
       y: rect.y + rect.height / 2 - begin.scale * begin.state.crop.y,
@@ -335,6 +365,7 @@ export const viewportController = (
 
   const rectCentre = (): Point | null => {
     const rect = view.frame()?.rect;
+
     return rect
       ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }
       : null;
@@ -352,14 +383,18 @@ export const viewportController = (
       x: begin.state.crop.x - delta.x / begin.scale,
       y: begin.state.crop.y - delta.y / begin.scale,
     };
+
     cropper.setCropState(
       { ...begin.state, crop: { ...begin.state.crop, ...desired } },
       { event, keep: "size", reason: cropper.getState().interacting ?? "pan" }
     );
+
     const after = cropper.getCropState();
+
     if (!after || cropper.getState().disabled) {
       return { excess: { x: 0, y: 0 }, moved: false };
     }
+
     return {
       excess: {
         x: snapNoise((desired.x - after.crop.x) * -begin.scale, PAN_NOISE),
@@ -377,9 +412,11 @@ export const viewportController = (
     event: Event
   ): number => {
     const centre = rectCentre();
+
     if (!centre || cropper.getState().disabled) {
       return 0;
     }
+
     const turn =
       options.rotateGesture === false
         ? 0
@@ -407,14 +444,17 @@ export const viewportController = (
       turn,
       offsetOf(begin)
     );
+
     cropper.setCropState(next, {
       event,
       keep: turn === 0 ? "size" : "centre",
       reason: cropper.getState().interacting ?? "pinch",
     });
+
     if (wanted < 1) {
       return snapNoise(Math.log(wanted), ZOOM_NOISE);
     }
+
     return wanted > max ? snapNoise(Math.log(wanted / max), ZOOM_NOISE) : 0;
   };
 
@@ -434,23 +474,32 @@ export const viewportController = (
     if (!pointers.delete(id)) {
       return;
     }
+
     if (pointers.size > 0) {
       rebase();
+
       if (!start) {
         view.settleOverscroll();
+
         return;
       }
+
       const held = view.overscroll();
+
       view.settleZoom();
       const { excess } = pan(start, held, event);
       const length = Math.hypot(excess.x, excess.y);
+
       view.setOverscroll(excess);
       rebase();
+
       if (length > 0) {
         backStart(excess, inverseRubberBand(length, PAN_BAND, 1) / length);
       }
+
       return;
     }
+
     start = null;
     releaseCursor?.();
     releaseCursor = null;
@@ -462,13 +511,16 @@ export const viewportController = (
     if (wheelTimer !== null) {
       clearTimeout(wheelTimer);
     }
+
     wheelTimer = null;
     wheelZoom = 0;
+
     if (wheelOwned) {
       wheelOwned = false;
       view.settleOverscroll(wheelPad);
       cropper.end(undefined, owner);
     }
+
     wheelPad = false;
   };
 
@@ -481,7 +533,9 @@ export const viewportController = (
     },
     onPointerDown(event) {
       const taken = view.claimed(event);
+
       view.claim(event);
+
       if (
         taken ||
         !presses(event) ||
@@ -492,22 +546,28 @@ export const viewportController = (
       ) {
         return;
       }
+
       if (pointers.size === 0) {
         if (wheelOwned) {
           endWheel();
         }
+
         anchorTo(element);
+
         if (!cropper.begin("pan", event, owner)) {
           return;
         }
       } else {
         cropper.begin("pinch", event, owner);
       }
+
       safari = null;
       capture(element, event.pointerId);
+
       if (pointers.size === 0 && event.pointerType !== "touch") {
         releaseCursor = holdCursor(element);
       }
+
       pointers.set(event.pointerId, local(event));
       rebase();
     },
@@ -515,21 +575,28 @@ export const viewportController = (
       if (!pointers.has(event.pointerId)) {
         return;
       }
+
       if (pressLost(event, element)) {
         finish(event.pointerId, event);
+
         return;
       }
+
       if (cropper.rebase(owner)) {
         rebase();
       }
+
       if (!start) {
         return;
       }
+
       const samples = event.getCoalescedEvents?.() ?? [];
       const last = samples.at(-1) ?? event;
+
       pointers.set(event.pointerId, local(last));
       const points = [...pointers.values()];
       const centroid = centroidOf(points);
+
       if (points.length === 1) {
         cropper.begin("pan", event, owner);
         const { excess } = pan(
@@ -540,12 +607,16 @@ export const viewportController = (
           },
           event
         );
+
         view.setOverscroll(
           rubberBandPoint(excess, { x: 0, y: 0 }, PAN_BAND, 1)
         );
+
         return;
       }
+
       const { distance, angle } = spread(points);
+
       twist += wrapDegrees(angle - start.angle);
       start.angle = angle;
       const excess = pinch(
@@ -555,6 +626,7 @@ export const viewportController = (
         twist,
         event
       );
+
       view.setOverscroll(null, bandZoom(excess), zoomAnchor());
     },
     onPointerUp(event) {
@@ -566,6 +638,7 @@ export const viewportController = (
     if (wheelTimer !== null) {
       clearTimeout(wheelTimer);
     }
+
     wheelTimer = setTimeout(endWheel, WHEEL_IDLE_MS);
   };
 
@@ -578,11 +651,14 @@ export const viewportController = (
     if (!cropper.begin("wheel", event, owner)) {
       return false;
     }
+
     wheelOwned = true;
     wheelPad = padStep(event);
+
     wheelZoom = wheelPad
       ? unpadZoom(view.overzoom())
       : unbandZoom(view.overzoom());
+
     return true;
   };
 
@@ -590,17 +666,24 @@ export const viewportController = (
     const raw = -wheelDelta(event, page, false).y;
     const pinchStep = padStep(event);
     const step = pinchStep ? raw : Math.min(Math.max(raw, -50), 50);
+
     if (pinchStep && !wheelPad) {
       wheelPad = true;
       wheelZoom = unpadZoom(view.overzoom());
     }
+
     const [held, rest] = absorb(wheelZoom, -step / 100);
+
     wheelZoom = held;
+
     if (rest !== 0) {
       wheelZoom += pinch(begin, begin.centroid, Math.exp(rest), 0, event);
     }
+
     const reach = wheelPad ? PAD_REACH : ZOOM_REACH;
+
     wheelZoom = Math.min(Math.max(wheelZoom, -reach), reach);
+
     view.setOverscroll(
       null,
       wheelPad ? padZoom(wheelZoom) : bandZoom(wheelZoom),
@@ -617,38 +700,50 @@ export const viewportController = (
   const onWheel = (event: WheelEvent): void => {
     const state = cropper.getCropState();
     const frame = view.frame();
+
     if (!element || !state || !frame) {
       return;
     }
+
     const zoom = wheelZooms(event);
+
     if (leavesWheel(event, zoom)) {
       return;
     }
+
     if (zoom) {
       event.preventDefault();
     }
+
     if (pointers.size > 0 || wheelIgnored(event.ctrlKey, zoom)) {
       return;
     }
+
     const delta = wheelDelta(event, element.clientHeight);
+
     if (delta.x === 0 && delta.y === 0) {
       if (event.ctrlKey) {
         endWheel();
       }
+
       return;
     }
+
     if (!wheelOwned) {
       if (
         !zoom &&
         (wheelTimer !== null || !canPan(state, delta, frame.scale))
       ) {
         idleWheel();
+
         return;
       }
+
       if (!claimWheel(event)) {
         return;
       }
     }
+
     idleWheel();
     event.preventDefault();
     anchorTo(element);
@@ -659,6 +754,7 @@ export const viewportController = (
       scale: frame.scale,
       state,
     };
+
     if (zoom) {
       wheelZoomBy(begin, event, element.clientHeight);
     } else {
@@ -682,6 +778,7 @@ export const viewportController = (
     scale: number
   ): Start | null => {
     const state = cropper.getCropState();
+
     return state
       ? {
           angle: event.rotation || 0,
@@ -697,15 +794,20 @@ export const viewportController = (
     if (inert()) {
       return;
     }
+
     event.preventDefault();
     const frame = view.frame();
+
     if (pointers.size > 0 || !element || !frame || !isGesture(event)) {
       return;
     }
+
     if (wheelOwned) {
       endWheel();
     }
+
     anchorTo(element);
+
     if (cropper.begin("pinch", event, owner)) {
       safari = safariStart(event, frame.scale);
     }
@@ -715,17 +817,23 @@ export const viewportController = (
     if (inert()) {
       return;
     }
+
     event.preventDefault();
+
     if (!safari || !isGesture(event)) {
       return;
     }
+
     const frame = view.frame();
+
     if (cropper.rebase(owner) && frame) {
       safari = safariStart(event, frame.scale) ?? safari;
     }
+
     if (!cropper.getCropState()) {
       return;
     }
+
     const excess = pinch(
       safari,
       local(event),
@@ -733,6 +841,7 @@ export const viewportController = (
       (event.rotation || 0) - safari.angle,
       event
     );
+
     view.setOverscroll(null, padZoom(excess), zoomAnchor());
   };
 
@@ -740,6 +849,7 @@ export const viewportController = (
     if (inert()) {
       return;
     }
+
     event.preventDefault();
     endSafari(event);
   };
@@ -748,6 +858,7 @@ export const viewportController = (
     for (const id of pointers.keys()) {
       finish(id, event);
     }
+
     endSafari(event);
     endWheel();
   };
@@ -764,6 +875,7 @@ export const viewportController = (
     if (event.key !== "Escape" || pointers.size === 0) {
       return;
     }
+
     event.preventDefault();
     event.stopPropagation();
     pointers.clear();
@@ -779,9 +891,11 @@ export const viewportController = (
     if (!element) {
       return;
     }
+
     for (const observer of observers) {
       observer.disconnect();
     }
+
     observers = [];
     dprQuery?.removeEventListener("change", onDpr);
     dprQuery = null;
@@ -798,10 +912,12 @@ export const viewportController = (
     view.setLayout(null, element);
     unclaim?.();
     unclaim = null;
+
     if (positioned) {
       element.style.position = "";
       positioned = false;
     }
+
     element = null;
   };
 
@@ -815,11 +931,14 @@ export const viewportController = (
       if (next === element) {
         return;
       }
+
       detach();
       element = next;
+
       if (!next) {
         return;
       }
+
       win = windowOf(next);
       unclaim = claimTouch(next, "none");
       next.addEventListener("wheel", onWheel, { passive: false });
@@ -830,11 +949,15 @@ export const viewportController = (
       win.document.addEventListener("animationend", onAncestorSettle, true);
       unwatch = watchLoss(cropper, onLoss, (id) => pointers.has(id), next);
       win.addEventListener("keydown", onEscape, true);
+
       observers = (["content-box", "border-box"] as const).map((box) => {
         const observer = new win.ResizeObserver(measure);
+
         observer.observe(next, { box });
+
         return observer;
       });
+
       onDpr();
     },
     setOptions(next) {
@@ -850,7 +973,9 @@ export const bindViewport = (
 ): (() => void) => {
   const controller = viewportController(cropper, options);
   const offPointers = bindPointers(element, controller.handlers);
+
   controller.setElement(element);
+
   return () => {
     offPointers();
     controller.destroy();

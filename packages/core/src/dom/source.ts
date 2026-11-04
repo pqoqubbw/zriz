@@ -9,9 +9,12 @@ const UNSIZED_HEIGHT = 150;
 
 export const assertReadable = (source: CanvasImageSource): boolean => {
   const canvas = canvasFor({ height: PROBE, width: PROBE });
+
   try {
     const context = context2d(canvas);
+
     context.drawImage(source, 0, 0, PROBE, PROBE);
+
     try {
       return context.getImageData(0, 0, PROBE, PROBE).data.some(Boolean);
     } catch {
@@ -32,15 +35,19 @@ const showsFrame = async (
   if (video.readyState < 2 || video.seeking) {
     return false;
   }
+
   if (assertReadable(video)) {
     return true;
   }
+
   if (tries === 0) {
     return false;
   }
+
   await new Promise((resolve) => {
     setTimeout(resolve, FRAME_POLL);
   });
+
   return await showsFrame(video, tries - 1);
 };
 
@@ -60,21 +67,27 @@ export const fromElement = async (
         "zriz: the video has no current frame yet. Wait for loadeddata or seeked."
       );
     }
+
     return await drawn(src, {
       height: src.videoHeight,
       width: src.videoWidth,
     });
   }
+
   if ("naturalWidth" in src) {
     if (!src.complete || src.naturalWidth === 0) {
       await src.decode();
     }
+
     assertReadable(src);
     const { naturalHeight: height, naturalWidth: width } = src;
+
     if (width * height > areaLimit) {
       return await createImageBitmap(src);
     }
+
     const bitmap = await createImageBitmap(src).catch(() => null);
+
     if (
       bitmap &&
       (bitmap.width !== UNSIZED_WIDTH ||
@@ -83,9 +96,13 @@ export const fromElement = async (
     ) {
       return bitmap;
     }
+
     bitmap?.close();
+
     return await drawn(src, { height, width });
   }
+
   assertReadable(src);
+
   return src instanceof ImageBitmap ? src : await createImageBitmap(src);
 };
