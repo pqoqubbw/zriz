@@ -329,6 +329,53 @@ describe("Root src flows", () => {
     URL.revokeObjectURL(second);
   });
 
+  it("a photo swap during a gesture under a controlled zoom commits a value and crop that agree", async () => {
+    const api = createRef<CropperApi>();
+    const commits: {
+      crop: unknown;
+      read: boolean;
+      value: CropValue;
+    }[] = [];
+    const onValueCommit = (
+      value: CropValue,
+      { pixelCrop }: { pixelCrop: unknown }
+    ): void => {
+      commits.push({
+        crop: pixelCrop,
+        read: api.current?.getState().committed === value,
+        value,
+      });
+    };
+    await render(
+      <Editor
+        api={api}
+        rootProps={{
+          aspect: 1,
+          image: { height: 3000, width: 4000 },
+          onValueCommit,
+          zoom: 2,
+        }}
+      />
+    );
+    await expect.poll(() => api.current?.getState().ready).toBeTruthy();
+    api.current?.setRotation(12);
+    await settled(api);
+    commits.length = 0;
+    const next = { height: 4000, width: 1000 };
+    api.current?.begin("pan");
+    api.current?.panBy(30, 20);
+    api.current?.setImage(next);
+    const [first] = commits;
+    expect(first?.read).toBeTruthy();
+    const same = createCropper({ defaultValue: first?.value, image: next });
+    expect(first?.crop).toStrictEqual(same.getPixelCrop());
+    same.destroy();
+    api.current?.end();
+    await settled(api);
+    expect(commits.at(-1)?.value).toStrictEqual(api.current?.getValue());
+    expect(commits.at(-1)?.crop).toStrictEqual(api.current?.getPixelCrop());
+  });
+
   it("swapping src during a drag ends the gesture cleanly and exports only B", async () => {
     const api = createRef<CropperApi>();
     const a = await photo(800, 600, RED);

@@ -460,20 +460,19 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
   };
 
-  const sendCommit = (
-    event: Event | undefined,
-    from: CropState | null,
-    reason: ChangeReason
-  ): void => {
-    const previous = committed;
-    committed = value;
-    refresh();
-    emit("commit", value, {
+  const sendCommit = (event: Event | undefined, reason: ChangeReason): void => {
+    const sent = value;
+    const details: CommitDetails = {
       event,
-      pixelCrop: from ? exportPlan(from) : null,
-      previous,
+      pixelCrop: state ? exportPlan(state) : null,
+      previous: committed,
       reason,
-    });
+    };
+    committed = sent;
+    refresh();
+    if (committed === sent) {
+      emit("commit", sent, details);
+    }
   };
 
   const settleCommit = (): void => {
@@ -486,7 +485,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     if (valuesEqual(value, committed)) {
       return;
     }
-    sendCommit(pending.event, state, pending.reason);
+    sendCommit(pending.event, pending.reason);
   };
 
   const refit = (
@@ -1010,8 +1009,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (gesture) {
         flush();
         if (!valuesEqual(value, committed)) {
-          sendCommit(undefined, fixed, "coverage");
+          sendCommit(undefined, "coverage");
         }
+      }
+      if (gesture) {
         gesture.start = state;
         gesture.startValue = value;
         outside = true;
