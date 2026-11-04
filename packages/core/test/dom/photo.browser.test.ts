@@ -9,6 +9,7 @@ import {
   loadImage,
   viewOf,
 } from "../../src/dom";
+import { TIMEOUT } from "../../src/dom/turn";
 
 const cleanups: (() => void)[] = [];
 
@@ -378,6 +379,74 @@ describe("photo layer", () => {
       .poll(() => canvas.width, { timeout: 3000 })
       .toBe(layout.width * dpr);
     await sharp(photo);
+  });
+
+  it.each<[string, number, number, number]>([
+    ["resample", 1024, 1.2, 1.3],
+    ["region", 400, 6, 7],
+  ])(
+    "starts the next job once a %s reply is overdue",
+    async (op, previewEdge, first, second) => {
+      const { cropper, photo } = await mount(previewEdge);
+      await sharp(photo);
+      const jobs = stalled(op);
+      vi.useFakeTimers({
+        shouldAdvanceTime: true,
+        toFake: ["setTimeout", "clearTimeout"],
+      });
+      cleanups.push(() => {
+        vi.useRealTimers();
+      });
+      cropper.setZoom(first);
+      await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+      cropper.setZoom(second);
+      await nextFrame();
+      await nextFrame();
+      expect(jobs.total()).toBe(1);
+      vi.advanceTimersByTime(TIMEOUT);
+      await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
+      await sharp(photo);
+    }
+  );
+
+  it("sharpens a new photo after a reply never came for the last one", async () => {
+    const { cropper, photo } = await mount(1024);
+    await sharp(photo);
+    const jobs = stalled("resample");
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+      toFake: ["setTimeout", "clearTimeout"],
+    });
+    cleanups.push(() => {
+      vi.useRealTimers();
+    });
+    cropper.setZoom(1.2);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    attachImage(cropper, await loadImage(await stripes(), { previewEdge: 1024 }));
+    vi.advanceTimersByTime(TIMEOUT);
+    await sharp(photo);
+  });
+
+  it("draws the frame of the current ticket when a late reply lands after the limit", async () => {
+    const { cropper, photo } = await mount(400, await gradient());
+    await sharp(photo);
+    const jobs = stalled("region");
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+      toFake: ["setTimeout", "clearTimeout"],
+    });
+    cleanups.push(() => {
+      vi.useRealTimers();
+    });
+    cropper.setZoom(3);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(1);
+    vi.advanceTimersByTime(TIMEOUT);
+    cropper.setZoom(4);
+    await expect.poll(() => jobs.total(), { timeout: 3000 }).toBe(2);
+    await sharp(photo);
+    await jobs.release();
+    await sharp(photo);
+    expect(paintError(cropper, photo)).toBeLessThan(5);
   });
 
   it("draws a cropped resample where the whole preview would land", async () => {

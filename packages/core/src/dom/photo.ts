@@ -3,6 +3,7 @@ import type { Matrix3 } from "../geometry/types";
 import type { LoadedImage } from "./image";
 import { imageOf, onImage } from "./image-store";
 import { afterPaint } from "./later";
+import { TIMEOUT, withTimeout } from "./turn";
 import { cssMatrix, viewOf } from "./view";
 import type { ViewFrame } from "./view";
 import { motionOff } from "./worker";
@@ -184,7 +185,7 @@ export const bindPhoto = (
       return;
     }
     running = true;
-    sharpen(frame, ticket)
+    withTimeout(sharpen(frame, ticket), TIMEOUT, undefined)
       .finally(() => {
         running = false;
         drain();
