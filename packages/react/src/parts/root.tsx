@@ -17,6 +17,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import type { Ref, RefCallback } from "react";
@@ -246,20 +247,23 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   const box = useElementBox();
   const merged = useBoxRef(box, ref);
 
-  const current = useLatest(cropper);
+  const [own] = useState(() => (external ? null : cropper));
+
+  useEffect(() => {
+    if (external && own) {
+      attachImage(own, null);
+    }
+  }, [external, own]);
 
   useEffect(() => {
     const node = box.get();
 
     return () => {
-      if (
-        !external &&
-        (node?.isConnected !== true || current.current !== cropper)
-      ) {
+      if (!external && node?.isConnected !== true) {
         attachImage(cropper, null);
       }
     };
-  }, [box, cropper, current, external]);
+  }, [box, cropper, external]);
 
   const context = useMemo<RootContextValue>(
     () => ({ box, dir, instructions, locale, shape }),
