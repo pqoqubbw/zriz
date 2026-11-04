@@ -451,6 +451,86 @@ describe("what the warnings count", () => {
   });
 });
 
+describe("aspect items that are not buttons", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("moves with arrows and skips a disabled item", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Group api={api} />);
+    await frames();
+    const radios = [
+      ...screen.container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ];
+    radios[0]?.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await frames();
+    expect(api.current?.getValue().aspect).toBe(3);
+    expect(document.activeElement).toBe(radios[2]);
+    expect(radios.map((radio) => radio.tabIndex)).toStrictEqual([-1, -1, 0]);
+  });
+
+  it("ignores a click on a disabled item", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Group api={api} />);
+    await frames();
+    screen.container
+      .querySelectorAll<HTMLElement>('[role="radio"]')[1]
+      ?.click();
+    await frames();
+    expect(api.current?.getValue().aspect).toBe(1);
+  });
+});
+
+describe("a disabled AspectItem", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("reports its disabled prop in the attribute and the state, and ignores presses", async () => {
+    const api = createRef<CropperApi>();
+    const seen: boolean[] = [];
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.AspectItem
+          className={(state) => {
+            seen.push(state.disabled);
+            return "";
+          }}
+          disabled
+          value={2}
+        >
+          Wide
+        </Cropper.AspectItem>
+      </Cropper.Root>
+    );
+    const button = item(screen.container, "aspect-item");
+    expect(button.dataset.disabled).toBe("");
+    expect(seen.at(-1)).toBeTruthy();
+    button.click();
+    await frames();
+    expect(api.current?.getValue().aspect).toBe("free");
+  });
+
+  it("stays locked on a circle with disabled false", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO} shape="circle">
+        <Cropper.AspectItem disabled={false} value={4 / 3}>
+          Wide
+        </Cropper.AspectItem>
+      </Cropper.Root>
+    );
+    const button = item(screen.container, "aspect-item");
+    expect(button.hasAttribute("disabled")).toBeTruthy();
+    expect(button.dataset.disabled).toBe("");
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await frames();
+    expect(api.current?.getValue().aspect).toBe(1);
+  });
+});
+
 describe("slider values follow every move", () => {
   afterEach(async () => {
     await cleanup();

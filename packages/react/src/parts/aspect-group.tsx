@@ -18,13 +18,15 @@ export type AspectGroupProps = PartProps<"div", AspectGroupState>;
 
 const ITEMS = '[data-zriz-item="aspect-item"]';
 
-const itemsOf = (group: Element): HTMLButtonElement[] =>
-  [...group.querySelectorAll<HTMLButtonElement>(ITEMS)].filter(
-    (item) => item.closest('[data-zriz-item="aspect-group"]') === group
+const itemsOf = (group: Element): HTMLElement[] =>
+  [...group.querySelectorAll<HTMLElement>(ITEMS)].filter(
+    (item) =>
+      item.closest('[data-zriz-item="aspect-group"]') === group &&
+      !item.matches(":disabled,[data-disabled]")
   );
 
 const syncStop = (group: Element): void => {
-  const enabled = itemsOf(group).filter((item) => !item.disabled);
+  const enabled = itemsOf(group);
   const checked = enabled.find(
     (item) => item.getAttribute("aria-checked") === "true"
   );
@@ -55,7 +57,7 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
         syncStop(group);
       });
       observer.observe(group, {
-        attributeFilter: ["aria-checked", "disabled"],
+        attributeFilter: ["aria-checked", "data-disabled", "disabled"],
         attributes: true,
         childList: true,
         subtree: true,
@@ -80,7 +82,7 @@ export const AspectGroup: Part<AspectGroupProps, HTMLDivElement> = forwardRef<
     ) {
       return;
     }
-    const enabled = itemsOf(element).filter((item) => !item.disabled);
+    const enabled = itemsOf(element);
     const index = (enabled as readonly EventTarget[]).indexOf(event.target);
     if (index === -1) {
       return;

@@ -8,7 +8,7 @@ import { AspectGroupContext } from "../buttons-context";
 import { useCropperContext } from "../context";
 import { RootContextValue } from "../part";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface AspectItemState {
@@ -24,14 +24,16 @@ export interface AspectItemProps extends PartProps<"button", AspectItemState> {
 export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
   HTMLButtonElement,
   AspectItemProps
->(function AspectItem({ value, ...props }, ref) {
+>(function AspectItem({ value, disabled: off, ...props }, ref) {
   const cropper = useCropperContext();
   const inGroup = useContext(AspectGroupContext);
   const { shape } = useContext(RootContextValue);
-  const disabled = shape === "circle" && value !== 1;
+  const disabled = off === true || (shape === "circle" && value !== 1);
   const checked = useCropperState((s) => sameAspect(s.aspect, value));
   const onClick = (event: React.MouseEvent): void => {
-    cropper.setAspect(value, { event: event.nativeEvent });
+    if (!disabled) {
+      cropper.setAspect(value, { event: event.nativeEvent });
+    }
   };
   let tabStop: number | undefined;
   if (inGroup) {
@@ -41,6 +43,7 @@ export const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
     "button",
     {
       "aria-checked": inGroup ? checked : undefined,
+      "aria-disabled": useAriaDisabled(),
       "aria-pressed": inGroup ? undefined : checked,
       "data-checked": checked ? "" : undefined,
       "data-disabled": disabled ? "" : undefined,
