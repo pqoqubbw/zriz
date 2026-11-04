@@ -212,7 +212,8 @@ const painted = async (
   width: number,
   height: number,
   options: { maxSize?: Size; type?: "image/webp" } = {},
-  perspective?: { horizontal: number; vertical: number }
+  perspective?: { horizontal: number; vertical: number },
+  file?: Blob
 ): Promise<{ cropper: Cropper; result: ExportResult }> => {
   vi.mocked(via).mockReset();
   vi.mocked(via).mockImplementation(async (_target, _op, args) => {
@@ -236,7 +237,7 @@ const painted = async (
     id: 1,
     mime: "image/jpeg",
     preview: image,
-    source: image,
+    source: file ?? image,
     width,
   };
   const result = await exportImage(cropper, loaded, {
@@ -369,6 +370,31 @@ describe("export retry", () => {
     expect(error).toHaveProperty("code", "blank");
     expect(allFreed(made)).toBeTruthy();
   });
+
+  it.each<[string, Limits]>([
+    ["the first size", {}],
+    ["a step down", { blank: 20_000_000 }],
+    ["every size blank", { blank: 0 }],
+  ])(
+    "closes the bitmap decoded from a file once after %s",
+    async (_name, limits) => {
+      const { made } = fakeCanvas(limits);
+      const close = vi.fn<() => void>();
+      vi.stubGlobal(
+        "createImageBitmap",
+        async () => await Promise.resolve({ close, height: 6000, width: 8000 })
+      );
+      await painted(
+        8000,
+        6000,
+        {},
+        undefined,
+        new Blob(["x"], { type: "image/jpeg" })
+      ).catch(noop);
+      expect(made.length).toBeGreaterThan(0);
+      expect(close).toHaveBeenCalledOnce();
+    }
+  );
 
   it("frees the canvas when every size fails", async () => {
     const { made } = fakeCanvas({ drawThrows: 0 });
