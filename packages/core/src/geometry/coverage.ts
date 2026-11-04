@@ -1,4 +1,4 @@
-import { sinCosDegrees } from "./angle";
+import { positiveZero, sinCosDegrees } from "./angle";
 import { applyMatrix2, rotationMatrix } from "./matrix";
 import { planeSupport } from "./planes";
 import type { HalfPlane, Point, Size } from "./types";
@@ -67,11 +67,12 @@ export const minScaleAt = (
   centre: Point
 ): number =>
   Math.max(
-    ...planes.map(
-      (plane) =>
-        planeSupport(plane, view.width, view.height) /
-        (plane.d - (plane.nx * centre.x + plane.ny * centre.y))
-    )
+    ...planes.map((plane) => {
+      const room = plane.d - (plane.nx * centre.x + plane.ny * centre.y);
+      return room > 0
+        ? planeSupport(plane, view.width, view.height) / room
+        : Number.POSITIVE_INFINITY;
+    })
   );
 
 const determinant3 = (a: Row, b: Row, c: Row): number =>
@@ -91,11 +92,13 @@ const solve3 = (a: Row, b: Row, c: Row, rhs: Row): Row | null => {
     return null;
   }
   const solveColumn = (column: number): number =>
-    determinant3(
-      withColumn(a, column, rhs[0]),
-      withColumn(b, column, rhs[1]),
-      withColumn(c, column, rhs[2])
-    ) / det;
+    positiveZero(
+      determinant3(
+        withColumn(a, column, rhs[0]),
+        withColumn(b, column, rhs[1]),
+        withColumn(c, column, rhs[2])
+      ) / det
+    );
   return [solveColumn(0), solveColumn(1), solveColumn(2)];
 };
 

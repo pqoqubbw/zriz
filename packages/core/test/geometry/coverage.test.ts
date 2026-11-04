@@ -226,4 +226,32 @@ describe("coverage with pan", () => {
     };
     expect(isCropCovered({ ...s, crop: c }, 0)).toBeFalsy();
   });
+
+  it("needs an infinite scale at a centre with no room", () => {
+    const planes = [{ d: 50, nx: 1, ny: 0 }];
+    const view = { height: 10, width: 10 };
+    expect(minScaleAt(planes, view, { x: 50, y: 0 })).toBe(
+      Number.POSITIVE_INFINITY
+    );
+    expect(minScaleAt(planes, view, { x: 60, y: 0 })).toBe(
+      Number.POSITIVE_INFINITY
+    );
+    expect(minScaleAt(planes, view, { x: 0, y: 0 })).toBe(0.1);
+  });
+
+  it("never returns a negative zero centre", () => {
+    const image = { height: 1000, width: 1000 };
+    const state: CropState = {
+      angle: 0,
+      aspect: null,
+      crop: { height: 500, width: 500, x: 0, y: 0 },
+      flip: false,
+      image,
+      perspective: { focal: 700, horizontal: 0, vertical: 0 },
+      turns: 0,
+    };
+    const { center } = largestFit(imagePlanes(state), state.crop);
+    expect(Object.is(center.x, -0)).toBeFalsy();
+    expect(Object.is(center.y, -0)).toBeFalsy();
+  });
 });
