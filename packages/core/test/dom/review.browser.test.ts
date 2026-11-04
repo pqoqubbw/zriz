@@ -889,4 +889,24 @@ describe("writes during a held gesture", () => {
     expect(rect?.height).toBeLessThanOrEqual(300);
     expect(rect?.y).toBeGreaterThanOrEqual(0);
   });
+
+  it("a new photo stops a glide at any size and after an empty cropper", () => {
+    const swaps = [
+      [{ height: 3000, width: 4000 }],
+      [{ height: 2000, width: 1000 }],
+      [null, { height: 3000, width: 4000 }],
+    ];
+    for (const swap of swaps) {
+      const r = rig();
+      throwDial(r);
+      expect(r.cropper.getState().interacting).toBe("dial");
+      for (const image of swap) {
+        r.cropper.setImage(image);
+      }
+      expect(r.cropper.getState().interacting).toBeNull();
+      const at = r.cropper.getValue().rotation;
+      r.time.frames(30);
+      expect(r.cropper.getValue().rotation).toBe(at);
+    }
+  });
 });

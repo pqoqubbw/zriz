@@ -586,6 +586,13 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
   };
 
+  const stopCoast = (): void => {
+    if (gesture?.coast) {
+      dropHolding();
+      gesture.coast();
+    }
+  };
+
   const accept = (
     next: CropState | null,
     nextValue: CropValue,
@@ -614,10 +621,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
     if (gesture && action.reason !== gesture.reason) {
       outside = true;
-      if (gesture.coast) {
-        dropHolding();
-        gesture.coast();
-      }
+      stopCoast();
     }
     state = next;
     value = nextValue;
@@ -916,6 +920,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (destroyed) {
         return;
       }
+      stopCoast();
       const next =
         given &&
         Number.isFinite(given.width) &&
