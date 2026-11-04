@@ -5,13 +5,13 @@ import type { CropState, Point, QuarterTurns, Size } from "./geometry/types";
 export type Aspect = "free" | "original" | number;
 
 export interface CropValue {
-  center: Point;
-  size: { width: number; height: number };
-  rotation: number;
-  quarterTurns: QuarterTurns;
-  mirrored: boolean;
-  perspective: { vertical: number; horizontal: number };
-  aspect: Aspect;
+  readonly center: Readonly<Point>;
+  readonly size: Readonly<Size>;
+  readonly rotation: number;
+  readonly quarterTurns: QuarterTurns;
+  readonly mirrored: boolean;
+  readonly perspective: { readonly vertical: number; readonly horizontal: number };
+  readonly aspect: Aspect;
 }
 
 export type ValueField = keyof CropValue;
@@ -21,7 +21,16 @@ export const PERSPECTIVE_LIMIT = 30;
 const REACH = 1e6;
 const MIN_RATIO = 1e-6;
 
-export const defaultValue: CropValue = {
+export const seal = <T extends object>(target: T): T => {
+  for (const item of Object.values(target)) {
+    if (typeof item === "object" && item) {
+      seal(item);
+    }
+  }
+  return Object.freeze(target);
+};
+
+export const defaultValue: CropValue = seal({
   aspect: "free",
   center: { x: 0.5, y: 0.5 },
   mirrored: false,
@@ -29,7 +38,7 @@ export const defaultValue: CropValue = {
   quarterTurns: 0,
   rotation: 0,
   size: { height: 1, width: 1 },
-};
+});
 
 const fields: readonly ValueField[] = [
   "center",
@@ -93,7 +102,7 @@ export const valueToState = (
 
 export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
   const turned = turnedSize(state.image, state.turns);
-  return {
+  return seal({
     aspect,
     center: {
       x: clean(state.crop.x / turned.width + 0.5),
@@ -110,7 +119,7 @@ export const stateToValue = (state: CropState, aspect: Aspect): CropValue => {
       height: cleanSide(state.crop.height / turned.height),
       width: cleanSide(state.crop.width / turned.width),
     },
-  };
+  });
 };
 
 export const sameAspect = (a: Aspect, b: Aspect): boolean =>
@@ -189,7 +198,7 @@ export const readValue = (
   const center = isRecord(raw.center) ? raw.center : {};
   const size = isRecord(raw.size) ? raw.size : {};
   const perspective = isRecord(raw.perspective) ? raw.perspective : {};
-  return {
+  return seal({
     aspect: raw.aspect === undefined ? base.aspect : toAspect(raw.aspect),
     center: {
       x: bound(center.x, base.center.x),
@@ -208,7 +217,7 @@ export const readValue = (
       height: side(size.height, base.size.height),
       width: side(size.width, base.size.width),
     },
-  };
+  });
 };
 
 const numbersOf = ({

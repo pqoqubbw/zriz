@@ -1810,3 +1810,65 @@ describe("minSize on a free crop", () => {
     expect(setup().cropper.getMinSize()).toStrictEqual({ height: 1, width: 1 });
   });
 });
+
+describe("values handed out", () => {
+  const deepFrozen = (target: object): boolean =>
+    Object.isFrozen(target) &&
+    Object.values(target).every(
+      (item) => typeof item !== "object" || !item || deepFrozen(item)
+    );
+
+  it("freezes every value and state the cropper holds", () => {
+    const { change, commit, cropper, time } = setup();
+    expect(deepFrozen(defaultValue)).toBe(true);
+    expect(deepFrozen(cropper.getValue())).toBe(true);
+    expect(deepFrozen(cropState(cropper.getCropState()))).toBe(true);
+    cropper.setRotation(5);
+    time.frame();
+    expect(deepFrozen(cropper.getValue())).toBe(true);
+    expect(deepFrozen(cropState(cropper.getCropState()))).toBe(true);
+    expect(deepFrozen(change.mock.calls[0]?.[0] ?? {})).toBe(true);
+    expect(deepFrozen(commit.mock.calls[0]?.[0] ?? {})).toBe(true);
+    expect(deepFrozen(cropper.getState().committed)).toBe(true);
+  });
+
+  it("keeps away from an object passed in", () => {
+    const shared = {
+      ...defaultValue,
+      center: { x: 0.5, y: 0.5 },
+      size: { height: 0.5, width: 0.5 },
+    };
+    const { cropper } = setup({ image: null, value: shared });
+    shared.center.x = 0.1;
+    shared.size.width = 0.25;
+    expect(cropper.getValue().center.x).toBe(0.5);
+    expect(cropper.getValue().size.width).toBe(0.5);
+    expect(Object.isFrozen(shared)).toBe(false);
+    const partial = { center: { x: 0.3, y: 0.3 } };
+    cropper.setValue(partial);
+    partial.center.x = 0.9;
+    expect(cropper.getValue().center.x).toBe(0.3);
+  });
+
+  it("keeps a state passed to setCropState away from the cropper", () => {
+    const { cropper } = setup();
+    const state = cropState(cropper.getCropState());
+    const crop = { ...state.crop, width: 2000 };
+    cropper.setCropState({ ...state, crop });
+    crop.width = 100;
+    expect(cropper.getCropState()?.crop.width).not.toBe(100);
+    expect(Object.isFrozen(crop)).toBe(false);
+  });
+
+  it("applies a change written on a copy of the value", () => {
+    const { change, commit, cropper, time } = setup({
+      value: { ...defaultValue, size: { height: 0.5, width: 0.5 } },
+    });
+    cropper.setValue({ ...cropper.getValue(), rotation: 2 });
+    time.frames(2);
+    expect(cropper.getCropState()?.angle).toBe(2);
+    expect(cropper.getPixelCrop()?.rotateExpand.degrees).toBe(2);
+    expect(change).toHaveBeenCalledOnce();
+    expect(commit).toHaveBeenCalledOnce();
+  });
+});

@@ -53,13 +53,13 @@ export interface Perspective {
 }
 
 export interface CropState {
-  image: Size;
-  turns: QuarterTurns;
-  flip: boolean;
-  angle: number;
-  crop: Crop;
-  aspect: number | null;
-  perspective: Perspective;
+  readonly image: Size;
+  readonly turns: QuarterTurns;
+  readonly flip: boolean;
+  readonly angle: number;
+  readonly crop: Readonly<Crop>;
+  readonly aspect: number | null;
+  readonly perspective: Readonly<Perspective>;
 }
 
 export interface PixelRect {

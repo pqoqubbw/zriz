@@ -31,6 +31,7 @@ import {
   positive,
   readValue,
   sameCrop,
+  seal,
   stateToValue,
   toAspect,
   valueToState,
@@ -377,10 +378,10 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       x,
       y,
     });
-    return {
+    return seal({
       ...shaped,
       crop: { height, width, x: centre.x, y: centre.y },
-    };
+    });
   };
 
   let resetFit: CropValue = resetValue;

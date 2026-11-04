@@ -92,6 +92,9 @@ const VALUE_PAGE = defineDoc({
         "a field that is not a usable number keeps the value it had, and a write with a usable field that still cannot make a crop, such as `setRotation(NaN)`, is ignored. an `aspect` that is not a number from 0.000001 to 1000000 counts as `\"free\"`. an option that is not a positive number falls back to its default, and a `maxZoom` below 1 counts as 1."
       ),
       p(
+        "a value from zriz is frozen, so one reader cannot change it for the next. copy it to change a field: `setValue({ ...value, rotation: 2 })`."
+      ),
+      p(
         "before a photo loads, zriz stores a value as you set it and fixes it when the photo arrives."
       )
     ),
