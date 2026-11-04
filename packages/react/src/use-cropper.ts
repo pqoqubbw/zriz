@@ -343,7 +343,20 @@ export const useCropperState = <T>(
 export const useCropperValue = (cropper?: Cropper): CropValue => {
   const target = useTarget(cropper);
   const subscribe = useCallback(
-    (listener: () => void) => target.on("commit", listener),
+    (listener: () => void) => {
+      let { ready } = target.getState();
+      const offCommit = target.on("commit", listener);
+      const offReady = target.subscribe(() => {
+        if (target.getState().ready !== ready) {
+          ready = !ready;
+          listener();
+        }
+      });
+      return () => {
+        offCommit();
+        offReady();
+      };
+    },
     [target]
   );
   return useSyncExternalStore(

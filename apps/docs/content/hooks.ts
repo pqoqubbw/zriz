@@ -107,7 +107,7 @@ const HOOKS_PAGE = defineDoc({
       ),
       part(
         "useCropperValue",
-        "`useCropperValue(cropper?)` returns the last committed value and renders once per commit. a new `value` prop and writes with `emit: false` change it without a commit, so the hook does not render for them. the first fit when a photo loads does not commit either. the fields are on [value](value).",
+        "`useCropperValue(cropper?)` returns the last committed value and renders once per commit. a new `value` prop and writes with `emit: false` change it without a commit, so the hook does not render for them. the first fit when a photo loads does not commit either, but the hook renders when a photo arrives or leaves, so it shows that fit. the fields are on [value](value).",
         code("hooks/use-cropper-value.tsx")
       ),
       part(

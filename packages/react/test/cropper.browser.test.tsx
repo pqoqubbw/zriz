@@ -9,7 +9,9 @@ import {
   Suspense,
   createRef,
   lazy,
+  memo,
   useEffect,
+  useLayoutEffect,
   useState,
 } from "react";
 import type { ReactNode } from "react";
@@ -526,8 +528,41 @@ describe("Root load results", () => {
   });
 });
 
+const ShownValue = memo(({ cropper }: { cropper?: CropperApi }) => (
+  <p id="shown">{JSON.stringify(useCropperValue(cropper))}</p>
+));
+
+const shownValue = (): unknown =>
+  JSON.parse(document.querySelector("#shown")?.textContent ?? "null");
+
 describe(useCropperValue, () => {
   afterEach(cleanup);
+
+  it("shows the props a shared cropper applied when its photo arrived", async () => {
+    const cropper = createCropper();
+    await render(
+      <Cropper.Root aspect={1} cropper={cropper} rotation={10} zoom={2}>
+        <ShownValue />
+      </Cropper.Root>
+    );
+    await frames(2);
+    cropper.setImage({ height: 3000, width: 4000 });
+    await frames(3);
+    expect(cropper.getValue().rotation).toBe(10);
+    expect(shownValue()).toStrictEqual(cropper.getValue());
+  });
+
+  it("shows a zoom prop applied when a loaded photo arrived", async () => {
+    const api = createRef<CropperApi>();
+    await render(
+      <Cropper.Root actionsRef={api} src={await photo()} zoom={2}>
+        <ShownValue />
+      </Cropper.Root>
+    );
+    await ready(api);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+    expect(shownValue()).toStrictEqual(api.current?.getValue());
+  });
 
   it("renders once for every commit with the committed value", async () => {
     let time = 0;
