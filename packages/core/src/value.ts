@@ -132,31 +132,16 @@ export const sameAspect = (a: Aspect, b: Aspect): boolean =>
     Math.abs(a - b) <= 1e-12 * Math.max(a, b));
 
 const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
-  switch (field) {
-    case "center": {
-      return a.center.x === b.center.x && a.center.y === b.center.y;
-    }
-    case "size": {
-      return a.size.width === b.size.width && a.size.height === b.size.height;
-    }
-    case "perspective": {
-      return (
-        a.perspective.vertical === b.perspective.vertical &&
-        a.perspective.horizontal === b.perspective.horizontal
-      );
-    }
-    case "aspect": {
-      return sameAspect(a.aspect, b.aspect);
-    }
-    case "mirrored":
-    case "quarterTurns":
-    case "rotation": {
-      return a[field] === b[field];
-    }
-    default: {
-      return false;
-    }
+  if (field === "aspect") {
+    return sameAspect(a.aspect, b.aspect);
   }
+  const x = a[field];
+  const y = b[field];
+  return typeof x === "object" && typeof y === "object"
+    ? Object.keys(defaultValue[field]).every(
+        (key) => Reflect.get(x, key) === Reflect.get(y, key)
+      )
+    : x === y;
 };
 
 export const changedFields = (a: CropValue, b: CropValue): ValueField[] =>
@@ -168,10 +153,13 @@ export const valuesEqual = (a: CropValue, b: CropValue): boolean =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const recordOf = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
+
 const finite = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-const clamp = (value: number, limit: number): number =>
+export const clamp = (value: number, limit: number): number =>
   positiveZero(Math.min(Math.max(value, -limit), limit));
 
 export const positive = (value: unknown, fallback: number): number =>
@@ -200,9 +188,9 @@ export const readValue = (
   raw: Partial<CropValue> | Record<string, unknown>,
   base: CropValue
 ): CropValue => {
-  const center = isRecord(raw.center) ? raw.center : {};
-  const size = isRecord(raw.size) ? raw.size : {};
-  const perspective = isRecord(raw.perspective) ? raw.perspective : {};
+  const center = recordOf(raw.center);
+  const size = recordOf(raw.size);
+  const perspective = recordOf(raw.perspective);
   return seal({
     aspect: raw.aspect === undefined ? base.aspect : toAspect(raw.aspect),
     center: {
@@ -225,25 +213,23 @@ export const readValue = (
   });
 };
 
-const numbersOf = ({
+export const isSound = ({
   center,
   perspective,
   rotation,
   size,
-}: CropValue): number[] => [
-  center.x,
-  center.y,
-  perspective.horizontal,
-  perspective.vertical,
-  rotation,
-  size.height,
-  size.width,
-];
-
-export const isSound = (value: CropValue): boolean =>
-  numbersOf(value).every(Number.isFinite) &&
-  value.size.width > 0 &&
-  value.size.height > 0;
+}: CropValue): boolean =>
+  [
+    center.x,
+    center.y,
+    perspective.horizontal,
+    perspective.vertical,
+    rotation,
+    size.height,
+    size.width,
+  ].every(Number.isFinite) &&
+  size.width > 0 &&
+  size.height > 0;
 
 const near = (a: number, b: number, reach: number): number =>
   Math.abs(a - b) <= reach ? b : a;
