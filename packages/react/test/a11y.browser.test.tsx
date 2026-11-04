@@ -395,3 +395,135 @@ const value = (rotation: number): CropValue => ({
   rotation,
   size: { height: 1, width: 1 },
 });
+
+describe("what the warnings count", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("warns for a slider with text inside and no name, and accepts title", async () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+    await render(
+      <Cropper.Root image={PHOTO}>
+        <Cropper.Area title="Crop" />
+      </Cropper.Root>
+    );
+    expect(warn).not.toHaveBeenCalled();
+    await render(
+      <Cropper.Root image={PHOTO}>
+        <Cropper.Zoom>
+          <span>150%</span>
+        </Cropper.Zoom>
+      </Cropper.Root>
+    );
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]?.[0]).toContain("Cropper.Zoom");
+    warn.mockRestore();
+  });
+
+  it("speaks the default text with a format the browser refuses", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO} locale="de">
+        <Cropper.Dial aria-label="Dial" format={{ style: "currency" }} />
+        <Cropper.Zoom
+          aria-label="Zoom"
+          format={{ maximumFractionDigits: 200 }}
+        />
+      </Cropper.Root>
+    );
+    expect(item(screen.container, "dial").getAttribute("aria-valuetext")).toBe(
+      "0 Grad"
+    );
+    expect(
+      item(screen.container, "zoom").getAttribute("aria-valuetext")
+    ).toMatch(/^100\s%$/u);
+  });
+
+  it("keeps a valid format when only the locale is bad", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO} locale="en_US">
+        <Cropper.Zoom aria-label="Zoom" format={{ style: "decimal" }} />
+      </Cropper.Root>
+    );
+    expect(item(screen.container, "zoom").getAttribute("aria-valuetext")).toBe(
+      "1"
+    );
+  });
+});
+
+describe("slider values follow every move", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("reads a new value prop and marks the zero again", async () => {
+    const screen = await render(<Sliders value={value(0)} />);
+    const dial = item(screen.container, "dial");
+    await screen.rerender(<Sliders value={value(12)} />);
+    await vi.waitFor(() => {
+      expect(dial.getAttribute("aria-valuenow")).toBe("12");
+    });
+    expect("snapped" in dial.dataset).toBeFalsy();
+    await screen.rerender(<Sliders value={value(0)} />);
+    await vi.waitFor(() => {
+      expect(dial.getAttribute("aria-valuenow")).toBe("0");
+    });
+    expect("snapped" in dial.dataset).toBeTruthy();
+  });
+
+  it("reads a saved zoom after the first fit", async () => {
+    const screen = await render(
+      <Sliders defaultValue={{ size: { height: 0.25, width: 0.25 } }} />
+    );
+    await vi.waitFor(() => {
+      expect(item(screen.container, "zoom").getAttribute("aria-valuenow")).toBe(
+        "4"
+      );
+    });
+  });
+
+  it("follows a new limit with no change to the crop", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Sliders api={api} maxZoom={15} />);
+    await frames();
+    api.current?.setZoom(3);
+    await frames(3);
+    await screen.rerender(<Sliders api={api} maxZoom={5} />);
+    await vi.waitFor(() => {
+      expect(item(screen.container, "zoom").getAttribute("aria-valuemax")).toBe(
+        "5"
+      );
+    });
+    expect(
+      Number(
+        item(screen.container, "zoom-thumb").style.insetInlineStart.replace(
+          "%",
+          ""
+        )
+      )
+    ).toBeCloseTo(68.26, 1);
+    await screen.rerender(
+      <Sliders api={api} maxZoom={5} minSize={{ height: 290, width: 290 }} />
+    );
+    await vi.waitFor(() => {
+      expect(
+        Number(item(screen.container, "dial").getAttribute("aria-valuemax"))
+      ).toBeLessThan(45);
+    });
+  });
+
+  it("leaves the marks alone through a dial gesture until it ends", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(<Sliders api={api} />);
+    await frames();
+    const dial = item(screen.container, "dial");
+    api.current?.begin("dial");
+    api.current?.setRotation(5);
+    await frames(3);
+    expect("snapped" in dial.dataset).toBeTruthy();
+    api.current?.end();
+    await vi.waitFor(() => {
+      expect("snapped" in dial.dataset).toBeFalsy();
+    });
+  });
+});

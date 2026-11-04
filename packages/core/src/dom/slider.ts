@@ -9,13 +9,42 @@ export interface KeyHandlers {
 
 export const numberFormat = (
   locale: string | undefined,
-  format: Intl.NumberFormatOptions
+  defaults: Intl.NumberFormatOptions,
+  format?: Intl.NumberFormatOptions
 ): Intl.NumberFormat => {
-  try {
-    return new Intl.NumberFormat(locale, format);
-  } catch {
-    return new Intl.NumberFormat(undefined, format);
+  const merged = { ...defaults, ...format };
+  for (const [tag, options] of [
+    [locale, merged],
+    [undefined, merged],
+    [locale, defaults],
+  ] as const) {
+    try {
+      return new Intl.NumberFormat(tag, options);
+    } catch {
+      continue;
+    }
   }
+  return new Intl.NumberFormat(undefined, defaults);
+};
+
+export const followDisabled = (
+  cropper: Cropper,
+  element: Element
+): (() => void) => {
+  let was = false;
+  const sync = (): void => {
+    const { disabled } = cropper.getState();
+    if (disabled !== was) {
+      was = disabled;
+      if (disabled) {
+        element.setAttribute("aria-disabled", "true");
+      } else {
+        element.removeAttribute("aria-disabled");
+      }
+    }
+  };
+  sync();
+  return cropper.subscribe(sync);
 };
 
 export const keyed = (
@@ -90,28 +119,43 @@ export const sliderKey = (
   return moves[event.key];
 };
 
+const VALUES = ["min", "max", "now", "text"];
+
 export const sliderAria = (
   cropper: Cropper,
   element: HTMLElement,
   reason: ChangeReason,
   read: () => readonly [number, number, number, string]
 ): (() => void) => {
+  const shown: unknown[] = [];
   const aria = (): void => {
-    const [min, max, now, text] = read();
-    element.setAttribute("aria-valuemin", String(min));
-    element.setAttribute("aria-valuemax", String(max));
-    element.setAttribute("aria-valuenow", String(now));
-    element.setAttribute("aria-valuetext", text);
+    for (const [index, next] of read().entries()) {
+      if (shown[index] !== next) {
+        shown[index] = next;
+        element.setAttribute(`aria-value${VALUES[index]}`, String(next));
+      }
+    }
   };
   aria();
-  const offCommit = cropper.on("commit", aria);
-  const offKeys = cropper.on("accept", (_, details) => {
-    if (details.reason === "keyboard" || details.reason === reason) {
-      aria();
-    }
-  });
+  const off = [
+    cropper.on("commit", aria),
+    cropper.on("settle", aria),
+    cropper.on("accept", (_, details) => {
+      if (details.reason === "keyboard" || details.reason === reason) {
+        aria();
+      }
+    }),
+    cropper.on("frame", () => {
+      const { interacting, settling } = cropper.getState();
+      if (interacting === null && !settling) {
+        aria();
+      }
+    }),
+    followDisabled(cropper, element),
+  ];
   return () => {
-    offCommit();
-    offKeys();
+    for (const stop of off) {
+      stop();
+    }
   };
 };

@@ -458,3 +458,36 @@ const LiveHost = ({ live }: { live: boolean }) => (
     </Cropper.Viewport>
   </Cropper.Root>
 );
+
+describe("sliders across parent renders", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("keeps the ref and the attributes while an inline format stays equal", async () => {
+    const dial = vi.fn<() => void>();
+    const zoom = vi.fn<() => void>();
+    const screen = await render(
+      <FormatHost digits={0} dial={dial} zoom={zoom} />
+    );
+    await frames();
+    dial.mockClear();
+    zoom.mockClear();
+    await screen.rerender(<FormatHost digits={0} dial={dial} zoom={zoom} />);
+    await screen.rerender(<FormatHost digits={0} dial={dial} zoom={zoom} />);
+    await frames();
+    expect(dial).not.toHaveBeenCalled();
+    expect(zoom).not.toHaveBeenCalled();
+  });
+
+  it("writes the new text in the commit that changes the format", async () => {
+    const screen = await render(<SpokenHost kind="percent" />);
+    await frames();
+    await screen.rerender(<SpokenHost kind="decimal" />);
+    expect(
+      screen.container
+        .querySelector('[data-zriz-item="zoom"]')
+        ?.getAttribute("aria-valuetext")
+    ).toBe("1");
+  });
+});

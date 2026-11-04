@@ -1,13 +1,14 @@
 "use client";
 
 import { dialAria, dialHandlers, dialState } from "@zriz/core/dom";
-import { warnUnlabelled } from "@zriz/react/warn";
+import { warnFormat, warnUnlabelled } from "@zriz/react/warn";
 import {
   forwardRef,
   useContext,
   useCallback,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 
@@ -18,9 +19,10 @@ import {
   useElementBox,
   useMergedRef,
   useRelease,
+  useSameJson,
 } from "../part";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { firstCommitted, useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface DialState {
@@ -53,30 +55,36 @@ export const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
     state.dragging,
     () => false
   );
-  const disabled = useCropperState((s) => s.disabled);
+  const disabled = useAriaDisabled();
+  const [first] = useState(() => firstCommitted(cropper).rotation);
+  const spoken = useSameJson(format);
   const own = useCallback(
     (node: HTMLDivElement) => {
       const clear = box.set(node);
       warnUnlabelled("Dial", node);
-      const off = dialAria(cropper, node, { format, locale });
+      warnFormat("Dial", locale, spoken);
+      const off = dialAria(cropper, node, { format: spoken, locale });
       return () => {
         clear();
         off();
       };
     },
-    [box, cropper, format, locale]
+    [box, cropper, spoken, locale]
   );
   return usePart(
     "div",
     {
-      "aria-disabled": disabled ? true : undefined,
+      "aria-disabled": disabled,
       "aria-orientation": "horizontal",
+      "aria-valuenow": first,
       "data-dragging": dragging ? "" : undefined,
+      "data-snapped": first === 0 ? "" : undefined,
       "data-zriz-item": "dial",
       ...nativeProps(handlers),
       role: "slider",
       style: {
         WebkitTapHighlightColor: "transparent",
+        WebkitUserSelect: "none",
         position: "relative",
         touchAction: "pan-y",
         userSelect: "none",

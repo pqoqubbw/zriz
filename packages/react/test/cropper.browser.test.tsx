@@ -1760,3 +1760,41 @@ describe("a circle holds its aspect", () => {
     expect(seen.current?.getState().pristine).toBeTruthy();
   });
 });
+
+describe("maxZoom changes", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("reach useZoom in a child that does not render again", async () => {
+    const screen = await render(<ZoomMaxHost top={15} />);
+    await frames();
+    expect(document.querySelector("#zoom-max")?.textContent).toBe("15");
+    await screen.rerender(<ZoomMaxHost top={5} />);
+    await vi.waitFor(() => {
+      expect(document.querySelector("#zoom-max")?.textContent).toBe("5");
+    });
+  });
+});
+
+describe("text selection on the sliders", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("turns off with both spellings on Dial and Zoom", async () => {
+    const screen = await render(
+      <Cropper.Root image={PHOTO}>
+        <Cropper.Dial aria-label="Dial" />
+        <Cropper.Zoom aria-label="Zoom" />
+      </Cropper.Root>
+    );
+    for (const name of ["dial", "zoom"]) {
+      const { style } = screen.container.querySelector<HTMLElement>(
+        `[data-zriz-item="${name}"]`
+      ) ?? { style: null };
+      expect(style?.getPropertyValue("user-select")).toBe("none");
+      expect(style?.getPropertyValue("-webkit-user-select")).toBe("none");
+    }
+  });
+});

@@ -1,8 +1,8 @@
 "use client";
 
 import { zoomAria, zoomHandlers } from "@zriz/core/dom";
-import { warnUnlabelled } from "@zriz/react/warn";
-import { forwardRef, useContext, useCallback, useMemo } from "react";
+import { warnFormat, warnUnlabelled } from "@zriz/react/warn";
+import { forwardRef, useContext, useCallback, useMemo, useState } from "react";
 
 import { useCropperContext } from "../context";
 import {
@@ -12,9 +12,10 @@ import {
   useLatest,
   useMergedRef,
   useRelease,
+  useSameJson,
 } from "../part";
 import type { Part, PartProps } from "../part";
-import { useCropperState } from "../use-cropper";
+import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
 export interface ZoomState {
@@ -42,32 +43,38 @@ export const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   );
   useRelease(handlers);
   const dragging = useCropperState((s) => s.interacting === "zoom-control");
-  const disabled = useCropperState((s) => s.disabled);
+  const disabled = useAriaDisabled();
+  const [first] = useState(cropper.getZoom);
+  const spoken = useSameJson(format);
   const own = useCallback(
     (node: HTMLDivElement) => {
       const clear = box.set(node);
       warnUnlabelled("Zoom", node);
-      const off = zoomAria(cropper, node, { format, locale, max });
+      warnFormat("Zoom", locale, spoken);
+      const off = zoomAria(cropper, node, { format: spoken, locale, max });
       return () => {
         clear();
         off();
       };
     },
-    [box, cropper, format, locale, max]
+    [box, cropper, spoken, locale, max]
   );
   return usePart(
     "div",
     {
-      "aria-disabled": disabled ? true : undefined,
+      "aria-disabled": disabled,
       "aria-orientation": "horizontal",
+      "aria-valuenow": first,
       "data-dragging": dragging ? "" : undefined,
       "data-zriz-item": "zoom",
       ...nativeProps(handlers),
       role: "slider",
       style: {
         WebkitTapHighlightColor: "transparent",
+        WebkitUserSelect: "none",
         position: "relative",
         touchAction: "none",
+        userSelect: "none",
       },
       tabIndex: 0,
     },

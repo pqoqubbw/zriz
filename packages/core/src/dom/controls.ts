@@ -172,9 +172,11 @@ export const zoomHandlers = (
     if (event.altKey) {
       return null;
     }
+    const top = max();
+    const zoom = cropper.getZoom();
     const next = sliderKey(
       event,
-      zoomProgress(cropper.getZoom(), max()),
+      zoomProgress(zoom, top),
       KEY_STEPS,
       0,
       1,
@@ -183,8 +185,13 @@ export const zoomHandlers = (
     if (next === undefined) {
       return null;
     }
+    const past =
+      event.key === "Home" || event.key === "End" ? 1 : Math.max(zoom / top, 1);
     return () => {
-      cropper.setZoom(zoomAt(next, max()), { event, reason: "zoom-control" });
+      cropper.setZoom(zoomAt(next, top) * past, {
+        event,
+        reason: "zoom-control",
+      });
     };
   });
   return {
@@ -238,17 +245,18 @@ export const zoomAria = (
   element: HTMLElement,
   options: ZoomOptions = {}
 ): (() => void) => {
-  const formatter = numberFormat(options.locale, {
-    maximumFractionDigits: 0,
-    style: "percent",
-    ...options.format,
-  });
+  const formatter = numberFormat(
+    options.locale,
+    { maximumFractionDigits: 0, style: "percent" },
+    options.format
+  );
   return sliderAria(cropper, element, "zoom-control", () => {
     const zoom = cropper.getZoom();
+    const top = options.max ?? cropper.getMaxZoom();
     return [
       1,
-      options.max ?? cropper.getMaxZoom(),
-      Math.round(zoom * 100) / 100,
+      top,
+      Math.round(Math.min(zoom, top) * 100) / 100,
       formatter.format(zoom),
     ];
   });

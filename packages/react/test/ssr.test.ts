@@ -306,3 +306,28 @@ describe("useRender options", () => {
     ).toContain('class="a b"');
   });
 });
+
+describe("sliders on the server", () => {
+  it("carry a value and the zero mark before hydration", () => {
+    const html = renderToString(
+      createElement(
+        Cropper.Root,
+        { defaultValue: { rotation: 7 }, image: { height: 300, width: 400 } },
+        createElement(Cropper.Dial, { "aria-label": "Dial" }),
+        createElement(Cropper.Zoom, { "aria-label": "Zoom" })
+      )
+    );
+    expect(html).toContain('aria-valuenow="7"');
+    expect(html).toContain('aria-valuenow="1"');
+    expect(html).not.toContain("data-snapped");
+    const level = renderToString(
+      createElement(
+        Cropper.Root,
+        null,
+        createElement(Cropper.Dial, { "aria-label": "Dial" })
+      )
+    );
+    expect(level).toContain('aria-valuenow="0"');
+    expect(level).toContain("data-snapped");
+  });
+});

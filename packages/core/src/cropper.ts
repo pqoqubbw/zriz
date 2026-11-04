@@ -1025,6 +1025,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
       if (state && image) {
         commitState(state, "centre", { reason: "coverage" }, "coverage");
       }
+      cropper.invalidate();
       refresh();
     },
     setRotation(degrees, action = {}) {

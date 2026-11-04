@@ -109,6 +109,8 @@ export const dialState = (cropper: Cropper): DialState => dialStateOf(cropper);
 const clamp = (value: number, limit: number): number =>
   Math.min(Math.max(value, -limit), limit);
 
+const tenths = (value: number): number => Math.round(value * 10) / 10 || 0;
+
 export const dialHandlers = (
   cropper: Cropper,
   initial: DialOptions = {},
@@ -405,18 +407,22 @@ export const dialAria = (
   element: HTMLElement,
   options: DialOptions = {}
 ): (() => void) => {
-  const formatter = numberFormat(options.locale, {
-    maximumFractionDigits: 1,
-    style: "unit",
-    unit: "degree",
-    unitDisplay: "long",
-    ...options.format,
-  });
+  const formatter = numberFormat(
+    options.locale,
+    {
+      maximumFractionDigits: 1,
+      style: "unit",
+      unit: "degree",
+      unitDisplay: "long",
+    },
+    options.format
+  );
   return sliderAria(cropper, element, "reset", () => {
-    const limit = cropper.getRotationLimit();
+    const limit = tenths(cropper.getRotationLimit());
     const { rotation } = cropper.getValue();
+    const now = tenths(rotation);
     element.toggleAttribute("data-snapped", rotation === 0);
-    return [-limit, limit, rotation, formatter.format(rotation)];
+    return [-limit, limit, now, formatter.format(now && rotation)];
   });
 };
 

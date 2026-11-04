@@ -340,6 +340,12 @@ export const useCropperState = <T>(
   );
 };
 
+export const useAriaDisabled = (): true | undefined =>
+  useCropperState((s) => s.disabled) || undefined;
+
+export const firstCommitted = (cropper: Cropper): CropValue =>
+  firstSnapshot(cropper).committed;
+
 export const useCropperValue = (cropper?: Cropper): CropValue => {
   const target = useTarget(cropper);
   const subscribe = useCallback(

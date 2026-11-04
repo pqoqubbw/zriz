@@ -16,6 +16,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import { attach } from "./merge-props";
@@ -58,6 +59,14 @@ export const RootContextValue: React.Context<RootContext> =
 
 export const useIsomorphicLayoutEffect: typeof useEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+export const useSameJson = <T>(value: T): T => {
+  const [held, setHeld] = useState(value);
+  if (JSON.stringify(held) !== JSON.stringify(value)) {
+    setHeld(value);
+  }
+  return held;
+};
 
 export const useLatest = <T>(value: T): { readonly current: T } => {
   const ref = useRef(value);
