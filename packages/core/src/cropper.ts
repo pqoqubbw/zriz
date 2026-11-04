@@ -714,7 +714,11 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const cropper: Cropper = {
     begin(reason, event, owner) {
-      if (disabled() || (gesture !== null && gesture.owner !== owner)) {
+      if (
+        destroyed ||
+        disabled() ||
+        (gesture !== null && gesture.owner !== owner)
+      ) {
         return false;
       }
       dropHolding();
@@ -1004,6 +1008,7 @@ export const createCropper = (initial: CropperOptions = {}): Cropper => {
         if (!valuesEqual(value, committed)) {
           const previous = committed;
           committed = value;
+          refresh();
           emit("commit", value, {
             event: undefined,
             pixelCrop: exportPlan(fixed),
