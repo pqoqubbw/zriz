@@ -108,7 +108,7 @@ const EXPORTING_PAGE = defineDoc({
         [
           {
             name: "width",
-            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default and for anything but a positive number",
+            text: "the output width in pixels, never below 1 px. `getPixelCrop()` takes a scale, 1 by default and for anything but a positive number or a scale that pushes a side past `Number.MAX_SAFE_INTEGER`",
             type: "number",
           },
           {

@@ -6055,7 +6055,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
 
 - \`image\` \`Size | null\` = \`null\`
 
-  sets the photo's natural size. most writes wait for it
+  sets the photo's natural size. most writes wait for it. a side of about 1e18 or more can drop the tilt and open level
 - \`value\` \`CropValue\`
 
   sets the start in place of \`defaultValue\`. \`reset()\` still goes to \`defaultValue\`
@@ -6070,7 +6070,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   sets the largest zoom. 1 is the largest crop
 - \`focalLength\` \`number\` = \`26\`
 
-  sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it
+  sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it. a length that overflows falls back to 26 mm
 - \`disabled\` \`boolean\` = \`false\`
 
   refuses gestures and most writes
@@ -6873,7 +6873,7 @@ call \`getPixelCrop()\` when you upload, because a photo the user never touches 
 
 - \`width\` \`number\`
 
-  the output width in pixels, never below 1 px. \`getPixelCrop()\` takes a scale, 1 by default and for anything but a positive number
+  the output width in pixels, never below 1 px. \`getPixelCrop()\` takes a scale, 1 by default and for anything but a positive number or a scale that pushes a side past \`Number.MAX_SAFE_INTEGER\`
 - \`height\` \`number\`
 
   the output height in pixels at the same scale

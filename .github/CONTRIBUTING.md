@@ -59,7 +59,7 @@ The repo ships settings for VS Code, Cursor and Zed, and an `.editorconfig` for 
 
 ## What CI runs
 
-Every pull request and every push to `main` runs lint, format, types, the package checks, node tests on Node 22, 24 and 26, browser tests in Chromium on Linux and in Firefox and WebKit on macOS, the bundle size limits and the docs build. The size job writes a table of every entry against `main` into the run summary. A pull request can merge only when all of it passes.
+Every pull request and every push to `main` runs lint, format, types, the package checks, node tests on Node 22, 24 and 26, browser tests in Chromium, Firefox and WebKit on Linux, the bundle size limits and the docs build. WebKit on macOS runs as a separate workflow outside the required checks, because Linux WebKit draws video frames blank and has no P3, so those tests only run there. The size job writes a table of every entry against `main` into the run summary. A pull request can merge only when all of it passes.
 
 CI on a pull request from a fork waits until I approve the run, and again after each new push. That can take a day.
 

@@ -18,7 +18,7 @@ const CROPPER_PAGE = defineDoc({
           {
             default: "null",
             name: "image",
-            text: "sets the photo's natural size. most writes wait for it",
+            text: "sets the photo's natural size. most writes wait for it. a side of about 1e18 or more can drop the tilt and open level",
             type: "Size | null",
           },
           {
@@ -46,7 +46,7 @@ const CROPPER_PAGE = defineDoc({
           {
             default: "26",
             name: "focalLength",
-            text: "sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it",
+            text: "sets the lens as a 35 mm equivalent, for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it. a length that overflows falls back to 26 mm",
             type: "number",
           },
           {
