@@ -28,6 +28,9 @@ const SERVER_CROP_PAGE = defineDoc({
     section(
       "send the file and the value",
       p(
+        "the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the `toSharp` steps under the dial."
+      ),
+      p(
         "`getValue()` returns the crop value, and `serialize` turns it into a small json string. send that, not the export plan, so the server works out which pixels to keep on its own. the upload button waits for `onLoad`, because a value means nothing without its photo."
       ),
       p(
@@ -139,7 +142,10 @@ const SERVER_CROP_PAGE = defineDoc({
       p("`crop-upload.tsx` runs in the browser:"),
       code("server-crop/crop-upload.tsx"),
       p("`app/api/crop/route.ts` runs on the server:"),
-      code("server-crop/app/api/crop/route.ts")
+      code("server-crop/app/api/crop/route.ts"),
+      p(
+        "the demo above keeps the limits and parts of `crop-upload.tsx`. it adds rotate, flip, handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site."
+      )
     ),
   ],
   lede: "send the photo and its crop value to your server, and cut the full-size original there with sharp.",

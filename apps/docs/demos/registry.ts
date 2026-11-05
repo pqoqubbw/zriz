@@ -411,7 +411,22 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+DialValue",
+        "+Flip",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+        "+Rotate",
+      ],
+      export: "CropUpload",
+      file: "server-crop/crop-upload.tsx",
+      inputs: {},
+      kind: "component",
+    },
     summary:
       "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and send in the corners. send shows the value and the sharp plan",
     zones: [EDITOR_ZONE],
