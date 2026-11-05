@@ -81,12 +81,14 @@ const CopyAction = ({ label, read }: CopyActionProps) => {
     <>
       <Button onClick={onClick}>
         <span className="grid">
-          <span className={cn("[grid-area:1/1]", copied && "invisible")}>
+          <span
+            className={cn("col-start-1 row-start-1", copied && "invisible")}
+          >
             {label}
           </span>
           <span
             aria-hidden="true"
-            className={cn("[grid-area:1/1]", !copied && "invisible")}
+            className={cn("col-start-1 row-start-1", !copied && "invisible")}
           >
             copied
           </span>
