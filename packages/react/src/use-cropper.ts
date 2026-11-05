@@ -119,7 +119,7 @@ const applyNumber = (
   read: () => number,
   write: (prop: number) => void,
   forced: boolean,
-  last: number
+  mine: Applied
 ): void => {
   const now = read();
   const fresh = prop !== slot.prop;
@@ -131,9 +131,10 @@ const applyNumber = (
     slot.prop = prop;
     slot.held = undefined;
 
-    if (fresh && !forced && answered(slot.sent, prop, near, last)) {
+    if (fresh && !forced && answered(slot.sent, prop, near, mine.last)) {
       slot.at = now;
       slot.held = near(now, prop) ? undefined : now;
+      mine.heldAt = performance.now();
 
       return;
     }
@@ -169,6 +170,7 @@ const applyAspect = (
 
   if (moved && answered(mine.aspects, aspect, sameAspect, mine.last)) {
     mine.heldAspect = sameAspect(crop, aspect) ? undefined : crop;
+    mine.heldAt = performance.now();
   } else if (moved && !sameAspect(crop, aspect)) {
     mine.wrote = emit;
     cropper.setAspect(aspect, { emit, reason: "aspect" });
@@ -278,7 +280,6 @@ const applyProps = (
 
   mine.busy = true;
   const emit = mine.had;
-  const before = [mine.heldAspect, mine.rotation.held, mine.zoom.held];
   const reason = applyAspect(cropper, mine, aspect, emit);
 
   if (rotation !== mine.rotation.prop || relaxed) {
@@ -291,7 +292,7 @@ const applyProps = (
         cropper.setRotation(next, { emit, reason });
       },
       false,
-      mine.last
+      mine
     );
   }
 
@@ -317,16 +318,8 @@ const applyProps = (
         });
       },
       swapped,
-      mine.last
+      mine
     );
-  }
-
-  if (
-    [mine.heldAspect, mine.rotation.held, mine.zoom.held].some(
-      (held, index) => held !== undefined && held !== before[index]
-    )
-  ) {
-    mine.heldAt = performance.now();
   }
 
   settleHeld(cropper, mine, { aspect, rotation, zoom });
