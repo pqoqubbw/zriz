@@ -1,0 +1,57 @@
+import { cva } from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
+
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/components/ui/icon";
+
+type ChipContentProps = VariantProps<typeof chipLabelVariants> & {
+  icon: IconName;
+  label: string;
+};
+
+const chipVariants = cva(
+  "relative flex h-8 shrink-0 items-center gap-1.5 rounded-button bg-white text-control font-medium select-none",
+  {
+    compoundVariants: [
+      {
+        className:
+          "not-aria-disabled:hover:bg-button-hover not-aria-disabled:active:bg-button-press",
+        live: true,
+        tone: "default",
+      },
+      { className: "hover:bg-error-hover", live: true, tone: "error" },
+    ],
+    defaultVariants: { live: true, size: "label", tone: "default" },
+    variants: {
+      live: {
+        false: "",
+        true: "cursor-pointer before:absolute before:-inset-1.5 focus-visible:shadow-lift focus-visible:inset-shadow-focus focus-visible:corners-none aria-disabled:cursor-default data-dim:*:opacity-40 data-pristine:hidden",
+      },
+      size: {
+        collapse:
+          "pr-2.5 pl-2 @max-demo:w-8 @max-demo:justify-center @max-demo:p-0",
+        fixed: "w-27 justify-center @max-demo:w-8",
+        icon: "w-8 justify-center",
+        label: "pr-2.5 pl-2",
+      },
+      tone: {
+        default: "text-ink shadow-raised",
+        error: "text-error shadow-error",
+      },
+    },
+  }
+);
+
+const chipLabelVariants = cva("", {
+  defaultVariants: { collapse: false },
+  variants: { collapse: { false: "", true: "@max-demo:hidden" } },
+});
+
+const ChipContent = ({ collapse, icon, label }: ChipContentProps) => (
+  <>
+    <Icon className="size-5 shrink-0" name={icon} />
+    <span className={chipLabelVariants({ collapse })}>{label}</span>
+  </>
+);
+
+export { ChipContent, chipVariants };
