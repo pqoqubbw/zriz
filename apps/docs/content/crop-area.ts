@@ -23,7 +23,8 @@ const CROP_AREA_PAGE = defineDoc({
       ),
       p(
         "`Area` points `aria-describedby` at the `Instructions` part. render it with your own help text. without it, the reference points at nothing and screen readers skip it. [accessibility](accessibility) covers it and `Announcer`."
-      )
+      ),
+      p("the demo above uses the styles from the zriz site.")
     ),
     section(
       "recolour the focus ring",

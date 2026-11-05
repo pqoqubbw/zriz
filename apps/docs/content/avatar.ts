@@ -58,7 +58,10 @@ const AVATAR_PAGE = defineDoc({
     section(
       "the whole file",
       p("`AvatarPicker` hands `onSave` the png as a `Blob`:"),
-      code("avatar/avatar-picker.tsx")
+      code("avatar/avatar-picker.tsx"),
+      p(
+        "the demo above runs this file with the styles from the zriz site. its open, reset and download buttons take the place of the input, the alerts and save. it adds a zoom slider with step buttons and stops the zoom at 3× with `maxZoom` on `Root`."
+      )
     ),
   ],
   lede: "a profile photo picker: the visitor picks a file, moves it under a circle and saves a round png.",

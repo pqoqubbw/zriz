@@ -19,6 +19,9 @@ const ZOOM_PAGE = defineDoc({
       code("zoom/anatomy.jsx.tsx"),
       p(
         "zriz paints nothing here and gives these parts no size. give `Zoom` a width and a height, then style the track and the thumb. a press on the track jumps the zoom to that point. [full editor](full-editor) paints a track and a thumb you can copy."
+      ),
+      p(
+        "the demo above stops the zoom at 3× with `maxZoom` on `Root`, marks a step at the limit as shown below and uses the styles from the zriz site."
       )
     ),
     section(
