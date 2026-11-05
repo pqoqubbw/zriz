@@ -24,6 +24,38 @@ type Turn = <T>(
   signal: AbortSignal | undefined
 ) => Promise<T>;
 
+type ScriptUrlPolicy = {
+  createScriptURL: (url: string) => string;
+};
+
+type PolicyFactory = {
+  createPolicy: (
+    name: string,
+    rules: { createScriptURL: (url: string) => string }
+  ) => ScriptUrlPolicy;
+};
+
+let policy: ScriptUrlPolicy | null | undefined;
+
+const trusted = (url: string): string => {
+  if (policy === undefined) {
+    policy = null;
+
+    try {
+      const { trustedTypes } = globalThis as { trustedTypes?: PolicyFactory };
+
+      policy =
+        trustedTypes?.createPolicy("zriz", {
+          createScriptURL: (given) => (given.startsWith("blob:") ? given : ""),
+        }) ?? null;
+    } catch {
+      policy = null;
+    }
+  }
+
+  return policy ? policy.createScriptURL(url) : url;
+};
+
 const program = (kernel: string): string =>
   `const kernel=(${kernel})();onmessage=async(e)=>{const{id,op,args}=e.data;try{const result=await kernel[op](...args);postMessage({id,result},result instanceof ImageBitmap?[result]:result&&result.preview?[result.preview]:[])}catch(error){postMessage({id,error:error instanceof ReferenceError?"zriz:worker:failed":String(error&&error.message||error)})}finally{for(const arg of args){const held=arg&&arg.source||arg;if(held instanceof ImageBitmap)held.close()}}}`;
 
@@ -52,7 +84,7 @@ const lane = <K>(kernel: () => K): Lane<K> => {
       const url = URL.createObjectURL(
         new Blob([program(kernel.toString())], { type: "text/javascript" })
       );
-      const created = new Worker(url);
+      const created = new Worker(trusted(url));
 
       created.addEventListener("message", (event: MessageEvent<Reply>) => {
         URL.revokeObjectURL(url);

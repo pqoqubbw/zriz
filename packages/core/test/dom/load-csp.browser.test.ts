@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createCropper } from "../../src";
 import { attachImage, exportCrop, loadImage } from "../../src/dom";
+import { lane } from "../../src/dom/worker";
 
 const PIXEL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
@@ -103,5 +104,27 @@ describe("load under a policy without blob: or data:", () => {
     await violated("img-src", "blob");
     expect(message).toContain("img-src");
     expect(message).toContain("blob:");
+  });
+});
+
+describe("under a page that enforces trusted types", () => {
+  it("still starts a worker through its own policy", async () => {
+    const policy = document.createElement("meta");
+    const blocked: string[] = [];
+
+    const note = (event: SecurityPolicyViolationEvent): void => {
+      blocked.push(event.effectiveDirective);
+    };
+
+    document.addEventListener("securitypolicyviolation", note);
+    policy.httpEquiv = "Content-Security-Policy";
+    policy.content = "require-trusted-types-for 'script'; trusted-types zriz";
+    document.head.append(policy);
+
+    const worker = lane(() => ({ ping: async () => await Promise.resolve(1) }));
+
+    await expect(worker.call("ping", [])).resolves.toBe(1);
+    document.removeEventListener("securitypolicyviolation", note);
+    expect(blocked).toStrictEqual([]);
   });
 });
