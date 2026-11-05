@@ -1,0 +1,5 @@
+@media (forced-colors: active) {
+  [data-zriz-item="zoom-thumb"] {
+    background: CanvasText !important;
+  }
+}

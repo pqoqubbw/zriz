@@ -2793,14 +2793,7 @@ cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span>
   [
     "vanilla-js",
     "vanilla-js/zoom.html",
-    "<style>
-  @media (forced-colors: active) {
-    [data-zriz-item="zoom-thumb"] {
-      background: CanvasText !important;
-    }
-  }
-</style>
-<div
+    "<div
   id="zoom"
   data-zriz-item="zoom"
   role="slider"
@@ -2828,14 +2821,7 @@ cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span>
     "
   ></div>
 </div>",
-    "<span class=p>&lt;</span><span class=t>style</span><span class=p>&gt;</span>
-  <span class=p>@</span><span class=k>media </span><span class=p>(</span>forced-colors<span class=p>:</span> active<span class=p>) {</span>
-    <span class=t>[data-zriz-item</span><span class=p>="</span><span class=t>zoom-thumb</span><span class=p>"</span><span class=t>] </span><span class=p>{</span>
-      <span class=a>background</span><span class=p>:</span> CanvasText <span class=k>!important</span><span class=p>;</span>
-    <span class=p>}</span>
-  <span class=p>}</span>
-<span class=p>&lt;/</span><span class=t>style</span><span class=p>&gt;</span>
-<span class=p>&lt;</span><span class=t>div</span>
+    "<span class=p>&lt;</span><span class=t>div</span>
   <span class=a>id</span><span class=p>="</span><span class=s>zoom</span><span class=p>"</span>
   <span class=a>data-zriz-item</span><span class=p>="</span><span class=s>zoom</span><span class=p>"</span>
   <span class=a>role</span><span class=p>="</span><span class=s>slider</span><span class=p>"</span>
@@ -2863,6 +2849,20 @@ cleanups<span class=p>.</span><span class=t>push</span><span class=p>(</span>
     <span class=p>"</span>
   <span class=p>&gt;&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
 <span class=p>&lt;/</span><span class=t>div</span><span class=p>&gt;</span>",
+  ],
+  [
+    "vanilla-js",
+    "vanilla-js/zoom.css",
+    "@media (forced-colors: active) {
+  [data-zriz-item="zoom-thumb"] {
+    background: CanvasText !important;
+  }
+}",
+    "<span class=p>@</span><span class=k>media </span><span class=p>(</span>forced-colors<span class=p>:</span> active<span class=p>) {</span>
+  <span class=t>[data-zriz-item</span><span class=p>=</span><span class=s>"</span><span class=t>zoom-thumb</span><span class=s>"</span><span class=t>] </span><span class=p>{</span>
+    <span class=a>background</span><span class=p>:</span> CanvasText <span class=k>!important</span><span class=p>;</span>
+  <span class=p>}</span>
+<span class=p>}</span>",
   ],
   [
     "vanilla-js",
@@ -9119,7 +9119,7 @@ export const cropperPolicy = [
 ].join("; ");
 \`\`\`
 
-zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`script-src\` needs nothing for it, and \`style-src\` needs nothing for the parts' own styles. a \`style\` prop of yours on a server rendered part stays refused, and the recipes size \`Viewport\`, \`Dial\` and \`Zoom\` and paint \`ZoomThumb\` that way. add \`style-src-attr 'unsafe-inline'\` to allow it, or drop the \`style\` prop and give those parts a class from your stylesheet. the same goes for a \`style\` attribute in your own html, as in the [vanilla js](https://zriz.dev/docs/vanilla-js.md) markup. with trusted types, add \`zriz\` to \`trusted-types\`.
+zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`script-src\` needs nothing for it, and \`style-src\` needs nothing for the parts' own styles. a \`style\` prop of yours on a server rendered part stays refused, and the recipes size \`Viewport\`, \`Dial\` and \`Zoom\` and paint \`ZoomThumb\` that way. add \`style-src-attr 'unsafe-inline'\` to allow it, or drop the \`style\` prop and give those parts a class from your stylesheet. the same goes for a \`style\` attribute in your own html, as in the [vanilla js](https://zriz.dev/docs/vanilla-js.md) markup. a \`<style>\` element in your html is refused too, and \`style-src-attr\` does not cover it. move its rules to your stylesheet, or list its hash in \`style-src\`. with trusted types, add \`zriz\` to \`trusted-types\`.
 
 ## urls you pass as src
 
@@ -10395,16 +10395,9 @@ after a flick, the speed falls to about a third every \`tau\` ms, and the glide 
 
 ## add a zoom slider
 
-zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`, an \`aria-label\`, a size, \`position: relative\`, \`touch-action: none\` and \`user-select: none\`, and draw the thumb yourself. the stylesheet paints nothing on zoom. forced colours mode drops the colour on the thumb, so the \`<style>\` paints it in \`CanvasText\`:
+zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`, an \`aria-label\`, a size, \`position: relative\`, \`touch-action: none\` and \`user-select: none\`, and draw the thumb yourself. the stylesheet paints nothing on zoom:
 
 \`\`\`html
-<style>
-  @media (forced-colors: active) {
-    [data-zriz-item="zoom-thumb"] {
-      background: CanvasText !important;
-    }
-  }
-</style>
 <div
   id="zoom"
   data-zriz-item="zoom"
@@ -10433,6 +10426,16 @@ zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`,
     "
   ></div>
 </div>
+\`\`\`
+
+forced colours mode drops the colour on the thumb. add this rule to your stylesheet to paint it in \`CanvasText\`. keep it in a css file, because a strict \`style-src\` refuses a \`<style>\` element. the thumb's colour is inline, so the rule needs \`!important\`:
+
+\`\`\`css
+@media (forced-colors: active) {
+  [data-zriz-item="zoom-thumb"] {
+    background: CanvasText !important;
+  }
+}
 \`\`\`
 
 then hand its events to \`zoomHandlers\`:

@@ -70,9 +70,13 @@ const VANILLA_JS_PAGE = defineDoc({
     section(
       "add a zoom slider",
       p(
-        'zoom has no single binder. give the element `role="slider"`, `tabindex="0"`, an `aria-label`, a size, `position: relative`, `touch-action: none` and `user-select: none`, and draw the thumb yourself. the stylesheet paints nothing on zoom. forced colours mode drops the colour on the thumb, so the `<style>` paints it in `CanvasText`:'
+        'zoom has no single binder. give the element `role="slider"`, `tabindex="0"`, an `aria-label`, a size, `position: relative`, `touch-action: none` and `user-select: none`, and draw the thumb yourself. the stylesheet paints nothing on zoom:'
       ),
       code("vanilla-js/zoom.html"),
+      p(
+        "forced colours mode drops the colour on the thumb. add this rule to your stylesheet to paint it in `CanvasText`. keep it in a css file, because a strict `style-src` refuses a `<style>` element. the thumb's colour is inline, so the rule needs `!important`:"
+      ),
+      code("vanilla-js/zoom.css"),
       p("then hand its events to `zoomHandlers`:"),
       code("vanilla-js/zoom.ts"),
       p(
