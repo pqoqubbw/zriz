@@ -1,5 +1,12 @@
-import { Frame } from "@/demos/shell/frame";
+"use client";
 
-const ZoomDemo = () => <Frame name="zoom" />;
+import { DemoShell } from "@/demos/shell/demo-shell";
+import { ZoomZone } from "@/demos/shell/zoom-zone";
+
+const ZoomDemo = () => (
+  <DemoShell maxZoom={3} name="zoom">
+    <ZoomZone />
+  </DemoShell>
+);
 
 export default ZoomDemo;
