@@ -8,6 +8,7 @@ import {
   capture,
   claim,
   claimTouch,
+  isRtl,
   pressLost,
   presses,
   targetOf,
@@ -144,7 +145,8 @@ const dialHandlers = (
   let stopGlide: ((event?: Event) => void) | null = null;
 
   const gain = (): number => positive(dial.options().gain, DEFAULT_GAIN);
-  const sign = (): number => (dial.options().dir === "rtl" ? -1 : 1);
+  const sign = (event: Event): number =>
+    isRtl(dial.options().dir, targetOf(event, element)) ? -1 : 1;
 
   const show = (raw: number, dragging: boolean, event: Event): void => {
     dial.stopSettle?.();
@@ -317,7 +319,7 @@ const dialHandlers = (
               1,
               -limit,
               limit,
-              sign()
+              sign(event)
             );
 
       if (next === undefined) {
@@ -454,15 +456,14 @@ const dialHandlers = (
 
       const samples = event.getCoalescedEvents?.() ?? [];
 
+      const way = sign(event);
+
       for (const sample of samples.length > 0 ? samples : [event]) {
-        tracker.push(
-          sample.timeStamp,
-          ((sample.clientX - startX) * sign()) / scale
-        );
+        tracker.push(sample.timeStamp, ((sample.clientX - startX) * way) / scale);
       }
 
       show(
-        startRotation + ((event.clientX - startX) * sign()) / scale / gain(),
+        startRotation + ((event.clientX - startX) * way) / scale / gain(),
         true,
         event
       );
@@ -653,7 +654,7 @@ const bindDialTicks = (
 
     const dpr = win.devicePixelRatio || 1;
     const middle = ((ticks.length - 1) / 2) * spacing();
-    const sign = dial.options().dir === "rtl" ? -1 : 1;
+    const sign = isRtl(dial.options().dir, strip) ? -1 : 1;
     const offset =
       centre -
       middle +

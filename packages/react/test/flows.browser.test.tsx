@@ -529,10 +529,17 @@ describe("hooks in a real render", () => {
   });
 });
 
-const measureDial = async (dir: "ltr" | "rtl") => {
+const measureDial = async (dir: "ltr" | "rtl", from: "root" | "page") => {
   const api = createRef<CropperApi>();
+  const image = { height: 300, width: 400 };
   const screen = await render(
-    <Editor api={api} rootProps={{ dir, image: { height: 300, width: 400 } }} />
+    from === "root" ? (
+      <Editor api={api} rootProps={{ dir, image }} />
+    ) : (
+      <div dir={dir}>
+        <Editor api={api} rootProps={{ image }} />
+      </div>
+    )
   );
 
   await frames(3);
@@ -566,17 +573,27 @@ const measureDial = async (dir: "ltr" | "rtl") => {
   return { key, moved, rotation };
 };
 
-describe("rtl through Root", () => {
+describe.each(["root", "page"] as const)("rtl from the %s", (from) => {
   afterEach(async () => {
     await cleanup();
   });
 
-  const rtl = { dir: "rtl", image: { height: 300, width: 400 } };
+  const image = { height: 300, width: 400 };
+  const mountRtl = (api: React.Ref<CropperApi>) =>
+    render(
+      from === "root" ? (
+        <Editor api={api} rootProps={{ dir: "rtl", image }} />
+      ) : (
+        <div dir="rtl">
+          <Editor api={api} rootProps={{ image }} />
+        </div>
+      )
+    );
 
   it("AspectGroup arrows run the other way", async () => {
     const api = createRef<CropperApi>();
 
-    await render(<Editor api={api} rootProps={rtl} />);
+    await mountRtl(api);
     await frames(3);
     const items = [
       ...document.querySelectorAll<HTMLButtonElement>(
@@ -596,7 +613,7 @@ describe("rtl through Root", () => {
   it("Zoom keys, pointer and thumb follow rtl", async () => {
     const api = createRef<CropperApi>();
 
-    await render(<Editor api={api} rootProps={rtl} />);
+    await mountRtl(api);
     await frames(3);
     api.current?.setZoom(4);
     await settled(api);
@@ -640,13 +657,100 @@ describe("rtl through Root", () => {
   });
 
   it("Dial keys flip and the strip follows the finger in both directions", async () => {
-    const ltr = await measureDial("ltr");
-    const rtl2 = await measureDial("rtl");
+    const ltr = await measureDial("ltr", from);
+    const rtl2 = await measureDial("rtl", from);
 
     expect(Math.sign(ltr.key)).toBe(-Math.sign(rtl2.key));
     expect(ltr.moved).toBeGreaterThan(0);
     expect(rtl2.moved).toBeGreaterThan(0);
     expect(Math.sign(ltr.rotation)).toBe(-Math.sign(rtl2.rotation));
+  });
+});
+
+describe("the page's direction", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  const image = { height: 300, width: 400 };
+
+  it("is left alone, with no dir attribute on Root", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(
+      <div dir="rtl">
+        <Editor api={api} rootProps={{ image }} />
+      </div>
+    );
+    const root = q('[data-zriz-item="root"]');
+
+    expect(root.hasAttribute("dir")).toBeFalsy();
+    expect(getComputedStyle(root).direction).toBe("rtl");
+  });
+
+  it("is read at each key press, so a later change takes effect", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <div data-testid="page" dir="ltr">
+        <Editor api={api} rootProps={{ image }} />
+      </div>
+    );
+
+    await frames(3);
+    const dial = q("#dial");
+
+    dial.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await settled(api);
+    expect(api.current?.getValue().rotation).toBeGreaterThan(0);
+
+    screen.container.querySelector("[data-testid]")?.setAttribute("dir", "rtl");
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+    await settled(api);
+    expect(api.current?.getValue().rotation).toBeLessThan(0);
+  });
+
+  it("gives way to dir on Root", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(
+      <div dir="rtl">
+        <Editor api={api} rootProps={{ dir: "ltr", image }} />
+      </div>
+    );
+    await frames(3);
+    q("#dial").focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await settled(api);
+    expect(api.current?.getValue().rotation).toBeGreaterThan(0);
+  });
+
+  it("keeps the minus of the dial value on the left", async () => {
+    await render(
+      <div dir="rtl">
+        <Cropper.Root image={image}>
+          <Cropper.DialValue format={() => "-5"} />
+        </Cropper.Root>
+      </div>
+    );
+    const value = q('[data-zriz-item="dial-value"]');
+
+    await expect.poll(() => value.textContent).toBe("-5");
+    const place = (index: number): number => {
+      const range = document.createRange();
+      const text = value.firstChild;
+
+      if (!text) {
+        throw new Error("no text");
+      }
+
+      range.setStart(text, index);
+      range.setEnd(text, index + 1);
+
+      return range.getBoundingClientRect().left;
+    };
+
+    expect(place(0)).toBeLessThan(place(1));
   });
 });
 

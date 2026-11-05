@@ -180,6 +180,7 @@ describe("part props", () => {
   it("forwards native events from the handlers it wraps", () => {
     const { cropper, props } = propsOf(Cropper.Dial);
     const nativeEvent = {
+      currentTarget: null,
       key: "ArrowRight",
       preventDefault: vi.fn<() => void>(),
       shiftKey: false,

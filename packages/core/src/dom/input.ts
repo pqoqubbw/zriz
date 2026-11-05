@@ -95,6 +95,9 @@ const isElement = (node: EventTarget | null): node is Element =>
 const windowOf = (element?: Element | null): typeof globalThis =>
   element?.ownerDocument.defaultView ?? globalThis;
 
+const isRtl = (dir: string | undefined, node: Element | null): boolean =>
+  (dir ?? (node ? getComputedStyle(node).direction : "")) === "rtl";
+
 const claimTouch = ({ style }: HTMLElement, touch: string): (() => void) => {
   style.touchAction = touch;
 
@@ -237,6 +240,7 @@ const bindPointers = (
 
 export type { PointerHandlers };
 export {
+  isRtl,
   MIN_HANDLE_SPAN,
   bindPointers,
   capture,

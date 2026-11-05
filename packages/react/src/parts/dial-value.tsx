@@ -52,7 +52,12 @@ const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
 
   return usePart(
     "span",
-    { "aria-hidden": true, "data-zriz-item": "dial-value", style: PRESS },
+    {
+      "aria-hidden": true,
+      "data-zriz-item": "dial-value",
+      dir: "ltr",
+      style: PRESS,
+    },
     bare,
     useMergedRef(own, ref),
     {}

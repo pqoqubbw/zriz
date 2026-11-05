@@ -35,7 +35,13 @@ const cast = <T>(value: unknown, is: (value: unknown) => value is T): T => {
 
 const key = (init: KeyInit): KeyboardEvent =>
   cast(
-    { altKey: false, preventDefault: () => {}, shiftKey: false, ...init },
+    {
+      altKey: false,
+      currentTarget: null,
+      preventDefault: () => {},
+      shiftKey: false,
+      ...init,
+    },
     isKey
   );
 

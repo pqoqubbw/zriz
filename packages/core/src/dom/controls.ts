@@ -7,6 +7,7 @@ import {
   MIN_HANDLE_SPAN,
   capture,
   claim,
+  isRtl,
   pressLost,
   presses,
   stopAtZoomCeiling,
@@ -151,7 +152,8 @@ const zoomHandlers = (
   const read = (): ZoomOptions =>
     typeof options === "function" ? options() : options;
   const max = (): number => read().max ?? cropper.getMaxZoom();
-  const sign = (): number => (read().dir === "rtl" ? -1 : 1);
+  const sign = (event: Event): number =>
+    isRtl(read().dir, targetOf(event, element)) ? -1 : 1;
 
   const fromPointer = (event: PointerEvent): void => {
     const box = targetOf(event, element)?.getBoundingClientRect();
@@ -162,7 +164,7 @@ const zoomHandlers = (
 
     let progress = (event.clientX - box.left) / box.width;
 
-    if (sign() < 0) {
+    if (sign(event) < 0) {
       progress = 1 - progress;
     }
 
@@ -212,7 +214,7 @@ const zoomHandlers = (
       KEY_STEPS,
       0,
       1,
-      sign()
+      sign(event)
     );
 
     if (next === undefined) {

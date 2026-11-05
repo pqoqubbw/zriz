@@ -49,7 +49,7 @@ type RootContextValue = {
   box?: ElementBox;
   shape: "rect" | "circle";
   instructions: string | undefined;
-  dir: "ltr" | "rtl";
+  dir: "ltr" | "rtl" | undefined;
   locale: string | undefined;
 };
 
@@ -59,7 +59,7 @@ type ElementBox = {
 };
 
 const RootContext: Context<RootContextValue> = createContext<RootContextValue>({
-  dir: "ltr",
+  dir: undefined,
   instructions: undefined,
   locale: undefined,
   shape: "rect",

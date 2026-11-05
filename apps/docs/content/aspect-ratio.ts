@@ -71,7 +71,7 @@ const ASPECT_RATIO_PAGE = defineDoc({
         },
       ]),
       p(
-        'the arrows wrap around at the ends and skip disabled items. with `dir="rtl"` on `Root`, left and right swap.'
+        'the arrows wrap around at the ends and skip disabled items. on a right-to-left page or with `dir="rtl"` on `Root`, left and right swap.'
       )
     ),
     section(

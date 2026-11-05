@@ -414,7 +414,7 @@ const pressKey = (
   name: string
 ): void => {
   Reflect.apply(press, undefined, [
-    { key: name, preventDefault: () => {}, shiftKey: false },
+    { currentTarget: null, key: name, preventDefault: () => {}, shiftKey: false },
   ]);
 };
 

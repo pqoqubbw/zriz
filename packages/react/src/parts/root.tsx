@@ -57,7 +57,7 @@ type RootProps = UseCropperOptions &
     motion?: "auto" | "always" | "reduce" | undefined;
     /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
     recenterDelay?: number | undefined;
-    /** Reading direction for keys and sliders. @default "ltr" */
+    /** Reading direction for keys and sliders. @default the page's direction */
     dir?: "ltr" | "rtl" | undefined;
     /** Locale for value text. */
     locale?: string | undefined;
@@ -146,7 +146,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     shape = "rect",
     motion = "auto",
     recenterDelay,
-    dir = "ltr",
+    dir,
     locale,
     actionsRef,
     onLoad,

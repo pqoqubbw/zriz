@@ -5522,7 +5522,7 @@ the group is one tab stop. tab lands on the checked item, or on the first one wh
 | \`left\` or \`up\` | select the previous ratio |
 | \`home\` or \`end\` | select the first or the last ratio |
 
-the arrows wrap around at the ends and skip disabled items. with \`dir="rtl"\` on \`Root\`, left and right swap.
+the arrows wrap around at the ends and skip disabled items. on a right-to-left page or with \`dir="rtl"\` on \`Root\`, left and right swap.
 
 ## api
 
@@ -6546,7 +6546,7 @@ these keys work while \`Dial\` has focus:
 | \`home\` or \`end\` | go to the lowest or the highest angle, −45° or 45° at most |
 | \`0\` | straighten to 0° |
 
-with \`dir="rtl"\` on \`Root\`, left and right swap. up and down stay the same.
+on a right-to-left page or with \`dir="rtl"\` on \`Root\`, left and right swap. up and down stay the same.
 
 escape during a drag cancels it and puts the angle back.
 
@@ -8454,9 +8454,9 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
 - \`recenterDelay\` \`number\` = \`500\`
 
   milliseconds after a gesture before the crop recentres
-- \`dir\` \`"ltr" | "rtl"\` = \`"ltr"\`
+- \`dir\` \`"ltr" | "rtl"\`
 
-  the reading direction for keys and sliders. \`Root\` also sets the html \`dir\` attribute
+  the reading direction for keys and sliders. with no value, each part reads its computed \`direction\` at the press. with a value, \`Root\` also sets the html \`dir\` attribute
 - \`locale\` \`string\`
 
   formats the values screen readers hear
@@ -9690,7 +9690,7 @@ cleanups.push(
 );
 \`\`\`
 
-pass \`{ dir: "rtl" }\` as the third argument of \`bindDial\` to swap the arrows and the drag.
+on a right-to-left page, the arrows and the drag swap. pass \`{ dir: "rtl" }\` or \`{ dir: "ltr" }\` as the third argument of \`bindDial\` to set it yourself.
 
 ## add a zoom slider
 

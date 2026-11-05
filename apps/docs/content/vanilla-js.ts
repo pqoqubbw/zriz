@@ -52,7 +52,7 @@ const VANILLA_JS_PAGE = defineDoc({
       ),
       code("vanilla-js/dial.ts"),
       p(
-        'pass `{ dir: "rtl" }` as the third argument of `bindDial` to swap the arrows and the drag.'
+        'on a right-to-left page, the arrows and the drag swap. pass `{ dir: "rtl" }` or `{ dir: "ltr" }` as the third argument of `bindDial` to set it yourself.'
       )
     ),
     section(

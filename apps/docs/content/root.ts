@@ -170,9 +170,8 @@ const ROOT_PAGE = defineDoc({
             type: "number",
           },
           {
-            default: '"ltr"',
             name: "dir",
-            text: "the reading direction for keys and sliders. `Root` also sets the html `dir` attribute",
+            text: "the reading direction for keys and sliders. with no value, each part reads its computed `direction` at the press. with a value, `Root` also sets the html `dir` attribute",
             type: '"ltr" | "rtl"',
           },
           {
