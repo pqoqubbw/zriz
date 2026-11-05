@@ -123,6 +123,11 @@ const svgSize = (text: string): Size => {
     size = { height, width: height * ratio };
   } else if (ratio > 0) {
     size = { height: boxHeight, width: boxWidth };
+  } else if (width > 0 || height > 0) {
+    size = {
+      height: height || FALLBACK.height,
+      width: width || FALLBACK.width,
+    };
   }
 
   const area = size.width * size.height;

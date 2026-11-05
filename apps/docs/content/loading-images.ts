@@ -47,7 +47,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "svg",
-            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing",
+            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. a side it cannot find falls back to 300 by 150 on that side. zriz draws it once at that size, at most the preview size, and exports from that drawing",
           ],
           [
             "animated gif, png, webp, avif",

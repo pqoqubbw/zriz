@@ -930,6 +930,21 @@ describe("svg sources", () => {
     }
   );
 
+  it("gives a lone width the default height without stretching", async () => {
+    const { preview } = await loadImage(
+      new Blob(
+        [
+          '<svg xmlns="http://www.w3.org/2000/svg" width="200"><rect width="200" height="150" fill="#cc3333"/></svg>',
+        ],
+        { type: "image/svg+xml" }
+      )
+    );
+
+    expect([preview.width, preview.height]).toStrictEqual([200, 150]);
+    expect(near(paint(preview, 0.98, 0.98), [204, 51, 51, 255])).toBeTruthy();
+    preview.close();
+  });
+
   it("opens a raster photo with svg off", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"), {
       svg: false,
