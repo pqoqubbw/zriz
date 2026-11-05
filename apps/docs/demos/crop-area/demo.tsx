@@ -1,5 +1,7 @@
-import { Frame } from "@/demos/shell/frame";
+"use client";
 
-const CropAreaDemo = () => <Frame name="crop-area" />;
+import { DemoShell } from "@/demos/shell/demo-shell";
+
+const CropAreaDemo = () => <DemoShell name="crop-area" />;
 
 export default CropAreaDemo;
