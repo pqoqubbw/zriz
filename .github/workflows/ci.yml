@@ -70,6 +70,7 @@ jobs:
   browser:
     name: browser (${{ matrix.engine }})
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
     timeout-minutes: 20
     permissions:
       contents: read
@@ -79,6 +80,7 @@ jobs:
         engine: [chromium, firefox, webkit]
     env:
       ENGINE: ${{ matrix.engine }}
+      HOME: /root
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,12 +94,9 @@ jobs:
       - run: pnpm build:packages
       - name: install the browser
         run: |
-          args=("$ENGINE" --with-deps)
+          args=("$ENGINE")
           if [ "$ENGINE" = chromium ]; then args+=(--only-shell); fi
-          for _ in 1 2 3; do
-            if timeout 300 pnpm exec playwright install "${args[@]}"; then exit 0; fi
-          done
-          exit 1
+          pnpm exec playwright install "${args[@]}"
       - run: pnpm exec vitest run --project "* ($ENGINE)"
       - if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
