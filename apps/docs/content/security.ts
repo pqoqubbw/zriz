@@ -111,7 +111,7 @@ const SECURITY_PAGE = defineDoc({
         "on your server, sharp is your decoder and you own its patches. use 0.35.5 or newer, which bundles libvips 8.18.7. versions before 0.35.0 are open to GHSA-f88m-g3jw-g9cj. run `npm audit` in ci, and turn off the decoders you don't need with `sharp.block()`, as the route does. don't point sharp at a libvips from your system, because that one brings its own loaders and its own patch level."
       ),
       p(
-        "zriz reads the pixel count before it decodes and refuses a file over `maxPixels`. lower it if your page only needs small photos, as in [loading images](loading-images)."
+        "zriz reads the pixel count before it decodes and refuses a file over `maxPixels`. lower it if your page only needs small photos, as in [loading images](loading-images). it sets no limit on bytes, so check `file.size` before you pass a file."
       )
     ),
     section(
@@ -120,7 +120,7 @@ const SECURITY_PAGE = defineDoc({
         "zriz draws an svg through an `img` from a data url, so the browser runs no script in it and fetches nothing it points at. we tried scripts, event attributes, `foreignObject`, external images, stylesheets, fonts and `use` in all three engines, with no script run and no request sent. the export is a bitmap, so nothing from the svg source survives in it."
       ),
       p(
-        "an svg still draws on the main thread, and a heavy one can freeze the tab. pass `svg={false}` to `Root` when people upload photos and you have no use for svg."
+        "an svg still draws on the main thread. a file under 2 kb froze the tab for 8 to 15 seconds in our test, and `timeout` cannot stop it. pass `svg={false}` to `Root` when people upload photos and you have no use for svg."
       ),
       p(
         "the danger is your own code using the source. a blob url of a file runs with your origin when it opens as a document, so a script inside the svg acts as your site. an `img` is safe. these are not:"
