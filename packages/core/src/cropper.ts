@@ -33,6 +33,7 @@ import {
   isSound,
   positive,
   readValue,
+  sameAspect,
   seal,
   stateToValue,
   toAspect,
@@ -1031,7 +1032,12 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     setAspect(given, action = {}) {
       const aspect = toAspect(given);
 
-      if (!state || disabled() || (locked !== undefined && aspect !== locked)) {
+      if (
+        !state ||
+        disabled() ||
+        sameAspect(aspect, value.aspect) ||
+        (locked !== undefined && aspect !== locked)
+      ) {
         return;
       }
 

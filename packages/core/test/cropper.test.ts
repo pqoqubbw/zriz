@@ -3019,3 +3019,48 @@ describe("huge finite options", () => {
     }
   );
 });
+
+describe("the aspect it already has", () => {
+  it.each([
+    ["a ratio", 1],
+    ["the photo's own", "original"],
+  ] as const)("setting %s again keeps the zoom and sends no commit", (_, aspect) => {
+    const time = fakeClock();
+    const commit = vi.fn<CropperEvents["commit"]>();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { aspect },
+      image: PHOTO,
+      onValueCommit: commit,
+    });
+
+    cropper.setZoom(3);
+    time.frames(2);
+    commit.mockClear();
+    const before = cropper.getValue();
+
+    cropper.setAspect(aspect);
+    time.frames(2);
+    expect(cropper.getValue()).toBe(before);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("a new aspect still fits the crop and commits once", () => {
+    const time = fakeClock();
+    const commit = vi.fn<CropperEvents["commit"]>();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { aspect: 1 },
+      image: PHOTO,
+      onValueCommit: commit,
+    });
+
+    cropper.setZoom(3);
+    time.frames(2);
+    commit.mockClear();
+    cropper.setAspect(16 / 9);
+    time.frames(2);
+    expect(cropper.getZoom()).toBeCloseTo(1, 6);
+    expect(commit).toHaveBeenCalledOnce();
+  });
+});

@@ -155,6 +155,69 @@ describe("accessibility", () => {
     expect(items.map((item) => item.tabIndex)).toStrictEqual([-1, 0, -1]);
   });
 
+  it("pressing the checked aspect again keeps the zoom and sends no commit", async () => {
+    const api = createRef<CropperApi>();
+    const commit = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root
+        actionsRef={api}
+        defaultValue={{ aspect: 1 }}
+        image={{ height: 300, width: 400 }}
+        onValueCommit={commit}
+      >
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+          <Cropper.AspectItem value={16 / 9}>Wide</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+
+    await frames(2);
+    api.current?.setZoom(3);
+    await frames(3);
+    commit.mockClear();
+    const item = screen.container.querySelector<HTMLButtonElement>(
+      '[data-zriz-item="aspect-item"]'
+    );
+
+    item?.click();
+    item?.focus();
+    await userEvent.keyboard("{Home}");
+    await frames(3);
+    expect(api.current?.getZoom()).toBeCloseTo(3, 6);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("the wrap on a circle's only enabled aspect keeps the zoom", async () => {
+    const api = createRef<CropperApi>();
+    const commit = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root
+        actionsRef={api}
+        image={{ height: 300, width: 400 }}
+        onValueCommit={commit}
+        shape="circle"
+      >
+        <Cropper.AspectGroup aria-label="Aspect">
+          <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
+          <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+        </Cropper.AspectGroup>
+      </Cropper.Root>
+    );
+
+    await frames(2);
+    api.current?.setZoom(3);
+    await frames(3);
+    commit.mockClear();
+    screen.container
+      .querySelector<HTMLButtonElement>('[aria-checked="true"]')
+      ?.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await frames(3);
+    expect(api.current?.getZoom()).toBeCloseTo(3, 6);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
   it("wraps around and jumps to the ends of the aspect group", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(
