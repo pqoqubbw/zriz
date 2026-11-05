@@ -6122,7 +6122,7 @@ what each set of imports adds to your bundle, minified and compressed with brotl
 
 | set | imports | brotli |
 | - | - | - |
-| editor | every part from \`@zriz/react/cropper\` | 32.31 kB |
+| editor | every part from \`@zriz/react/cropper\` | 32.28 kB |
 | avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 25.67 kB |
 | root only | \`Root\` | 18.20 kB |
 | vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 21.10 kB |

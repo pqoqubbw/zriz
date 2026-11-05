@@ -718,6 +718,33 @@ describe("focus when Reset hides", () => {
     expect(document.activeElement).toBe(item(screen.container, "rotate"));
   });
 
+  it("falls back to a native input before a later button", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api} image={PHOTO}>
+        <Cropper.Reset>Reset</Cropper.Reset>
+        <input aria-label="Zoom" id="slider" type="range" />
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+      </Cropper.Root>
+    );
+
+    await frames();
+    api.current?.setRotation(10);
+    await frames(3);
+    const reset = item(screen.container, "reset");
+
+    reset.focus();
+    reset.click();
+
+    await vi.waitFor(() => {
+      expect(reset.hidden).toBeTruthy();
+    });
+
+    expect(document.activeElement).toBe(
+      screen.container.querySelector("#slider")
+    );
+  });
+
   it("moves past an Area that cannot take focus", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(

@@ -38,7 +38,7 @@ const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
 
       for (const selector of [
         '[data-zriz-item="area"]',
-        '[tabindex="0"]:not([hidden]),button:enabled:not([hidden])',
+        ':is([tabindex="0"],button,input,select,textarea,a[href]):not([hidden])',
       ]) {
         for (const next of scope?.querySelectorAll<HTMLElement>(selector) ??
           []) {
