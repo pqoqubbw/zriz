@@ -13,6 +13,14 @@ const config: NextConfig = {
       headers: [{ key: "Vary", value: "Accept" }],
       source: "/docs/:slug",
     },
+    {
+      headers: [
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "X-Frame-Options", value: "DENY" },
+      ],
+      source: "/:path*",
+    },
   ],
   poweredByHeader: false,
   reactCompiler: true,

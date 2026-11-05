@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { gap } from "@/lib/doc/flow";
 import type { Before, Slot } from "@/lib/doc/flow";
 
+import config from "../next.config";
+
 const SLOTS: readonly Slot[] = [
   "actions",
   "code",
@@ -120,4 +122,19 @@ describe("flow", () => {
       expect(gap(before, after)).toBe(px);
     }
   );
+});
+
+describe("the site's response headers", () => {
+  it("turns off sniffing, framing and full referrers on every path", async () => {
+    const rules = (await config.headers?.()) ?? [];
+    const all = rules.find(({ source }) => source === "/:path*")?.headers ?? [];
+
+    expect(
+      Object.fromEntries(all.map(({ key, value }) => [key, value]))
+    ).toStrictEqual({
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+    });
+  });
 });
