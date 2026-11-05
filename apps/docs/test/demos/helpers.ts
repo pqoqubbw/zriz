@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { expect } from "vitest";
-import { render } from "vitest-browser-react";
+import { cleanup, render } from "vitest-browser-react";
 
 import "../../app/globals.css";
 
@@ -124,6 +124,50 @@ const boxIn = (element: Element, panel: Element): Box => {
   };
 };
 
+const FRAME_PARTS = [
+  '[data-slot="stage"]',
+  '[data-slot="corner-start"] > :first-child',
+  '[data-slot="corner-end"] > :last-child',
+  '[data-slot="zone"]',
+  '[data-slot="zone-row"] > *',
+  '[data-slot="ruler"]',
+  '[data-slot="value"]',
+  '[data-slot="track"]',
+] as const;
+
+const layoutOf = (): string[] => {
+  const panel = find("[data-demo]");
+  const { height, width } = panel.getBoundingClientRect();
+  const out = [`panel ${width.toFixed(1)}x${height.toFixed(1)}`];
+
+  for (const selector of FRAME_PARTS) {
+    for (const [index, element] of [
+      ...panel.querySelectorAll(selector),
+    ].entries()) {
+      const box = boxIn(element, panel);
+
+      out.push(
+        `${selector} ${index} ${box.x.toFixed(1)} ${box.y.toFixed(1)} ${box.width.toFixed(1)} ${box.height.toFixed(1)}`
+      );
+    }
+  }
+
+  return out;
+};
+
+const frameLayout = async (
+  name: DemoName,
+  width: DemoWidth = "desktop"
+): Promise<string[]> => {
+  await mountFrame(name, width);
+
+  const layout = layoutOf();
+
+  await cleanup();
+
+  return layout;
+};
+
 const hits = (target: Element, sides: readonly Side[] = ALL_SIDES): boolean => {
   const box = target.getBoundingClientRect();
   const x = box.left + box.width / 2;
@@ -148,8 +192,10 @@ export {
   boxIn,
   button,
   find,
+  frameLayout,
   hits,
   item,
+  layoutOf,
   mountDemo,
   mountFrame,
   mountLive,
