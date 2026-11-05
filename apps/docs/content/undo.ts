@@ -50,7 +50,10 @@ const UNDO_PAGE = defineDoc({
     section(
       "the whole file",
       p("`Editor` adds the button under the dial:"),
-      code("undo/undo-editor.tsx")
+      code("undo/undo-editor.tsx"),
+      p(
+        "the demo above runs this file with a rotate button, so a turn is one more step to undo. it adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site."
+      )
     ),
   ],
   lede: "an undo button for the crop, built from what each commit hands you.",

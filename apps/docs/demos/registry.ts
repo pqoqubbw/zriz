@@ -422,7 +422,21 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+DialValue",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+        "+Rotate",
+      ],
+      export: "UndoEditor",
+      file: "undo/undo-editor.tsx",
+      inputs: { src: "photo" },
+      kind: "component",
+    },
     summary:
       "a 3:2 photo, the straighten dial with undo and rotate, and open, reset and download in the corners",
     zones: [{ end: "rotate-left", kind: "dial", start: "undo", value: true }],
