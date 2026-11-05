@@ -47,7 +47,7 @@ const stageVariants = cva(
 const contentVariants = cva("absolute inset-0 data-loading:opacity-40");
 
 const cornerVariants = cva("absolute top-2 z-1 flex gap-1.5", {
-  variants: { side: { end: "right-2", start: "left-2" } },
+  variants: { side: { end: "end-2", start: "start-2" } },
 });
 
 const zoneVariants = cva(

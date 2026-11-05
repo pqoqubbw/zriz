@@ -25,7 +25,7 @@ const chipVariants = cva(
     variants: {
       live: {
         false: "",
-        true: "cursor-pointer before:absolute before:-inset-1.5 focus-visible:shadow-lift focus-visible:inset-shadow-focus focus-visible:corners-none aria-disabled:cursor-default data-dim:*:opacity-40 data-pristine:hidden",
+        true: "cursor-pointer before:absolute before:-inset-1.5 focus-visible:shadow-lift focus-visible:inset-shadow-focus focus-visible:corners-none aria-disabled:cursor-default aria-disabled:*:opacity-40 data-dim:*:opacity-40 data-pristine:hidden",
       },
       size: {
         collapse:

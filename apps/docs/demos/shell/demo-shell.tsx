@@ -57,6 +57,8 @@ type DemoShellProps = Omit<
   name: DemoName;
   /** Replaces the download with another action, such as send. */
   onAction?: DemoRun;
+  /** Overrides the crop shape from the demo spec. */
+  shape?: RootProps["shape"];
   /** Props for the viewport, such as wheel. */
   viewport?: Pick<ViewportProps, "rotateGesture" | "wheel">;
 };
@@ -100,6 +102,7 @@ const DemoShell = ({
   lock = false,
   name,
   onAction,
+  shape,
   viewport,
   ...root
 }: DemoShellProps) => {
@@ -121,7 +124,7 @@ const DemoShell = ({
         className="flex w-full flex-col items-center"
         onError={photo.handleError}
         onLoad={photo.handleLoad}
-        shape={spec.shape}
+        shape={shape ?? spec.shape}
         src={photo.src}
       >
         <Stage {...photo.drop}>
