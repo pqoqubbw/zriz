@@ -38,6 +38,13 @@ const release = (image: LoadedImage): void => {
   }
 };
 
+const discardImage = (image: LoadedImage): void => {
+  if (!holders.get(image) && !freed.has(image)) {
+    freed.add(image);
+    freeImage(image);
+  }
+};
+
 const drop = (cropper: Cropper, image: LoadedImage): void => {
   attached.delete(cropper);
   release(image);
@@ -100,4 +107,4 @@ const attachImage = (cropper: Cropper, image: LoadedImage | null): void => {
 const imageOf = (cropper: Cropper): LoadedImage | null =>
   attached.get(cropper) ?? null;
 
-export { attachImage, imageOf, onImage };
+export { attachImage, discardImage, imageOf, onImage };

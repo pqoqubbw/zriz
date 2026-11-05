@@ -9,7 +9,7 @@ export type {
   LoadOptions,
   LoadedImage,
 } from "./image";
-export { attachImage, imageOf, onImage } from "./image-store";
+export { attachImage, discardImage, imageOf, onImage } from "./image-store";
 export { sniff, svgSize } from "./svg-size";
 export { bindPhoto } from "./photo";
 export { cropShapeOf, setCropShape } from "./shape";

@@ -6775,7 +6775,7 @@ with \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
 
 - \`type\` \`"image/jpeg" | "image/png" | "image/webp"\` = \`"image/jpeg"\`
 
-  the file format. a circle crop defaults to png
+  the file format. a circle crop defaults to png. jpeg has no transparency, so clear pixels come out white
 - \`quality\` \`number\` = \`0.9\`
 
   jpeg and webp quality, from 0 to 1
@@ -6787,7 +6787,7 @@ with \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
   \`"display-p3"\` keeps wide colour when the photo came from a file or url. it decodes on the main thread
 - \`shape\` \`"rect" | "circle"\`
 
-  \`"rect"\` cuts a rectangle. \`"circle"\` cuts a circle with transparent corners. defaults to \`shape\` on \`Root\`
+  \`"rect"\` cuts a rectangle. \`"circle"\` cuts a circle, with transparent corners in png and webp and white ones in jpeg. defaults to \`shape\` on \`Root\`
 - \`signal\` \`AbortSignal\`
 
   cancels a running export, which then rejects with \`aborted\`
@@ -7900,7 +7900,9 @@ export const Heic = ({ onSave }: Props) => {
 
 \`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
 
-\`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again.
+\`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call \`discardImage(image)\`, for example after your own stale check or an \`exportImage\` with no \`attachImage\`. it does nothing while a cropper holds the photo.
+
+zriz never closes an \`ImageBitmap\` you pass as the source. close it yourself once the photo left its cropper, and not before.
 
 ## handle a failed load
 

@@ -126,7 +126,10 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
       ),
       p(
-        "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again."
+        "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call `discardImage(image)`, for example after your own stale check or an `exportImage` with no `attachImage`. it does nothing while a cropper holds the photo."
+      ),
+      p(
+        "zriz never closes an `ImageBitmap` you pass as the source. close it yourself once the photo left its cropper, and not before."
       )
     ),
     section(

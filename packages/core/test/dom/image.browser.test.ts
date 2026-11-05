@@ -1228,6 +1228,21 @@ describe("video sources", () => {
 });
 
 describe("sharing and freeing a photo", () => {
+  it("loads the same bitmap again after the first photo left its cropper", async () => {
+    const bitmap = await createImageBitmap(await halves(64, 32));
+    const cropper = createCropper();
+
+    attachImage(cropper, await loadImage(bitmap));
+    attachImage(cropper, null);
+    expect(bitmap.width).toBe(64);
+    const again = await loadImage(bitmap);
+
+    expect(again.width).toBe(64);
+    attachImage(cropper, again);
+    attachImage(cropper, null);
+    bitmap.close();
+  });
+
   it("frees a photo when its last cropper is destroyed", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const cropper = createCropper();

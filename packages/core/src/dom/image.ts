@@ -242,12 +242,20 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   );
 };
 
+const borrowed = new WeakSet<object>();
+
+const closeOwn = (bitmap: ImageBitmap): void => {
+  if (!borrowed.has(bitmap)) {
+    bitmap.close();
+  }
+};
+
 const freeImage = (image: LoadedImage): void => {
   void releaseOff(image.id);
-  image.preview.close();
+  closeOwn(image.preview);
 
   if (image.source instanceof ImageBitmap && image.source !== image.preview) {
-    image.source.close();
+    closeOwn(image.source);
   }
 };
 
@@ -270,7 +278,9 @@ const loadImage = async (
   let inHook = false;
 
   const own = (bitmap: ImageBitmap): ImageBitmap => {
-    if (bitmap !== src) {
+    if (bitmap === src) {
+      borrowed.add(bitmap);
+    } else {
       held.push(bitmap);
     }
 

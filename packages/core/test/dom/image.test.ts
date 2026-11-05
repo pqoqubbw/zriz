@@ -4,7 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
-import { ZrizError, attachImage, loadImage } from "../../src/dom";
+import { ZrizError, attachImage, discardImage, loadImage } from "../../src/dom";
 import { freeImage, raster, toZriz } from "../../src/dom/image";
 import type { LoadOptions, LoadedImage } from "../../src/dom/image";
 import { exportImage } from "../../src/dom/render";
@@ -189,6 +189,58 @@ describe("a load that never reaches attachImage", () => {
     vi.unstubAllGlobals();
   });
 
+  it("discards a photo that never reached a cropper, worker copy included", async () => {
+    const image = await loadImage(jpeg());
+
+    expect(live("worker")).toBe(1);
+    discardImage(image);
+    await noneLive();
+  });
+
+  it("discards a photo only once", async () => {
+    const image = await loadImage(jpeg());
+    const close = vi.spyOn(image.preview, "close");
+
+    discardImage(image);
+    discardImage(image);
+    expect(close).toHaveBeenCalledOnce();
+    await noneLive();
+  });
+
+  it("refuses to attach a discarded photo", async () => {
+    const image = await loadImage(jpeg());
+
+    discardImage(image);
+    expect(() => {
+      attachImage(createCropper(), image);
+    }).toThrow(ZrizError);
+    await noneLive();
+  });
+
+  it("leaves a photo on a cropper alone when asked to discard it", async () => {
+    const image = await loadImage(jpeg());
+    const cropper = createCropper();
+
+    attachImage(cropper, image);
+    discardImage(image);
+    expect(live("main")).toBe(1);
+    expect(live("worker")).toBe(1);
+    attachImage(cropper, null);
+    await noneLive();
+  });
+
+  it("does not free a photo twice after it left its last cropper", async () => {
+    const image = await loadImage(jpeg());
+    const close = vi.spyOn(image.preview, "close");
+    const cropper = createCropper();
+
+    attachImage(cropper, image);
+    attachImage(cropper, null);
+    discardImage(image);
+    expect(close).toHaveBeenCalledOnce();
+    await noneLive();
+  });
+
   it("frees the worker copy when aborted while decoding", async () => {
     const release = hold();
     const controller = new AbortController();
@@ -217,6 +269,7 @@ describe("a load that never reaches attachImage", () => {
 
     controller.abort();
     expect(codeOf(await failure(load))).toBe("aborted");
+    source.close();
     await noneLive();
   });
 
@@ -1079,14 +1132,41 @@ describe("releasing a separate source bitmap", () => {
     expect(open.has(full)).toBeFalsy();
   });
 
-  it("closes a large bitmap passed as the source when it is removed", async () => {
+  it("frees its own preview and leaves a large bitmap the caller passed open", async () => {
     const full = bitmap();
     const image = await loadImage(full, { previewEdge: 100 });
     const cropper = createCropper();
 
+    expect(image.preview).not.toBe(full);
     attachImage(cropper, image);
     attachImage(cropper, null);
-    expect(open.has(full)).toBeFalsy();
+    expect(open.has(image.preview as unknown as FakeBitmap)).toBeFalsy();
+    expect(open.has(full)).toBeTruthy();
+    full.close();
+    await noneLive();
+  });
+
+  it("leaves a bitmap the caller passed open when the load aborts", async () => {
+    const full = bitmap();
+    const controller = new AbortController();
+
+    controller.abort();
+    const error = await failure(
+      loadImage(full, { signal: controller.signal })
+    );
+
+    expect(codeOf(error)).toBe("aborted");
+    expect(open.has(full)).toBeTruthy();
+    full.close();
+  });
+
+  it("leaves a bitmap the caller passed open when the load is discarded", async () => {
+    const full = bitmap();
+    const image = await loadImage(full, { previewEdge: 100 });
+
+    discardImage(image);
+    expect(open.has(full)).toBeTruthy();
+    full.close();
     await noneLive();
   });
 
