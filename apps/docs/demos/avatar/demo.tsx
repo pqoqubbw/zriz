@@ -17,6 +17,7 @@ const VIEWPORT: DemoShellProps["viewport"] = { wheel: "zoom" };
 const AvatarDemo = () => (
   <DemoShell
     exportOptions={EXPORT}
+    fresh
     grid={false}
     handles={NO_HANDLES}
     maxZoom={3}

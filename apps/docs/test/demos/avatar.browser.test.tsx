@@ -186,6 +186,23 @@ describe("avatar demo", () => {
     expect(off("Zoom in")).toBeTruthy();
   });
 
+  it("starts a new photo from the whole frame", async () => {
+    await mountDemo("avatar");
+    await ready();
+    button("Zoom in").click();
+    await settle();
+
+    expect(button("Reset").checkVisibility()).toBeTruthy();
+
+    pick(await bigPortrait());
+
+    await expect
+      .poll(() => button("Reset").checkVisibility(), { timeout: 15_000 })
+      .toBeFalsy();
+
+    expect(shown()).toBe("1.0×");
+  });
+
   it("downloads a round png at most 512 px wide", async () => {
     await mountDemo("avatar");
     await ready();

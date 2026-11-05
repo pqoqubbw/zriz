@@ -50,6 +50,8 @@ type DemoShellProps = Omit<
   className?: string;
   /** Export options for the download chip. */
   exportOptions?: ExportOptions;
+  /** Starts each new photo from the whole frame, like a key bumped per pick. */
+  fresh?: boolean;
   /** Draw the crop grid. */
   grid?: boolean;
   /** The crop handles to render. */
@@ -101,6 +103,7 @@ const DemoShell = ({
   children,
   className,
   exportOptions,
+  fresh = false,
   grid = true,
   handles = HANDLES,
   lock = false,
@@ -127,7 +130,13 @@ const DemoShell = ({
         actionsRef={actions}
         className={cn("flex w-full flex-col items-center", className)}
         onError={photo.handleError}
-        onLoad={photo.handleLoad}
+        onLoad={() => {
+          if (fresh && photo.loading) {
+            actions.current?.reset({ emit: false });
+          }
+
+          photo.handleLoad();
+        }}
         shape={shape ?? spec.shape}
         src={photo.src}
       >
