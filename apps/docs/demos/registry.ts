@@ -56,7 +56,7 @@ type DemoAction = {
   label: string;
 };
 
-type SnippetInput = "callback" | "flag" | "photo";
+type SnippetInput = "callback" | "flag" | "photo" | "text";
 
 type DemoSnippet = {
   differences: readonly string[];
@@ -82,7 +82,7 @@ const DOWNLOAD: DemoAction = {
   label: "download",
 };
 
-const SEND: DemoAction = { done: "sent", icon: "download", label: "send" };
+const SEND: DemoAction = { done: "sent", icon: "upload", label: "send" };
 
 const EDITOR_ZONE: DialZoneSpec = {
   end: "flip-horizontal",

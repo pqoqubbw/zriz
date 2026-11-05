@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 import { DEMO_SPECS } from "@/demos/registry";
 import type { DemoName } from "@/demos/registry";
 import { DemoContext } from "@/demos/shell/context";
+import type { DemoPhoto } from "@/demos/shell/context";
 import { FileChips } from "@/demos/shell/file-chips";
 import {
   DropVeil,
@@ -33,6 +34,8 @@ import { usePhoto } from "@/demos/shell/use-photo";
 import { cn } from "@/lib/cn";
 
 type HandlePosition = HandleProps["position"];
+
+type PhotoProps = Pick<RootProps, "defaultValue" | "onValueCommit">;
 
 type DemoShellProps = Omit<
   RootProps,
@@ -62,6 +65,8 @@ type DemoShellProps = Omit<
   name: DemoName;
   /** Replaces the download with another action, such as send. */
   onAction?: DemoRun;
+  /** Remounts Root for each photo, with the props it returns. */
+  photoProps?: (photo: DemoPhoto) => PhotoProps;
   /** Overrides the crop shape from the demo spec. */
   shape?: RootProps["shape"];
   /** Props for the viewport, such as wheel. */
@@ -99,6 +104,16 @@ const SPOKEN: Partial<Record<CommitDetails["reason"], string>> = {
 const announce = (_: CropValue, details: CommitDetails): string | null =>
   SPOKEN[details.reason] ?? null;
 
+const photoIdOf = (src: Blob | string, initial: string): string => {
+  if (typeof src === "string") {
+    return initial;
+  }
+
+  return src instanceof File
+    ? `${src.name}:${src.size}:${src.lastModified}`
+    : `${src.type}:${src.size}`;
+};
+
 const DemoShell = ({
   children,
   className,
@@ -109,6 +124,7 @@ const DemoShell = ({
   lock = false,
   name,
   onAction,
+  photoProps,
   shape,
   viewport,
   ...root
@@ -117,16 +133,22 @@ const DemoShell = ({
   const actions = useRef<CropperApi>(null);
   const download = useDownload(actions, onAction ?? exportRun(exportOptions));
   const photo = usePhoto(photoUrl(spec.photo), download.abort);
-  const { dropping } = photo;
+  const { dropping, pick, src } = photo;
   const locked = lock && download.busy;
   const busy = photo.loading || dropping;
-  const state = useMemo(() => ({ dim: busy }), [busy]);
+  const id = photoIdOf(src, spec.photo);
+  const state = useMemo(
+    () => ({ dim: busy, photo: { id, key: `${id}:${pick}` } }),
+    [busy, id, pick]
+  );
 
   return (
     <DemoContext.Provider value={state}>
       <Cropper.Root
         {...root}
+        {...photoProps?.(state.photo)}
         {...(lock ? { disabled: locked } : null)}
+        key={photoProps ? state.photo.key : undefined}
         actionsRef={actions}
         className={cn("flex w-full flex-col items-center", className)}
         onError={photo.handleError}
@@ -140,47 +162,51 @@ const DemoShell = ({
         shape={shape ?? spec.shape}
         src={photo.src}
       >
-        <Stage {...photo.drop}>
-          {photo.dropping ? null : (
-            <FileChips
-              action={spec.action}
-              dim={busy || locked}
-              download={download}
-              photo={photo}
-            />
-          )}
-          <StageContent data-loading={photo.loading ? "" : undefined}>
-            <Cropper.Viewport
-              {...viewport}
-              className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
-            >
-              <Cropper.Image />
-              <Cropper.Mask className={coverVariants({ dropping })} />
-              <Cropper.Area
-                aria-label="Crop area"
-                className={coverVariants({
-                  className: "focus-visible:corners-none",
-                  dropping,
-                })}
+        <>
+          <Stage {...photo.drop}>
+            {photo.dropping ? null : (
+              <FileChips
+                action={spec.action}
+                dim={busy || locked}
+                download={download}
+                photo={photo}
+              />
+            )}
+            <StageContent data-loading={photo.loading ? "" : undefined}>
+              <Cropper.Viewport
+                {...viewport}
+                className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
               >
-                {grid ? <Cropper.Grid className="grid-hold" /> : null}
-                {handles.map((position) => (
-                  <Cropper.Handle key={position} position={position} />
-                ))}
-              </Cropper.Area>
-            </Cropper.Viewport>
-          </StageContent>
-          {photo.loading ? <Spinner /> : null}
-          {photo.dropping ? <DropVeil /> : null}
-          <StageEdge />
-        </Stage>
-        {children}
-        <Cropper.Instructions>{INSTRUCTIONS}</Cropper.Instructions>
-        <Cropper.Announcer announce={announce} />
+                <Cropper.Image />
+                <Cropper.Mask className={coverVariants({ dropping })} />
+                <Cropper.Area
+                  aria-label="Crop area"
+                  className={coverVariants({
+                    className: "focus-visible:corners-none",
+                    dropping,
+                  })}
+                >
+                  <>
+                    {grid ? <Cropper.Grid className="grid-hold" /> : null}
+                    {handles.map((position) => (
+                      <Cropper.Handle key={position} position={position} />
+                    ))}
+                  </>
+                </Cropper.Area>
+              </Cropper.Viewport>
+            </StageContent>
+            {photo.loading ? <Spinner /> : null}
+            {photo.dropping ? <DropVeil /> : null}
+            <StageEdge />
+          </Stage>
+          {children}
+          <Cropper.Instructions>{INSTRUCTIONS}</Cropper.Instructions>
+          <Cropper.Announcer announce={announce} />
+        </>
       </Cropper.Root>
     </DemoContext.Provider>
   );
 };
 
-export type { DemoShellProps, HandlePosition };
+export type { DemoShellProps, HandlePosition, PhotoProps };
 export { DemoShell };

@@ -23,6 +23,7 @@ type Photo = {
   handleLoad: () => void;
   handlePick: (event: ChangeEvent<HTMLInputElement>) => void;
   loading: boolean;
+  pick: number;
   ready: boolean;
   src: Blob | string;
 };
@@ -47,6 +48,7 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState(0);
+  const [pick, setPick] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(
@@ -81,6 +83,7 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
     show(null);
     onOpen();
     setSrc(file);
+    setPick((count) => count + 1);
     setStatus(loaded ? "replacing" : "first");
   };
 
@@ -131,6 +134,7 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
       event.currentTarget.value = "";
     },
     loading: status === "replacing",
+    pick,
     ready: loaded && status === "ready",
     src,
   };

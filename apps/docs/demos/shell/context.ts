@@ -2,13 +2,24 @@
 
 import { createContext, useContext } from "react";
 
-type DemoState = {
-  dim: boolean;
+type DemoPhoto = {
+  id: string;
+  key: string;
 };
 
-const DemoContext = createContext<DemoState>({ dim: false });
+type DemoState = {
+  dim: boolean;
+  photo: DemoPhoto;
+};
+
+const DemoContext = createContext<DemoState>({
+  dim: false,
+  photo: { id: "", key: "" },
+});
 
 const useDemoDim = (): boolean => useContext(DemoContext).dim;
 
-export type { DemoState };
-export { DemoContext, useDemoDim };
+const useDemoPhoto = (): DemoPhoto => useContext(DemoContext).photo;
+
+export type { DemoPhoto, DemoState };
+export { DemoContext, useDemoDim, useDemoPhoto };

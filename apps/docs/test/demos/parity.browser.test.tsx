@@ -83,6 +83,7 @@ const INPUTS: Record<SnippetInput, () => unknown> = {
   callback: () => () => {},
   flag: () => false,
   photo: () => new Blob(),
+  text: () => "photo",
 };
 
 const inputOf = (kind: SnippetInput): unknown => INPUTS[kind]();
