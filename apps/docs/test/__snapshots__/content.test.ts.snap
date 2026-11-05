@@ -4194,12 +4194,17 @@ const open = (image: Raw) =>
     limitInputPixels: false,
   });
 const raw = (pipeline: Sharp) =>
-  pipeline.raw().toBuffer({ resolveWithObject: true });
+  pipeline
+    .timeout({ seconds: MAX_SECONDS })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
   if (!saved) throw new TypeError("not a crop value");
-  const upright = await raw(sharp(input).rotate());
+  const upright = await raw(
+    sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
+  );
   const cropper = createCropper({
     image: upright.info,
     maxZoom: MAX_ZOOM,
@@ -4238,12 +4243,17 @@ const cut = async (input: Buffer, value: string) => {
     limitInputPixels<span class=p>: </span><span class=n>false</span><span class=p>,</span>
   <span class=p>});</span>
 <span class=k>const </span><span class=t>raw </span><span class=p>= (</span>pipeline<span class=p>:</span> Sharp<span class=p>) =&gt;</span>
-  pipeline<span class=p>.</span><span class=t>raw</span><span class=p>().</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
+  pipeline
+    <span class=p>.</span><span class=t>timeout</span><span class=p>({</span> seconds<span class=p>:</span> MAX_SECONDS <span class=p>})</span>
+    <span class=p>.</span><span class=t>raw</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
 
 <span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
   <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
   <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
-  <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>sharp</span><span class=p>(</span>input<span class=p>).</span><span class=t>rotate</span><span class=p>());</span>
+  <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+    <span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>:</span> MAX_PIXELS <span class=p>}).</span><span class=t>rotate</span><span class=p>()</span>
+  <span class=p>);</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
     image<span class=p>:</span> upright<span class=p>.</span>info<span class=p>,</span>
     maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
@@ -4279,98 +4289,216 @@ const cut = async (input: Buffer, value: string) => {
   [
     "server-crop",
     "server-crop/app/api/crop/route.ts",
-    "export const POST = async (request: Request) => {
-  const length = Number(request.headers.get("content-length"));
-  if (!length || length > MAX_BODY) {
-    return new Response("this upload is too large.", {
-      status: 413,
-    });
+    "const MAX_BODY = 50 * 1024 * 1024;
+const MAX_VALUE = 4096;
+const MAX_PIXELS = 120_000_000;
+const MAX_RUNNING = 2;
+const MAX_SECONDS = 30;
+const HEADERS = {
+  "cache-control": "private, no-store",
+  "x-content-type-options": "nosniff",
+};
+
+sharp.block({ operation: ["VipsForeignLoad"] });
+sharp.unblock({
+  operation: [
+    "VipsForeignLoadJpegBuffer",
+    "VipsForeignLoadPngBuffer",
+    "VipsForeignLoadWebpBuffer",
+    "VipsForeignLoadHeifBuffer",
+  ],
+});",
+    "<span class=k>const</span> MAX_BODY <span class=p>= </span><span class=n>50 </span><span class=p>* </span><span class=n>1024 </span><span class=p>* </span><span class=n>1024</span><span class=p>;</span>
+<span class=k>const</span> MAX_VALUE <span class=p>= </span><span class=n>4096</span><span class=p>;</span>
+<span class=k>const</span> MAX_PIXELS <span class=p>= </span><span class=n>120_000_000</span><span class=p>;</span>
+<span class=k>const</span> MAX_RUNNING <span class=p>= </span><span class=n>2</span><span class=p>;</span>
+<span class=k>const</span> MAX_SECONDS <span class=p>= </span><span class=n>30</span><span class=p>;</span>
+<span class=k>const</span> HEADERS <span class=p>= {</span>
+  <span class=s>"</span>cache-control<span class=s>"</span><span class=p>: </span><span class=s>"private, no-store"</span><span class=p>,</span>
+  <span class=s>"</span>x-content-type-options<span class=s>"</span><span class=p>: </span><span class=s>"nosniff"</span><span class=p>,</span>
+<span class=p>};</span>
+
+sharp<span class=p>.</span><span class=t>block</span><span class=p>({</span> operation<span class=p>: [</span><span class=s>"VipsForeignLoad"</span><span class=p>] });</span>
+sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
+  operation<span class=p>: [</span>
+    <span class=s>"VipsForeignLoadJpegBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadPngBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadWebpBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadHeifBuffer"</span><span class=p>,</span>
+  <span class=p>],</span>
+<span class=p>});</span>",
+  ],
+  [
+    "server-crop",
+    "server-crop/app/api/crop/route.ts",
+    "const readForm = async (request: Request) => {
+  let seen = 0;
+  const capped = request.body?.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, stream) {
+        seen += chunk.length;
+        if (seen > MAX_BODY) stream.error(new RangeError());
+        else stream.enqueue(chunk);
+      },
+    })
+  );
+  const form = await new Response(capped, {
+    headers: request.headers,
+  })
+    .formData()
+    .catch(() => null);
+  return { form, over: seen > MAX_BODY };
+};
+
+const answer = async (request: Request) => {
+  const { form, over } = await readForm(request);
+  if (over) return refuse("this upload is too large.", 413);
+  const file = form?.get("file");
+  const value = form?.get("value");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    typeof value !== "string"
+  ) {
+    return refuse("send a file and a crop value.", 400);
   }
-  const form = await request.formData();
-  const file = form.get("file");
-  const value = form.get("value");
-  if (!(file instanceof File) || typeof value !== "string") {
-    return new Response("send a file and a crop value.", {
-      status: 400,
-    });
+  if (value.length > MAX_VALUE) {
+    return refuse("this crop does not fit this photo.", 422);
   }
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
-  if (!meta) {
-    return new Response("sharp cannot open this file.", {
-      status: 400,
-    });
+  if (!meta) return refuse("sharp cannot open this file.", 400);
+  if (meta.format === "heif" && meta.compression !== "av1") {
+    return refuse("send a jpeg, png, webp or avif.", 415);
+  }
+  if (meta.width * meta.height > MAX_PIXELS) {
+    return refuse("this photo has too many pixels.", 413);
   }
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
-    return new Response(
+    return refuse(
       "save this webp without an orientation tag.",
-      {
-        status: 422,
-      }
+      422
     );
   }
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
+      .timeout({ seconds: MAX_SECONDS })
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
     return new Response(new Uint8Array(jpeg), {
-      headers: { "content-type": "image/jpeg" },
+      headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this crop does not fit this photo.", {
-      status: 422,
-    });
+    return refuse("this crop does not fit this photo.", 422);
   }
 };",
-    "<span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
-  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
-  <span class=k>if </span><span class=p>(!</span>length <span class=p>||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>413</span><span class=p>,</span>
-    <span class=p>});</span>
+    "<span class=k>const </span><span class=t>readForm </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>let</span> seen <span class=p>= </span><span class=n>0</span><span class=p>;</span>
+  <span class=k>const</span> capped <span class=p>=</span> request<span class=p>.</span>body<span class=p>?.</span><span class=t>pipeThrough</span><span class=p>(</span>
+    <span class=k>new </span><span class=t>TransformStream</span><span class=p>&lt;</span>Uint8Array<span class=p>,</span> Uint8Array<span class=p>&gt;({</span>
+      <span class=t>transform</span><span class=p>(</span>chunk<span class=p>,</span> stream<span class=p>) {</span>
+        seen <span class=p>+=</span> chunk<span class=p>.</span>length<span class=p>;</span>
+        <span class=k>if </span><span class=p>(</span>seen <span class=p>&gt;</span> MAX_BODY<span class=p>)</span> stream<span class=p>.</span><span class=t>error</span><span class=p>(</span><span class=k>new </span><span class=t>RangeError</span><span class=p>());</span>
+        <span class=k>else</span> stream<span class=p>.</span><span class=t>enqueue</span><span class=p>(</span>chunk<span class=p>);</span>
+      <span class=p>},</span>
+    <span class=p>})</span>
+  <span class=p>);</span>
+  <span class=k>const</span> form <span class=p>= </span><span class=k>await new </span><span class=t>Response</span><span class=p>(</span>capped<span class=p>, {</span>
+    headers<span class=p>:</span> request<span class=p>.</span>headers<span class=p>,</span>
+  <span class=p>})</span>
+    <span class=p>.</span><span class=t>formData</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+  <span class=k>return </span><span class=p>{</span> form<span class=p>,</span> over<span class=p>:</span> seen <span class=p>&gt;</span> MAX_BODY <span class=p>};</span>
+<span class=p>};</span>
+
+<span class=k>const </span><span class=t>answer </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>const </span><span class=p>{</span> form<span class=p>,</span> over <span class=p>} = </span><span class=k>await </span><span class=t>readForm</span><span class=p>(</span>request<span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>over<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
+  <span class=k>const</span> file <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
+  <span class=k>const</span> value <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>
+    <span class=p>!(</span>file <span class=k>instanceof</span> File<span class=p>) ||</span>
+    file<span class=p>.</span>size <span class=p>=== </span><span class=n>0 </span><span class=p>||</span>
+    <span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span>
+  <span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
   <span class=p>}</span>
-  <span class=k>const</span> form <span class=p>= </span><span class=k>await</span> request<span class=p>.</span><span class=t>formData</span><span class=p>();</span>
-  <span class=k>const</span> file <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
-  <span class=k>const</span> value <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
-    <span class=p>});</span>
+  <span class=k>if </span><span class=p>(</span>value<span class=p>.</span>length <span class=p>&gt;</span> MAX_VALUE<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
   <span class=p>}</span>
   <span class=k>const</span> input <span class=p>=</span> Buffer<span class=p>.</span><span class=t>from</span><span class=p>(</span><span class=k>await</span> file<span class=p>.</span><span class=t>arrayBuffer</span><span class=p>());</span>
   <span class=k>const</span> meta <span class=p>= </span><span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>)</span>
     <span class=p>.</span><span class=t>metadata</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!</span>meta<span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
-    <span class=p>});</span>
+  <span class=k>if </span><span class=p>(!</span>meta<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"heif" </span><span class=p>&amp;&amp;</span> meta<span class=p>.</span>compression <span class=p>!== </span><span class=s>"av1"</span><span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a jpeg, png, webp or avif."</span><span class=p>, </span><span class=n>415</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>width <span class=p>*</span> meta<span class=p>.</span>height <span class=p>&gt;</span> MAX_PIXELS<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this photo has too many pixels."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span>
       <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
-      <span class=p>{</span>
-        status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
-      <span class=p>}</span>
+      <span class=n>422</span>
     <span class=p>);</span>
   <span class=p>}</span>
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
+      <span class=p>.</span><span class=t>timeout</span><span class=p>({</span> seconds<span class=p>:</span> MAX_SECONDS <span class=p>})</span>
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
       <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>
     <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=k>new </span><span class=t>Uint8Array</span><span class=p>(</span>jpeg<span class=p>), {</span>
-      headers<span class=p>: { </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
+      headers<span class=p>: { ...</span>HEADERS<span class=p>, </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
-    <span class=p>});</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
+  <span class=p>}</span>
+<span class=p>};</span>",
+  ],
+  [
+    "server-crop",
+    "server-crop/app/api/crop/route.ts",
+    "export const POST = async (request: Request) => {
+  if (!(await canCrop(request))) {
+    return refuse("sign in to crop a photo.", 401);
+  }
+  const length = Number(request.headers.get("content-length"));
+  if (!(length > 0) || length > MAX_BODY) {
+    return refuse("this upload is too large.", 413);
+  }
+  if (running >= MAX_RUNNING) {
+    return refuse("the server is busy. try again.", 503);
+  }
+  running += 1;
+  try {
+    return await answer(request);
+  } finally {
+    running -= 1;
+  }
+};",
+    "<span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>if </span><span class=p>(!(</span><span class=k>await </span><span class=t>canCrop</span><span class=p>(</span>request<span class=p>))) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sign in to crop a photo."</span><span class=p>, </span><span class=n>401</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+  <span class=k>if </span><span class=p>(!(</span>length <span class=p>&gt; </span><span class=n>0</span><span class=p>) ||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>if </span><span class=p>(</span>running <span class=p>&gt;=</span> MAX_RUNNING<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"the server is busy. try again."</span><span class=p>, </span><span class=n>503</span><span class=p>);</span>
+  <span class=p>}</span>
+  running <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>return await </span><span class=t>answer</span><span class=p>(</span>request<span class=p>);</span>
+  <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+    running <span class=p>-= </span><span class=n>1</span><span class=p>;</span>
   <span class=p>}</span>
 <span class=p>};</span>",
   ],
@@ -4381,6 +4509,12 @@ const cut = async (input: Buffer, value: string) => {
 export const MAX_ZOOM = 15;",
     "<span class=k>export const</span> MIN_SIZE <span class=p>= {</span> width<span class=p>: </span><span class=n>1</span><span class=p>,</span> height<span class=p>: </span><span class=n>1 </span><span class=p>};</span>
 <span class=k>export const</span> MAX_ZOOM <span class=p>= </span><span class=n>15</span><span class=p>;</span>",
+  ],
+  [
+    "server-crop",
+    "server-crop/can-crop.ts",
+    "export const canCrop = async (_request: Request) => false;",
+    "<span class=k>export const </span><span class=t>canCrop </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>_request<span class=p>:</span> Request<span class=p>) =&gt; </span><span class=n>false</span><span class=p>;</span>",
   ],
   [
     "server-crop",
@@ -4614,9 +4748,33 @@ export const CropUpload = () => {
     "import { createCropper, parse, toSharp } from "@zriz/core";
 import sharp from "sharp";
 import type { OutputInfo, Sharp } from "sharp";
+import { canCrop } from "../../../can-crop";
 import { MAX_ZOOM, MIN_SIZE } from "../../../crop-limits";
 
 const MAX_BODY = 50 * 1024 * 1024;
+const MAX_VALUE = 4096;
+const MAX_PIXELS = 120_000_000;
+const MAX_RUNNING = 2;
+const MAX_SECONDS = 30;
+const HEADERS = {
+  "cache-control": "private, no-store",
+  "x-content-type-options": "nosniff",
+};
+
+sharp.block({ operation: ["VipsForeignLoad"] });
+sharp.unblock({
+  operation: [
+    "VipsForeignLoadJpegBuffer",
+    "VipsForeignLoadPngBuffer",
+    "VipsForeignLoadWebpBuffer",
+    "VipsForeignLoadHeifBuffer",
+  ],
+});
+
+let running = 0;
+
+const refuse = (text: string, status: number) =>
+  new Response(text, { headers: HEADERS, status });
 
 type Raw = { data: Buffer; info: OutputInfo };
 const open = (image: Raw) =>
@@ -4625,12 +4783,17 @@ const open = (image: Raw) =>
     limitInputPixels: false,
   });
 const raw = (pipeline: Sharp) =>
-  pipeline.raw().toBuffer({ resolveWithObject: true });
+  pipeline
+    .timeout({ seconds: MAX_SECONDS })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
   if (!saved) throw new TypeError("not a crop value");
-  const upright = await raw(sharp(input).rotate());
+  const upright = await raw(
+    sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
+  );
   const cropper = createCropper({
     image: upright.info,
     maxZoom: MAX_ZOOM,
@@ -4663,59 +4826,120 @@ const cut = async (input: Buffer, value: string) => {
   return open(turned).extract(steps.extract);
 };
 
-export const POST = async (request: Request) => {
-  const length = Number(request.headers.get("content-length"));
-  if (!length || length > MAX_BODY) {
-    return new Response("this upload is too large.", {
-      status: 413,
-    });
+const readForm = async (request: Request) => {
+  let seen = 0;
+  const capped = request.body?.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, stream) {
+        seen += chunk.length;
+        if (seen > MAX_BODY) stream.error(new RangeError());
+        else stream.enqueue(chunk);
+      },
+    })
+  );
+  const form = await new Response(capped, {
+    headers: request.headers,
+  })
+    .formData()
+    .catch(() => null);
+  return { form, over: seen > MAX_BODY };
+};
+
+const answer = async (request: Request) => {
+  const { form, over } = await readForm(request);
+  if (over) return refuse("this upload is too large.", 413);
+  const file = form?.get("file");
+  const value = form?.get("value");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    typeof value !== "string"
+  ) {
+    return refuse("send a file and a crop value.", 400);
   }
-  const form = await request.formData();
-  const file = form.get("file");
-  const value = form.get("value");
-  if (!(file instanceof File) || typeof value !== "string") {
-    return new Response("send a file and a crop value.", {
-      status: 400,
-    });
+  if (value.length > MAX_VALUE) {
+    return refuse("this crop does not fit this photo.", 422);
   }
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
-  if (!meta) {
-    return new Response("sharp cannot open this file.", {
-      status: 400,
-    });
+  if (!meta) return refuse("sharp cannot open this file.", 400);
+  if (meta.format === "heif" && meta.compression !== "av1") {
+    return refuse("send a jpeg, png, webp or avif.", 415);
+  }
+  if (meta.width * meta.height > MAX_PIXELS) {
+    return refuse("this photo has too many pixels.", 413);
   }
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
-    return new Response(
+    return refuse(
       "save this webp without an orientation tag.",
-      {
-        status: 422,
-      }
+      422
     );
   }
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
+      .timeout({ seconds: MAX_SECONDS })
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
     return new Response(new Uint8Array(jpeg), {
-      headers: { "content-type": "image/jpeg" },
+      headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this crop does not fit this photo.", {
-      status: 422,
-    });
+    return refuse("this crop does not fit this photo.", 422);
+  }
+};
+
+export const POST = async (request: Request) => {
+  if (!(await canCrop(request))) {
+    return refuse("sign in to crop a photo.", 401);
+  }
+  const length = Number(request.headers.get("content-length"));
+  if (!(length > 0) || length > MAX_BODY) {
+    return refuse("this upload is too large.", 413);
+  }
+  if (running >= MAX_RUNNING) {
+    return refuse("the server is busy. try again.", 503);
+  }
+  running += 1;
+  try {
+    return await answer(request);
+  } finally {
+    running -= 1;
   }
 };",
     "<span class=k>import </span><span class=p>{</span> createCropper<span class=p>,</span> parse<span class=p>,</span> toSharp <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import</span> sharp <span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> OutputInfo<span class=p>,</span> Sharp <span class=p>} </span><span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> canCrop <span class=p>} </span><span class=k>from </span><span class=s>"../../../can-crop"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> MAX_ZOOM<span class=p>,</span> MIN_SIZE <span class=p>} </span><span class=k>from </span><span class=s>"../../../crop-limits"</span><span class=p>;</span>
 
 <span class=k>const</span> MAX_BODY <span class=p>= </span><span class=n>50 </span><span class=p>* </span><span class=n>1024 </span><span class=p>* </span><span class=n>1024</span><span class=p>;</span>
+<span class=k>const</span> MAX_VALUE <span class=p>= </span><span class=n>4096</span><span class=p>;</span>
+<span class=k>const</span> MAX_PIXELS <span class=p>= </span><span class=n>120_000_000</span><span class=p>;</span>
+<span class=k>const</span> MAX_RUNNING <span class=p>= </span><span class=n>2</span><span class=p>;</span>
+<span class=k>const</span> MAX_SECONDS <span class=p>= </span><span class=n>30</span><span class=p>;</span>
+<span class=k>const</span> HEADERS <span class=p>= {</span>
+  <span class=s>"</span>cache-control<span class=s>"</span><span class=p>: </span><span class=s>"private, no-store"</span><span class=p>,</span>
+  <span class=s>"</span>x-content-type-options<span class=s>"</span><span class=p>: </span><span class=s>"nosniff"</span><span class=p>,</span>
+<span class=p>};</span>
+
+sharp<span class=p>.</span><span class=t>block</span><span class=p>({</span> operation<span class=p>: [</span><span class=s>"VipsForeignLoad"</span><span class=p>] });</span>
+sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
+  operation<span class=p>: [</span>
+    <span class=s>"VipsForeignLoadJpegBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadPngBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadWebpBuffer"</span><span class=p>,</span>
+    <span class=s>"VipsForeignLoadHeifBuffer"</span><span class=p>,</span>
+  <span class=p>],</span>
+<span class=p>});</span>
+
+<span class=k>let</span> running <span class=p>= </span><span class=n>0</span><span class=p>;</span>
+
+<span class=k>const </span><span class=t>refuse </span><span class=p>= (</span>text<span class=p>:</span> string<span class=p>,</span> status<span class=p>:</span> number<span class=p>) =&gt;</span>
+  <span class=k>new </span><span class=t>Response</span><span class=p>(</span>text<span class=p>, {</span> headers<span class=p>:</span> HEADERS<span class=p>,</span> status <span class=p>});</span>
 
 <span class=k>type</span> Raw <span class=p>= {</span> data<span class=p>:</span> Buffer<span class=p>;</span> info<span class=p>:</span> OutputInfo <span class=p>};</span>
 <span class=k>const </span><span class=t>open </span><span class=p>= (</span>image<span class=p>:</span> Raw<span class=p>) =&gt;</span>
@@ -4724,12 +4948,17 @@ export const POST = async (request: Request) => {
     limitInputPixels<span class=p>: </span><span class=n>false</span><span class=p>,</span>
   <span class=p>});</span>
 <span class=k>const </span><span class=t>raw </span><span class=p>= (</span>pipeline<span class=p>:</span> Sharp<span class=p>) =&gt;</span>
-  pipeline<span class=p>.</span><span class=t>raw</span><span class=p>().</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
+  pipeline
+    <span class=p>.</span><span class=t>timeout</span><span class=p>({</span> seconds<span class=p>:</span> MAX_SECONDS <span class=p>})</span>
+    <span class=p>.</span><span class=t>raw</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
 
 <span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
   <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
   <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
-  <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>sharp</span><span class=p>(</span>input<span class=p>).</span><span class=t>rotate</span><span class=p>());</span>
+  <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+    <span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>:</span> MAX_PIXELS <span class=p>}).</span><span class=t>rotate</span><span class=p>()</span>
+  <span class=p>);</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
     image<span class=p>:</span> upright<span class=p>.</span>info<span class=p>,</span>
     maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
@@ -4762,51 +4991,88 @@ export const POST = async (request: Request) => {
   <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>);</span>
 <span class=p>};</span>
 
-<span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
-  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
-  <span class=k>if </span><span class=p>(!</span>length <span class=p>||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>413</span><span class=p>,</span>
-    <span class=p>});</span>
+<span class=k>const </span><span class=t>readForm </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>let</span> seen <span class=p>= </span><span class=n>0</span><span class=p>;</span>
+  <span class=k>const</span> capped <span class=p>=</span> request<span class=p>.</span>body<span class=p>?.</span><span class=t>pipeThrough</span><span class=p>(</span>
+    <span class=k>new </span><span class=t>TransformStream</span><span class=p>&lt;</span>Uint8Array<span class=p>,</span> Uint8Array<span class=p>&gt;({</span>
+      <span class=t>transform</span><span class=p>(</span>chunk<span class=p>,</span> stream<span class=p>) {</span>
+        seen <span class=p>+=</span> chunk<span class=p>.</span>length<span class=p>;</span>
+        <span class=k>if </span><span class=p>(</span>seen <span class=p>&gt;</span> MAX_BODY<span class=p>)</span> stream<span class=p>.</span><span class=t>error</span><span class=p>(</span><span class=k>new </span><span class=t>RangeError</span><span class=p>());</span>
+        <span class=k>else</span> stream<span class=p>.</span><span class=t>enqueue</span><span class=p>(</span>chunk<span class=p>);</span>
+      <span class=p>},</span>
+    <span class=p>})</span>
+  <span class=p>);</span>
+  <span class=k>const</span> form <span class=p>= </span><span class=k>await new </span><span class=t>Response</span><span class=p>(</span>capped<span class=p>, {</span>
+    headers<span class=p>:</span> request<span class=p>.</span>headers<span class=p>,</span>
+  <span class=p>})</span>
+    <span class=p>.</span><span class=t>formData</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+  <span class=k>return </span><span class=p>{</span> form<span class=p>,</span> over<span class=p>:</span> seen <span class=p>&gt;</span> MAX_BODY <span class=p>};</span>
+<span class=p>};</span>
+
+<span class=k>const </span><span class=t>answer </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>const </span><span class=p>{</span> form<span class=p>,</span> over <span class=p>} = </span><span class=k>await </span><span class=t>readForm</span><span class=p>(</span>request<span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>over<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
+  <span class=k>const</span> file <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
+  <span class=k>const</span> value <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>
+    <span class=p>!(</span>file <span class=k>instanceof</span> File<span class=p>) ||</span>
+    file<span class=p>.</span>size <span class=p>=== </span><span class=n>0 </span><span class=p>||</span>
+    <span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span>
+  <span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
   <span class=p>}</span>
-  <span class=k>const</span> form <span class=p>= </span><span class=k>await</span> request<span class=p>.</span><span class=t>formData</span><span class=p>();</span>
-  <span class=k>const</span> file <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
-  <span class=k>const</span> value <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
-    <span class=p>});</span>
+  <span class=k>if </span><span class=p>(</span>value<span class=p>.</span>length <span class=p>&gt;</span> MAX_VALUE<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
   <span class=p>}</span>
   <span class=k>const</span> input <span class=p>=</span> Buffer<span class=p>.</span><span class=t>from</span><span class=p>(</span><span class=k>await</span> file<span class=p>.</span><span class=t>arrayBuffer</span><span class=p>());</span>
   <span class=k>const</span> meta <span class=p>= </span><span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>)</span>
     <span class=p>.</span><span class=t>metadata</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!</span>meta<span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
-    <span class=p>});</span>
+  <span class=k>if </span><span class=p>(!</span>meta<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"heif" </span><span class=p>&amp;&amp;</span> meta<span class=p>.</span>compression <span class=p>!== </span><span class=s>"av1"</span><span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a jpeg, png, webp or avif."</span><span class=p>, </span><span class=n>415</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>width <span class=p>*</span> meta<span class=p>.</span>height <span class=p>&gt;</span> MAX_PIXELS<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this photo has too many pixels."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span>
       <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
-      <span class=p>{</span>
-        status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
-      <span class=p>}</span>
+      <span class=n>422</span>
     <span class=p>);</span>
   <span class=p>}</span>
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
+      <span class=p>.</span><span class=t>timeout</span><span class=p>({</span> seconds<span class=p>:</span> MAX_SECONDS <span class=p>})</span>
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
       <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>
     <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=k>new </span><span class=t>Uint8Array</span><span class=p>(</span>jpeg<span class=p>), {</span>
-      headers<span class=p>: { </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
+      headers<span class=p>: { ...</span>HEADERS<span class=p>, </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, {</span>
-      status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
-    <span class=p>});</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
+  <span class=p>}</span>
+<span class=p>};</span>
+
+<span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>if </span><span class=p>(!(</span><span class=k>await </span><span class=t>canCrop</span><span class=p>(</span>request<span class=p>))) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sign in to crop a photo."</span><span class=p>, </span><span class=n>401</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+  <span class=k>if </span><span class=p>(!(</span>length <span class=p>&gt; </span><span class=n>0</span><span class=p>) ||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>if </span><span class=p>(</span>running <span class=p>&gt;=</span> MAX_RUNNING<span class=p>) {</span>
+    <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"the server is busy. try again."</span><span class=p>, </span><span class=n>503</span><span class=p>);</span>
+  <span class=p>}</span>
+  running <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>return await </span><span class=t>answer</span><span class=p>(</span>request<span class=p>);</span>
+  <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
+    running <span class=p>-= </span><span class=n>1</span><span class=p>;</span>
   <span class=p>}</span>
 <span class=p>};</span>",
   ],
@@ -8828,13 +9094,15 @@ the demo runs on the page at https\\://zriz.dev/docs/server-crop.
 
 ## install sharp
 
-a browser export can come out smaller than the crop. [loading images](https://zriz.dev/docs/loading-images.md) has the size limits, and [errors](https://zriz.dev/docs/errors.md) explains \`blank\`. sharp has no canvas and never retries smaller, so cut on the server when you need the full‑size crop. sharp refuses photos over about 268 megapixels unless you raise \`limitInputPixels\`.
+a browser export can come out smaller than the crop. [loading images](https://zriz.dev/docs/loading-images.md) has the size limits, and [errors](https://zriz.dev/docs/errors.md) explains \`blank\`. sharp has no canvas and never retries smaller, so cut on the server when you need the full‑size crop.
 
 the route runs on your server and needs \`sharp\`. add it and \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md):
 
 \`\`\`sh
 pnpm add sharp @zriz/core
 \`\`\`
+
+use sharp 0.35.5 or newer and keep it updated. it bundles libvips and every image decoder, so an old sharp means old decoders. [security](https://zriz.dev/docs/security.md) lists the advisories.
 
 ## send the file and the value
 
@@ -8934,7 +9202,7 @@ const upload = async () => {
 
 a crop with no straighten comes back as \`"extract"\`: a rectangle, a flop, a turn in steps of 90° and a resize to the size of the plan. a straightened crop comes back as \`"affine"\`: extract the \`source\` window, the part of the photo the crop can touch, pad at least 2 px on each side by copying the edge, turn with a bicubic affine, then extract the crop.
 
-in one pipeline sharp runs \`extend()\` after \`affine()\`, and \`affine()\` after \`extract()\` and \`rotate()\`, so the route ends each stage as a raw buffer and opens a new pipeline for the next one. each new pipeline passes \`limitInputPixels: false\`, since the upload already passed the check and a turned crop can grow past it.
+in one pipeline sharp runs \`extend()\` after \`affine()\`, and \`affine()\` after \`extract()\` and \`rotate()\`, so the route ends each stage as a raw buffer and opens a new pipeline for the next one. each new pipeline passes \`limitInputPixels: false\`, since the upload already passed the check and a turned crop can grow past it. the first one holds the limit.
 
 \`toSharp\` does not apply perspective, so the route answers 422 for a value with \`perspective\`. export those in the browser instead.
 
@@ -8946,12 +9214,17 @@ const open = (image: Raw) =>
     limitInputPixels: false,
   });
 const raw = (pipeline: Sharp) =>
-  pipeline.raw().toBuffer({ resolveWithObject: true });
+  pipeline
+    .timeout({ seconds: MAX_SECONDS })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
   if (!saved) throw new TypeError("not a crop value");
-  const upright = await raw(sharp(input).rotate());
+  const upright = await raw(
+    sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
+  );
   const cropper = createCropper({
     image: upright.info,
     maxZoom: MAX_ZOOM,
@@ -8985,71 +9258,155 @@ const cut = async (input: Buffer, value: string) => {
 };
 \`\`\`
 
+the upload is cut as pixels, and each stage drops everything else, so exif, gps, xmp, thumbnails, gain maps and bytes after the image never reach the answer. don't add \`keepMetadata()\` or \`keepExif()\`. [security](https://zriz.dev/docs/security.md) explains why.
+
 ## answer the request
 
-the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 413 for a body over 50 mb or with no \`content-length\`, 400 when the form lacks the file or the value, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the crop cannot be cut, and otherwise a jpeg at quality 92 with clear pixels filled white.
+the route is a next.js route handler saved as \`app/api/crop/route.ts\`. a jpeg at quality 92 with clear pixels filled white comes back when all goes well. otherwise:
+
+| status | when |
+| - | - |
+| \`400\` | the form lacks the file or the value, or sharp cannot open the file |
+| \`401\` | \`canCrop\` says no |
+| \`413\` | the body is over 50 mb or declares no \`content-length\`, or the photo is over \`MAX_PIXELS\` |
+| \`415\` | a heic or other heif that is not avif, because prebuilt sharp has no hevc decoder |
+| \`422\` | the crop cannot be cut, or the value is over 4096 characters |
+| \`503\` | \`MAX_RUNNING\` crops are already running in this process |
 
 chromium and firefox ignore the orientation tag of a webp and safari honours it, so the value can describe a different frame from the one sharp turns upright. the route answers 422 for a webp with an orientation above 1 instead of cutting the wrong pixels.
 
-the value and the file come from the browser, so treat them as client input. decoding a large photo still costs memory, so keep the route behind your own auth and a rate limit.
+\`canCrop\` in \`can-crop.ts\` answers \`false\` until you connect your session check, so a copied route refuses everyone. replace its body before you ship.
+
+the value and the file come from the browser, so treat both as hostile. the top of the route holds the limits:
 
 \`\`\`ts
-export const POST = async (request: Request) => {
-  const length = Number(request.headers.get("content-length"));
-  if (!length || length > MAX_BODY) {
-    return new Response("this upload is too large.", {
-      status: 413,
-    });
+const MAX_BODY = 50 * 1024 * 1024;
+const MAX_VALUE = 4096;
+const MAX_PIXELS = 120_000_000;
+const MAX_RUNNING = 2;
+const MAX_SECONDS = 30;
+const HEADERS = {
+  "cache-control": "private, no-store",
+  "x-content-type-options": "nosniff",
+};
+
+sharp.block({ operation: ["VipsForeignLoad"] });
+sharp.unblock({
+  operation: [
+    "VipsForeignLoadJpegBuffer",
+    "VipsForeignLoadPngBuffer",
+    "VipsForeignLoadWebpBuffer",
+    "VipsForeignLoadHeifBuffer",
+  ],
+});
+\`\`\`
+
+a small png can ask for a huge image, and the bytes on the wire say nothing about the memory it takes. a photo at \`MAX_PIXELS\` peaked at about 2 gb in our test, for a 460 kb upload at a 45° tilt, so give the server that much per running crop. raise \`MAX_PIXELS\` only with memory to match. 120 million covers a 108 megapixel phone photo, and a 200 megapixel one gets 413. \`MAX_RUNNING\` counts one process, so add a rate limit per user on top.
+
+\`sharp.block()\` turns off every decoder but jpeg, png, webp and avif for the whole process, because the route never needs svg, tiff, gif or the others. move it if another route in the same process does.
+
+\`\`\`ts
+const readForm = async (request: Request) => {
+  let seen = 0;
+  const capped = request.body?.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, stream) {
+        seen += chunk.length;
+        if (seen > MAX_BODY) stream.error(new RangeError());
+        else stream.enqueue(chunk);
+      },
+    })
+  );
+  const form = await new Response(capped, {
+    headers: request.headers,
+  })
+    .formData()
+    .catch(() => null);
+  return { form, over: seen > MAX_BODY };
+};
+
+const answer = async (request: Request) => {
+  const { form, over } = await readForm(request);
+  if (over) return refuse("this upload is too large.", 413);
+  const file = form?.get("file");
+  const value = form?.get("value");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    typeof value !== "string"
+  ) {
+    return refuse("send a file and a crop value.", 400);
   }
-  const form = await request.formData();
-  const file = form.get("file");
-  const value = form.get("value");
-  if (!(file instanceof File) || typeof value !== "string") {
-    return new Response("send a file and a crop value.", {
-      status: 400,
-    });
+  if (value.length > MAX_VALUE) {
+    return refuse("this crop does not fit this photo.", 422);
   }
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
-  if (!meta) {
-    return new Response("sharp cannot open this file.", {
-      status: 400,
-    });
+  if (!meta) return refuse("sharp cannot open this file.", 400);
+  if (meta.format === "heif" && meta.compression !== "av1") {
+    return refuse("send a jpeg, png, webp or avif.", 415);
+  }
+  if (meta.width * meta.height > MAX_PIXELS) {
+    return refuse("this photo has too many pixels.", 413);
   }
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
-    return new Response(
+    return refuse(
       "save this webp without an orientation tag.",
-      {
-        status: 422,
-      }
+      422
     );
   }
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
+      .timeout({ seconds: MAX_SECONDS })
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
     return new Response(new Uint8Array(jpeg), {
-      headers: { "content-type": "image/jpeg" },
+      headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this crop does not fit this photo.", {
-      status: 422,
-    });
+    return refuse("this crop does not fit this photo.", 422);
   }
 };
 \`\`\`
 
-## all three files
+\`\`\`ts
+export const POST = async (request: Request) => {
+  if (!(await canCrop(request))) {
+    return refuse("sign in to crop a photo.", 401);
+  }
+  const length = Number(request.headers.get("content-length"));
+  if (!(length > 0) || length > MAX_BODY) {
+    return refuse("this upload is too large.", 413);
+  }
+  if (running >= MAX_RUNNING) {
+    return refuse("the server is busy. try again.", 503);
+  }
+  running += 1;
+  try {
+    return await answer(request);
+  } finally {
+    running -= 1;
+  }
+};
+\`\`\`
+
+## all four files
 
 \`crop-limits.ts\` is shared by both:
 
 \`\`\`ts
 export const MIN_SIZE = { width: 1, height: 1 };
 export const MAX_ZOOM = 15;
+\`\`\`
+
+\`can-crop.ts\` runs on the server. connect your session check here:
+
+\`\`\`ts
+export const canCrop = async (_request: Request) => false;
 \`\`\`
 
 \`crop-upload.tsx\` runs in the browser:
@@ -9174,9 +9531,33 @@ export const CropUpload = () => {
 import { createCropper, parse, toSharp } from "@zriz/core";
 import sharp from "sharp";
 import type { OutputInfo, Sharp } from "sharp";
+import { canCrop } from "../../../can-crop";
 import { MAX_ZOOM, MIN_SIZE } from "../../../crop-limits";
 
 const MAX_BODY = 50 * 1024 * 1024;
+const MAX_VALUE = 4096;
+const MAX_PIXELS = 120_000_000;
+const MAX_RUNNING = 2;
+const MAX_SECONDS = 30;
+const HEADERS = {
+  "cache-control": "private, no-store",
+  "x-content-type-options": "nosniff",
+};
+
+sharp.block({ operation: ["VipsForeignLoad"] });
+sharp.unblock({
+  operation: [
+    "VipsForeignLoadJpegBuffer",
+    "VipsForeignLoadPngBuffer",
+    "VipsForeignLoadWebpBuffer",
+    "VipsForeignLoadHeifBuffer",
+  ],
+});
+
+let running = 0;
+
+const refuse = (text: string, status: number) =>
+  new Response(text, { headers: HEADERS, status });
 
 type Raw = { data: Buffer; info: OutputInfo };
 const open = (image: Raw) =>
@@ -9185,12 +9566,17 @@ const open = (image: Raw) =>
     limitInputPixels: false,
   });
 const raw = (pipeline: Sharp) =>
-  pipeline.raw().toBuffer({ resolveWithObject: true });
+  pipeline
+    .timeout({ seconds: MAX_SECONDS })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
   if (!saved) throw new TypeError("not a crop value");
-  const upright = await raw(sharp(input).rotate());
+  const upright = await raw(
+    sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
+  );
   const cropper = createCropper({
     image: upright.info,
     maxZoom: MAX_ZOOM,
@@ -9223,51 +9609,88 @@ const cut = async (input: Buffer, value: string) => {
   return open(turned).extract(steps.extract);
 };
 
-export const POST = async (request: Request) => {
-  const length = Number(request.headers.get("content-length"));
-  if (!length || length > MAX_BODY) {
-    return new Response("this upload is too large.", {
-      status: 413,
-    });
+const readForm = async (request: Request) => {
+  let seen = 0;
+  const capped = request.body?.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, stream) {
+        seen += chunk.length;
+        if (seen > MAX_BODY) stream.error(new RangeError());
+        else stream.enqueue(chunk);
+      },
+    })
+  );
+  const form = await new Response(capped, {
+    headers: request.headers,
+  })
+    .formData()
+    .catch(() => null);
+  return { form, over: seen > MAX_BODY };
+};
+
+const answer = async (request: Request) => {
+  const { form, over } = await readForm(request);
+  if (over) return refuse("this upload is too large.", 413);
+  const file = form?.get("file");
+  const value = form?.get("value");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    typeof value !== "string"
+  ) {
+    return refuse("send a file and a crop value.", 400);
   }
-  const form = await request.formData();
-  const file = form.get("file");
-  const value = form.get("value");
-  if (!(file instanceof File) || typeof value !== "string") {
-    return new Response("send a file and a crop value.", {
-      status: 400,
-    });
+  if (value.length > MAX_VALUE) {
+    return refuse("this crop does not fit this photo.", 422);
   }
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
-  if (!meta) {
-    return new Response("sharp cannot open this file.", {
-      status: 400,
-    });
+  if (!meta) return refuse("sharp cannot open this file.", 400);
+  if (meta.format === "heif" && meta.compression !== "av1") {
+    return refuse("send a jpeg, png, webp or avif.", 415);
+  }
+  if (meta.width * meta.height > MAX_PIXELS) {
+    return refuse("this photo has too many pixels.", 413);
   }
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
-    return new Response(
+    return refuse(
       "save this webp without an orientation tag.",
-      {
-        status: 422,
-      }
+      422
     );
   }
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
+      .timeout({ seconds: MAX_SECONDS })
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
     return new Response(new Uint8Array(jpeg), {
-      headers: { "content-type": "image/jpeg" },
+      headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this crop does not fit this photo.", {
-      status: 422,
-    });
+    return refuse("this crop does not fit this photo.", 422);
+  }
+};
+
+export const POST = async (request: Request) => {
+  if (!(await canCrop(request))) {
+    return refuse("sign in to crop a photo.", 401);
+  }
+  const length = Number(request.headers.get("content-length"));
+  if (!(length > 0) || length > MAX_BODY) {
+    return refuse("this upload is too large.", 413);
+  }
+  if (running >= MAX_RUNNING) {
+    return refuse("the server is busy. try again.", 503);
+  }
+  running += 1;
+  try {
+    return await answer(request);
+  } finally {
+    running -= 1;
   }
 };
 \`\`\`

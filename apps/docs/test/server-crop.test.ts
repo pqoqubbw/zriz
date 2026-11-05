@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { createCropper, parse, serialize } from "@zriz/core";
 import {
   assert,
@@ -9,11 +11,18 @@ import {
   record,
 } from "fast-check";
 import sharp from "sharp";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cleanCopy } from "../snippets/security/clean-copy";
 import { serveUpload } from "../snippets/security/serve-upload";
 import { POST } from "../snippets/server-crop/app/api/crop/route";
+import { canCrop } from "../snippets/server-crop/can-crop";
+
+vi.mock(import("../snippets/server-crop/can-crop"), async (actual) => {
+  const { canCrop: real } = await actual();
+
+  return { canCrop: vi.fn(real) };
+});
 
 const gradient = (width: number, height: number) => {
   const bytes = Buffer.alloc(width * height * 3);
@@ -113,6 +122,10 @@ describe("the security recipes", () => {
 });
 
 describe("the documented crop route", () => {
+  beforeEach(() => {
+    vi.mocked(canCrop).mockResolvedValue(true);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -182,6 +195,205 @@ describe("the documented crop route", () => {
       ),
       { numRuns: 5000 }
     );
+  });
+
+  it("refuses everyone until the app connects its own session check", async () => {
+    const { canCrop: real } = await vi.importActual<{
+      canCrop: typeof canCrop;
+    }>("../snippets/server-crop/can-crop");
+
+    await expect(
+      real(new Request("http://zriz.test/api/crop"))
+    ).resolves.toBeFalsy();
+  });
+
+  it("answers 401 before it reads the body when the check says no", async () => {
+    vi.mocked(canCrop).mockResolvedValue(false);
+    const input = await gradient(8, 8).png().toBuffer();
+    const response = await post(input, "{}");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("refuses a body longer than the length it declares", async () => {
+    const response = await post(Buffer.alloc(51 * 1024 * 1024), "{}", "10");
+
+    expect(response.status).toBe(413);
+  });
+
+  it("refuses a negative length", async () => {
+    const input = await gradient(8, 8).png().toBuffer();
+
+    await expect(post(input, "{}", "-5")).resolves.toHaveProperty(
+      "status",
+      413
+    );
+  });
+
+  it.each([
+    ["multipart/form-data; boundary=x", "not a form"],
+    ["application/json", "{}"],
+  ])("answers 400 for a %s body that is no form", async (type, body) => {
+    const response = await POST(
+      new Request("http://zriz.test/api/crop", {
+        body,
+        headers: { "content-length": "9", "content-type": type },
+        method: "POST",
+      })
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("answers 400 for an empty file", async () => {
+    await expect(post(Buffer.alloc(0), "{}")).resolves.toHaveProperty(
+      "status",
+      400
+    );
+  });
+
+  it("answers 422 for a value too long to be a crop", async () => {
+    const input = await gradient(8, 8).png().toBuffer();
+    const value = JSON.stringify({ note: "x".repeat(8192) });
+
+    await expect(post(input, value)).resolves.toHaveProperty("status", 422);
+  });
+
+  it.each([
+    [
+      "svg",
+      async () =>
+        await Promise.resolve(
+          Buffer.from(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"/>'
+          )
+        ),
+    ],
+    ["tiff", async () => await gradient(8, 8).tiff().toBuffer()],
+    ["gif", async () => await gradient(8, 8).gif().toBuffer()],
+  ])("answers 400 for a %s and never decodes it", async (_format, make) => {
+    const response = await post(await make(), "{}");
+
+    expect(response.status).toBe(400);
+  });
+
+  it("names the formats it takes for a heic it cannot decode", async () => {
+    const input = readFileSync(
+      new URL("../../../packages/core/test/fixtures/hevc.heic", import.meta.url)
+    );
+    const response = await post(input, "{}");
+
+    expect(response.status).toBe(415);
+    await expect(response.text()).resolves.toContain("jpeg");
+  });
+
+  it("opens an avif", async () => {
+    const input = await gradient(16, 16).avif({ effort: 0 }).toBuffer();
+
+    await expect(post(input, "{}")).resolves.toHaveProperty("status", 200);
+  });
+
+  it("answers 413 for a photo over its pixel limit before it decodes", async () => {
+    const toBuffer = vi.spyOn(sharp.prototype, "toBuffer");
+    const input = await sharp({
+      create: {
+        background: "#000",
+        channels: 3,
+        height: 11_000,
+        width: 11_000,
+      },
+    })
+      .png()
+      .toBuffer();
+
+    toBuffer.mockClear();
+    const response = await post(input, "{}");
+
+    expect(response.status).toBe(413);
+    expect(toBuffer).not.toHaveBeenCalled();
+  });
+
+  it("answers 503 for a crop over the limit of crops at once", async () => {
+    const input = await gradient(8, 8).png().toBuffer();
+    const answers = await Promise.all(
+      [1, 2, 3].map(async () => await post(input, "{}"))
+    );
+
+    expect(answers.map(({ status }) => status).toSorted()).toStrictEqual([
+      200, 200, 503,
+    ]);
+    await expect(post(input, "{}")).resolves.toHaveProperty("status", 200);
+  });
+
+  it("gives every sharp stage a time limit", async () => {
+    const timeout = vi.spyOn(sharp.prototype, "timeout");
+    const input = await gradient(16, 16).png().toBuffer();
+
+    timeout.mockClear();
+    const response = await post(input, JSON.stringify({ rotation: 7 }));
+
+    expect(response.status).toBe(200);
+    expect(timeout.mock.calls.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each([
+    ["a crop", async () => await gradient(8, 8).png().toBuffer(), 200],
+    ["a refusal", async () => await Promise.resolve(Buffer.from("no")), 400],
+  ])("marks %s private and not to be sniffed", async (_kind, make, status) => {
+    const response = await post(await make(), "{}");
+
+    expect(response.status).toBe(status);
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("sends back the crop and nothing else from the upload", async () => {
+    const left = Buffer.alloc(64 * 64 * 3);
+
+    for (let at = 0; at < left.length; at += 3) {
+      left[at] = (at / 3) % 64 < 32 ? 255 : 0;
+    }
+
+    const photo = await sharp(left, {
+      raw: { channels: 3, height: 64, width: 64 },
+    })
+      .jpeg()
+      .withExif({ IFD0: { Copyright: "a-marker" } })
+      .withXmp(
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/"><a>a-marker</a></x:xmpmeta>'
+      )
+      .withIccProfile("p3")
+      .toBuffer();
+    const response = await post(
+      Buffer.concat([photo, Buffer.from("a-marker")]),
+      JSON.stringify({
+        center: { x: 0.75, y: 0.5 },
+        size: { height: 1, width: 0.5 },
+      })
+    );
+    const out = Buffer.from(await response.arrayBuffer());
+    const meta = await sharp(out).metadata();
+    const { data } = await sharp(out)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    expect(out.includes("a-marker")).toBeFalsy();
+    expect(meta.exif).toBeUndefined();
+    expect(meta.xmp).toBeUndefined();
+    expect(meta.icc).toBeUndefined();
+    expect([meta.width, meta.height]).toStrictEqual([32, 64]);
+    expect(Math.max(...data.filter((_, at) => at % 3 === 0))).toBeLessThan(90);
+  });
+
+  it("leaves Object.prototype alone for a value that names it", async () => {
+    const input = await gradient(8, 8).png().toBuffer();
+    const response = await post(
+      input,
+      '{"__proto__":{"zrizMark":1},"center":{"__proto__":{"zrizMark":1}}}'
+    );
+
+    expect(response.status).toBe(200);
+    expect("zrizMark" in {}).toBeFalsy();
   });
 
   it("answers 400 without a file or a value", async () => {
