@@ -16,6 +16,7 @@ type ImageSource =
 
 type LoadOptions = {
   previewEdge?: number | undefined;
+  maxPixels?: number | undefined;
   crossOrigin?: "anonymous" | "use-credentials" | undefined;
   signal?: AbortSignal | undefined;
   timeout?: number | undefined;
@@ -54,6 +55,7 @@ let nextId = 0;
 const TOUCH_AREA = 16_777_216;
 const NON_TOUCH_AREA = 268_435_456;
 const HEAD = 4096;
+const MAX_PIXELS = 268_402_689;
 
 const startsWith = (
   bytes: Uint8Array,
@@ -237,7 +239,7 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   }
 
   return new ZrizError(
-    code === "blank" ? "blank" : "decode",
+    code === "blank" || code === "too-large" ? code : "decode",
     `zriz: ${detail}`
   );
 };
@@ -347,13 +349,20 @@ const loadImage = async (
         async () => {
           resume();
 
-          return await decodeOff(blob, edge, id);
+          return await decodeOff(
+            blob,
+            edge,
+            id,
+            options.maxPixels ?? MAX_PIXELS
+          );
         },
         ms,
         signal
       ).catch(async (error: unknown) => {
-        if (!options.decode) {
-          throw toZriz(error, mime);
+        const failed = toZriz(error, mime);
+
+        if (!options.decode || failed.code === "too-large") {
+          throw failed;
         }
 
         checkpoint();

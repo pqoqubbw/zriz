@@ -41,8 +41,13 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "decode",
-            "the url answered with an error status, the file cannot be read, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, a `video` has no current frame, `img-src` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again",
+            "the url answered with an error status, the file cannot be read, the file is cut short, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an `img`, `video` or `canvas` you pass cannot be read, a `video` has no current frame, `img-src` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again",
             "open the url and check the response. if you are offline, try again once the network is back. if the same error comes back, reload the page, because a browser can keep a failed chunk until then. wait for `loadeddata` before you pass a `video`. [loading images](loading-images) lists the `img-src` sources",
+          ],
+          [
+            "too-large",
+            "the file's header asks for more pixels than `maxPixels`, 268402689 by default",
+            "send a smaller file. to open it anyway, load the photo yourself with a higher `maxPixels`, as in [loading images](loading-images)",
           ],
           [
             "timeout",

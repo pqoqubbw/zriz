@@ -5,7 +5,8 @@ type ZrizErrorCode =
   | "timeout"
   | "aborted"
   | "blank"
-  | "no-image";
+  | "no-image"
+  | "too-large";
 
 class ZrizError extends Error {
   readonly code: ZrizErrorCode;

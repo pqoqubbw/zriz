@@ -56,6 +56,9 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
+        "zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with `decode` in every browser. data after the end of the file still opens. firefox opens a cut gif and paints what is missing white."
+      ),
+      p(
         "every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo."
       )
     ),
@@ -77,6 +80,9 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
         ],
       }),
+      p(
+        "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif or bmp over `maxPixels` fails with `too-large`. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it."
+      ),
       p(
         "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs three decodes at a time, and a photo waiting for its turn is not on the clock. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
       ),
@@ -123,7 +129,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "`ready` turns the save button on once the photo is attached. `onSave` gets the cropper for `exportCrop`, as in [exporting](exporting). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left."
       ),
       p(
-        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
+        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `maxPixels`, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
       ),
       p(
         "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call `discardImage(image)`, for example after your own stale check or an `exportImage` with no `attachImage`. it does nothing while a cropper holds the photo."

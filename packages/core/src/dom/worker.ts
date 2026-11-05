@@ -204,8 +204,10 @@ const decoding = (): Lane<Kernel> => {
 const decodeOff = async (
   blob: Blob,
   edge: number,
-  keep?: number
-): Promise<DecodeReply> => await via(decoding(), "decode", [blob, edge, keep]);
+  keep?: number,
+  maxPixels?: number
+): Promise<DecodeReply> =>
+  await via(decoding(), "decode", [blob, edge, keep, maxPixels]);
 
 const keepOff = async (id: number, bitmap: ImageBitmap): Promise<void> => {
   await via(decoding(), "keep", [id, bitmap]);

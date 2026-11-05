@@ -1,4 +1,5 @@
 import { getEventListeners } from "node:events";
+import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -144,10 +145,19 @@ const stub = (worker: boolean): void => {
   vi.stubGlobal("createImageBitmap", bitmapsIn("main"));
 };
 
-const jpeg = (): Blob =>
-  new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0])], {
-    type: "image/jpeg",
-  });
+const JPEG = readFileSync(new URL("../fixtures/orient-1.jpg", import.meta.url));
+const PNG = readFileSync(new URL("../fixtures/wide.png", import.meta.url));
+
+const jpeg = (): Blob => new Blob([JPEG], { type: "image/jpeg" });
+
+const pngOf = (width: number, height: number): Blob => {
+  const file = Buffer.from(PNG);
+
+  file.writeUInt32BE(width, 16);
+  file.writeUInt32BE(height, 20);
+
+  return new Blob([file], { type: "image/png" });
+};
 
 const decoding = async (count = 1): Promise<void> => {
   await vi.waitFor(() => {
@@ -211,9 +221,11 @@ describe("a load that never reaches attachImage", () => {
     const image = await loadImage(jpeg());
 
     discardImage(image);
+
     expect(() => {
       attachImage(createCropper(), image);
     }).toThrow(ZrizError);
+
     await noneLive();
   });
 
@@ -730,6 +742,57 @@ describe("fetching a url", () => {
 
 const { promise: never } = deferred<never>();
 
+describe("the pixel limit", () => {
+  beforeEach(() => {
+    open.clear();
+    decodes = 0;
+    made = 0;
+    decodeFails = false;
+    copyFails = false;
+    gate = Promise.resolve();
+    stub(true);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("opens a photo of exactly 268402689 pixels by default", async () => {
+    const image = await loadImage(pngOf(16_383, 16_383));
+
+    expect(decodes).toBe(1);
+    image.preview.close();
+  });
+
+  it("refuses a photo over the default limit before it decodes", async () => {
+    const error = await failure(loadImage(pngOf(16_384, 16_383)));
+
+    expect(codeOf(error)).toBe("too-large");
+    expect(decodes).toBe(0);
+  });
+
+  it("honours a limit the caller passes, higher or lower", async () => {
+    expect(
+      codeOf(await failure(loadImage(pngOf(100, 100), { maxPixels: 9999 })))
+    ).toBe("too-large");
+
+    const image = await loadImage(pngOf(30_000, 30_000), {
+      maxPixels: Number.POSITIVE_INFINITY,
+    });
+
+    expect(decodes).toBe(1);
+    image.preview.close();
+  });
+
+  it("does not offer a file over the limit to the decode function", async () => {
+    const decode = vi.fn<(blob: Blob) => Promise<ImageBitmap>>();
+    const error = await failure(loadImage(pngOf(30_000, 30_000), { decode }));
+
+    expect(codeOf(error)).toBe("too-large");
+    expect(decode).not.toHaveBeenCalled();
+  });
+});
+
 describe("the time limit", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -1137,10 +1200,12 @@ describe("releasing a separate source bitmap", () => {
     const image = await loadImage(full, { previewEdge: 100 });
     const cropper = createCropper();
 
+    const close = vi.spyOn(image.preview, "close");
+
     expect(image.preview).not.toBe(full);
     attachImage(cropper, image);
     attachImage(cropper, null);
-    expect(open.has(image.preview as unknown as FakeBitmap)).toBeFalsy();
+    expect(close).toHaveBeenCalledOnce();
     expect(open.has(full)).toBeTruthy();
     full.close();
     await noneLive();
@@ -1151,9 +1216,7 @@ describe("releasing a separate source bitmap", () => {
     const controller = new AbortController();
 
     controller.abort();
-    const error = await failure(
-      loadImage(full, { signal: controller.signal })
-    );
+    const error = await failure(loadImage(full, { signal: controller.signal }));
 
     expect(codeOf(error)).toBe("aborted");
     expect(open.has(full)).toBeTruthy();

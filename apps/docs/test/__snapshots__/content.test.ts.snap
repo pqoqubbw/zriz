@@ -6487,7 +6487,8 @@ every \`ZrizError\` has a \`code\` from the table below, and its message starts 
 | - | - |
 | \`cross-origin\` | the server sent the photo without \`Access-Control-Allow-Origin\`, the network dropped, \`connect-src\` in a content security policy blocked the url, or an \`img\`, \`video\`, \`canvas\` or \`ImageBitmap\` you pass is tainted. send the header. if the request needs cookies, pass \`crossOrigin="use-credentials"\` to \`Root\`. add the host to \`connect-src\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`unsupported-format\` | the browser could not decode a heic, jpeg xl or tiff file, because it does not support the format or the file is damaged, either on load or when an export decodes the original again. try another copy of the file. call \`loadImage\` yourself with your own \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), or convert the file to jpeg first |
-| \`decode\` | the url answered with an error status, the file cannot be read, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back. if the same error comes back, reload the page, because a browser can keep a failed chunk until then. wait for \`loadeddata\` before you pass a \`video\`. [loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
+| \`decode\` | the url answered with an error status, the file cannot be read, the file is cut short, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back. if the same error comes back, reload the page, because a browser can keep a failed chunk until then. wait for \`loadeddata\` before you pass a \`video\`. [loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
+| \`too-large\` | the file's header asks for more pixels than \`maxPixels\`, 268402689 by default. send a smaller file. to open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`timeout\` | a photo took over 15 s to load, or an export took over 30 s. time spent waiting behind other photos or exports does not count. send a smaller file or export a smaller \`maxSize\`. for a slow network, load the photo yourself with a longer \`timeout\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`aborted\` | the \`signal\` you passed fired, or a new photo replaced the one being exported. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
 | \`blank\` | the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones. set \`maxSize\` to 2048 by 2048 or less |
@@ -7777,6 +7778,8 @@ if that server wants a token in a header, fetch the photo yourself with that hea
 | svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. without both it opens at 300 by 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
 | animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif. an \`img\` already playing opens on the frame it shows in safari, so pass a \`Blob\` for the first frame |
 
+zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with \`decode\` in every browser. data after the end of the file still opens. firefox opens a cut gif and paints what is missing white.
+
 every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo.
 
 ## handle large photos
@@ -7787,6 +7790,8 @@ a worker decodes a preview sized for the screen. the original stays a blob until
 | - | - |
 | preview size | twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere |
 | export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere, with a long edge of at most 16383 px for webp and 65500 px for other types. a bigger crop comes out scaled down |
+
+before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif or bmp over \`maxPixels\` fails with \`too-large\`. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass \`maxPixels\` to \`loadImage\` to change it.
 
 the fetch and the decode share one time limit. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. zriz runs three decodes at a time, and a photo waiting for its turn is not on the clock. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
 
@@ -7898,7 +7903,7 @@ export const Heic = ({ onSave }: Props) => {
 
 \`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left.
 
-\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
+\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`maxPixels\`, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
 
 \`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call \`discardImage(image)\`, for example after your own stale check or an \`exportImage\` with no \`attachImage\`. it does nothing while a cropper holds the photo.
 

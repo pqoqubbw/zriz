@@ -39,7 +39,7 @@ const release = (image: LoadedImage): void => {
 };
 
 const discardImage = (image: LoadedImage): void => {
-  if (!holders.get(image) && !freed.has(image)) {
+  if ((holders.get(image) ?? 0) === 0 && !freed.has(image)) {
     freed.add(image);
     freeImage(image);
   }

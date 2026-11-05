@@ -86,6 +86,36 @@ const halves = async (width: number, height: number): Promise<Blob> => {
   return await canvas.convertToBlob({ type: "image/png" });
 };
 
+const clear = async (): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(64, 64);
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+
+  context.fillStyle = "#f00";
+  context.fillRect(16, 16, 32, 32);
+
+  return await canvas.convertToBlob({ type: "image/png" });
+};
+
+const encoded = async (type: string): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(200, 160);
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+
+  for (let i = 0; i < 400; i += 1) {
+    context.fillStyle = `hsl(${i * 37} 80% ${30 + (i % 40)}%)`;
+    context.fillRect((i * 53) % 200, (i * 31) % 160, 9, 9);
+  }
+
+  return await canvas.convertToBlob({ type });
+};
+
 const otherRealm = async () => {
   const frame = document.createElement("iframe");
 
@@ -242,20 +272,6 @@ describe("load and export", () => {
   });
 
   describe("a jpeg of a photo with clear pixels", () => {
-    const clear = async (): Promise<Blob> => {
-      const canvas = new OffscreenCanvas(64, 64);
-      const context = canvas.getContext("2d");
-
-      if (!context) {
-        throw new Error("no 2d context");
-      }
-
-      context.fillStyle = "#f00";
-      context.fillRect(16, 16, 32, 32);
-
-      return await canvas.convertToBlob({ type: "image/png" });
-    };
-
     const WHITE = [255, 255, 255, 255];
     const RED = [255, 0, 0, 255];
 
@@ -820,6 +836,67 @@ const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
     () => "resolved",
     (error: unknown) => (error instanceof ZrizError ? error.code : error)
   );
+
+describe("reading a file before it decodes", () => {
+  it.each(["image/png", "image/jpeg"])(
+    "refuses a %s cut in half in this browser",
+    async (type) => {
+      const whole = await encoded(type);
+      const part = whole.slice(0, Math.floor(whole.size / 2), type);
+
+      await expect(codeOf(loadImage(part))).resolves.toBe("decode");
+    }
+  );
+
+  it("refuses a cut photo from a url as well", async () => {
+    const whole = await encoded("image/jpeg");
+    const url = URL.createObjectURL(
+      whole.slice(0, Math.floor(whole.size / 2), "image/jpeg")
+    );
+
+    await expect(codeOf(loadImage(url))).resolves.toBe("decode");
+    URL.revokeObjectURL(url);
+  });
+
+  it.each(["image/png", "image/jpeg"])(
+    "opens a %s with data after its end",
+    async (type) => {
+      const whole = await encoded(type);
+      const image = await loadImage(
+        new Blob([whole, new Uint8Array(4096).fill(7)], { type })
+      );
+
+      expect(image.width).toBe(200);
+      image.preview.close();
+    }
+  );
+
+  it("refuses a file over maxPixels without opening it", async () => {
+    const blob = await encoded("image/png");
+
+    await expect(
+      codeOf(loadImage(blob, { maxPixels: 200 * 160 - 1 }))
+    ).resolves.toBe("too-large");
+
+    const image = await loadImage(blob, { maxPixels: 200 * 160 });
+
+    expect(image.height).toBe(160);
+    image.preview.close();
+  });
+
+  it("refuses a png whose header asks for too many pixels by default", async () => {
+    const blob = await encoded("image/png");
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const view = new DataView(bytes.buffer);
+
+    view.setUint32(16, 30_000);
+    view.setUint32(20, 30_000);
+
+    await expect(
+      codeOf(loadImage(new Blob([bytes], { type: "image/png" })))
+    ).resolves.toBe("too-large");
+  });
+});
 
 describe("svg sources", () => {
   it.each([
