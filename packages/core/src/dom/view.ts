@@ -466,6 +466,30 @@ const springProgress = (omega: number, ms: number): number => {
   return 1 - (1 + t) * Math.exp(-t);
 };
 
+const leadOf = (
+  kind: Transition,
+  spin: number,
+  turning: boolean,
+  from: Pose,
+  to: Pose | null,
+  lead: number
+): number => {
+  if (!to) {
+    return 0;
+  }
+
+  if (kind === "rotate") {
+    return lead + (spin * (to.mirror < 0 ? -Math.PI : Math.PI)) / 2;
+  }
+
+  const off = to.angle - from.angle - lead;
+
+  return turning &&
+    Math.abs(off - 2 * Math.PI * Math.round(off / (2 * Math.PI))) < 1e-3
+    ? lead
+    : 0;
+};
+
 const flag = (on: boolean): string | undefined => (on ? "" : undefined);
 
 const orientationOf = (aspect: Aspect): "portrait" | "landscape" | "square" => {
@@ -741,10 +765,7 @@ const viewOf = (cropper: Cropper): View => {
 
     blend = {
       from: start,
-      lead:
-        to && kind === "rotate"
-          ? lead + (spin * (to.mirror < 0 ? -Math.PI : Math.PI)) / 2
-          : 0,
+      lead: leadOf(kind, spin, turning, start, to, lead),
       span,
       start: rigid ? (span ?? spanOf(from.rect, from.matrix)) : null,
       t: 0,

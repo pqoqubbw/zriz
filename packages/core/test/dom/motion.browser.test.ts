@@ -36,6 +36,15 @@ const wait = async (ms: number): Promise<void> => {
   });
 };
 
+const spinSteps = (angles: number[]): number[] =>
+  angles.slice(1).map((angle, index) => {
+    const turn = angle - (angles[index] ?? 0);
+
+    return (
+      ((turn - 2 * Math.PI * Math.round(turn / (2 * Math.PI))) * 180) / Math.PI
+    );
+  });
+
 type Fixture = {
   id: string;
   cropper: Cropper;
@@ -427,6 +436,74 @@ describe("view motion", () => {
     expect(end).toBeCloseTo(260, 0);
     expect(widths.some((w) => w < start - 10 && w > end + 10)).toBeTruthy();
     expect(fixture.root.dataset.transition).toBeUndefined();
+  });
+
+  it("an aspect change mid spin does not reverse the spin", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const angles: number[] = [];
+
+    time.frames(2);
+    const off = viewOf(fixture.cropper).onFrame((frame) => {
+      angles.push(Math.atan2(frame.matrix[3], frame.matrix[0]));
+    });
+
+    for (let tap = 0; tap < 3; tap += 1) {
+      fixture.cropper.rotate90("ccw", { reason: "rotate-90" });
+      time.frames(1);
+    }
+
+    fixture.cropper.setAspect(1);
+    time.frames(40);
+    off();
+    const steps = spinSteps(angles);
+
+    expect(Math.max(...steps)).toBeLessThan(0.01);
+    expect(steps.reduce((sum, step) => sum + step, 0)).toBeCloseTo(-270, 0);
+  });
+
+  it("a flip mid spin does not reverse the spin", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const turns: number[] = [];
+
+    time.frames(2);
+    const off = viewOf(fixture.cropper).onFrame((frame) => {
+      turns.push(Math.atan2(frame.matrix[3], frame.matrix[4]));
+    });
+
+    for (let tap = 0; tap < 3; tap += 1) {
+      fixture.cropper.rotate90("ccw", { reason: "rotate-90" });
+      time.frames(1);
+    }
+
+    fixture.cropper.flip();
+    time.frames(40);
+    off();
+    const steps = spinSteps(turns);
+
+    expect(Math.max(...steps)).toBeLessThan(0.01);
+    expect(steps.reduce((sum, step) => sum + step, 0)).toBeCloseTo(-270, 0);
+  });
+
+  it("a reset that changes the target angle mid spin takes the short way", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const angles: number[] = [];
+
+    time.frames(2);
+    const off = viewOf(fixture.cropper).onFrame((frame) => {
+      angles.push(Math.atan2(frame.matrix[3], frame.matrix[0]));
+    });
+
+    fixture.cropper.rotate90("ccw", { reason: "rotate-90" });
+    time.frames(3);
+    fixture.cropper.reset();
+    time.frames(40);
+    off();
+    const steps = spinSteps(angles);
+
+    expect(steps.reduce((sum, step) => sum + step, 0)).toBeCloseTo(0, 0);
   });
 
   it("finishes in about 150 ms under reduced motion", async () => {
