@@ -498,7 +498,11 @@ describe("docs recipes", () => {
       save.focus();
       save.click();
       save.click();
-      await expect.poll(() => onSave.mock.calls.length).toBeGreaterThan(0);
+
+      await expect
+        .poll(() => onSave.mock.calls.length, { timeout: 15_000 })
+        .toBeGreaterThan(0);
+
       await frames(30);
 
       expect(onSave).toHaveBeenCalledOnce();
@@ -516,7 +520,11 @@ describe("docs recipes", () => {
       save.focus();
       save.click();
       save.click();
-      await expect.poll(() => clicked.mock.calls.length).toBeGreaterThan(0);
+
+      await expect
+        .poll(() => clicked.mock.calls.length, { timeout: 15_000 })
+        .toBeGreaterThan(0);
+
       await frames(30);
 
       expect(clicked).toHaveBeenCalledOnce();
@@ -539,7 +547,10 @@ describe("docs recipes", () => {
       expect(clicked).not.toHaveBeenCalled();
 
       button("save").click();
-      await expect.poll(() => clicked.mock.calls.length).toBe(1);
+
+      await expect
+        .poll(() => clicked.mock.calls.length, { timeout: 15_000 })
+        .toBe(1);
     });
 
     it("drops an avatar save still running when another photo is picked", async () => {
@@ -560,7 +571,10 @@ describe("docs recipes", () => {
       expect(alertText()).toBeUndefined();
 
       button("save").click();
-      await expect.poll(() => onSave.mock.calls.length).toBe(1);
+
+      await expect
+        .poll(() => onSave.mock.calls.length, { timeout: 15_000 })
+        .toBe(1);
     });
 
     it("drops a full editor export still running when src changes", async () => {

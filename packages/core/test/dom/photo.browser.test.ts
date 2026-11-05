@@ -747,11 +747,34 @@ describe("photo layer", () => {
     const canvas = photo.querySelector("canvas");
     const width = canvas?.width;
     const jobs = flights("resample");
+    const realTimeout = setTimeout.bind(globalThis);
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const arm = vi
+      .spyOn(globalThis, "setTimeout")
+      .mockImplementation((run, ms) => {
+        if (ms !== LAYOUT_IDLE_MS) {
+          return realTimeout(run, ms);
+        }
+
+        idle = realTimeout(run, 60_000);
+
+        return idle;
+      });
+    const clear = vi.spyOn(globalThis, "clearTimeout");
+
+    cleanups.push(() => {
+      arm.mockRestore();
+      clear.mockRestore();
+    });
 
     viewport.style.width = "300px";
-    await waitForLayout(cropper, 300);
+    await expect.poll(() => idle, { timeout: 3000 }).toBeDefined();
     viewport.style.width = "400px";
     await waitForLayout(cropper, 400);
+
+    await expect
+      .poll(() => clear.mock.calls.flat(), { timeout: 5000 })
+      .toContain(idle);
 
     await new Promise((resolve) => {
       setTimeout(resolve, 300);
