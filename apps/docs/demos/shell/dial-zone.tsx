@@ -34,7 +34,7 @@ const DialZone = ({ end, start, value = true }: DialZoneProps) => {
   );
 
   return (
-    <Zone data-dim={dim ? "" : undefined} kind="dial">
+    <Zone data-dim={dim ? "" : undefined} kind={value ? "dial" : "row"}>
       <ZoneRow>
         {start}
         {value ? (

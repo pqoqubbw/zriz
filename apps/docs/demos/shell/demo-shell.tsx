@@ -51,6 +51,8 @@ type DemoShellProps = Omit<
   grid?: boolean;
   /** The crop handles to render. */
   handles?: readonly HandlePosition[];
+  /** Sets disabled on Root while the download runs. */
+  lock?: boolean;
   /** Which demo this is, for its photo, shape and corner action. */
   name: DemoName;
   /** Replaces the download with another action, such as send. */
@@ -95,6 +97,7 @@ const DemoShell = ({
   exportOptions,
   grid = true,
   handles = HANDLES,
+  lock = false,
   name,
   onAction,
   viewport,
@@ -105,6 +108,7 @@ const DemoShell = ({
   const photo = usePhoto(photoUrl(spec.photo));
   const download = useDownload(actions, onAction ?? exportRun(exportOptions));
   const { dropping } = photo;
+  const locked = lock && download.busy;
   const busy = photo.loading || dropping;
   const state = useMemo(() => ({ dim: busy }), [busy]);
 
@@ -112,6 +116,7 @@ const DemoShell = ({
     <DemoContext.Provider value={state}>
       <Cropper.Root
         {...root}
+        {...(lock ? { disabled: locked } : null)}
         actionsRef={actions}
         className="flex w-full flex-col items-center"
         onError={photo.handleError}
@@ -123,7 +128,7 @@ const DemoShell = ({
           {photo.dropping ? null : (
             <FileChips
               action={spec.action}
-              dim={busy}
+              dim={busy || locked}
               download={download}
               photo={photo}
             />

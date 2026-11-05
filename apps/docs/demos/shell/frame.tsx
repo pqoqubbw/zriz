@@ -75,7 +75,7 @@ const StaticDial = ({ zone }: StaticDialProps) => {
   );
 
   return (
-    <Zone kind="dial">
+    <Zone kind={zone.value ? "dial" : "row"}>
       <ZoneRow>
         {zone.start ? <StaticGhost icon={zone.start} /> : null}
         {zone.value ? (
