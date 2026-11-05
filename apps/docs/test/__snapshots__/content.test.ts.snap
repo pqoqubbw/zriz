@@ -6584,7 +6584,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
 
   adds behaviour, see add a plugin and clean it up below
 
-\`minSize\` also caps the angle on tiny photos. while \`disabled\`, \`setValue()\`, \`setImage()\` and \`setOptions()\` still work. both callbacks are on [events](https://zriz.dev/docs/events.md).
+\`minSize\` also caps the angle once its diagonal is longer than a side of the photo. only its size next to the photo counts, not the photo's pixel count. while \`disabled\`, \`setValue()\`, \`setImage()\` and \`setOptions()\` still work. both callbacks are on [events](https://zriz.dev/docs/events.md).
 
 ## read the crop
 
@@ -7335,7 +7335,7 @@ the browser draws pixels onto a canvas and encodes them, so exif, gps, xmp, thum
 
 \`maxSize\` never scales up, so a crop smaller than the box comes out smaller. set \`minSize\` on \`Root\` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with \`minSize\` and \`maxSize\` both at 512 by 512 exports at 512 by 512.
 
-\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free while the minimum can still turn 45 degrees inside the photo. a bigger minimum lowers \`getRotationLimit()\` below 45, and on a square photo that starts at a square minimum of about 71% of its side. the crop does not grow back on its own.
+\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free while the minimum's diagonal fits along each side of the photo, so only the minimum's size next to the photo counts. a bigger minimum lowers \`getRotationLimit()\` below 45, and on a square photo that starts at a square minimum of about 71% of its side. the crop does not grow back on its own.
 
 ## handle a failed export
 
@@ -10079,7 +10079,7 @@ outside react, import the type from \`@zriz/core\`, installed as in [exporting](
   sets the crop's width and height as fractions of the photo's sides
 - \`rotation\` \`number\` = \`0\`
 
-  straightens the photo, in degrees from −45 to 45. a big \`minSize\` on a small photo lowers the limit, see \`getRotationLimit()\` on [cropper](https://zriz.dev/docs/cropper.md)
+  straightens the photo, in degrees from −45 to 45. a \`minSize\` with a diagonal longer than a side of the photo lowers the limit, see \`getRotationLimit()\` on [cropper](https://zriz.dev/docs/cropper.md)
 - \`quarterTurns\` \`0 | 1 | 2 | 3\` = \`0\`
 
   counts clockwise 90° turns. one counter-clockwise turn reads 3

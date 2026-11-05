@@ -42,7 +42,7 @@ const VALUE_PAGE = defineDoc({
           {
             default: "0",
             name: "rotation",
-            text: "straightens the photo, in degrees from −45 to 45. a big `minSize` on a small photo lowers the limit, see `getRotationLimit()` on [cropper](cropper)",
+            text: "straightens the photo, in degrees from −45 to 45. a `minSize` with a diagonal longer than a side of the photo lowers the limit, see `getRotationLimit()` on [cropper](cropper)",
             type: "number",
           },
           {

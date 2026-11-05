@@ -81,7 +81,7 @@ const CROPPER_PAGE = defineDoc({
         "option"
       ),
       p(
-        "`minSize` also caps the angle on tiny photos. while `disabled`, `setValue()`, `setImage()` and `setOptions()` still work. both callbacks are on [events](events)."
+        "`minSize` also caps the angle once its diagonal is longer than a side of the photo. only its size next to the photo counts, not the photo's pixel count. while `disabled`, `setValue()`, `setImage()` and `setOptions()` still work. both callbacks are on [events](events)."
       )
     ),
     section(
