@@ -44,6 +44,9 @@ const BUTTONS_PAGE = defineDoc({
         ],
       }),
       p(
+        "every button part sets `touch-action: manipulation` and `user-select: none` inline, so a double tap on a phone never zooms the page and a long press never selects the label and loses the click."
+      ),
+      p(
         "while `Root` is disabled, a press does nothing, and before the photo loads only `Reset` acts. the buttons stay natively enabled and report `aria-disabled`, so style them from `data-disabled` on `Root`, as [root](root) shows."
       ),
       p(

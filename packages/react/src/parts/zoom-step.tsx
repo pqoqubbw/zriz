@@ -5,6 +5,7 @@ import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
+import { PRESS } from "../press";
 import { useAriaDisabled } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -31,6 +32,7 @@ const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
     {
       "aria-disabled": useAriaDisabled(),
       "data-zriz-item": "zoom-step",
+      style: PRESS,
       onClick,
       type: "button",
     },

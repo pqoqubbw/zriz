@@ -6,6 +6,7 @@ import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
+import { PRESS } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -42,6 +43,7 @@ const Orientation: Part<OrientationProps, HTMLButtonElement> = forwardRef<
       "data-disabled": disabled ? "" : undefined,
       "data-orientation": orientation,
       "data-zriz-item": "orientation",
+      style: PRESS,
       disabled,
       onClick,
       type: "button",

@@ -5872,6 +5872,8 @@ zriz ships them bare, with no paint and no icons. the demo above uses the icons 
 | \`Flip\` | mirrors the photo, left to right by default, with a spring |
 | \`Reset\` | springs back to where the crop started: \`defaultValue\` and the starting \`aspect\` and \`rotation\`, or the full photo |
 
+every button part sets \`touch-action: manipulation\` and \`user-select: none\` inline, so a double tap on a phone never zooms the page and a long press never selects the label and loses the click.
+
 while \`Root\` is disabled, a press does nothing, and before the photo loads only \`Reset\` acts. the buttons stay natively enabled and report \`aria-disabled\`, so style them from \`data-disabled\` on \`Root\`, as [root](https://zriz.dev/docs/root.md) shows.
 
 while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. during \`"rotate"\` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides \`Area\` and its handles. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.

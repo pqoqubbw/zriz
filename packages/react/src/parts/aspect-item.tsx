@@ -9,6 +9,7 @@ import { AspectGroupContext } from "../aspect-group-context";
 import { useCropperContext } from "../context";
 import { RootContext } from "../part";
 import type { Part, PartProps } from "../part";
+import { PRESS } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -54,6 +55,7 @@ const AspectItem: Part<AspectItemProps, HTMLButtonElement> = forwardRef<
       "data-checked": checked ? "" : undefined,
       "data-disabled": disabled ? "" : undefined,
       "data-zriz-item": "aspect-item",
+      style: PRESS,
       disabled,
       onClick,
       role: inGroup ? "radio" : undefined,

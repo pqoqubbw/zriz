@@ -11,6 +11,7 @@ import {
   useMergedRef,
 } from "../part";
 import type { Part, PartProps } from "../part";
+import { PRESS } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -61,6 +62,7 @@ const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
       "aria-disabled": disabled,
       "data-pristine": pristine ? "" : undefined,
       "data-zriz-item": "reset",
+      style: PRESS,
       hidden: pristine,
       onClick,
       type: "button",

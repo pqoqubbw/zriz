@@ -116,6 +116,58 @@ describe("a second viewport", () => {
   });
 });
 
+describe("presses on touch", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  const selectable = (element: Element): string => {
+    const style = getComputedStyle(element);
+
+    return style.userSelect || style.webkitUserSelect;
+  };
+
+  it("stops double-tap zoom and text selection on every button part", async () => {
+    await mount(
+      <>
+        <Cropper.Rotate>Rotate</Cropper.Rotate>
+        <Cropper.Flip>Flip</Cropper.Flip>
+        <Cropper.Reset hidden={false}>Reset</Cropper.Reset>
+        <Cropper.ZoomStep factor={2}>In</Cropper.ZoomStep>
+        <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
+        <Cropper.Orientation>Swap</Cropper.Orientation>
+      </>
+    );
+    const buttons = [...document.querySelectorAll("button")];
+
+    expect(buttons).toHaveLength(6);
+
+    for (const button of buttons) {
+      expect(getComputedStyle(button).touchAction).toBe("manipulation");
+      expect(selectable(button)).toBe("none");
+    }
+  });
+
+  it("stops text selection on the dial value", async () => {
+    const { pick } = await mount(<Cropper.DialValue />);
+
+    expect(selectable(pick("dial-value"))).toBe("none");
+  });
+
+  it("lets a style of the caller replace the press style", async () => {
+    const { pick } = await mount(
+      <Cropper.Flip style={{ color: "red", touchAction: "auto" }}>
+        Flip
+      </Cropper.Flip>
+    );
+    const button = pick("flip");
+
+    expect(getComputedStyle(button).touchAction).toBe("auto");
+    expect(button.style.color).toBe("red");
+    expect(selectable(button)).toBe("none");
+  });
+});
+
 describe("buttons and state attributes", () => {
   afterEach(async () => {
     await cleanup();
