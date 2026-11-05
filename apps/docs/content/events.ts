@@ -20,7 +20,7 @@ const EVENTS_PAGE = defineDoc({
     section(
       "save when the user lets go",
       p(
-        "a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on `Area`, `Dial` or `Zoom` commits once when it comes up, however long it was held, or when focus leaves. a write such as `rotate90()` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. loading a photo fits the crop without a commit, so a photo the user never touches sends none. to save it anyway, read `getValue()` or `getPixelCrop()` from the cropper in `actionsRef`, see [cropper](cropper)."
+        "a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on `Area`, `Dial` or `Zoom` commits once when it comes up, however long it was held, or when focus leaves. a write such as `rotate90()` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. the first photo, or a photo after `null`, fits the crop without a commit. a later photo commits only when fitting it changes the value, such as a locked aspect on a photo of another shape, and that commit has the reason `coverage`. to save a photo nobody touched, read `getValue()` or `getPixelCrop()` from the cropper in `actionsRef`, see [cropper](cropper)."
       ),
       p(
         "`stop()` and unmount commit synchronously. react warns if `onValueCommit` calls `flushSync` inside that unmount, so leave `flushSync` out of the handler."
@@ -108,7 +108,7 @@ const EVENTS_PAGE = defineDoc({
           },
           {
             name: "pixelCrop",
-            text: "holds the export plan at scale 1 in source pixels, or `null` before a photo loads. [server crop](server-crop) cuts the original with it",
+            text: "holds the export plan at scale 1 in source pixels, or `null` before a photo loads. use it for your own tools. [server crop](server-crop) sends the value from `getValue()` and recomputes the plan on the server, see [exporting](exporting)",
             type: "ExportPlan | null",
           },
           {
@@ -177,7 +177,7 @@ const EVENTS_PAGE = defineDoc({
     section(
       "listen on the cropper",
       p(
-        'the cropper emits the two callbacks as `change` and `commit`, plus six more events. in react, make the cropper with `useCropper` and listen in an effect: `useEffect(() => cropper.on("settle", onSettle), [cropper])`, see [hooks](hooks). `createCropper` comes from `@zriz/core`, installed as in [exporting](exporting). `on()` returns a function that removes the listener:'
+        'the cropper emits the two callbacks as `change` and `commit`, plus six more events. under `Root` or `useCropper`, `change` also fires when a controlled prop lands as passed, which `onValueChange` skips. in react, make the cropper with `useCropper` and listen in an effect: `useEffect(() => cropper.on("settle", onSettle), [cropper])`, see [hooks](hooks). `createCropper` comes from `@zriz/core`, installed as in [exporting](exporting). `on()` returns a function that removes the listener:'
       ),
       code("events/on.ts"),
       table({
@@ -196,7 +196,7 @@ const EVENTS_PAGE = defineDoc({
           [
             "settle",
             "nothing",
-            "fires each time the last animation stops, springs included",
+            "fires each time the last animation stops, springs included. `stop()` ends motion with no `settle`, so listen to `stop` for that case",
           ],
           [
             "frame",
@@ -206,7 +206,10 @@ const EVENTS_PAGE = defineDoc({
           ["stop", "nothing", "fires when `stop()` ends all motion"],
           ["destroy", "nothing", "fires once, when `destroy()` runs"],
         ],
-      })
+      }),
+      p(
+        "a listener that throws stops nothing. the other listeners still run, the crop keeps working, and the error comes back as an uncaught error on a microtask."
+      )
     ),
   ],
   lede: "two callbacks on `Root` report crop changes: `onValueChange` for live ui and `onValueCommit` for saving.",

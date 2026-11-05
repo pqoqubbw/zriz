@@ -6613,7 +6613,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   locks the crop to an aspect
 - \`setCropState\` \`(state, options?) => void\`
 
-  sets the crop in image pixels. \`keep: "center"\` holds the centre. the default, \`keep: "size"\`, holds the size
+  sets the crop in image pixels. \`keep: "center"\` holds the centre. the default, \`keep: "size"\`, holds the size. a state from a photo of another size does nothing, and the state's \`aspect\` and \`focal\` are ignored
 - \`rotate90\` \`(direction?, options?) => void\`
 
   turns counter-clockwise by default, or clockwise with \`"cw"\`. a numeric aspect turns with it, so 4:3 becomes 3:4
@@ -6782,7 +6782,33 @@ if a plugin holds a timer or a socket, call \`destroy()\` yourself when you are 
   ends any gesture, drops all motion, commits what is there and emits \`stop\`. the cropper keeps working
 - \`destroy\` \`() => void\`
 
-  runs each plugin's \`destroy\`, emits \`destroy\`, detaches the photo and drops every listener. the cropper is finished, and every later write is ignored
+  runs each plugin's \`destroy\`, emits \`destroy\`, detaches the photo and drops every listener. a change or commit still waiting is dropped, and a running gesture ends with no \`gestureend\`, so call \`stop()\` first to send them. the cropper is finished, and every later write is ignored
+
+## read the crop in image pixels
+
+\`getCropState()\` and \`useCropperFrame\` give a \`CropState\`, and \`setCropState()\` takes one. \`crop.x\` and \`crop.y\` are not a corner. they are the crop's centre measured from the photo's centre, so they can be negative, with x to the right and y down, after the quarter turns.
+
+- \`image\` \`Size\`
+
+  the photo's size before any turn
+- \`turns\` \`0 | 1 | 2 | 3\`
+
+  quarter turns, 0 to 3
+- \`flip\` \`boolean\`
+
+  \`true\` while mirrored
+- \`angle\` \`number\`
+
+  the straighten angle in degrees
+- \`crop\` \`{ x, y, width, height }\`
+
+  the crop in image pixels, after the quarter turns
+- \`aspect\` \`number | null\`
+
+  the ratio as a number, or \`null\` when free
+- \`perspective\` \`{ vertical, horizontal, focal }\`
+
+  the tilt in degrees, with \`focal\` in pixels
 "
 `;
 
@@ -7020,7 +7046,7 @@ two callbacks on \`Root\` report crop changes: \`onValueChange\` for live ui and
 
 ## save when the user lets go
 
-a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on \`Area\`, \`Dial\` or \`Zoom\` commits once when it comes up, however long it was held, or when focus leaves. a write such as \`rotate90()\` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. loading a photo fits the crop without a commit, so a photo the user never touches sends none. to save it anyway, read \`getValue()\` or \`getPixelCrop()\` from the cropper in \`actionsRef\`, see [cropper](https://zriz.dev/docs/cropper.md).
+a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on \`Area\`, \`Dial\` or \`Zoom\` commits once when it comes up, however long it was held, or when focus leaves. a write such as \`rotate90()\` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. the first photo, or a photo after \`null\`, fits the crop without a commit. a later photo commits only when fitting it changes the value, such as a locked aspect on a photo of another shape, and that commit has the reason \`coverage\`. to save a photo nobody touched, read \`getValue()\` or \`getPixelCrop()\` from the cropper in \`actionsRef\`, see [cropper](https://zriz.dev/docs/cropper.md).
 
 \`stop()\` and unmount commit synchronously. react warns if \`onValueCommit\` calls \`flushSync\` inside that unmount, so leave \`flushSync\` out of the handler.
 
@@ -7105,7 +7131,7 @@ the second argument of \`onValueCommit\`:
   holds the last committed value. push it to a stack for [undo](https://zriz.dev/docs/undo.md)
 - \`pixelCrop\` \`ExportPlan | null\`
 
-  holds the export plan at scale 1 in source pixels, or \`null\` before a photo loads. [server crop](https://zriz.dev/docs/server-crop.md) cuts the original with it
+  holds the export plan at scale 1 in source pixels, or \`null\` before a photo loads. use it for your own tools. [server crop](https://zriz.dev/docs/server-crop.md) sends the value from \`getValue()\` and recomputes the plan on the server, see [exporting](https://zriz.dev/docs/exporting.md)
 - \`event\` \`Event | undefined\`
 
   holds the event that ended the gesture, or the one passed with the write
@@ -7135,7 +7161,7 @@ every change and commit names its reason. inside a gesture, a write without its 
 
 ## listen on the cropper
 
-the cropper emits the two callbacks as \`change\` and \`commit\`, plus six more events. in react, make the cropper with \`useCropper\` and listen in an effect: \`useEffect(() => cropper.on("settle", onSettle), [cropper])\`, see [hooks](https://zriz.dev/docs/hooks.md). \`createCropper\` comes from \`@zriz/core\`, installed as in [exporting](https://zriz.dev/docs/exporting.md). \`on()\` returns a function that removes the listener:
+the cropper emits the two callbacks as \`change\` and \`commit\`, plus six more events. under \`Root\` or \`useCropper\`, \`change\` also fires when a controlled prop lands as passed, which \`onValueChange\` skips. in react, make the cropper with \`useCropper\` and listen in an effect: \`useEffect(() => cropper.on("settle", onSettle), [cropper])\`, see [hooks](https://zriz.dev/docs/hooks.md). \`createCropper\` comes from \`@zriz/core\`, installed as in [exporting](https://zriz.dev/docs/exporting.md). \`on()\` returns a function that removes the listener:
 
 \`\`\`ts
 import { createCropper } from "@zriz/core";
@@ -7151,10 +7177,12 @@ off();
 | - | - | - |
 | \`gesturestart\` | \`reason, event\` | fires when an input takes hold |
 | \`gestureend\` | \`reason, event\` | fires when \`end()\` runs. for a thrown dial, that is when the throw stops |
-| \`settle\` | \`nothing\` | fires each time the last animation stops, springs included |
+| \`settle\` | \`nothing\` | fires each time the last animation stops, springs included. \`stop()\` ends motion with no \`settle\`, so listen to \`stop\` for that case |
 | \`frame\` | \`{ time, value, state }\` | fires on every frame that moved. \`useCropperFrame\` wraps it |
 | \`stop\` | \`nothing\` | fires when \`stop()\` ends all motion |
 | \`destroy\` | \`nothing\` | fires once, when \`destroy()\` runs |
+
+a listener that throws stops nothing. the other listeners still run, the crop keeps working, and the error comes back as an uncaught error on a microtask.
 "
 `;
 
@@ -7999,7 +8027,7 @@ pass one cropper to one \`Root\`. \`shape\`, \`motion\` and \`recenterDelay\` be
 
 - \`ready\` \`boolean\`
 
-  is \`true\` once a photo is loaded and sized
+  is \`true\` once the cropper knows the photo's size. the \`image\` option makes it \`true\` before the file loads, so wait for \`onLoad\` before you export
 - \`interacting\` \`ChangeReason | null\`
 
   names the gesture in progress
@@ -8044,7 +8072,7 @@ export const Angle = () => {
 
 ### \`useCropperFrame\`
 
-\`useCropperFrame(listener, cropper?)\` calls the listener on every frame that moved, without a render. the frame holds \`time\`, \`value\` and \`state\`, the crop in image pixels, which is \`null\` before a photo loads. write the live angle straight into the dom:
+\`useCropperFrame(listener, cropper?)\` calls the listener on every frame that moved, without a render. the frame holds \`time\`, \`value\` and \`state\`, the crop in image pixels, which is \`null\` before a photo loads. [cropper](https://zriz.dev/docs/cropper.md) lists its fields. write the live angle straight into the dom:
 
 \`\`\`tsx
 "use client";
@@ -8080,10 +8108,10 @@ export const LiveAngle = () => {
   is \`true\` while a drag runs
 - \`onValueChange\` \`(zoom) => void\`
 
-  starts the gesture on the first call and sets the zoom
+  starts the gesture on the first call and sets the zoom. with no pointer or key held, the gesture ends 150 ms after the last call
 - \`onValueCommitted\` \`() => void\`
 
-  ends the gesture. call it when the slider lets go
+  ends the gesture. call it when the slider lets go. the hook also ends it when the last held pointer or key lifts anywhere in the window, when the window loses focus and on unmount
 
 ### \`useCoverScale\`
 
@@ -8240,7 +8268,7 @@ zriz reads the format from the first 4096 bytes of the file, so a wrong name or 
 
 ## start each photo from the full frame
 
-a new \`src\` keeps the current crop, angle and flip, and fits them to the new photo. to start every photo from the whole frame, give \`Root\` a \`key\` that changes with each pick, such as a counter you bump in \`onChange\`. a new \`key\` also frees the previous photo at once.
+a new \`src\` keeps the current crop, angle and flip, and fits them to the new photo. a controlled \`zoom\` goes back to the prop when the new photo has another size. to start every photo from the whole frame, give \`Root\` a \`key\` that changes with each pick, such as a counter you bump in \`onChange\`. a new \`key\` also frees the previous photo at once.
 
 \`\`\`tsx
 <Cropper.Root key={picks} src={file}>
@@ -8861,7 +8889,7 @@ if (saved?.id !== id) return null;
 
 \`Reset\` goes back to \`defaultValue\`, which is now the saved crop. to keep \`Reset\` on the whole photo, pass \`saved.value ?? undefined\` as \`value\` instead. it stays the same object, so it moves the crop only once, see [value](https://zriz.dev/docs/value.md).
 
-the recipe skips \`coverage\` commits. that is zriz fitting the crop to a new photo, and nobody chose it, so it must not replace the saved crop. a full quota throws on write, so the \`try\` keeps the error away from the commit listeners and the crop goes on working unsaved.
+the recipe skips \`coverage\` commits. that is zriz fitting the crop to a new photo, and nobody chose it, so it must not replace the saved crop. a full quota throws on write. without the \`try\`, zriz rethrows that as an uncaught error, so the \`try\` keeps your error reporting quiet and the crop goes on working unsaved.
 
 \`\`\`tsx
 <Cropper.Root
@@ -10032,7 +10060,7 @@ outside react, import the type from \`@zriz/core\`, installed as in [exporting](
   swaps left and right. each flip toggles it and negates \`rotation\`. a left to right flip also turns a \`quarterTurns\` of 1 into 3, and a top to bottom flip turns 0 into 2
 - \`perspective\` \`object\` = \`{ vertical: 0, horizontal: 0 }\`
 
-  tilts the photo by \`vertical\` and \`horizontal\` degrees. no part or gesture sets it, only \`setValue()\`, \`value\` and \`defaultValue\`. keep each within −30 to 30. \`parse\` clamps to that range, \`setValue()\` does not
+  tilts the photo by \`vertical\` and \`horizontal\` degrees. no part or gesture sets it, only \`setValue()\`, \`setCropState()\`, \`value\` and \`defaultValue\`. keep each within −30 to 30. \`parse\` clamps to that range, \`setValue()\` does not
 - \`aspect\` \`Aspect\` = \`"free"\`
 
   locks the crop's shape to a ratio such as \`16 / 9\`, to \`"original"\` for the photo's own shape, or to nothing with \`"free"\`
@@ -10097,13 +10125,13 @@ export const Editor = ({ src }: { src: string }) => {
 };
 \`\`\`
 
-\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and commits, so \`onValueCommit\` runs with the whole new value. \`onValueChange\` stays quiet when each controlled prop lands as passed, even when the crop size moves with it, as it does for a new \`aspect\`. it runs when zriz applied something else: a rotation of 60 reports 45. to mirror the whole value, write it from both callbacks. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. if no other answer follows and the crop has not moved since, that value applies when the 2 s end. a preset equal to a recent report lands late this way, and a value never reported lands at once. mirror \`rotation\`, \`zoom\` or \`aspect\` from \`onValueChange\`, not \`onValueCommit\`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to \`maxZoom\`. a prop applied as the photo arrives is silent.
+\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and commits, so \`onValueCommit\` runs with the whole new value. \`onValueChange\` stays quiet when each controlled prop lands as passed, even when the crop size moves with it, as it does for a new \`aspect\`. it runs when zriz applied something else: a rotation of 60 reports 45. to mirror the whole value, write it from both callbacks. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. if no other answer follows and the crop has not moved since, that value applies when the 2 s end, or 500 ms after it arrived if that is later. a preset equal to a recent report lands late this way, and a value never reported lands at once. mirror \`rotation\`, \`zoom\` or \`aspect\` from \`onValueChange\`, not \`onValueCommit\`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to \`maxZoom\`. a prop applied as the photo arrives is silent.
 
 \`value\` sets the whole object without calling either callback. each new object moves the crop, unless zriz reported that same object in the last 2 s, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
 
 during a gesture and until it commits, zriz ignores a new \`value\`, \`rotation\` or \`zoom\`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in \`onValueCommit\`. a new \`aspect\` applies at once. the \`aspect\`, \`rotation\` and \`zoom\` from the first render become the reset target.
 
-a prop acts when it changes. a write ignored during a gesture is not replayed. to limit a gesture, call \`details.cancel()\`. \`rotation={5}\` with no handler sets the angle once and the user can move away from it.
+a prop acts when it changes. \`zoom\` also acts when a photo of another size arrives: with \`zoom={3}\` held, the crop goes back to 3 and commits with reason \`coverage\`. a write ignored during a gesture is not replayed. to limit a gesture, call \`details.cancel()\`. \`rotation={5}\` with no handler sets the angle once and the user can move away from it.
 
 a photo after \`null\` counts as a first photo: zriz fits your \`value\` to it and sends nothing. read \`getValue()\` if you keep the fitted crop.
 

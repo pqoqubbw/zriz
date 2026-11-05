@@ -60,7 +60,7 @@ const VALUE_PAGE = defineDoc({
           {
             default: "{ vertical: 0, horizontal: 0 }",
             name: "perspective",
-            text: "tilts the photo by `vertical` and `horizontal` degrees. no part or gesture sets it, only `setValue()`, `value` and `defaultValue`. keep each within −30 to 30. `parse` clamps to that range, `setValue()` does not",
+            text: "tilts the photo by `vertical` and `horizontal` degrees. no part or gesture sets it, only `setValue()`, `setCropState()`, `value` and `defaultValue`. keep each within −30 to 30. `parse` clamps to that range, `setValue()` does not",
             type: "object",
           },
           {
@@ -103,7 +103,7 @@ const VALUE_PAGE = defineDoc({
       p("pass `rotation` and update it in `onValueChange`:"),
       code("value/controlled.tsx"),
       p(
-        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and commits, so `onValueCommit` runs with the whole new value. `onValueChange` stays quiet when each controlled prop lands as passed, even when the crop size moves with it, as it does for a new `aspect`. it runs when zriz applied something else: a rotation of 60 reports 45. to mirror the whole value, write it from both callbacks. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. if no other answer follows and the crop has not moved since, that value applies when the 2 s end. a preset equal to a recent report lands late this way, and a value never reported lands at once. mirror `rotation`, `zoom` or `aspect` from `onValueChange`, not `onValueCommit`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to `maxZoom`. a prop applied as the photo arrives is silent."
+        "`rotation`, `zoom` and `aspect` each control one part of the crop. a new prop moves the crop and commits, so `onValueCommit` runs with the whole new value. `onValueChange` stays quiet when each controlled prop lands as passed, even when the crop size moves with it, as it does for a new `aspect`. it runs when zriz applied something else: a rotation of 60 reports 45. to mirror the whole value, write it from both callbacks. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. if no other answer follows and the crop has not moved since, that value applies when the 2 s end, or 500 ms after it arrived if that is later. a preset equal to a recent report lands late this way, and a value never reported lands at once. mirror `rotation`, `zoom` or `aspect` from `onValueChange`, not `onValueCommit`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to `maxZoom`. a prop applied as the photo arrives is silent."
       ),
       p(
         "`value` sets the whole object without calling either callback. each new object moves the crop, unless zriz reported that same object in the last 2 s, so keep it stable or update it from `onValueChange`. `Reset` still goes to `defaultValue`, not to the last `value`."
@@ -112,7 +112,7 @@ const VALUE_PAGE = defineDoc({
         "during a gesture and until it commits, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in `onValueCommit`. a new `aspect` applies at once. the `aspect`, `rotation` and `zoom` from the first render become the reset target."
       ),
       p(
-        "a prop acts when it changes. a write ignored during a gesture is not replayed. to limit a gesture, call `details.cancel()`. `rotation={5}` with no handler sets the angle once and the user can move away from it."
+        "a prop acts when it changes. `zoom` also acts when a photo of another size arrives: with `zoom={3}` held, the crop goes back to 3 and commits with reason `coverage`. a write ignored during a gesture is not replayed. to limit a gesture, call `details.cancel()`. `rotation={5}` with no handler sets the angle once and the user can move away from it."
       ),
       p(
         "a photo after `null` counts as a first photo: zriz fits your `value` to it and sends nothing. read `getValue()` if you keep the fitted crop."

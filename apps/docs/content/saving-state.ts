@@ -35,7 +35,7 @@ const SAVING_STATE_PAGE = defineDoc({
         "`Reset` goes back to `defaultValue`, which is now the saved crop. to keep `Reset` on the whole photo, pass `saved.value ?? undefined` as `value` instead. it stays the same object, so it moves the crop only once, see [value](value)."
       ),
       p(
-        "the recipe skips `coverage` commits. that is zriz fitting the crop to a new photo, and nobody chose it, so it must not replace the saved crop. a full quota throws on write, so the `try` keeps the error away from the commit listeners and the crop goes on working unsaved."
+        "the recipe skips `coverage` commits. that is zriz fitting the crop to a new photo, and nobody chose it, so it must not replace the saved crop. a full quota throws on write. without the `try`, zriz rethrows that as an uncaught error, so the `try` keeps your error reporting quiet and the crop goes on working unsaved."
       ),
       excerpt("saving-state/saved-crop.tsx", [
         "<Cropper.Root",

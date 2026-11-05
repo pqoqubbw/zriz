@@ -158,7 +158,7 @@ const CROPPER_PAGE = defineDoc({
           },
           {
             name: "setCropState",
-            text: 'sets the crop in image pixels. `keep: "center"` holds the centre. the default, `keep: "size"`, holds the size',
+            text: 'sets the crop in image pixels. `keep: "center"` holds the centre. the default, `keep: "size"`, holds the size. a state from a photo of another size does nothing, and the state\'s `aspect` and `focal` are ignored',
             type: "(state, options?) => void",
           },
           {
@@ -298,11 +298,53 @@ const CROPPER_PAGE = defineDoc({
           },
           {
             name: "destroy",
-            text: "runs each plugin's `destroy`, emits `destroy`, detaches the photo and drops every listener. the cropper is finished, and every later write is ignored",
+            text: "runs each plugin's `destroy`, emits `destroy`, detaches the photo and drops every listener. a change or commit still waiting is dropped, and a running gesture ends with no `gestureend`, so call `stop()` first to send them. the cropper is finished, and every later write is ignored",
             type: "() => void",
           },
         ],
         "method"
+      )
+    ),
+    section(
+      "read the crop in image pixels",
+      p(
+        "`getCropState()` and `useCropperFrame` give a `CropState`, and `setCropState()` takes one. `crop.x` and `crop.y` are not a corner. they are the crop's centre measured from the photo's centre, so they can be negative, with x to the right and y down, after the quarter turns."
+      ),
+      props(
+        [
+          {
+            name: "image",
+            text: "the photo's size before any turn",
+            type: "Size",
+          },
+          {
+            name: "turns",
+            text: "quarter turns, 0 to 3",
+            type: "0 | 1 | 2 | 3",
+          },
+          { name: "flip", text: "`true` while mirrored", type: "boolean" },
+          {
+            name: "angle",
+            text: "the straighten angle in degrees",
+            type: "number",
+          },
+          {
+            name: "crop",
+            text: "the crop in image pixels, after the quarter turns",
+            type: "{ x, y, width, height }",
+          },
+          {
+            name: "aspect",
+            text: "the ratio as a number, or `null` when free",
+            type: "number | null",
+          },
+          {
+            name: "perspective",
+            text: "the tilt in degrees, with `focal` in pixels",
+            type: "{ vertical, horizontal, focal }",
+          },
+        ],
+        "field"
       )
     ),
   ],

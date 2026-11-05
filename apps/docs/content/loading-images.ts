@@ -15,7 +15,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
     section(
       "start each photo from the full frame",
       p(
-        "a new `src` keeps the current crop, angle and flip, and fits them to the new photo. to start every photo from the whole frame, give `Root` a `key` that changes with each pick, such as a counter you bump in `onChange`. a new `key` also frees the previous photo at once."
+        "a new `src` keeps the current crop, angle and flip, and fits them to the new photo. a controlled `zoom` goes back to the prop when the new photo has another size. to start every photo from the whole frame, give `Root` a `key` that changes with each pick, such as a counter you bump in `onChange`. a new `key` also frees the previous photo at once."
       ),
       code("loading-images/key.jsx.tsx")
     ),

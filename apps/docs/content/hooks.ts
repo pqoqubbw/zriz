@@ -55,7 +55,7 @@ const HOOKS_PAGE = defineDoc({
           [
             {
               name: "ready",
-              text: "is `true` once a photo is loaded and sized",
+              text: "is `true` once the cropper knows the photo's size. the `image` option makes it `true` before the file loads, so wait for `onLoad` before you export",
               type: "boolean",
             },
             {
@@ -112,7 +112,7 @@ const HOOKS_PAGE = defineDoc({
       ),
       part(
         "useCropperFrame",
-        "`useCropperFrame(listener, cropper?)` calls the listener on every frame that moved, without a render. the frame holds `time`, `value` and `state`, the crop in image pixels, which is `null` before a photo loads. write the live angle straight into the dom:",
+        "`useCropperFrame(listener, cropper?)` calls the listener on every frame that moved, without a render. the frame holds `time`, `value` and `state`, the crop in image pixels, which is `null` before a photo loads. [cropper](cropper) lists its fields. write the live angle straight into the dom:",
         code("hooks/use-cropper-frame.tsx")
       ),
       part(
@@ -142,12 +142,12 @@ const HOOKS_PAGE = defineDoc({
             },
             {
               name: "onValueChange",
-              text: "starts the gesture on the first call and sets the zoom",
+              text: "starts the gesture on the first call and sets the zoom. with no pointer or key held, the gesture ends 150 ms after the last call",
               type: "(zoom) => void",
             },
             {
               name: "onValueCommitted",
-              text: "ends the gesture. call it when the slider lets go",
+              text: "ends the gesture. call it when the slider lets go. the hook also ends it when the last held pointer or key lifts anywhere in the window, when the window loses focus and on unmount",
               type: "() => void",
             },
           ],
