@@ -54,6 +54,28 @@ describe("accessibility", () => {
     await cleanup();
   });
 
+  it("gets the application role so arrow keys reach it in browse mode, and takes another role from the caller", async () => {
+    const screen = await render(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    const area = screen.container.querySelector('[data-zriz-item="area"]');
+
+    expect(area?.getAttribute("role")).toBe("application");
+
+    await screen.rerender(
+      <Cropper.Root image={{ height: 300, width: 400 }}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" role="group" />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+    expect(area?.getAttribute("role")).toBe("group");
+  });
+
   it("has no axe violations", async () => {
     const api = createRef<CropperApi>();
     const screen = await render(<Editor api={api} />);

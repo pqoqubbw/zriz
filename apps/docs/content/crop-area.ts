@@ -103,7 +103,7 @@ const CROP_AREA_PAGE = defineDoc({
       "api",
       part(
         "Area",
-        'renders a `<div role="group">` inside `Viewport`, with `tabIndex={0}` once a photo is placed and `tabIndex={-1}` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ shape, interacting }`.',
+        'renders a `<div role="application">` inside `Viewport`, with `tabIndex={0}` once a photo is placed and `tabIndex={-1}` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ shape, interacting }`.',
         props([
           {
             name: "aria-label",

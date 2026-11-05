@@ -29,7 +29,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
         rows: [
           [
             "Area",
-            'one tab stop with `role="group"`, described by `Instructions`',
+            'one tab stop with `role="application"` once a photo is placed, described by `Instructions`. the role passes the arrow keys through a screen reader\'s browse mode. pass your own `role` to change it',
           ],
           [
             "Dial",

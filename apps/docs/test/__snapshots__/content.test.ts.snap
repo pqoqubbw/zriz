@@ -2450,7 +2450,7 @@ export const Editor = ({ src }: { src: string }) => {
     <div
       id="area"
       data-zriz-item="area"
-      role="group"
+      role="application"
       tabindex="0"
       aria-label="Crop area"
       style="position: absolute"
@@ -2478,7 +2478,7 @@ export const Editor = ({ src }: { src: string }) => {
     <span class=p>&lt;</span><span class=t>div</span>
       <span class=a>id</span><span class=p>="</span><span class=s>area</span><span class=p>"</span>
       <span class=a>data-zriz-item</span><span class=p>="</span><span class=s>area</span><span class=p>"</span>
-      <span class=a>role</span><span class=p>="</span><span class=s>group</span><span class=p>"</span>
+      <span class=a>role</span><span class=p>="</span><span class=s>application</span><span class=p>"</span>
       <span class=a>tabindex</span><span class=p>="</span><span class=s>0</span><span class=p>"</span>
       <span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>"</span>
       <span class=a>style</span><span class=p>="</span><span class=s>position: absolute</span><span class=p>"</span>
@@ -5258,7 +5258,7 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
 
 | part | what a screen reader gets |
 | - | - |
-| \`Area\` | one tab stop with \`role="group"\`, described by \`Instructions\` |
+| \`Area\` | one tab stop with \`role="application"\` once a photo is placed, described by \`Instructions\`. the role passes the arrow keys through a screen reader's browse mode. pass your own \`role\` to change it |
 | \`Dial\` | a slider that reads "4 degrees" in your \`locale\`. \`format\` changes the wording |
 | \`Zoom\` | a slider that reads "150%" in your \`locale\`. \`format\` changes the wording |
 | \`AspectGroup\` | a \`radiogroup\` with one tab stop. each \`AspectItem\` is a radio. outside a group, an item is a button with \`aria-pressed\` |
@@ -6131,7 +6131,7 @@ escape during a handle drag cancels it and puts the crop back.
 
 ### \`Area\`
 
-renders a \`<div role="group">\` inside \`Viewport\`, with \`tabIndex={0}\` once a photo is placed and \`tabIndex={-1}\` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes \`className\`, \`render\` and the props of its element, see [composition](https://zriz.dev/docs/composition.md). \`className\` and \`render\` get \`{ shape, interacting }\`.
+renders a \`<div role="application">\` inside \`Viewport\`, with \`tabIndex={0}\` once a photo is placed and \`tabIndex={-1}\` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes \`className\`, \`render\` and the props of its element, see [composition](https://zriz.dev/docs/composition.md). \`className\` and \`render\` get \`{ shape, interacting }\`.
 
 - \`aria-label\` \`string\`
 
@@ -9526,7 +9526,7 @@ give each element its \`data-zriz-item\`, so the stylesheet finds it, and give t
     <div
       id="area"
       data-zriz-item="area"
-      role="group"
+      role="application"
       tabindex="0"
       aria-label="Crop area"
       style="position: absolute"

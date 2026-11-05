@@ -57,7 +57,7 @@ const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
       "data-shape": shape,
       "data-zriz-item": "area",
       ...nativeProps(keys),
-      role: "group",
+      role: "application",
       style: shape === "circle" ? ROUND : SQUARE,
       tabIndex: ready ? 0 : -1,
     },
