@@ -1024,8 +1024,8 @@ describe("the pixel limit", () => {
 
   it("refuses what a decode function returns over the limit and closes it", async () => {
     decodeFails = true;
-    const close = vi.fn<() => void>();
-    const bitmap = { close, height: 100, width: 100 } as unknown as ImageBitmap;
+    const bitmap = new FakeBitmap(100, 100, "main");
+    const close = vi.spyOn(bitmap, "close");
     const error = await failure(
       loadImage(new Blob([Uint8Array.of(0)]), {
         decode: async () => await Promise.resolve(bitmap),

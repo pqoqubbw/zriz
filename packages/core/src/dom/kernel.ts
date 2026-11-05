@@ -270,6 +270,7 @@ const imageKernel = (): Kernel => {
           (little(b, at + 1, 2) + little(b, at + 5, 2)) *
             (little(b, at + 3, 2) + little(b, at + 7, 2))
         );
+
         at = pastBlocks(b, at + 11 + colourTable(b[at + 9] ?? 0));
       } else if (b[at] === 0x21) {
         at = pastBlocks(b, at + 2);

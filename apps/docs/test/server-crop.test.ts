@@ -21,7 +21,7 @@ import { canCrop } from "../snippets/server-crop/can-crop";
 vi.mock(import("../snippets/server-crop/can-crop"), async (actual) => {
   const { canCrop: real } = await actual();
 
-  return { canCrop: vi.fn(real) };
+  return { canCrop: vi.fn<typeof real>(real) };
 });
 
 const gradient = (width: number, height: number) => {
@@ -111,9 +111,11 @@ describe("the security recipes", () => {
 
     expect(response.headers.get("content-type")).toBe("image/jpeg");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+
     expect(response.headers.get("content-security-policy")).toContain(
       "sandbox"
     );
+
     await expect(response.arrayBuffer()).resolves.toHaveProperty(
       "byteLength",
       3
@@ -319,9 +321,10 @@ describe("the documented crop route", () => {
       [1, 2, 3].map(async () => await post(input, "{}"))
     );
 
-    expect(answers.map(({ status }) => status).toSorted()).toStrictEqual([
-      200, 200, 503,
-    ]);
+    expect(
+      answers.map(({ status }) => status).toSorted((a, b) => a - b)
+    ).toStrictEqual([200, 200, 503]);
+
     await expect(post(input, "{}")).resolves.toHaveProperty("status", 200);
   });
 
@@ -378,9 +381,13 @@ describe("the documented crop route", () => {
       .toBuffer({ resolveWithObject: true });
 
     expect(out.includes("a-marker")).toBeFalsy();
-    expect(meta.exif).toBeUndefined();
-    expect(meta.xmp).toBeUndefined();
-    expect(meta.icc).toBeUndefined();
+
+    expect([meta.exif, meta.xmp, meta.icc]).toStrictEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
+
     expect([meta.width, meta.height]).toStrictEqual([32, 64]);
     expect(Math.max(...data.filter((_, at) => at % 3 === 0))).toBeLessThan(90);
   });

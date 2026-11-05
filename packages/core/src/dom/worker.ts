@@ -37,17 +37,21 @@ type PolicyFactory = {
 
 let policy: ScriptUrlPolicy | null | undefined;
 
+const isPolicyFactory = (value: unknown): value is PolicyFactory =>
+  typeof value === "object" && value !== null && "createPolicy" in value;
+
 const trusted = (url: string): string => {
   if (policy === undefined) {
     policy = null;
 
     try {
-      const { trustedTypes } = globalThis as { trustedTypes?: PolicyFactory };
+      const factory: unknown = Reflect.get(globalThis, "trustedTypes");
 
-      policy =
-        trustedTypes?.createPolicy("zriz", {
+      if (isPolicyFactory(factory)) {
+        policy = factory.createPolicy("zriz", {
           createScriptURL: (given) => (given.startsWith("blob:") ? given : ""),
-        }) ?? null;
+        });
+      }
     } catch {
       policy = null;
     }

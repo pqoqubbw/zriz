@@ -254,7 +254,7 @@ describe("image kernel", () => {
 
   it("keeps reading a gif past its extension blocks", async () => {
     const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
-    const table = 3 * 2 ** (((file[10] ?? 0) & 7) + 1);
+    const table = 3 * 2 ** (((file[10] ?? 0) % 8) + 1);
     const at = 13 + table;
     const comment = Buffer.from([0x21, 0xfe, 2, 1, 2, 0]);
     const longer = Buffer.concat([
@@ -295,6 +295,7 @@ describe("image kernel", () => {
     ],
   ])("reads the pixel count of a %s endian tiff", async (name, put) => {
     const file = Buffer.alloc(8 + 2 + 24 + 4);
+
     const entry = (at: number, tag: number): void => {
       put(file, at, tag);
       put(file, at + 2, 3);
@@ -316,6 +317,7 @@ describe("image kernel", () => {
 
   it("refuses a tiff over the limit from any of its pages", async () => {
     const tiff = Buffer.alloc(8 + 2 * (2 + 24 + 4));
+
     const entry = (at: number, tag: number, value: number): void => {
       tiff.writeUInt16LE(tag, at);
       tiff.writeUInt16LE(3, at + 2);
