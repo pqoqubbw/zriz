@@ -63,6 +63,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
         key={picks}
         actionsRef={actions}
         src={file}
+        svg={false}
         shape="circle"
         minSize={{ width: 512, height: 512 }}
         onLoad={() => setStatus("ready")}

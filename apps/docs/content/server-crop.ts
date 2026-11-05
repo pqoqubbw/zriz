@@ -47,7 +47,7 @@ const SERVER_CROP_PAGE = defineDoc({
         ["const unreadable", '"this photo'],
         ["const [picks", null],
         ["const last", null],
-        ["useEffect(() => () => last", "[result]"],
+        ["useEffect(() => () => last", ");"],
         ["const upload", "};"],
         ["<input", "/>"],
         ["<Cropper.Root", ">"],
@@ -129,6 +129,9 @@ const SERVER_CROP_PAGE = defineDoc({
     ),
     section(
       "all four files",
+      p(
+        "save `crop-limits.ts`, `can-crop.ts` and `crop-upload.tsx` next to the `app` folder. that is where the imports look for them."
+      ),
       p("`crop-limits.ts` is shared by both:"),
       code("server-crop/crop-limits.ts"),
       p("`can-crop.ts` runs on the server. connect your session check here:"),

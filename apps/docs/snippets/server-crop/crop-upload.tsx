@@ -84,6 +84,7 @@ export const CropUpload = () => {
         maxZoom={MAX_ZOOM}
         minSize={MIN_SIZE}
         src={file}
+        svg={false}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >

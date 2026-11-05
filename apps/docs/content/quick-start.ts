@@ -27,7 +27,7 @@ const QUICK_START_PAGE = defineDoc({
     section(
       "render a cropper",
       p(
-        "paste this component into a page. it loads a sample photo, and the stylesheet gives it the default look:"
+        "save this component in its own file and render `<PhotoCropper />` from a page. it loads a sample photo, and the stylesheet gives it the default look:"
       ),
       code("quick-start/render.tsx"),
       p(

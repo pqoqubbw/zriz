@@ -2983,6 +2983,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
   key={picks}
   actionsRef={actions}
   src={file}
+  svg={false}
   shape="circle"
   minSize={{ width: 512, height: 512 }}
   onLoad={() => setStatus("ready")}
@@ -3001,6 +3002,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
   <span class=a>key</span><span class=p>={</span>picks<span class=p>}</span>
   <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
   <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
+  <span class=a>svg</span><span class=p>={</span><span class=n>false</span><span class=p>}</span>
   <span class=a>shape</span><span class=p>="</span><span class=s>circle</span><span class=p>"</span>
   <span class=a>minSize</span><span class=p>={{</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>}}</span>
   <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setStatus</span><span class=p>(</span><span class=s>"ready"</span><span class=p>)}</span>
@@ -3172,6 +3174,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
         key={picks}
         actionsRef={actions}
         src={file}
+        svg={false}
         shape="circle"
         minSize={{ width: 512, height: 512 }}
         onLoad={() => setStatus("ready")}
@@ -3264,6 +3267,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
         <span class=a>key</span><span class=p>={</span>picks<span class=p>}</span>
         <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
         <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
+        <span class=a>svg</span><span class=p>={</span><span class=n>false</span><span class=p>}</span>
         <span class=a>shape</span><span class=p>="</span><span class=s>circle</span><span class=p>"</span>
         <span class=a>minSize</span><span class=p>={{</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>}}</span>
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setStatus</span><span class=p>(</span><span class=s>"ready"</span><span class=p>)}</span>
@@ -4044,6 +4048,7 @@ useEffect(
     if (result) URL.revokeObjectURL(result);
   },
   [result]
+);
 
 const upload = async () => {
   const value = actions.current?.getValue();
@@ -4101,6 +4106,7 @@ const upload = async () => {
   maxZoom={MAX_ZOOM}
   minSize={MIN_SIZE}
   src={file}
+  svg={false}
   onLoad={() => setReady(true)}
   onError={() => setError(unreadable)}
 >
@@ -4121,8 +4127,9 @@ const upload = async () => {
     <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
   <span class=p>},</span>
   <span class=p>[</span>result<span class=p>]</span>
+<span class=p>);</span>
 
-const <span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
+<span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>const</span> value <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getValue</span><span class=p>();</span>
   <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>value<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
@@ -4154,7 +4161,7 @@ const <span class=t>upload </span><span class=p>= </span><span class=k>async </s
       <span class=t>setError</span><span class=p>(</span><span class=s>"the upload did not reach the server."</span><span class=p>);</span>
     <span class=p>}</span>
   <span class=p>}</span>
-<span class=p>}</span>;
+<span class=p>};</span>
 
 <span class=p>&lt;</span><span class=t>input</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
@@ -4178,6 +4185,7 @@ const <span class=t>upload </span><span class=p>= </span><span class=k>async </s
   <span class=a>maxZoom</span><span class=p>={</span>MAX_ZOOM<span class=p>}</span>
   <span class=a>minSize</span><span class=p>={</span>MIN_SIZE<span class=p>}</span>
   <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
+  <span class=a>svg</span><span class=p>={</span><span class=n>false</span><span class=p>}</span>
   <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
   <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setError</span><span class=p>(</span>unreadable<span class=p>)}</span>
 <span class=p>&gt;</span>
@@ -4607,6 +4615,7 @@ export const CropUpload = () => {
         maxZoom={MAX_ZOOM}
         minSize={MIN_SIZE}
         src={file}
+        svg={false}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >
@@ -4718,6 +4727,7 @@ export const CropUpload = () => {
         <span class=a>maxZoom</span><span class=p>={</span>MAX_ZOOM<span class=p>}</span>
         <span class=a>minSize</span><span class=p>={</span>MIN_SIZE<span class=p>}</span>
         <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
+        <span class=a>svg</span><span class=p>={</span><span class=n>false</span><span class=p>}</span>
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
         <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setError</span><span class=p>(</span>unreadable<span class=p>)}</span>
       <span class=p>&gt;</span>
@@ -5924,6 +5934,7 @@ each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo sta
   key={picks}
   actionsRef={actions}
   src={file}
+  svg={false}
   shape="circle"
   minSize={{ width: 512, height: 512 }}
   onLoad={() => setStatus("ready")}
@@ -6068,6 +6079,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
         key={picks}
         actionsRef={actions}
         src={file}
+        svg={false}
         shape="circle"
         minSize={{ width: 512, height: 512 }}
         onLoad={() => setStatus("ready")}
@@ -8568,7 +8580,7 @@ npm, yarn and bun work too. [faq](https://zriz.dev/docs/faq.md) lists what zriz 
 
 ## render a cropper
 
-paste this component into a page. it loads a sample photo, and the stylesheet gives it the default look:
+save this component in its own file and render \`<PhotoCropper />\` from a page. it loads a sample photo, and the stylesheet gives it the default look:
 
 \`\`\`tsx
 "use client";
@@ -9178,6 +9190,7 @@ useEffect(
     if (result) URL.revokeObjectURL(result);
   },
   [result]
+);
 
 const upload = async () => {
   const value = actions.current?.getValue();
@@ -9235,6 +9248,7 @@ const upload = async () => {
   maxZoom={MAX_ZOOM}
   minSize={MIN_SIZE}
   src={file}
+  svg={false}
   onLoad={() => setReady(true)}
   onError={() => setError(unreadable)}
 >
@@ -9444,6 +9458,8 @@ export const POST = async (request: Request) => {
 
 ## all four files
 
+save \`crop-limits.ts\`, \`can-crop.ts\` and \`crop-upload.tsx\` next to the \`app\` folder. that is where the imports look for them.
+
 \`crop-limits.ts\` is shared by both:
 
 \`\`\`ts
@@ -9546,6 +9562,7 @@ export const CropUpload = () => {
         maxZoom={MAX_ZOOM}
         minSize={MIN_SIZE}
         src={file}
+        svg={false}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >
