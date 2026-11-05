@@ -15,9 +15,11 @@ const deadline = (
   promise: Promise<never>;
   clear: () => void;
   pause: () => () => void;
+  touch: () => void;
 } => {
   let clear = noop;
   let pause = (): (() => void) => noop;
+  let touch = noop;
   const promise = new Promise<never>((_resolve, reject) => {
     let timer: ReturnType<typeof setTimeout>;
     let due = 0;
@@ -51,6 +53,11 @@ const deadline = (
       signal?.removeEventListener("abort", abort);
     };
 
+    touch = () => {
+      clearTimeout(timer);
+      arm(Math.min(ms, MAX_DELAY_MS));
+    };
+
     pause = () => {
       clearTimeout(timer);
       const left = Math.max(0, due - performance.now());
@@ -61,7 +68,7 @@ const deadline = (
     };
   });
 
-  return { clear, pause, promise };
+  return { clear, pause, promise, touch };
 };
 
 const withTimeout = async <T>(

@@ -56,7 +56,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
-        "zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with `decode` in every browser. data after the end of the file still opens. firefox opens a cut gif and paints what is missing white."
+        "zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with `decode` in every browser. data after the end of the file still opens. firefox opens a cut gif, and firefox and safari open a cut bmp, with the missing part painted in."
       ),
       p(
         "every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo."
@@ -84,7 +84,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif or bmp over `maxPixels` fails with `too-large`. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it."
       ),
       p(
-        "the fetch and the decode share one time limit. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs three decodes at a time, and a photo waiting for its turn is not on the clock. photos that load together share the network, so a slow link can push all of them past the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
+        "a load has one time limit. a download stays inside it while bytes keep arriving, and the decode gets what is left after the last byte. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs six downloads and three decodes at a time, and a photo waiting for its turn is not on the clock. a url that hangs holds one of the six until the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."
       ),
       p("a content security policy needs these sources:"),
       table({

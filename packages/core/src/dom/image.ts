@@ -2,8 +2,8 @@ import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { fitEdge, textOf } from "./media";
-import { TIMEOUT_MS, aborted, deadline, noop } from "./turn";
-import { decodeOff, decodeTurn, keepOff, releaseOff } from "./worker";
+import { MAX_DELAY_MS, TIMEOUT_MS, aborted, deadline, noop } from "./turn";
+import { decodeOff, decodeTurn, gate, keepOff, releaseOff } from "./worker";
 
 type ImageSource =
   | Blob
@@ -179,10 +179,13 @@ const resizeBitmap = async (
   });
 };
 
+const fetchTurn = gate(6);
+
 const toBlob = async (
   src: string,
   crossOrigin: LoadOptions["crossOrigin"],
-  signal: AbortSignal
+  signal: AbortSignal,
+  touch: () => void
 ): Promise<Blob> => {
   try {
     const response = await fetch(src, {
@@ -199,7 +202,19 @@ const toBlob = async (
       );
     }
 
-    return await response.blob();
+    const { body, headers } = response;
+    const counted = body?.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, stream) {
+          touch();
+          stream.enqueue(chunk);
+        },
+      })
+    );
+
+    return await (
+      counted ? new Response(counted, { headers }) : response
+    ).blob();
   } catch (error) {
     if (error instanceof ZrizError) {
       throw error;
@@ -319,7 +334,17 @@ const loadImage = async (
       let blob: Blob;
 
       if (typeof src === "string") {
-        blob = await toBlob(src, options.crossOrigin, signal);
+        const resume = limit.pause();
+
+        blob = await fetchTurn(
+          async () => {
+            resume();
+
+            return await toBlob(src, options.crossOrigin, signal, limit.touch);
+          },
+          MAX_DELAY_MS,
+          signal
+        );
       } else {
         blob = Object.prototype.isPrototypeOf.call(Blob.prototype, src)
           ? src

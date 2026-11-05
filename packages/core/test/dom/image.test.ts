@@ -742,6 +742,238 @@ describe("fetching a url", () => {
 
 const { promise: never } = deferred<never>();
 
+type Fresh = typeof import("../../src/dom");
+
+const freshDom = async (): Promise<Fresh> => {
+  vi.resetModules();
+
+  return await import("../../src/dom");
+};
+
+const streamed = (
+  signal: AbortSignal | null | undefined,
+  type = "image/jpeg"
+) => {
+  let sink: ReadableStreamDefaultController<Uint8Array> | null = null;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      sink = controller;
+    },
+  });
+
+  signal?.addEventListener("abort", () => {
+    sink?.error(new DOMException("stopped", "AbortError"));
+  });
+
+  return {
+    close: () => {
+      sink?.close();
+    },
+    response: new Response(body, { headers: { "content-type": type } }),
+    send: (bytes: Uint8Array) => {
+      sink?.enqueue(bytes);
+    },
+  };
+};
+
+type Download = ReturnType<typeof streamed> & { url: string };
+
+const downloads = () => {
+  const started: Download[] = [];
+
+  vi.stubGlobal(
+    "fetch",
+    async (url: string, init: RequestInit): Promise<Response> => {
+      const download = { ...streamed(init.signal), url };
+
+      started.push(download);
+
+      return await Promise.resolve(download.response);
+    }
+  );
+
+  return started;
+};
+
+const finish = (download: Download | undefined): void => {
+  download?.send(JPEG);
+  download?.close();
+};
+
+describe("the download clock", () => {
+  beforeEach(() => {
+    open.clear();
+    decodes = 0;
+    made = 0;
+    decodeFails = false;
+    copyFails = false;
+    gate = Promise.resolve();
+    stub(false);
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("lets a slow download run past the limit while bytes keep arriving", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const run = load("/slow.jpg");
+
+    await vi.advanceTimersByTimeAsync(0);
+
+    for (let second = 0; second < 60; second += 10) {
+      started[0]?.send(JPEG.subarray(0, 0 + 1));
+      await vi.advanceTimersByTimeAsync(10_000);
+    }
+
+    started[0]?.send(JPEG.subarray(1));
+    started[0]?.close();
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(run).resolves.toHaveProperty("width", FULL.width);
+  });
+
+  it("times out once no byte arrives for the limit", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const settled = vi.fn<(error: unknown) => void>();
+    const run = failure(load("/stuck.jpg"));
+
+    void run.then(settled);
+    await vi.advanceTimersByTimeAsync(10_000);
+    started[0]?.send(JPEG.subarray(0, 10));
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(settled).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(run).resolves.toHaveProperty("code", "timeout");
+  });
+
+  it("times out when a url never answers with a byte", async () => {
+    downloads();
+    const { loadImage: load } = await freshDom();
+    const run = failure(load("/hung.jpg"));
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    await expect(run).resolves.toHaveProperty("code", "timeout");
+  });
+
+  it("keeps the type the server declared", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const run = load("/photo.jpg");
+
+    await vi.advanceTimersByTimeAsync(0);
+    finish(started[0]);
+    await vi.advanceTimersByTimeAsync(0);
+    const { source } = await run;
+
+    expect(source).toBeInstanceOf(Blob);
+    expect((source as Blob).type).toBe("image/jpeg");
+  });
+
+  it("runs six downloads at a time and starts the next as one ends", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const runs = Array.from(
+      { length: 8 },
+      async (_, i) => await load(`/${i}.jpg`)
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(started).toHaveLength(6);
+    finish(started[0]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(started).toHaveLength(7);
+    await runs[0];
+
+    for (const download of started.slice(1)) {
+      finish(download);
+    }
+
+    await vi.advanceTimersByTimeAsync(0);
+    finish(started[7]);
+    await vi.advanceTimersByTimeAsync(0);
+    await Promise.all(runs);
+  });
+
+  it("does not count the wait for a download slot against the limit", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const settled = vi.fn<(error: unknown) => void>();
+    const first = Array.from(
+      { length: 6 },
+      async (_, i) => await failure(load(`/${i}.jpg`))
+    );
+    const waiting = failure(load("/last.jpg"));
+
+    void waiting.then(settled);
+
+    for (let second = 0; second < 60; second += 10) {
+      for (const download of started) {
+        download.send(JPEG.subarray(0, 1));
+      }
+
+      await vi.advanceTimersByTimeAsync(10_000);
+    }
+
+    expect(started).toHaveLength(6);
+    expect(settled).not.toHaveBeenCalled();
+    finish(started[0]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(started).toHaveLength(7);
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(settled).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(waiting).resolves.toHaveProperty("code", "timeout");
+    await Promise.all(first);
+  });
+
+  it("gives the slot of a hung url to the next load at the limit", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const hung = Array.from(
+      { length: 6 },
+      async (_, i) => await failure(load(`/hung-${i}.jpg`))
+    );
+    const healthy = load("/healthy.jpg");
+
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(started).toHaveLength(6);
+    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(started.at(-1)?.url).toBe("/healthy.jpg");
+    finish(started.at(-1));
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(healthy).resolves.toHaveProperty("width", FULL.width);
+    await Promise.all(hung);
+  });
+
+  it("drops a load from the queue when its signal fires", async () => {
+    const started = downloads();
+    const { loadImage: load } = await freshDom();
+    const controller = new AbortController();
+    const first = Array.from(
+      { length: 6 },
+      async (_, i) => await failure(load(`/${i}.jpg`))
+    );
+    const dropped = failure(load("/gone.jpg", { signal: controller.signal }));
+    const next = failure(load("/next.jpg"));
+
+    await vi.advanceTimersByTimeAsync(0);
+    controller.abort();
+    await expect(dropped).resolves.toHaveProperty("code", "aborted");
+    await vi.advanceTimersByTimeAsync(15_000);
+    await Promise.all(first);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(started.map(({ url }) => url)).not.toContain("/gone.jpg");
+    expect(started.map(({ url }) => url)).toContain("/next.jpg");
+    await vi.advanceTimersByTimeAsync(15_000);
+    await next;
+  });
+});
+
 describe("the pixel limit", () => {
   beforeEach(() => {
     open.clear();

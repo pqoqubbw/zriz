@@ -51,7 +51,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "timeout",
-            "a photo took over 15 s to load, or an export took over 30 s. time spent waiting behind other photos or exports does not count",
+            "a url sent no bytes for 15 s, a photo took over 15 s to decode after its last byte, or an export took over 30 s. time spent waiting behind other photos or exports does not count",
             "send a smaller file or export a smaller `maxSize`. for a slow network, load the photo yourself with a longer `timeout`, as in [loading images](loading-images)",
           ],
           [
