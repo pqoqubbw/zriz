@@ -5690,7 +5690,7 @@ the group and the orientation button go anywhere inside \`Root\`. each item name
 
 \`value\` is width divided by height, so \`4 / 5\` is 4:5. \`"free"\` drops the lock and \`"original"\` uses the photo's own ratio. picking an item springs the crop to it, with \`data-transition="morph"\` on \`Root\`.
 
-on a round crop every item but \`value={1}\` is disabled. zriz ships these parts bare. the demo above uses the styles from the zriz site.
+on a round crop every item but \`value={1}\` is disabled. zriz ships these parts bare. the demo above adds \`"original"\`, turns its labels with the orientation as the ratios further down do, and uses the styles from the zriz site.
 
 ## lock one ratio with no buttons
 
@@ -7217,6 +7217,8 @@ export const SaveCrop = ({ file }: { file: File }) => {
 \`\`\`
 
 an export can fail on a very large photo, so the snippet catches it. [errors](https://zriz.dev/docs/errors.md) lists the codes. \`running\` holds the export in flight. a second click does nothing, and a new file aborts it, so an old crop never downloads after the photo changed.
+
+the demo above runs this export with the same \`maxSize\`, in the format you pick in its track, and uses the styles from the zriz site.
 
 the export draws from the original, not the preview on screen. without \`maxSize\`, the file has the crop's size in source pixels.
 
@@ -9770,11 +9772,13 @@ set the colour variables on \`Root\`, on one part or on any ancestor. this one m
 
 write a value with \`light-dark()\` to keep both schemes, or a single colour to use it in both.
 
+the page at https\\://zriz.dev/docs/styling runs this cropper: a 3:2 photo, the straighten dial with its value, a track of default, ink and soft colours, and open, reset and download in the corners.
+
+the demo above switches between the stylesheet's colours and two light looks of its own. each look sets all five variables on \`Root\`. drag the dial to see the accent.
+
 ## follow dark mode
 
-the parts follow the page's \`color-scheme\`. the light values above apply in light mode and the dark values in dark mode:
-
-the page at https\\://zriz.dev/docs/styling runs this cropper: a 3:2 photo, a track of default, ink and soft looks, and open, reset and download in the corners.
+the parts follow the page's \`color-scheme\`. the light values above apply in light mode and the dark values in dark mode.
 
 with this rule on the page, the parts follow the system setting:
 
@@ -10463,6 +10467,8 @@ the page at https\\://zriz.dev/docs/viewport runs this cropper: a 3:2 photo, a t
 one \`Viewport\` per cropper. a second one takes over the layout, and zriz warns in development. draw a live preview with \`useCropperFrame\`.
 
 zriz makes it \`position: relative\` when it is static and sets \`touch-action: none\`, so the page does not scroll under a finger. \`Image\` clips the photo to the box by itself. the stylesheet also clips the viewport, so a handle at its edge never hangs outside it.
+
+the track in the demo above sets \`wheel\` to pan or zoom. the photo pans once you zoom in. the demo uses the styles from the zriz site.
 
 ## leave room around the crop
 
