@@ -2771,6 +2771,16 @@ describe("values handed out", () => {
     expect(cropper.getValue().center.x).toBe(0.3);
   });
 
+  it("freezes a value set under a locked aspect before a photo", () => {
+    const cropper = createCropper();
+
+    (cropper as CropperInternals).retarget({ aspect: 1, lock: true });
+    cropper.setValue({ rotation: 3 });
+    expect(cropper.getValue().aspect).toBe(1);
+    expect(deepFrozen(cropper.getValue())).toBeTruthy();
+    cropper.destroy();
+  });
+
   it("keeps a state passed to setCropState away from the cropper", () => {
     const { cropper } = setup();
     const state = cropState(cropper.getCropState());

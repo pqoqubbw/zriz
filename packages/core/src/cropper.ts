@@ -1258,7 +1258,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       const next = readValue(partial, value);
 
       applyValue(
-        locked === undefined ? next : { ...next, aspect: locked },
+        locked === undefined ? next : seal({ ...next, aspect: locked }),
         action,
         "imperative"
       );
