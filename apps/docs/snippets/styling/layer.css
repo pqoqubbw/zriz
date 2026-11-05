@@ -1,0 +1,2 @@
+@layer vendor, reset, base, components, utilities;
+@import url("@zriz/react/styles.css") layer(vendor);

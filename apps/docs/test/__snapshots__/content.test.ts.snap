@@ -462,12 +462,16 @@ export const PhotoCropper = () => {
     "crop-area",
     "crop-area/focus.css",
     "[data-zriz-item="area"]:focus-visible {
-  outline: 2px solid #fdca00;
-  outline-offset: 4px;
+  outline-color: #000;
+}
+[data-zriz-item="area"]:focus-visible::after {
+  outline-color: #fdca00;
 }",
     "<span class=t>[data-zriz-item</span><span class=p>=</span><span class=s>"</span><span class=t>area</span><span class=s>"</span><span class=t>]:focus-visible </span><span class=p>{</span>
-  <span class=a>outline</span><span class=p>:</span> 2px solid #fdca00<span class=p>;</span>
-  <span class=a>outline-offset</span><span class=p>:</span> 4px<span class=p>;</span>
+  <span class=a>outline-color</span><span class=p>:</span> #000<span class=p>;</span>
+<span class=p>}</span>
+<span class=t>[data-zriz-item</span><span class=p>=</span><span class=s>"</span><span class=t>area</span><span class=s>"</span><span class=t>]:focus-visible::after </span><span class=p>{</span>
+  <span class=a>outline-color</span><span class=p>:</span> #fdca00<span class=p>;</span>
 <span class=p>}</span>",
   ],
   [
@@ -1831,6 +1835,14 @@ export const Heic = ({ onSave }: Props) => {
     "styling/import.ts",
     "import "@zriz/react/styles.css";",
     "<span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>",
+  ],
+  [
+    "styling",
+    "styling/layer.css",
+    "@layer vendor, reset, base, components, utilities;
+@import url("@zriz/react/styles.css") layer(vendor);",
+    "<span class=p>@</span><span class=k>layer</span> vendor<span class=p>,</span> reset<span class=p>,</span> base<span class=p>,</span> components<span class=p>,</span> utilities<span class=p>;</span>
+<span class=p>@</span><span class=k>import</span> url<span class=p>(</span><span class=s>"@zriz/react/styles.css"</span><span class=p>)</span> layer<span class=p>(</span>vendor<span class=p>);</span>",
   ],
   [
     "styling",
@@ -5295,7 +5307,7 @@ escape also cancels a drag on the photo, a handle, \`Dial\` or \`Zoom\`, and the
 
 a key pressed in a focusable child of \`Area\`, \`Dial\` or \`Zoom\` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on \`Area\`, which resizes the crop.
 
-zriz adds no focus style and removes none, so the browser's default ring shows on \`Area\`, \`Dial\` and \`Zoom\`. [crop area](https://zriz.dev/docs/crop-area.md) shows a ring of your own.
+on keyboard focus, the stylesheet draws a two-tone ring inside \`Area\` in \`Canvas\` and \`CanvasText\`, so it shows on any photo and at padding 0. a mouse press adds nothing. without the stylesheet, and on \`Dial\` and \`Zoom\`, the browser's default ring shows. [crop area](https://zriz.dev/docs/crop-area.md) shows how to recolour the ring.
 
 ## work without a drag
 
@@ -6050,14 +6062,16 @@ leave out the handles you do not need. with \`shape="circle"\`, the stylesheet h
 
 \`Area\` points \`aria-describedby\` at the \`Instructions\` part. render it with your own help text. without it, the reference points at nothing and screen readers skip it. [accessibility](https://zriz.dev/docs/accessibility.md) covers it and \`Announcer\`.
 
-## add a focus ring
+## recolour the focus ring
 
-the browser draws its default ring on \`Area\`. to draw your own:
+the stylesheet draws a two-tone ring inside \`Area\` on keyboard focus, so a crop flush with the viewport keeps it. without the stylesheet, the browser draws its default ring. to recolour it:
 
 \`\`\`css
 [data-zriz-item="area"]:focus-visible {
-  outline: 2px solid #fdca00;
-  outline-offset: 4px;
+  outline-color: #000;
+}
+[data-zriz-item="area"]:focus-visible::after {
+  outline-color: #fdca00;
 }
 \`\`\`
 
@@ -6115,7 +6129,7 @@ escape during a handle drag cancels it and puts the crop back.
 
 ### \`Area\`
 
-renders a \`<div role="group">\` with \`tabIndex={0}\` inside \`Viewport\`. zriz writes its position and size inline on every frame. every part also takes \`className\`, \`render\` and the props of its element, see [composition](https://zriz.dev/docs/composition.md). \`className\` and \`render\` get \`{ shape, interacting }\`.
+renders a \`<div role="group">\` inside \`Viewport\`, with \`tabIndex={0}\` once a photo is placed and \`tabIndex={-1}\` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes \`className\`, \`render\` and the props of its element, see [composition](https://zriz.dev/docs/composition.md). \`className\` and \`render\` get \`{ shape, interacting }\`.
 
 - \`aria-label\` \`string\`
 
@@ -9072,14 +9086,21 @@ import "@zriz/react/styles.css";
 | - | - |
 | \`Viewport\` | \`overflow: clip\` and a grab cursor |
 | \`Mask\` | the scrim colour. it fades to 60% during a gesture |
-| \`Area\` | a 1 px outline inside the crop |
+| \`Area\` | a 1 px outline inside the crop, and a two-tone ring on keyboard focus |
 | \`Handle\` | a corner mark of two short lines or an edge bar, and a resize cursor. corners hide with \`shape="circle"\` |
 | \`Grid\` | white lines that fade in during a gesture |
 | \`Dial\` | 40 px height, sideways clip, a grab cursor, centre line, tick colours, the zero dot |
 
 it paints nothing on \`Zoom\`, the buttons or the aspect items. the demos on this site style those themselves. [viewport](https://zriz.dev/docs/viewport.md) shows how to size the box.
 
-every rule sits in \`:where()\` inside \`@layer components.zriz\`, so any class of yours wins in any import order, tailwind included. \`@zriz/core/styles.css\` is the same file for [vanilla js](https://zriz.dev/docs/vanilla-js.md).
+every rule sits in \`:where()\` inside \`@layer components.zriz\`. a class with no layer wins in any import order, and so does a class in your \`components\` or \`utilities\` layer, tailwind included. a class in any other layer wins only when that layer is declared after the stylesheet. \`@zriz/core/styles.css\` is the same file for [vanilla js](https://zriz.dev/docs/vanilla-js.md).
+
+the first line of the file names \`properties\`, \`theme\`, \`base\`, \`components\` and \`utilities\`, so a stylesheet loaded first sets the order of those layers on your page. to keep your own order, and to let every layer of yours win, import it into a layer of its own:
+
+\`\`\`css
+@layer vendor, reset, base, components, utilities;
+@import url("@zriz/react/styles.css") layer(vendor);
+\`\`\`
 
 ## style a part by its state
 
@@ -9148,7 +9169,7 @@ to pin one part, put \`data-theme="dark"\` or the class \`dark\` on the part its
 <Cropper.Dial data-theme="dark" aria-label="Straighten" />
 \`\`\`
 
-in forced colours mode, the marks the stylesheet paints switch to \`CanvasText\`, and the dial's centre line to \`Highlight\` during a drag. the \`--zriz-*\` variables keep your values, so css of your own that reads one needs a \`forced-colors\` rule with a system colour.
+in forced colours mode, the marks the stylesheet paints switch to \`CanvasText\`, and the dial's centre line to \`Highlight\` during a drag. the browser turns the scrim into a veil of \`Canvas\`, so a dark \`--zriz-scrim\` shows in the palette's own colour. the other \`--zriz-*\` variables keep your values, on \`Root\` or on one part, so css of your own that reads one needs a \`forced-colors\` rule with a system colour.
 
 ## style with tailwind
 

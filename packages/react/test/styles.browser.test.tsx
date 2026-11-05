@@ -1,4 +1,5 @@
 import "../../core/src/styles.css";
+import stylesheet from "../../core/src/styles.css?raw";
 import type { Cropper as CropperApi } from "@zriz/core";
 import { createRef } from "react";
 import { hydrateRoot } from "react-dom/client";
@@ -362,6 +363,80 @@ describe("a turn of the whole crop", () => {
     api.current?.rotate90();
     await expect.poll(() => getComputedStyle(area).opacity).toBe("0");
     await expect.poll(() => getComputedStyle(area).opacity).toBe("1");
+  });
+});
+
+describe("layer order on the page", () => {
+  const held: HTMLIFrameElement[] = [];
+
+  afterEach(() => {
+    for (const frame of held.splice(0)) {
+      frame.remove();
+    }
+  });
+
+  const SCRIM = "@layer app { .my-scrim { background: rgb(255 0 0); } }";
+  const SITE =
+    "@layer reset { .site { color: rgb(0 0 255); } } @layer utilities { .site { color: rgb(0 128 0); } }";
+  const RED = "rgb(255, 0, 0)";
+  const GREEN = "rgb(0, 128, 0)";
+  const BLUE = "rgb(0, 0, 255)";
+  const file = URL.createObjectURL(
+    new Blob([stylesheet], { type: "text/css" })
+  );
+
+  const pageWith = (...css: string[]): (() => [string, string]) => {
+    const frame = document.createElement("iframe");
+
+    frame.srcdoc = `<!doctype html>${css.map((text) => `<style>${text}</style>`).join("")}<p class="site"></p><div class="my-scrim" data-zriz-item="mask"></div>`;
+    document.body.append(frame);
+    held.push(frame);
+
+    return () => {
+      const win = frame.contentWindow;
+      const doc = frame.contentDocument;
+      const site = doc?.querySelector(".site");
+      const mask = doc?.querySelector(".my-scrim");
+
+      return win && site && mask
+        ? [
+            win.getComputedStyle(site).color,
+            win.getComputedStyle(mask).backgroundColor,
+          ]
+        : ["", ""];
+    };
+  };
+
+  it("sets the order of the usual layers when it loads first", async () => {
+    const read = pageWith(stylesheet, `@layer reset, utilities; ${SITE}`);
+
+    await expect.poll(() => read()[0]).toBe(BLUE);
+  });
+
+  it("lets a class win only from a layer declared after it", async () => {
+    const after = pageWith(stylesheet, SCRIM);
+    const before = pageWith(SCRIM, stylesheet);
+
+    await expect.poll(() => after()[1]).toBe(RED);
+    await expect.poll(() => before()[1]).not.toBe("");
+    await expect.poll(() => before()[1]).not.toBe(RED);
+  });
+
+  it("lets a class with no layer win in either order", async () => {
+    const plain = ".my-scrim { background: rgb(255 0 0); }";
+    const first = pageWith(plain, stylesheet);
+    const last = pageWith(stylesheet, plain);
+
+    await expect.poll(() => first()[1]).toBe(RED);
+    await expect.poll(() => last()[1]).toBe(RED);
+  });
+
+  it("keeps the page's order and loses to every layer of it when imported into a layer", async () => {
+    const read = pageWith(
+      `@layer vendor, reset, app, utilities; @import url("${file}") layer(vendor); ${SCRIM} ${SITE}`
+    );
+
+    await expect.poll(() => read()).toStrictEqual([GREEN, RED]);
   });
 });
 

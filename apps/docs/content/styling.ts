@@ -40,8 +40,12 @@ const STYLING_PAGE = defineDoc({
         "it paints nothing on `Zoom`, the buttons or the aspect items. the demos on this site style those themselves. [viewport](viewport) shows how to size the box."
       ),
       p(
-        "every rule sits in `:where()` inside `@layer components.zriz`, so any class of yours wins in any import order, tailwind included. `@zriz/core/styles.css` is the same file for [vanilla js](vanilla-js)."
-      )
+        "every rule sits in `:where()` inside `@layer components.zriz`. a class with no layer wins in any import order, and so does a class in your `components` or `utilities` layer, tailwind included. a class in any other layer wins only when that layer is declared after the stylesheet. `@zriz/core/styles.css` is the same file for [vanilla js](vanilla-js)."
+      ),
+      p(
+        "the first line of the file names `properties`, `theme`, `base`, `components` and `utilities`, so a stylesheet loaded first sets the order of those layers on your page. to keep your own order, and to let every layer of yours win, import it into a layer of its own:"
+      ),
+      code("styling/layer.css")
     ),
     section(
       "style a part by its state",
