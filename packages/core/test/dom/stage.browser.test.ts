@@ -1130,6 +1130,112 @@ describe("inputs that give way", () => {
   );
 });
 
+describe("a button pressed during a drag", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const panning = async (): Promise<Fixture> => {
+    const fixture = mount();
+
+    fixture.cropper.setZoom(2, { emit: false });
+    await frames();
+    pointer(fixture, "pointerdown", 1, 200, 150);
+    pointer(fixture, "pointermove", 1, 210, 150);
+
+    return fixture;
+  };
+
+  it("flip during a pan sticks on the next move and in the commit", async () => {
+    const fixture = await panning();
+    const commits: boolean[] = [];
+
+    fixture.cropper.on("commit", (value) => {
+      commits.push(value.mirrored);
+    });
+    fixture.cropper.flip("x", { reason: "flip" });
+    pointer(fixture, "pointermove", 1, 220, 150);
+    expect(fixture.cropper.getValue().mirrored).toBeTruthy();
+    pointer(fixture, "pointerup", 1, 220, 150);
+    await frames();
+    expect(commits).toStrictEqual([true]);
+  });
+
+  it("flip during a pinch sticks on the next move", async () => {
+    const fixture = mount();
+
+    fixture.cropper.setZoom(2, { emit: false });
+    await frames();
+    pointer(fixture, "pointerdown", 1, 150, 150);
+    pointer(fixture, "pointerdown", 2, 250, 150);
+    pointer(fixture, "pointermove", 2, 260, 150);
+    fixture.cropper.flip("x", { reason: "flip" });
+    pointer(fixture, "pointermove", 2, 270, 150);
+    expect(fixture.cropper.getValue().mirrored).toBeTruthy();
+    pointer(fixture, "pointerup", 1, 150, 150);
+    pointer(fixture, "pointerup", 2, 270, 150);
+  });
+
+  it("rotate during a pan keeps the value and the state on one crop", async () => {
+    const fixture = await panning();
+
+    fixture.cropper.setAspect(16 / 9);
+    pointer(fixture, "pointermove", 1, 215, 150);
+    fixture.cropper.rotate90("cw", { reason: "rotate-90" });
+    pointer(fixture, "pointermove", 1, 220, 150);
+    const value = fixture.cropper.getValue();
+    const state = fixture.cropper.getCropState();
+
+    expect(value.quarterTurns).toBe(1);
+    expect(value.aspect).toBeCloseTo(9 / 16, 9);
+    expect(state?.aspect).toBeCloseTo(9 / 16, 9);
+    pointer(fixture, "pointerup", 1, 220, 150);
+  });
+
+  it("reset during a pan stays reset on the next move", async () => {
+    const fixture = await panning();
+
+    fixture.cropper.reset({ reason: "reset" });
+    pointer(fixture, "pointermove", 1, 212, 150);
+    expect(fixture.cropper.getValue().size.width).toBe(1);
+    pointer(fixture, "pointerup", 1, 212, 150);
+  });
+
+  it("flip during a handle drag leaves the crop where the pointer holds it", async () => {
+    const fixture = mount();
+
+    await frames();
+    const handle = fixture.area.querySelector<HTMLElement>("[data-handle]");
+    const box = handle?.getBoundingClientRect();
+    const send = (type: string, dx: number): void => {
+      handle?.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons: 1,
+          clientX: (box?.x ?? 0) + dx,
+          clientY: (box?.y ?? 0) + dx,
+          pointerId: 5,
+        })
+      );
+    };
+
+    send("pointerdown", 0);
+    send("pointermove", -30);
+    fixture.cropper.flip("x", { reason: "flip" });
+    const { width } = fixture.cropper.getValue().size;
+
+    send("pointermove", -31);
+    expect(fixture.cropper.getValue().mirrored).toBeTruthy();
+    expect(Math.abs(fixture.cropper.getValue().size.width - width)).toBeLessThan(
+      0.01
+    );
+    send("pointerup", -31);
+  });
+});
+
 describe("viewport resize during a pan", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
