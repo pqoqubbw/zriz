@@ -93,6 +93,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:packages
       - name: install the browser
+        shell: bash
         run: |
           args=("$ENGINE")
           if [ "$ENGINE" = chromium ]; then args+=(--only-shell); fi
