@@ -151,7 +151,7 @@
   :where([data-zriz-item="dial-ticks"] > *) {
     width: 1px;
     height: 10px;
-    background: var(--zriz-tick, light-dark(#9b9b9b, #666));
+    background: var(--zriz-tick, light-dark(#949494, #666));
   }
   :where([data-zriz-item="dial-ticks"] > [data-major]) {
     background: var(--zriz-line, light-dark(#000, #fff));

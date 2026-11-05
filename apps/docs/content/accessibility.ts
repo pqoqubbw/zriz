@@ -125,6 +125,9 @@ const ACCESSIBILITY_PAGE = defineDoc({
         '`motion="reduce"` on `Root` forces the short motion, and `motion="always"` keeps the full one. `Root` shows `data-reduced-motion` while it is on.'
       ),
       p(
+        "spring-backs keep their length in both modes: the dial past its limit, the photo pulled past the crop and the zoom past its limits."
+      ),
+      p(
         "the stylesheet's fades keep their length in both modes: the mask dims over 200 ms and comes back over 300 ms, and the grid fades in over 250 ms and out over 300 ms. after a gesture, the thirds grid and `data-interacting` on `Root` and `Mask` stay for 1380 ms. on `Area`, `data-interacting` clears when the gesture ends."
       )
     ),

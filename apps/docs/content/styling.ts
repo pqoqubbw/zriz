@@ -92,7 +92,7 @@ const STYLING_PAGE = defineDoc({
             "outline, handle marks, dial centre line, major ticks, zero dot",
           ],
           ["--zriz-grid", "`#fff9` in both", "grid lines"],
-          ["--zriz-tick", "`#9b9b9b`, `#666`", "minor ticks on the dial"],
+          ["--zriz-tick", "`#949494`, `#666`", "minor ticks on the dial"],
           [
             "--zriz-accent",
             "`#fdca00` in both",

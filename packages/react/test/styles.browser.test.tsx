@@ -125,6 +125,29 @@ describe("default styles", () => {
     expect(tick.getBoundingClientRect().height).toBe(10);
   });
 
+  it("gives minor ticks 3:1 contrast on white in light mode, and keeps the dark tick and the accent", async () => {
+    const api = createRef<CropperApi>();
+
+    for (const [theme, tick] of [
+      ["light", "rgb(148, 148, 148)"],
+      ["dark", "rgb(102, 102, 102)"],
+    ] as const) {
+      const screen = await render(
+        <div data-theme={theme}>
+          <Editor api={api} />
+        </div>
+      );
+
+      await frames(2);
+      expect(
+        background('[data-zriz-item="dial-ticks"] > :not([data-major])')
+      ).toBe(tick);
+      await screen.unmount();
+    }
+
+    expect(stylesheet).toContain("var(--zriz-accent, #fdca00)");
+  });
+
   it("shows the grid only while it is on", async () => {
     const api = createRef<CropperApi>();
 

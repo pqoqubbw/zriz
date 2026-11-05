@@ -5381,6 +5381,8 @@ with \`prefers-reduced-motion: reduce\`, motion that zriz starts on its own gets
 
 \`motion="reduce"\` on \`Root\` forces the short motion, and \`motion="always"\` keeps the full one. \`Root\` shows \`data-reduced-motion\` while it is on.
 
+spring-backs keep their length in both modes: the dial past its limit, the photo pulled past the crop and the zoom past its limits.
+
 the stylesheet's fades keep their length in both modes: the mask dims over 200 ms and comes back over 300 ms, and the grid fades in over 250 ms and out over 300 ms. after a gesture, the thirds grid and \`data-interacting\` on \`Root\` and \`Mask\` stay for 1380 ms. on \`Area\`, \`data-interacting\` clears when the gesture ends.
 
 ## api
@@ -9148,7 +9150,7 @@ set the colour variables on \`Root\`, on one part or on any ancestor. this one m
 | \`--zriz-scrim\` | \`#f7f7f7eb\`, \`#000000c7\` | the mask outside the crop |
 | \`--zriz-line\` | \`#000\`, \`#fff\` | outline, handle marks, dial centre line, major ticks, zero dot |
 | \`--zriz-grid\` | \`#fff9\` in both | grid lines |
-| \`--zriz-tick\` | \`#9b9b9b\`, \`#666\` | minor ticks on the dial |
+| \`--zriz-tick\` | \`#949494\`, \`#666\` | minor ticks on the dial |
 | \`--zriz-accent\` | \`#fdca00\` in both | dial centre line while you drag the dial |
 
 write a value with \`light-dark()\` to keep both schemes, or a single colour to use it in both.
