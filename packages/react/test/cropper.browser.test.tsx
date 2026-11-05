@@ -2269,6 +2269,7 @@ const press = (id: string, type: string, pointerId: number): void => {
 };
 
 const LATE_MS = 100;
+const ANSWER_WINDOW_MS = 2200;
 
 type LateParent = {
   api: { current: CropperApi | null };
@@ -2481,6 +2482,212 @@ describe("a controlled parent that answers late", () => {
     later.mockReturnValue(now + 3000);
     await parent.write(1);
     expect(parent.api.current?.getValue().rotation).toBe(1);
+  });
+
+  it("applies a preset equal to an earlier report when the answer window closes", async () => {
+    const parent = await lateParent(0, undefined, false);
+
+    for (let count = 0; count < 5; count += 1) {
+      await parent.press();
+    }
+
+    await parent.write(3);
+    expect(parent.api.current?.getValue().rotation).toBe(5);
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(parent.api.current?.getValue().rotation).toBe(3);
+    expect(parent.commits).toStrictEqual([1, 2, 3, 4, 5, 3]);
+  });
+
+  it("keeps a press made after the parent wrote a reported value", async () => {
+    const parent = await lateParent(0, undefined, false);
+
+    await parent.press();
+    await parent.press();
+    await parent.write(1);
+    await parent.press();
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(parent.api.current?.getValue().rotation).toBe(3);
+  });
+
+  it("does not move a mirror that answered every report once the window closes", async () => {
+    const parent = await lateParent(400);
+
+    await parent.press();
+    await parent.press();
+    await quietFor(ANSWER_WINDOW_MS + 400);
+    expect(parent.trail).toStrictEqual([1, 2]);
+    expect(parent.commits).toStrictEqual([1, 2]);
+  });
+
+  it("applies an aspect prop reported by two turns when the window closes", async () => {
+    const api = createRef<CropperApi>();
+    const state: { write: (aspect: number) => void } = { write: () => {} };
+
+    const Host = () => {
+      const [aspect, setAspect] = useState(16 / 9);
+
+      useLayoutEffect(() => {
+        state.write = setAspect;
+      }, []);
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          aspect={aspect}
+          image={PHOTO}
+          onValueCommit={() => {}}
+        >
+          <Cropper.Rotate id="late-turn" />
+        </Cropper.Root>
+      );
+    };
+
+    await render(<Host />);
+    await frames(3);
+    document.querySelector<HTMLElement>("#late-turn")?.click();
+    await frames(2);
+    document.querySelector<HTMLElement>("#late-turn")?.click();
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBeCloseTo(16 / 9);
+
+    flushSync(() => {
+      state.write(9 / 16);
+    });
+
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(api.current?.getValue().aspect).toBe(9 / 16);
+  });
+
+  it("applies an aspect prop reported by aspect items when the window closes", async () => {
+    const api = createRef<CropperApi>();
+    const state: { write: (aspect: number | "free") => void } = {
+      write: () => {},
+    };
+
+    const Host = () => {
+      const [aspect, setAspect] = useState<number | "free">("free");
+
+      useLayoutEffect(() => {
+        state.write = setAspect;
+      }, []);
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          aspect={aspect}
+          image={PHOTO}
+          onValueCommit={() => {}}
+        >
+          <Cropper.AspectGroup aria-label="aspect">
+            <Cropper.AspectItem id="late-square" value={1} />
+            <Cropper.AspectItem id="late-wide" value={2} />
+          </Cropper.AspectGroup>
+        </Cropper.Root>
+      );
+    };
+
+    await render(<Host />);
+    await frames(3);
+    document.querySelector<HTMLElement>("#late-square")?.click();
+    await frames(2);
+    document.querySelector<HTMLElement>("#late-wide")?.click();
+    await frames(2);
+
+    flushSync(() => {
+      state.write(1);
+    });
+
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(api.current?.getValue().aspect).toBe(1);
+  });
+
+  it("applies a value object reported earlier when the window closes", async () => {
+    const api = createRef<CropperApi>();
+    const reports: CropValue[] = [];
+    const state: { write: (value: CropValue) => void } = { write: () => {} };
+
+    const Host = () => {
+      const [value, setValue] = useState<CropValue>();
+
+      useLayoutEffect(() => {
+        state.write = setValue;
+      }, []);
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          image={PHOTO}
+          onValueChange={(next) => {
+            reports.push(next);
+          }}
+          {...(value ? { value } : {})}
+        />
+      );
+    };
+
+    await render(<Host />);
+    await frames(3);
+    api.current?.setRotation(1);
+    await frames(1);
+    api.current?.setRotation(2);
+    await frames(1);
+    const [first] = reports;
+
+    if (first) {
+      flushSync(() => {
+        state.write(first);
+      });
+    }
+
+    await frames(2);
+    expect(api.current?.getValue().rotation).toBe(2);
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(api.current?.getValue().rotation).toBe(1);
+  });
+
+  it("forgets a held prop when the image leaves", async () => {
+    const api = createRef<CropperApi>();
+    const state: { write: (rotation: number) => void } = { write: () => {} };
+
+    type HostProps = { image: { height: number; width: number } | null };
+
+    const Host = ({ image }: HostProps) => {
+      const [rotation, setRotation] = useState(0);
+
+      useLayoutEffect(() => {
+        state.write = setRotation;
+      }, []);
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          image={image}
+          onValueCommit={() => {}}
+          rotation={rotation}
+        />
+      );
+    };
+
+    const screen = await render(<Host image={PHOTO} />);
+
+    await frames(3);
+    api.current?.setRotation(1);
+    await frames(1);
+    api.current?.setRotation(2);
+    await frames(1);
+
+    flushSync(() => {
+      state.write(1);
+    });
+
+    await frames(2);
+    await screen.rerender(<Host image={null} />);
+    await frames(2);
+    await screen.rerender(<Host image={PHOTO} />);
+    await frames(2);
+    api.current?.setRotation(7, { emit: false });
+    await quietFor(ANSWER_WINDOW_MS);
+    expect(api.current?.getValue().rotation).toBe(7);
   });
 
   it("sends no change for a prop that lands exactly, and commits", async () => {
