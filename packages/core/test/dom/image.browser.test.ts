@@ -899,18 +899,53 @@ describe("reading a file before it decodes", () => {
 });
 
 describe("svg sources", () => {
+  const SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"><rect width="64" height="32" fill="red"/></svg>';
+
+  it.each(["image/jpeg", "image/png", "image/webp"])(
+    "fails with decode for svg text declared as %s",
+    async (type) => {
+      await expect(codeOf(loadImage(new Blob([SVG], { type })))).resolves.toBe(
+        "decode"
+      );
+    }
+  );
+
+  it.each(["", "application/octet-stream", "text/plain"])(
+    "still opens svg text with the type %j",
+    async (type) => {
+      const image = await loadImage(new Blob([SVG], { type }));
+
+      expect(image.mime).toBe("image/svg+xml");
+      image.preview.close();
+    }
+  );
+
+  it.each(["", "application/octet-stream", "image/svg+xml"])(
+    "refuses svg text typed %j when svg is off",
+    async (type) => {
+      await expect(
+        codeOf(loadImage(new Blob([SVG], { type }), { svg: false }))
+      ).resolves.toBe("decode");
+    }
+  );
+
+  it("opens a raster photo with svg off", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"), {
+      svg: false,
+    });
+
+    expect(image.mime).toBe("image/jpeg");
+    image.preview.close();
+  });
+
   it.each([
     ["no type", new Blob([solid('width="20" height="10"')])],
     [
       "text/plain",
       new Blob([solid('width="20" height="10"')], { type: "text/plain" }),
     ],
-    [
-      "a jpeg name",
-      new File([solid('width="20" height="10"')], "a.jpg", {
-        type: "image/jpeg",
-      }),
-    ],
+    ["a jpeg name", new File([solid('width="20" height="10"')], "a.jpg")],
     [
       "a charset",
       new Blob([solid('width="20" height="10"')], {

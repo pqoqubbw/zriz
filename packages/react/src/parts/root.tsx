@@ -47,6 +47,10 @@ type RootProps = UseCropperOptions &
     src?: string | Blob | null | undefined;
     /** CORS mode for a cross-origin URL. */
     crossOrigin?: "anonymous" | "use-credentials" | undefined;
+    /** The longest side of the preview in pixels. */
+    previewEdge?: number | undefined;
+    /** false refuses svg files. @default true */
+    svg?: boolean | undefined;
     /** Crop shape. A circle locks the aspect to 1, draws a round mask and exports a round PNG. */
     shape?: "rect" | "circle" | undefined;
     /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
@@ -137,6 +141,8 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     plugins,
     src,
     crossOrigin,
+    previewEdge,
+    svg,
     shape = "rect",
     motion = "auto",
     recentreDelay,
@@ -214,7 +220,9 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       try {
         loaded = await loadImage(src, {
           crossOrigin,
+          previewEdge,
           signal: controller.signal,
+          svg,
         });
       } catch (error) {
         if (!controller.signal.aborted && error instanceof ZrizError) {
@@ -242,7 +250,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     return () => {
       controller.abort();
     };
-  }, [cropper, crossOrigin, latestError, latestLoad, src]);
+  }, [cropper, crossOrigin, latestError, latestLoad, previewEdge, src, svg]);
 
   const box = useElementBox();
   const merged = useBoxRef(box, ref);

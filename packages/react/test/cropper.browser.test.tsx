@@ -510,6 +510,53 @@ describe("Root load results", () => {
     await cleanup();
   });
 
+  it("bounds the preview with previewEdge", async () => {
+    const onLoad = vi.fn<(image: LoadedImage) => void>();
+
+    await render(
+      <Cropper.Root
+        onLoad={onLoad}
+        previewEdge={64}
+        src={await photo(400, 300)}
+      >
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Image />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+
+    await vi.waitFor(() => {
+      expect(onLoad).toHaveBeenCalledOnce();
+    });
+
+    const [image] = onLoad.mock.calls[0] ?? [];
+
+    expect(image?.preview.width).toBe(64);
+    expect(image?.width).toBe(400);
+  });
+
+  it("refuses svg with svg off", async () => {
+    const onError = vi.fn<(error: ZrizError) => void>();
+    const src = new Blob(
+      ['<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"/>'],
+      { type: "image/svg+xml" }
+    );
+
+    await render(
+      <Cropper.Root onError={onError} src={src} svg={false}>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Image />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+
+    expect(onError.mock.calls[0]?.[0].code).toBe("decode");
+  });
+
   it("reports an svg with html inside through onLoad", async () => {
     const svg = new Blob(
       [

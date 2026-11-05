@@ -58,6 +58,17 @@ const ROOT_PAGE = defineDoc({
             type: '"anonymous" | "use-credentials"',
           },
           {
+            name: "previewEdge",
+            text: "the longest side of the preview in pixels. the default follows the screen, see [loading images](loading-images). a grid of small `Root`s saves memory with a low one",
+            type: "number",
+          },
+          {
+            default: "true",
+            name: "svg",
+            text: "`false` refuses svg files, which then fail with `decode`",
+            type: "boolean",
+          },
+          {
             name: "image",
             text: "the photo's pixel size up front, read once",
             type: "Size | null",

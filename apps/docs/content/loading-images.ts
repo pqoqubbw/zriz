@@ -9,7 +9,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
       ),
       code("loading-images/picker.jsx.tsx"),
       p(
-        "zriz reads the format from the first 4096 bytes of the file, so a wrong name or mime type does not stop a photo from opening. when `src` changes, zriz cancels a load that is still running and keeps `onError` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails."
+        "zriz reads the format from the first 4096 bytes of the file, so a wrong name or a wrong raster mime type does not stop a photo from opening. a file declared as a raster image type never opens as svg, and `svg={false}` on `Root` or `svg: false` on `loadImage` refuses svg altogether. both fail with `decode`. when `src` changes, zriz cancels a load that is still running and keeps `onError` quiet for it. the previous photo stays on screen until the new one is ready, and stays there when the new one fails."
       )
     ),
     section(
@@ -72,7 +72,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         rows: [
           [
             "preview size",
-            "twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere",
+            "twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere. `previewEdge` on `Root` sets it",
           ],
           [
             "export size",
@@ -129,7 +129,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "`ready` turns the save button on once the photo is attached. `onSave` gets the cropper for `exportCrop`, as in [exporting](exporting). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left."
       ),
       p(
-        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `maxPixels`, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
+        "`loadImage` also takes `timeout` in milliseconds, `previewEdge`, the longest side of the preview in pixels, `maxPixels`, `svg`, `crossOrigin` and an abort `signal`. it accepts an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` as its source. a `video` needs a current frame, so wait for `loadeddata` or `seeked`, or the load fails with `decode`. a frame with nothing opaque in it counts as no frame."
       ),
       p(
         "`attachImage` frees a photo when it leaves its last cropper, and `destroy()` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call `discardImage(image)`, for example after your own stale check or an `exportImage` with no `attachImage`. it does nothing while a cropper holds the photo."

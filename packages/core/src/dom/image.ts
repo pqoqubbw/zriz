@@ -17,6 +17,7 @@ type ImageSource =
 type LoadOptions = {
   previewEdge?: number | undefined;
   maxPixels?: number | undefined;
+  svg?: boolean | undefined;
   crossOrigin?: "anonymous" | "use-credentials" | undefined;
   signal?: AbortSignal | undefined;
   timeout?: number | undefined;
@@ -331,7 +332,10 @@ const loadImage = async (
       ({ mime, animated } = raster(head));
       const typed = blob.type.startsWith("image/svg+xml");
       const vector =
-        mime === null && (typed || /<svg/iu.test(textOf(head)))
+        mime === null &&
+        options.svg !== false &&
+        (typed ||
+          (!blob.type.startsWith("image/") && /<svg/iu.test(textOf(head))))
           ? await import("./svg")
           : null;
 
