@@ -30,11 +30,14 @@ const COMPOSITION_PAGE = defineDoc({
     section(
       "stop zriz's own handler",
       p(
-        "your handler runs first. call `preventZrizHandler(event)` in it, and zriz skips that part's own handler for that event. a press still bubbles to `Viewport`, so veto there to stop a pan, or call `event.stopPropagation()`:"
+        "your handler runs first. call `preventZrizHandler(event)` in it, and zriz skips that part's own handler for that event. `Area`, `Image`, `Mask` and `Grid` have no press handler of their own, so a press on them pans through `Viewport`. to stop that pan, veto on `Viewport` or call `event.stopPropagation()`. a press on `Handle`, `Dial`, `Zoom` or a button starts no pan:"
       ),
       code("composition/veto.jsx.tsx"),
       p(
         "`event.preventDefault()` does not stop zriz. it only stops the browser default."
+      ),
+      p(
+        'the wheel and safari gestures on `Viewport` are native listeners. they run before your `onWheel`, so neither a veto nor `event.stopPropagation()` in it stops them. `wheel="none"` leaves a plain wheel to the page, and ctrl + wheel still zooms.'
       ),
       p(
         "`preventZrizHandler`, `mergeProps`, `mergeRefs` and `CropperContext` come from `@zriz/react`, like the hooks."

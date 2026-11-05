@@ -47,11 +47,11 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "svg",
-            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. a missing width opens at 300 and a missing height at 150. zriz draws it once at that size, at most the preview size, and exports from that drawing",
+            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. with one side and a `viewBox`, the other follows the ratio. with no `viewBox`, a missing width opens at 300 and a missing height at 150. a side in `%` or `em` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing",
           ],
           [
             "animated gif, png, webp, avif",
-            "open on their first frame. `animated` on the loaded image is `true`, and always for a gif. an `img` already playing opens on the frame it shows in safari, so pass a `Blob` for the first frame",
+            "open on their first frame. from a file or url, `animated` on the loaded image is `true`, and always for a gif. a heic sequence also reports `true`. an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` source always reports `false`, even an `img` showing a gif. an `img` already playing opens on the frame it shows in safari, so pass a `Blob` for the first frame",
           ],
         ],
       }),
@@ -81,7 +81,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
-        "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif, bmp or tiff over `maxPixels` fails with `too-large`. a gif counts its largest frame. a jpeg xl has no count zriz can read, so it fails after the decode, and so does what a `decode` function returns. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it."
+        "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif, bmp or tiff over `maxPixels` fails with `too-large`. a gif counts its largest frame. a jpeg xl has no count zriz can read, so it fails after the decode, and so does what a `decode` function returns. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it. `maxPixels` does not apply to an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` source, or to an svg, which zriz draws at most at the preview size."
       ),
       p(
         "a load has one time limit. a download stays inside it while bytes keep arriving, and the decode gets what is left after the last byte. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs six downloads and three decodes at a time, and a photo waiting for its turn is not on the clock. a url that hangs holds one of the six until the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."

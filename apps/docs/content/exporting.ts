@@ -85,7 +85,7 @@ const EXPORTING_PAGE = defineDoc({
         "`maxSize` never scales up, so a crop smaller than the box comes out smaller. set `minSize` on `Root` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with `minSize` and `maxSize` both at 512 by 512 exports at 512 by 512."
       ),
       p(
-        "`minSize` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free and the crop does not grow back on its own."
+        "`minSize` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free unless the minimum nearly fills the photo, and then `getRotationLimit()` drops below 45. the crop does not grow back on its own."
       )
     ),
     section(
@@ -124,7 +124,7 @@ const EXPORTING_PAGE = defineDoc({
           {
             name: "pixelRect",
             text: "`{ left, top, width, height }` in the upright original, or `null` with a straighten angle or perspective",
-            type: "PixelRect | null",
+            type: "{ left, top, width, height } | null",
           },
           {
             name: "rotateExpand",
@@ -134,17 +134,17 @@ const EXPORTING_PAGE = defineDoc({
           {
             name: "forward",
             text: "the map from source pixels to output pixels, as `[a, b, c, d, e, f]` in canvas `setTransform()` order. alone it holds only when `homography` is `null`. with perspective, `output = forward(c + H(s - c))`, with `c` the centre of the image in source pixels",
-            type: "AffineMatrix",
+            type: "[a, b, c, d, e, f]",
           },
           {
             name: "inverse",
             text: "the map from output pixels back to source pixels. alone it holds only when `homography` is `null`. with perspective, `s = c + H⁻¹(inverse(output) - c)`",
-            type: "AffineMatrix",
+            type: "[a, b, c, d, e, f]",
           },
           {
             name: "homography",
-            text: "the 3 by 3 perspective matrix `H`, row by row, or `null` with no perspective. divide by the third coordinate after you apply it",
-            type: "Matrix3 | null",
+            text: "the 3 by 3 perspective matrix `H`, as 9 numbers row by row, or `null` with no perspective. divide by the third coordinate after you apply it",
+            type: "number[] | null",
           },
         ],
         "field"
@@ -153,7 +153,7 @@ const EXPORTING_PAGE = defineDoc({
         "with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn. `pixelRect` is the truth for the file: its edges land on whole source pixels, so on a very small photo the frame on screen can sit up to half a source pixel from the file edge. a side never goes below 1 px, so a thin crop can come out slightly over `maxSize`."
       ),
       p(
-        "`toSharp` from `@zriz/core` turns the plan into sharp steps. [server crop](server-crop) shows the route for a level crop and a straightened one."
+        '`toSharp(plan, image)` from `@zriz/core` takes the plan and the upright photo\'s size and returns sharp steps with `kind` `"extract"` or `"affine"`. it ignores perspective without an error, so check `plan.homography` first. [server crop](server-crop) shows the route for a level crop and a straightened one.'
       )
     ),
   ],

@@ -13,7 +13,7 @@ const ERRORS_PAGE = defineDoc({
     section(
       "where errors arrive",
       p(
-        "`Root` calls `onError` with a `ZrizError` when a photo cannot load. `ZrizError` comes from `@zriz/core/dom`, like `loadImage` and `exportCrop`. `loadImage` and `exportCrop` reject instead, so catch them where you call them:"
+        "`Root` calls `onError` with a `ZrizError` when a photo cannot load. `ZrizError` comes from `@zriz/core/dom`, like `loadImage` and `exportCrop`. `attachImage` throws `no-image` at once when the photo was already freed. `loadImage` and `exportCrop` reject, so catch them where you call them:"
       ),
       code("errors/save.ts"),
       p(
@@ -46,7 +46,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "too-large",
-            "the file's header or the decoded image has more pixels than `maxPixels`, 268402689 by default. this also covers a `decode` function",
+            "a file's header or decoded image has more pixels than `maxPixels`, 268402689 by default. this also covers a `decode` function, but not an svg or an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` source",
             "send a smaller file. to open it anyway, load the photo yourself with a higher `maxPixels`, as in [loading images](loading-images)",
           ],
           [
@@ -56,7 +56,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "aborted",
-            "the `signal` you passed fired while the photo was still attached, or a new photo arrived after the export had started drawing. `Root` also aborts its own load when `src` changes and never reports it",
+            "the `signal` you passed fired, a new photo or a detach came while the export code was still downloading, or a photo from an `img`, `video`, `canvas`, svg or `decode` function was freed while the export waited its turn. a new photo after that does not stop the export and you get the old crop, so abort with your own `signal` when the photo changes. `Root` also aborts its own load when `src` changes and never reports it",
             "nothing. skip this code in your catch",
           ],
           [
@@ -66,7 +66,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "no-image",
-            "an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo. a detach in the same tick as the export, even with an aborted signal, gives this code",
+            "an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo. a detach before the export call, even with an aborted signal, gives this code. a detach in the same tick right after the call gives `aborted`",
             "disable the export button until `onLoad` fires. load a freed photo again. keep `@zriz/core` at the same version as `@zriz/react`",
           ],
         ],
@@ -75,7 +75,7 @@ const ERRORS_PAGE = defineDoc({
     section(
       "thrown errors",
       p(
-        "these are plain `Error` objects that react shows in its error overlay. they mean a part or hook cannot find its cropper."
+        "these are plain `Error` objects that react shows in its error overlay. the first three mean a part or hook cannot find its cropper. `toSharp` throws the last one as a `RangeError`, usually on your server."
       ),
       messages("message", [
         {
@@ -90,12 +90,16 @@ const ERRORS_PAGE = defineDoc({
           fix: "`Root` got `cropper` on its first render and none later. keep passing the same cropper, or give `Root` a new `key` to start a new one",
           message: "zriz: no cropper",
         },
+        {
+          fix: "pass `toSharp` the plan from `getPixelCrop()` or a `commit`, and the size of the same photo, both unchanged. a hand-made plan with a bad `forward`, a side that is not a whole number of at least 1, or a crop outside the photo throws this",
+          message: "zriz: this is not an export plan",
+        },
       ])
     ),
     section(
       "console warnings",
       p(
-        "in development, `Area`, `Dial` and `Zoom` each warn once when nothing names them, and `Dial` and `Zoom` warn once for a `locale` or `format` the browser refuses. the message has the part's name. production builds print nothing."
+        "in development, `Area`, `Dial` and `Zoom` each warn once when nothing names them, `Dial` and `Zoom` warn once for a `locale` or `format` the browser refuses, and a second visible `Viewport` on one cropper warns once. the message has the part's name. production builds print nothing."
       ),
       messages("message", [
         {
@@ -107,6 +111,11 @@ const ERRORS_PAGE = defineDoc({
           fix: "pass a locale tag like `en-US` and options `Intl.NumberFormat` accepts. until then the slider speaks its default text",
           message:
             "zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.",
+        },
+        {
+          fix: "render one `Viewport` per cropper, and draw a live preview with `useCropperFrame`, see [viewport](viewport)",
+          message:
+            "zriz: one <Cropper.Viewport> per cropper. A second one takes over the layout. Draw a live preview with useCropperFrame.",
         },
       ])
     ),

@@ -6332,7 +6332,7 @@ each part's state is in the api table on its page. \`className\` takes the same 
 
 ## stop zriz's own handler
 
-your handler runs first. call \`preventZrizHandler(event)\` in it, and zriz skips that part's own handler for that event. a press still bubbles to \`Viewport\`, so veto there to stop a pan, or call \`event.stopPropagation()\`:
+your handler runs first. call \`preventZrizHandler(event)\` in it, and zriz skips that part's own handler for that event. \`Area\`, \`Image\`, \`Mask\` and \`Grid\` have no press handler of their own, so a press on them pans through \`Viewport\`. to stop that pan, veto on \`Viewport\` or call \`event.stopPropagation()\`. a press on \`Handle\`, \`Dial\`, \`Zoom\` or a button starts no pan:
 
 \`\`\`tsx
 <Cropper.Reset
@@ -6347,6 +6347,8 @@ your handler runs first. call \`preventZrizHandler(event)\` in it, and zriz skip
 \`\`\`
 
 \`event.preventDefault()\` does not stop zriz. it only stops the browser default.
+
+the wheel and safari gestures on \`Viewport\` are native listeners. they run before your \`onWheel\`, so neither a veto nor \`event.stopPropagation()\` in it stops them. \`wheel="none"\` leaves a plain wheel to the page, and ctrl + wheel still zooms.
 
 \`preventZrizHandler\`, \`mergeProps\`, \`mergeRefs\` and \`CropperContext\` come from \`@zriz/react\`, like the hooks.
 
@@ -6960,7 +6962,7 @@ every error zriz throws or reports, when it happens and how to fix it.
 
 ## where errors arrive
 
-\`Root\` calls \`onError\` with a \`ZrizError\` when a photo cannot load. \`ZrizError\` comes from \`@zriz/core/dom\`, like \`loadImage\` and \`exportCrop\`. \`loadImage\` and \`exportCrop\` reject instead, so catch them where you call them:
+\`Root\` calls \`onError\` with a \`ZrizError\` when a photo cannot load. \`ZrizError\` comes from \`@zriz/core/dom\`, like \`loadImage\` and \`exportCrop\`. \`attachImage\` throws \`no-image\` at once when the photo was already freed. \`loadImage\` and \`exportCrop\` reject, so catch them where you call them:
 
 \`\`\`ts
 import type { Cropper } from "@zriz/core";
@@ -6994,15 +6996,15 @@ every \`ZrizError\` has a \`code\` from the table below, and its message starts 
 | \`cross-origin\` | the server sent the photo without \`Access-Control-Allow-Origin\`, the network dropped, \`connect-src\` in a content security policy blocked the url, or an \`img\`, \`video\`, \`canvas\` or \`ImageBitmap\` you pass is tainted. send the header. if the request needs cookies, pass \`crossOrigin="use-credentials"\` to \`Root\`. add the host to \`connect-src\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`unsupported-format\` | the browser could not decode a heic, jpeg xl or tiff file, because it does not support the format or the file is damaged, either on load or when an export decodes the original again. try another copy of the file. call \`loadImage\` yourself with your own \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), or convert the file to jpeg first |
 | \`decode\` | the url answered with an error status, the file cannot be read, the file is cut short, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back. if the same error comes back, reload the page, because a browser can keep a failed chunk until then. wait for \`loadeddata\` before you pass a \`video\`. [loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
-| \`too-large\` | the file's header or the decoded image has more pixels than \`maxPixels\`, 268402689 by default. this also covers a \`decode\` function. send a smaller file. to open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
+| \`too-large\` | a file's header or decoded image has more pixels than \`maxPixels\`, 268402689 by default. this also covers a \`decode\` function, but not an svg or an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source. send a smaller file. to open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`timeout\` | a url sent no bytes for 15 s, a photo took over 15 s to decode after its last byte, or an export took over 30 s. time spent waiting behind other photos or exports does not count. send a smaller file or export a smaller \`maxSize\`. for a slow network, load the photo yourself with a longer \`timeout\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
-| \`aborted\` | the \`signal\` you passed fired while the photo was still attached, or a new photo arrived after the export had started drawing. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
+| \`aborted\` | the \`signal\` you passed fired, a new photo or a detach came while the export code was still downloading, or a photo from an \`img\`, \`video\`, \`canvas\`, svg or \`decode\` function was freed while the export waited its turn. a new photo after that does not stop the export and you get the old crop, so abort with your own \`signal\` when the photo changes. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
 | \`blank\` | the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones. set \`maxSize\` to 2048 by 2048 or less |
-| \`no-image\` | an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. a detach in the same tick as the export, even with an aborted signal, gives this code. disable the export button until \`onLoad\` fires. load a freed photo again. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
+| \`no-image\` | an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. a detach before the export call, even with an aborted signal, gives this code. a detach in the same tick right after the call gives \`aborted\`. disable the export button until \`onLoad\` fires. load a freed photo again. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
 
 ## thrown errors
 
-these are plain \`Error\` objects that react shows in its error overlay. they mean a part or hook cannot find its cropper.
+these are plain \`Error\` objects that react shows in its error overlay. the first three mean a part or hook cannot find its cropper. \`toSharp\` throws the last one as a \`RangeError\`, usually on your server.
 
 - \`zriz: parts must be inside <Cropper.Root>\`
 
@@ -7013,10 +7015,13 @@ these are plain \`Error\` objects that react shows in its error overlay. they me
 - \`zriz: no cropper\`
 
   \`Root\` got \`cropper\` on its first render and none later. keep passing the same cropper, or give \`Root\` a new \`key\` to start a new one
+- \`zriz: this is not an export plan\`
+
+  pass \`toSharp\` the plan from \`getPixelCrop()\` or a \`commit\`, and the size of the same photo, both unchanged. a hand-made plan with a bad \`forward\`, a side that is not a whole number of at least 1, or a crop outside the photo throws this
 
 ## console warnings
 
-in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing names them, and \`Dial\` and \`Zoom\` warn once for a \`locale\` or \`format\` the browser refuses. the message has the part's name. production builds print nothing.
+in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing names them, \`Dial\` and \`Zoom\` warn once for a \`locale\` or \`format\` the browser refuses, and a second visible \`Viewport\` on one cropper warns once. the message has the part's name. production builds print nothing.
 
 - \`zriz: <Cropper.Area> needs aria-label or aria-labelledby. zriz ships no words, so screen readers get nothing otherwise.\`
 
@@ -7024,6 +7029,9 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing name
 - \`zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.\`
 
   pass a locale tag like \`en-US\` and options \`Intl.NumberFormat\` accepts. until then the slider speaks its default text
+- \`zriz: one <Cropper.Viewport> per cropper. A second one takes over the layout. Draw a live preview with useCropperFrame.\`
+
+  render one \`Viewport\` per cropper, and draw a live preview with \`useCropperFrame\`, see [viewport](https://zriz.dev/docs/viewport.md)
 "
 `;
 
@@ -7313,7 +7321,7 @@ the browser draws pixels onto a canvas and encodes them, so exif, gps, xmp, thum
 
 \`maxSize\` never scales up, so a crop smaller than the box comes out smaller. set \`minSize\` on \`Root\` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with \`minSize\` and \`maxSize\` both at 512 by 512 exports at 512 by 512.
 
-\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free and the crop does not grow back on its own.
+\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free unless the minimum nearly fills the photo, and then \`getRotationLimit()\` drops below 45. the crop does not grow back on its own.
 
 ## handle a failed export
 
@@ -7394,25 +7402,25 @@ to cut on a server, send the crop value from \`getValue()\` and let the server r
 - \`height\` \`number\`
 
   the output height in pixels at the same scale
-- \`pixelRect\` \`PixelRect | null\`
+- \`pixelRect\` \`{ left, top, width, height } | null\`
 
   \`{ left, top, width, height }\` in the upright original, or \`null\` with a straighten angle or perspective
 - \`rotateExpand\` \`{ flop, degrees, dx, dy }\`
 
   the mirror as \`flop\`, the quarter turns times 90 plus the straighten angle as \`degrees\`, and the crop's centre from the photo's centre after that whole turn as \`dx\` and \`dy\`, in source pixels
-- \`forward\` \`AffineMatrix\`
+- \`forward\` \`[a, b, c, d, e, f]\`
 
   the map from source pixels to output pixels, as \`[a, b, c, d, e, f]\` in canvas \`setTransform()\` order. alone it holds only when \`homography\` is \`null\`. with perspective, \`output = forward(c + H(s - c))\`, with \`c\` the centre of the image in source pixels
-- \`inverse\` \`AffineMatrix\`
+- \`inverse\` \`[a, b, c, d, e, f]\`
 
   the map from output pixels back to source pixels. alone it holds only when \`homography\` is \`null\`. with perspective, \`s = c + H⁻¹(inverse(output) - c)\`
-- \`homography\` \`Matrix3 | null\`
+- \`homography\` \`number[] | null\`
 
-  the 3 by 3 perspective matrix \`H\`, row by row, or \`null\` with no perspective. divide by the third coordinate after you apply it
+  the 3 by 3 perspective matrix \`H\`, as 9 numbers row by row, or \`null\` with no perspective. divide by the third coordinate after you apply it
 
 with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn. \`pixelRect\` is the truth for the file: its edges land on whole source pixels, so on a very small photo the frame on screen can sit up to half a source pixel from the file edge. a side never goes below 1 px, so a thin crop can come out slightly over \`maxSize\`.
 
-\`toSharp\` from \`@zriz/core\` turns the plan into sharp steps. [server crop](https://zriz.dev/docs/server-crop.md) shows the route for a level crop and a straightened one.
+\`toSharp(plan, image)\` from \`@zriz/core\` takes the plan and the upright photo's size and returns sharp steps with \`kind\` \`"extract"\` or \`"affine"\`. it ignores perspective without an error, so check \`plan.homography\` first. [server crop](https://zriz.dev/docs/server-crop.md) shows the route for a level crop and a straightened one.
 "
 `;
 
@@ -8291,8 +8299,8 @@ if that server wants a token in a header, fetch the photo yourself with that hea
 | jpeg, png, webp, avif, gif | open in every current browser |
 | bmp | opens in every current browser, but safari cannot open some bmp files with a v4 or v5 header. those fail with \`decode\`. pass a \`decode\` function to open them, or convert the file to jpeg first |
 | heic, jpeg xl, tiff | open where the browser decodes them. they fail with \`unsupported-format\` elsewhere, and when the file is damaged |
-| svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. a missing width opens at 300 and a missing height at 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
-| animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif. an \`img\` already playing opens on the frame it shows in safari, so pass a \`Blob\` for the first frame |
+| svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. with one side and a \`viewBox\`, the other follows the ratio. with no \`viewBox\`, a missing width opens at 300 and a missing height at 150. a side in \`%\` or \`em\` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing |
+| animated gif, png, webp, avif | open on their first frame. from a file or url, \`animated\` on the loaded image is \`true\`, and always for a gif. a heic sequence also reports \`true\`. an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source always reports \`false\`, even an \`img\` showing a gif. an \`img\` already playing opens on the frame it shows in safari, so pass a \`Blob\` for the first frame |
 
 zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with \`decode\` in every browser. data after the end of the file still opens. firefox opens a cut gif, and firefox and safari open a cut bmp, with the missing part painted in.
 
@@ -8307,7 +8315,7 @@ a worker decodes a preview sized for the screen. the original stays a blob until
 | preview size | twice the screen's long edge in device pixels, at most 4096 px on a touch screen and 8192 px elsewhere. \`previewEdge\` on \`Root\` sets it |
 | export size | 16.8 megapixels on a touch screen and 268 megapixels elsewhere, with a long edge of at most 16383 px for webp and 65500 px for other types. a bigger crop comes out scaled down |
 
-before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif, bmp or tiff over \`maxPixels\` fails with \`too-large\`. a gif counts its largest frame. a jpeg xl has no count zriz can read, so it fails after the decode, and so does what a \`decode\` function returns. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass \`maxPixels\` to \`loadImage\` to change it.
+before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif, bmp or tiff over \`maxPixels\` fails with \`too-large\`. a gif counts its largest frame. a jpeg xl has no count zriz can read, so it fails after the decode, and so does what a \`decode\` function returns. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass \`maxPixels\` to \`loadImage\` to change it. \`maxPixels\` does not apply to an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source, or to an svg, which zriz draws at most at the preview size.
 
 a load has one time limit. a download stays inside it while bytes keep arriving, and the decode gets what is left after the last byte. past it the load fails with \`timeout\`, and [errors](https://zriz.dev/docs/errors.md) gives the number. zriz runs six downloads and three decodes at a time, and a photo waiting for its turn is not on the clock. a url that hangs holds one of the six until the limit. to allow more time, load the photo yourself and pass \`timeout\`, as in the heic section below.
 
@@ -9106,7 +9114,7 @@ pass \`crossOrigin="use-credentials"\` only for hosts you trust. to hide your pa
 
 don't add a url field to a server route. fetching a url from a client lets them reach your internal network. the [server crop](https://zriz.dev/docs/server-crop.md) route takes a file for that reason.
 
-a \`ZrizError\` message for a failed url holds its host and path, without the query. if a secret sits in your path, don't log the message.
+a \`ZrizError\` message for an error status holds the url as you passed it, cut at 80 characters, without the query or fragment. a cors or network failure holds no url. if a secret sits in your path, don't log the message.
 
 ## protect the server route
 

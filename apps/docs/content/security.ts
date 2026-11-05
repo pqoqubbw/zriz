@@ -198,7 +198,7 @@ const SECURITY_PAGE = defineDoc({
         "don't add a url field to a server route. fetching a url from a client lets them reach your internal network. the [server crop](server-crop) route takes a file for that reason."
       ),
       p(
-        "a `ZrizError` message for a failed url holds its host and path, without the query. if a secret sits in your path, don't log the message."
+        "a `ZrizError` message for an error status holds the url as you passed it, cut at 80 characters, without the query or fragment. a cors or network failure holds no url. if a secret sits in your path, don't log the message."
       )
     ),
     section(
