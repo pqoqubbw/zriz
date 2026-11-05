@@ -145,10 +145,10 @@ const DemoShell = ({
   return (
     <DemoContext.Provider value={state}>
       <Cropper.Root
+        key={photoProps ? state.photo.key : undefined}
         {...root}
         {...photoProps?.(state.photo)}
         {...(lock ? { disabled: locked } : null)}
-        key={photoProps ? state.photo.key : undefined}
         actionsRef={actions}
         className={cn("flex w-full flex-col items-center", className)}
         onError={photo.handleError}
@@ -162,47 +162,43 @@ const DemoShell = ({
         shape={shape ?? spec.shape}
         src={photo.src}
       >
-        <>
-          <Stage {...photo.drop}>
-            {photo.dropping ? null : (
-              <FileChips
-                action={spec.action}
-                dim={busy || locked}
-                download={download}
-                photo={photo}
-              />
-            )}
-            <StageContent data-loading={photo.loading ? "" : undefined}>
-              <Cropper.Viewport
-                {...viewport}
-                className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
+        <Stage {...photo.drop}>
+          {photo.dropping ? null : (
+            <FileChips
+              action={spec.action}
+              dim={busy || locked}
+              download={download}
+              photo={photo}
+            />
+          )}
+          <StageContent data-loading={photo.loading ? "" : undefined}>
+            <Cropper.Viewport
+              {...viewport}
+              className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
+            >
+              <Cropper.Image />
+              <Cropper.Mask className={coverVariants({ dropping })} />
+              <Cropper.Area
+                aria-label="Crop area"
+                className={coverVariants({
+                  className: "focus-visible:corners-none",
+                  dropping,
+                })}
               >
-                <Cropper.Image />
-                <Cropper.Mask className={coverVariants({ dropping })} />
-                <Cropper.Area
-                  aria-label="Crop area"
-                  className={coverVariants({
-                    className: "focus-visible:corners-none",
-                    dropping,
-                  })}
-                >
-                  <>
-                    {grid ? <Cropper.Grid className="grid-hold" /> : null}
-                    {handles.map((position) => (
-                      <Cropper.Handle key={position} position={position} />
-                    ))}
-                  </>
-                </Cropper.Area>
-              </Cropper.Viewport>
-            </StageContent>
-            {photo.loading ? <Spinner /> : null}
-            {photo.dropping ? <DropVeil /> : null}
-            <StageEdge />
-          </Stage>
-          {children}
-          <Cropper.Instructions>{INSTRUCTIONS}</Cropper.Instructions>
-          <Cropper.Announcer announce={announce} />
-        </>
+                {grid ? <Cropper.Grid className="grid-hold" /> : null}
+                {handles.map((position) => (
+                  <Cropper.Handle key={position} position={position} />
+                ))}
+              </Cropper.Area>
+            </Cropper.Viewport>
+          </StageContent>
+          {photo.loading ? <Spinner /> : null}
+          {photo.dropping ? <DropVeil /> : null}
+          <StageEdge />
+        </Stage>
+        {children}
+        <Cropper.Instructions>{INSTRUCTIONS}</Cropper.Instructions>
+        <Cropper.Announcer announce={announce} />
       </Cropper.Root>
     </DemoContext.Provider>
   );
