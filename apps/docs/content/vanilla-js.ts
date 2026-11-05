@@ -18,7 +18,7 @@ const VANILLA_JS_PAGE = defineDoc({
     section(
       "bind the parts",
       p(
-        "create a cropper, bind each element, add the four corner handles, and attach the photo when the user picks a file:"
+        "create a cropper, bind each element, add the four corner handles, and attach the photo when the user picks a file. save this as `cropper.ts`. the snippets below import `cropper` and `cleanups` from it:"
       ),
       code("vanilla-js/cropper.ts"),
       p(

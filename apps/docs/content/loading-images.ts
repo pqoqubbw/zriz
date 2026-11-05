@@ -115,7 +115,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "with `require-trusted-types-for 'script'`, add `zriz` to `trusted-types`. zriz starts its workers through a policy of that name, and the policy only takes `blob:` urls. without it the page works, but decodes and exports on the main thread."
       ),
       p(
-        "a strict `style-src` also refuses `style` attributes in server html. the parts write their own styles again during hydration, so they work after it. a `style` prop of yours on a server rendered part stays refused. add `style-src-attr 'unsafe-inline'` to allow it."
+        "a strict `style-src` also refuses `style` attributes in server html. the parts write their own styles again during hydration, so they work after it. a `style` prop of yours on a server rendered part stays refused. add `style-src-attr 'unsafe-inline'` to allow it, or give the part a class from your stylesheet instead."
       )
     ),
     section(

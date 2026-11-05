@@ -179,7 +179,10 @@ const CROP_AREA_PAGE = defineDoc({
           ],
           rows: [
             ["data-edge", "always, set to its position"],
-            ["data-active", "while this handle is dragged"],
+            [
+              "data-active",
+              "from a press on this handle until the pointer lets go, even if it never moves",
+            ],
           ],
         }),
         table({

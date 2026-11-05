@@ -183,7 +183,7 @@ const SECURITY_PAGE = defineDoc({
       ),
       code("security/cropper-policy.ts"),
       p(
-        "zriz injects no `style` tag and calls no `innerHTML` or `eval`, so `script-src` needs nothing for it, and `style-src` needs nothing for the parts' own styles. a `style` prop of yours on a server rendered part stays refused, and the recipes size `Viewport` and `Dial` that way. add `style-src-attr 'unsafe-inline'`, or size them with a class from your stylesheet, see [loading images](loading-images). with trusted types, add `zriz` to `trusted-types`."
+        "zriz injects no `style` tag and calls no `innerHTML` or `eval`, so `script-src` needs nothing for it, and `style-src` needs nothing for the parts' own styles. a `style` prop of yours on a server rendered part stays refused, and the recipes size `Viewport`, `Dial` and `Zoom` and paint `ZoomThumb` that way. add `style-src-attr 'unsafe-inline'` to allow it, or drop the `style` prop and give those parts a class from your stylesheet. the same goes for a `style` attribute in your own html, as in the [vanilla js](vanilla-js) markup. with trusted types, add `zriz` to `trusted-types`."
       )
     ),
     section(

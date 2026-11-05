@@ -6505,7 +6505,7 @@ renders an \`aria-hidden\` \`<div>\` inside \`Area\`, so a \`render\` element mu
 | attribute | when |
 | - | - |
 | \`data-edge\` | always, set to its position |
-| \`data-active\` | while this handle is dragged |
+| \`data-active\` | from a press on this handle until the pointer lets go, even if it never moves |
 
 | variable | what it sets |
 | - | - |
@@ -7335,7 +7335,7 @@ the browser draws pixels onto a canvas and encodes them, so exif, gps, xmp, thum
 
 \`maxSize\` never scales up, so a crop smaller than the box comes out smaller. set \`minSize\` on \`Root\` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with \`minSize\` and \`maxSize\` both at 512 by 512 exports at 512 by 512.
 
-\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free unless the minimum nearly fills the photo, and then \`getRotationLimit()\` drops below 45. the crop does not grow back on its own.
+\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free while the minimum can still turn 45 degrees inside the photo. a bigger minimum lowers \`getRotationLimit()\` below 45, and on a square photo that starts at a square minimum of about 71% of its side. the crop does not grow back on its own.
 
 ## handle a failed export
 
@@ -7345,7 +7345,7 @@ after the first photo appears, zriz loads the export code in the background, so 
 
 ## show a small preview of the crop
 
-call \`exportCrop\` with a small \`maxSize\` in \`onLoad\` and in \`onValueCommit\`, and show the blob with \`URL.createObjectURL()\`. a photo nobody touches sends no commit, so \`onLoad\` draws the first preview. pass an \`AbortController\` \`signal\` and abort the last export on each commit, so a slow one never overwrites a newer one. revoke the old object url when a new preview replaces it:
+call \`exportCrop\` with a small \`maxSize\` in \`onLoad\` and in \`onValueCommit\`, and show the blob with \`URL.createObjectURL()\`. the first photo sends no commit until someone touches it, so \`onLoad\` draws the first preview. a later photo commits only when it has to refit the crop. pass an \`AbortController\` \`signal\` and abort the last export on each commit, so a slow one never overwrites a newer one. revoke the old object url when a new preview replaces it:
 
 \`\`\`tsx
 "use client";
@@ -8127,7 +8127,7 @@ export const LiveAngle = () => {
   is the \`max\` option, or the cropper's \`maxZoom\`, 15 by default. \`max\` sets the slider's range only. the cropper still stops at \`maxZoom\`
 - \`dragging\` \`boolean\`
 
-  is \`true\` while a drag runs
+  is \`true\` from a press on any \`Zoom\` of this cropper until release, and while this slider changes the zoom, until release or 150 ms after its last change
 - \`onValueChange\` \`(zoom) => void\`
 
   starts the gesture on the first call and sets the zoom. with no pointer or key held, the gesture ends 150 ms after the last call
@@ -8344,7 +8344,7 @@ a content security policy needs these sources:
 
 with \`require-trusted-types-for 'script'\`, add \`zriz\` to \`trusted-types\`. zriz starts its workers through a policy of that name, and the policy only takes \`blob:\` urls. without it the page works, but decodes and exports on the main thread.
 
-a strict \`style-src\` also refuses \`style\` attributes in server html. the parts write their own styles again during hydration, so they work after it. a \`style\` prop of yours on a server rendered part stays refused. add \`style-src-attr 'unsafe-inline'\` to allow it.
+a strict \`style-src\` also refuses \`style\` attributes in server html. the parts write their own styles again during hydration, so they work after it. a \`style\` prop of yours on a server rendered part stays refused. add \`style-src-attr 'unsafe-inline'\` to allow it, or give the part a class from your stylesheet instead.
 
 ## open heic on every browser
 
@@ -9119,7 +9119,7 @@ export const cropperPolicy = [
 ].join("; ");
 \`\`\`
 
-zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`script-src\` needs nothing for it, and \`style-src\` needs nothing for the parts' own styles. a \`style\` prop of yours on a server rendered part stays refused, and the recipes size \`Viewport\` and \`Dial\` that way. add \`style-src-attr 'unsafe-inline'\`, or size them with a class from your stylesheet, see [loading images](https://zriz.dev/docs/loading-images.md). with trusted types, add \`zriz\` to \`trusted-types\`.
+zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`script-src\` needs nothing for it, and \`style-src\` needs nothing for the parts' own styles. a \`style\` prop of yours on a server rendered part stays refused, and the recipes size \`Viewport\`, \`Dial\` and \`Zoom\` and paint \`ZoomThumb\` that way. add \`style-src-attr 'unsafe-inline'\` to allow it, or drop the \`style\` prop and give those parts a class from your stylesheet. the same goes for a \`style\` attribute in your own html, as in the [vanilla js](https://zriz.dev/docs/vanilla-js.md) markup. with trusted types, add \`zriz\` to \`trusted-types\`.
 
 ## urls you pass as src
 
@@ -10240,7 +10240,7 @@ give each element its \`data-zriz-item\`, so the stylesheet finds it, and give t
 
 ## bind the parts
 
-create a cropper, bind each element, add the four corner handles, and attach the photo when the user picks a file:
+create a cropper, bind each element, add the four corner handles, and attach the photo when the user picks a file. save this as \`cropper.ts\`. the snippets below import \`cropper\` and \`cleanups\` from it:
 
 \`\`\`ts
 import { createCropper } from "@zriz/core";

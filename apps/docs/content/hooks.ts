@@ -137,7 +137,7 @@ const HOOKS_PAGE = defineDoc({
             },
             {
               name: "dragging",
-              text: "is `true` while a drag runs",
+              text: "is `true` from a press on any `Zoom` of this cropper until release, and while this slider changes the zoom, until release or 150 ms after its last change",
               type: "boolean",
             },
             {
