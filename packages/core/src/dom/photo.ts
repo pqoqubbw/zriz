@@ -100,7 +100,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   motion.decoding = "async";
   const layer = { ...LAYER_BOX, transition: "none", visibility: "hidden" };
 
-  Object.assign(rest.style, layer);
+  Object.assign(rest.style, layer, { transform: "matrix(1,0,0,1,0,0)" });
   Object.assign(motion.style, layer, { transformOrigin: "0 0" });
   let image: LoadedImage | null = null;
   let motionReady = false;

@@ -170,6 +170,7 @@ describe("the documented crop route", () => {
       "status",
       422
     );
+
     await expect(post(input, "[1]")).resolves.toHaveProperty("status", 422);
   });
 

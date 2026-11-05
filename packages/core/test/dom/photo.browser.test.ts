@@ -545,6 +545,17 @@ describe("photo layer", () => {
     ]);
   });
 
+  it("places the rest canvas through a transform like the moving image", async () => {
+    const { photo } = await mount(1024);
+    const canvas = photo.querySelector("canvas");
+
+    if (!canvas) {
+      throw new Error("no canvas");
+    }
+
+    expect(getComputedStyle(canvas).transform).toBe("matrix(1, 0, 0, 1, 0, 0)");
+  });
+
   it("turns sharp after the first settle when the image arrives with the binder", async () => {
     const image = await loadImage(await stripes(), { previewEdge: 1024 });
     const viewport = document.createElement("div");
