@@ -102,6 +102,8 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
 
   Object.assign(rest.style, layer, { transform: "matrix(1,0,0,1,0,0)" });
   Object.assign(motion.style, layer, { transformOrigin: "0 0" });
+  motion.style.setProperty("max-width", "none", "important");
+  motion.style.setProperty("max-height", "none", "important");
   let image: LoadedImage | null = null;
   let motionReady = false;
   let drawn: Drawn | null = null;

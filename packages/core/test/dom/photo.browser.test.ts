@@ -1326,6 +1326,8 @@ describe("photo layer", () => {
   it.each([
     ["img{max-height:100%}"],
     ["*{max-height:100%}"],
+    ["img{max-height:100%!important}"],
+    ["img{max-width:100%!important}"],
     ["img{border:4px solid red;padding:4px}"],
     ["img{min-width:3000px;min-height:3000px}"],
     ["img{margin:10px}"],
