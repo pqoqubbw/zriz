@@ -4,9 +4,9 @@ import type { ZrizError } from "@zriz/core/dom";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 
-import { ERROR_MS } from "@/demos/shell/sizes";
+import { ERROR_MS, SPINNER_DELAY_MS } from "@/demos/shell/sizes";
 
-type PhotoStatus = "first" | "ready" | "replacing";
+type PhotoStatus = "empty" | "first" | "ready" | "replacing";
 
 type PhotoDrop = {
   onDragEnter: (event: DragEvent) => void;
@@ -24,6 +24,7 @@ type Photo = {
   handlePick: (event: ChangeEvent<HTMLInputElement>) => void;
   loading: boolean;
   pick: number;
+  replacing: boolean;
   ready: boolean;
   src: Blob | string;
 };
@@ -49,7 +50,21 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
   const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState(0);
   const [pick, setPick] = useState(0);
+  const [slow, setSlow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    const wait =
+      status === "first"
+        ? setTimeout(() => {
+            setSlow(true);
+          }, SPINNER_DELAY_MS)
+        : undefined;
+
+    return () => {
+      clearTimeout(wait);
+    };
+  }, [status]);
 
   useEffect(
     () => () => {
@@ -117,7 +132,7 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
     dropping: depth > 0,
     error,
     handleError: (failure) => {
-      setStatus(loaded ? "ready" : "first");
+      setStatus(loaded ? "ready" : "empty");
 
       const text = ERROR_TEXT[failure.code];
 
@@ -133,9 +148,10 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
       open(event.currentTarget.files?.[0]);
       event.currentTarget.value = "";
     },
-    loading: status === "replacing",
+    loading: status === "replacing" || (status === "first" && slow),
     pick,
     ready: loaded && status === "ready",
+    replacing: status === "replacing",
     src,
   };
 };

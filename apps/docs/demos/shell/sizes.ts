@@ -31,6 +31,7 @@ const ICON_COLUMNS_BELOW = 400;
 const MIN_HIT = 44;
 const ERROR_MS = 4000;
 const SAVED_MS = 2000;
+const SPINNER_DELAY_MS = 200;
 
 const ZONE_PADDING = {
   aspect: { bottom: 8, top: 12 },
@@ -64,6 +65,7 @@ export {
   SAFE_BOTTOM,
   SAFE_TOP,
   SAVED_MS,
+  SPINNER_DELAY_MS,
   TRACK_ITEM_HEIGHT,
   VALUE_GAP,
   VALUE_HEIGHT,
