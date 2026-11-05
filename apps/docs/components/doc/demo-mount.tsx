@@ -9,11 +9,12 @@ import type { DemoName } from "@/demos/registry";
 type DemoMountProps = {
   children: ReactNode;
   name: DemoName;
+  preload: string | null;
 };
 
 const ROOT_MARGIN = "600px";
 
-const DemoMount = ({ children, name }: DemoMountProps) => {
+const DemoMount = ({ children, name, preload }: DemoMountProps) => {
   const box = useRef<HTMLDivElement>(null);
   const [demo, setDemo] = useState<ComponentType | null>(null);
 
@@ -60,6 +61,9 @@ const DemoMount = ({ children, name }: DemoMountProps) => {
       data-slot="demo-mount"
       ref={box}
     >
+      {preload === null ? null : (
+        <link as="fetch" crossOrigin="anonymous" href={preload} rel="preload" />
+      )}
       {Live ? <Live /> : children}
     </div>
   );

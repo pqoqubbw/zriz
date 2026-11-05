@@ -1,5 +1,4 @@
 import { cva } from "class-variance-authority";
-import { preload } from "react-dom";
 
 import { DemoMount } from "@/components/doc/demo-mount";
 import { Panel } from "@/components/ui/panel";
@@ -28,10 +27,6 @@ const demoVariants = cva("@container flex flex-col items-center p-1", {
 const Demo = ({ className, name, space }: DemoProps) => {
   const spec = DEMO_SPECS[name];
 
-  if (!spec.below) {
-    preload(photoUrl(spec.photo), { as: "fetch", crossOrigin: "anonymous" });
-  }
-
   return (
     <Panel
       className={demoVariants({ className, space })}
@@ -39,7 +34,7 @@ const Demo = ({ className, name, space }: DemoProps) => {
       data-markdown-ignore=""
       radius="demo"
     >
-      <DemoMount name={name}>
+      <DemoMount name={name} preload={spec.below ? null : photoUrl(spec.photo)}>
         <Frame name={name} />
       </DemoMount>
     </Panel>
