@@ -20,6 +20,9 @@ const EXPORTING_PAGE = defineDoc({
         "an export can fail on a very large photo, so the snippet catches it. [errors](errors) lists the codes. `running` holds the export in flight. a second click does nothing, and a new file aborts it, so an old crop never downloads after the photo changed."
       ),
       p(
+        "the demo above runs this export with the same `maxSize`, in the format you pick in its track, and uses the styles from the zriz site."
+      ),
+      p(
         "the export draws from the original, not the preview on screen. without `maxSize`, the file has the crop's size in source pixels."
       )
     ),

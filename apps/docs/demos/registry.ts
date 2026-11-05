@@ -217,7 +217,19 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+      ],
+      export: "SaveCrop",
+      file: "exporting/save-crop.tsx",
+      inputs: { file: "photo" },
+      kind: "component",
+    },
     summary:
       "a 3:2 photo, a track of jpeg, png and webp, and open, reset and download in the corners",
     zones: [
