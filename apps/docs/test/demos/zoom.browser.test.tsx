@@ -116,20 +116,27 @@ describe("zoom demo", () => {
     await mountDemo("zoom");
     await ready();
 
-    const track = find(item("zoom")).getBoundingClientRect();
+    const ruler = find('[data-slot="ruler"]').getBoundingClientRect();
 
     const centre = (): number => {
       const thumb = find(item("zoom-thumb")).getBoundingClientRect();
 
-      return (thumb.left + thumb.width / 2 - track.left) / track.width;
+      return thumb.left + thumb.width / 2 - ruler.left;
     };
 
-    expect(centre()).toBeCloseTo(0, 2);
+    const at = (zoom: number): number =>
+      16 + ((ruler.width - 32) * Math.log(zoom)) / Math.log(3);
+
+    expect(centre()).toBeCloseTo(at(1), 1);
 
     button("Zoom in").click();
     await settle();
 
-    expect(centre()).toBeCloseTo(Math.log(1.25) / Math.log(3), 2);
+    expect(centre()).toBeCloseTo(at(1.25), 1);
+
+    await press("{End}");
+
+    expect(centre()).toBeCloseTo(at(3), 1);
   });
 
   it("shows reset after a zoom and resets", async () => {

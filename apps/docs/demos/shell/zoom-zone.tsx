@@ -75,7 +75,7 @@ const ZoomZone = () => {
             <span className="absolute inset-x-2 top-3.5 h-1 rounded-full bg-rail" />
             <Cropper.Zoom
               aria-label="Zoom"
-              className="absolute inset-x-4 inset-y-0 focus-visible:corners-none"
+              className="mx-4 h-8 focus-visible:corners-none"
             >
               <Cropper.ZoomThumb className="top-2 size-4 -translate-x-1/2 rounded-full bg-white shadow-raised" />
             </Cropper.Zoom>
