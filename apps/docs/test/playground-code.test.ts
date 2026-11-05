@@ -167,5 +167,9 @@ describe("playground code", () => {
     expect(markdown).toContain(textOf({ file: SNIPPET, kind: "code" }));
 
     expect(markdown).toContain(jsonText(DEFAULT_VALUE));
+
+    expect(markdown).toContain(
+      "/docs/playground runs this cropper: a 3:2 photo"
+    );
   });
 });

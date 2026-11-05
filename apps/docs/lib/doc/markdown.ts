@@ -1,5 +1,6 @@
 import type { Paragraph, PhrasingContent, RootContent } from "mdast";
 
+import { DEMO_SPECS } from "@/demos/registry";
 import { piecesOf } from "@/lib/doc/inline";
 import {
   blockquote,
@@ -118,7 +119,9 @@ const converters: { [K in Kind]: Converter<K> } = {
     ),
   ],
   demo: (block) => [
-    prose(`the demo runs on the page at ${pageUrl(block.name)}.`),
+    prose(
+      `the page at ${pageUrl(block.name)} runs this cropper: ${DEMO_SPECS[block.name].summary}.`
+    ),
   ],
   excerpt: fenceOf,
   intro: (block, depth, nested) => nested(block.blocks, depth),
