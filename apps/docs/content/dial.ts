@@ -22,6 +22,9 @@ const DIAL_PAGE = defineDoc({
       code("dial/anatomy.jsx.tsx"),
       p(
         "the stylesheet makes `Dial` 40 px tall and clips its ticks at the sides only, so the zero dot above them stays in view. it draws the ticks and the centre line. `DialValue` ships bare."
+      ),
+      p(
+        "the demo above shows the angle to one decimal with a degree sign and uses the styles from the zriz site."
       )
     ),
     section(

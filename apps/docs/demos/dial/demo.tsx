@@ -1,5 +1,12 @@
-import { Frame } from "@/demos/shell/frame";
+"use client";
 
-const DialDemo = () => <Frame name="dial" />;
+import { DemoShell } from "@/demos/shell/demo-shell";
+import { DialZone } from "@/demos/shell/dial-zone";
+
+const DialDemo = () => (
+  <DemoShell name="dial">
+    <DialZone />
+  </DemoShell>
+);
 
 export default DialDemo;
