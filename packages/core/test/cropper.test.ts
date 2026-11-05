@@ -2802,7 +2802,6 @@ describe("frame timing", () => {
     const cropper = createCropper({
       clock: {
         cancel: () => {},
-        now: () => 0,
         request: (step) => steps.push(step),
       },
       image: PHOTO,

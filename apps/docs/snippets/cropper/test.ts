@@ -6,7 +6,6 @@ let id = 0;
 let now = 0;
 
 const clock: Clock = {
-  now: () => now,
   request: (step) => {
     id += 1;
     queue.set(id, step);

@@ -4,6 +4,7 @@ type FakeClock = {
   clock: Clock;
   frame: (ms?: number) => void;
   frames: (count: number, ms?: number) => void;
+  now: () => number;
   pending: () => number;
 };
 
@@ -28,7 +29,6 @@ const fakeClock = (): FakeClock => {
       cancel: (handle) => {
         queue.delete(handle);
       },
-      now: () => time,
       request: (step) => {
         id += 1;
         queue.set(id, step);
@@ -42,6 +42,7 @@ const fakeClock = (): FakeClock => {
         frame(ms);
       }
     },
+    now: () => time,
     pending: () => queue.size,
   };
 };

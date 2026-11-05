@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
   aspectRatio,
   changedFields,
   createCropper,
   defaultValue,
+  frameClock,
   parse,
 } from "../src";
-import type { Cropper, CropperEvents, CropperOptions } from "../src";
+import type { Clock, Cropper, CropperEvents, CropperOptions } from "../src";
 import { areaKeyHandlers } from "../src/dom/controls";
 import { fitPlacement, viewOf } from "../src/dom/view";
 import * as geometry from "../src/geometry";
@@ -1219,5 +1220,16 @@ describe("Area zoom and reset keys", () => {
     lockedKeys.onKeyUp(event);
     expect(stateOf(locked).crop.width).toBeCloseTo(square.width * 1.01, 6);
     expect(stateOf(locked).crop.height).toBeCloseTo(square.height * 1.01, 6);
+  });
+});
+
+describe("the public entries", () => {
+  it("gives a clock only request and cancel", () => {
+    expectTypeOf<keyof Clock>().toEqualTypeOf<"cancel" | "request">();
+
+    expect(Object.keys(frameClock()).toSorted()).toStrictEqual([
+      "cancel",
+      "request",
+    ]);
   });
 });

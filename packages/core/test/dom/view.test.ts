@@ -293,11 +293,11 @@ describe("view", () => {
     const widths = new Map<number, number>();
 
     view.onFrame((frame) => {
-      widths.set(Math.round(time.clock.now()), frame.matrix[0] / rest);
+      widths.set(Math.round(time.now()), frame.matrix[0] / rest);
     });
 
     cropper.flip();
-    const start = time.clock.now();
+    const start = time.now();
 
     time.frames(60, 1000 / 240);
 

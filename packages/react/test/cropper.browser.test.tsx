@@ -668,7 +668,6 @@ describe(useCropperValue, () => {
         cancel: (handle) => {
           queue.delete(handle);
         },
-        now: () => time,
         request: (step) => {
           id += 1;
           queue.set(id, step);

@@ -1,5 +1,4 @@
 type Clock = {
-  now: () => number;
   request: (step: (time: number) => void) => number;
   cancel: (handle: number) => void;
 };
@@ -28,7 +27,6 @@ const frameClock = (): Clock => {
     cancel: (handle) => {
       pending.get(handle)?.();
     },
-    now: () => performance.now(),
     request: (step) => {
       id += 1;
       const key = id;

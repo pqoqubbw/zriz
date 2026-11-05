@@ -1513,7 +1513,6 @@ let id = 0;
 let now = 0;
 
 const clock: Clock = {
-  now: () => now,
   request: (step) => {
     id += 1;
     queue.set(id, step);
@@ -1549,7 +1548,6 @@ console.log(commits);",
 <span class=k>let</span> now <span class=p>= </span><span class=n>0</span><span class=p>;</span>
 
 <span class=k>const</span> clock<span class=p>:</span> Clock <span class=p>= {</span>
-  now<span class=p>: () =&gt;</span> now<span class=p>,</span>
   request<span class=p>: (</span>step<span class=p>) =&gt; {</span>
     id <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
     queue<span class=p>.</span><span class=t>set</span><span class=p>(</span>id<span class=p>,</span> step<span class=p>);</span>
@@ -6383,7 +6381,6 @@ let id = 0;
 let now = 0;
 
 const clock: Clock = {
-  now: () => now,
   request: (step) => {
     id += 1;
     queue.set(id, step);
