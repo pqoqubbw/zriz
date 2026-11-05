@@ -10,10 +10,6 @@ import { useDemoDim } from "@/demos/shell/context";
 import { ghostVariants } from "@/demos/shell/ghost";
 import { Ruler, Scale, Value, Zone, ZoneRow } from "@/demos/shell/layout";
 
-type ZoomZoneProps = {
-  max?: number;
-};
-
 const STEP = 1.25;
 
 const EDGE = 0.0005;
@@ -21,18 +17,15 @@ const EDGE = 0.0005;
 const formatZoom = (zoom: number): string =>
   (Math.round(zoom * 10) / 10).toFixed(1);
 
-const useZoomEdge = (
-  cropper: CropperApi,
-  edge: "max" | "min",
-  max: number | undefined
-): boolean =>
+const useZoomEdge = (cropper: CropperApi, edge: "max" | "min"): boolean =>
   useSyncExternalStore(
     (listener) => cropper.on("frame", listener),
     () => {
       const zoom = cropper.getZoom();
-      const top = max ?? cropper.getMaxZoom();
 
-      return edge === "min" ? zoom <= 1 + EDGE : zoom >= top - EDGE;
+      return edge === "min"
+        ? zoom <= 1 + EDGE
+        : zoom >= cropper.getMaxZoom() - EDGE;
     },
     () => edge === "min"
   );
@@ -47,12 +40,12 @@ const useCropperApi = (): CropperApi => {
   return cropper;
 };
 
-const ZoomZone = ({ max }: ZoomZoneProps) => {
+const ZoomZone = () => {
   const dim = useDemoDim();
   const text = useRef<HTMLSpanElement>(null);
   const cropper = useCropperApi();
-  const atMin = useZoomEdge(cropper, "min", max);
-  const atMax = useZoomEdge(cropper, "max", max);
+  const atMin = useZoomEdge(cropper, "min");
+  const atMax = useZoomEdge(cropper, "max");
 
   useCropperFrame(() => {
     if (text.current) {
@@ -83,12 +76,8 @@ const ZoomZone = ({ max }: ZoomZoneProps) => {
             <Cropper.Zoom
               aria-label="Zoom"
               className="absolute inset-x-4 inset-y-0 focus-visible:corners-none"
-              max={max}
             >
-              <Cropper.ZoomThumb
-                className="top-2 size-4 -translate-x-1/2 rounded-full bg-white shadow-raised"
-                max={max}
-              />
+              <Cropper.ZoomThumb className="top-2 size-4 -translate-x-1/2 rounded-full bg-white shadow-raised" />
             </Cropper.Zoom>
           </Ruler>
         </Scale>
