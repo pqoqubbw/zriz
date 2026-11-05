@@ -60,7 +60,7 @@ const GridTable = ({
             as="th"
             className={cn(i > 0 && "max-sm:sr-only")}
             end={cell.end}
-            key={cell.label}
+            key={`${i}-${cell.label}`}
             kind="head"
             scope="col"
           >
@@ -162,7 +162,7 @@ const TableBlock = ({ block, className }: TableBlockProps) => {
             <DataCell
               column={column}
               first={i === 0}
-              key={column.label}
+              key={`${i}-${column.label}`}
               labelled={columns.length > 2}
               muted={fix !== undefined}
               value={row[i] ?? ""}

@@ -49,10 +49,10 @@ const Choice = ({
 }: ControlProps<"choice", string>) => (
   <fieldset className="flex gap-0.5 rounded-group bg-fill p-0.5">
     <legend className="sr-only">{control.name}</legend>
-    {control.options.map((option) => (
+    {control.options.map((option, i) => (
       <label
         className="flex h-7 cursor-pointer items-center rounded-item px-2.5 text-control text-faint has-checked:bg-white has-checked:font-medium has-checked:text-ink has-checked:shadow-raised has-focus-visible:corners"
-        key={option}
+        key={`${i}-${option}`}
       >
         <input
           checked={value === option}
@@ -174,9 +174,17 @@ const Controls = ({ bind, className, controls }: ControlsProps) => (
   <Panel className={className} data-markdown-ignore="" layout="list">
     {controls.map((control, i) =>
       bind === "playground" ? (
-        <PlaygroundRow control={control} key={control.name} ruled={i > 0} />
+        <PlaygroundRow
+          control={control}
+          key={`${i}-${control.name}`}
+          ruled={i > 0}
+        />
       ) : (
-        <LocalRow control={control} key={control.name} ruled={i > 0} />
+        <LocalRow
+          control={control}
+          key={`${i}-${control.name}`}
+          ruled={i > 0}
+        />
       )
     )}
   </Panel>

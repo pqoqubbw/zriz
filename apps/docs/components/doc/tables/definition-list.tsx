@@ -42,8 +42,8 @@ const NameGap = () => <span className="inline-block w-3"> </span>;
 
 const PropList = ({ className, label, rows }: PropListProps) => (
   <DefinitionList className={className} label={label}>
-    {rows.map((row) => (
-      <TableRow as="div" key={row.name}>
+    {rows.map((row, i) => (
+      <TableRow as="div" key={`${i}-${row.name}`}>
         <TableCell as="dt" kind="mono">
           <span className="font-semibold">{row.name}</span>
           {row.type !== undefined && (
@@ -77,8 +77,8 @@ const PropList = ({ className, label, rows }: PropListProps) => (
 
 const MessageList = ({ className, label, rows }: MessageListProps) => (
   <DefinitionList className={className} label={label}>
-    {rows.map((row) => (
-      <TableRow as="div" key={row.message}>
+    {rows.map((row, i) => (
+      <TableRow as="div" key={`${i}-${row.message}`}>
         <TableCell as="dt" kind="mono" tone="ink">
           <Tokens items={row.message.split(/(?<=[.,]) /u)} />
         </TableCell>

@@ -264,11 +264,11 @@ const Flow = ({ anchors, blocks, first, level }: FlowProps): ReactNode =>
   });
 
 const DocBody = ({ anchors, blocks }: DocBodyProps) =>
-  blocks.map((block) =>
+  blocks.map((block, i) =>
     block.kind === "demo" ? (
       <Demo
         className=""
-        key={block.name}
+        key={`${i}-${block.name}`}
         name={block.name}
         space={block.space ?? 40}
       />
@@ -277,7 +277,7 @@ const DocBody = ({ anchors, blocks }: DocBodyProps) =>
         anchors={anchors}
         blocks={[block]}
         first={null}
-        key={block.kind === "section" ? block.title : block.kind}
+        key={`${i}-${block.kind === "section" ? block.title : block.kind}`}
         level={3}
       />
     )

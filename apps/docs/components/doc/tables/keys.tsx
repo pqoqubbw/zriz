@@ -60,10 +60,10 @@ const Key = ({ name }: KeyProps) => {
 const Keys = ({ keys }: KeysProps) => (
   <span className="flex min-h-5.5 flex-wrap content-start items-center gap-1 pt-px">
     {keys.map((chord, i) => (
-      <Fragment key={chord.join("+")}>
+      <Fragment key={`${i}-${chord.join("+")}`}>
         {i > 0 && <span className="sr-only">or</span>}
         {chord.map((name, j) => (
-          <Fragment key={name}>
+          <Fragment key={`${j}-${name}`}>
             {j > 0 && <span className="text-small text-faint">+</span>}
             <Key name={name} />
           </Fragment>

@@ -17,8 +17,8 @@ const PairTable = ({ className, kind, rows }: PairTableProps) => (
     head={TABLE_HEADS[kind].map((label) => ({ end: false, label }))}
     template={PAIR_COLUMNS}
   >
-    {rows.map((row) => (
-      <TableRow key={"keys" in row ? row.text : row.name}>
+    {rows.map((row, i) => (
+      <TableRow key={`${i}-${"keys" in row ? row.text : row.name}`}>
         {"keys" in row ? (
           <TableCell>
             <Keys keys={row.keys} />
