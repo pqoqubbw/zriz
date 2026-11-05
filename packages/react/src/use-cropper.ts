@@ -7,6 +7,7 @@ import type {
   CropValue,
   Cropper,
   CropperFrame,
+  CropperInternals,
   CropperOptions,
   CropperSnapshot,
 } from "@zriz/core";
@@ -356,7 +357,7 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
 
     return empty
       ? undefined
-      : cropper.retarget(
+      : (cropper as CropperInternals).retarget(
           given
             ? { aspect: first, rotation: angle, zoom: close }
             : { zoom: close }

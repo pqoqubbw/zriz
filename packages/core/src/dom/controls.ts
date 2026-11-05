@@ -1,5 +1,5 @@
 import { MAX_ZOOM } from "../cropper";
-import type { Cropper } from "../cropper";
+import type { Cropper, CropperInternals } from "../cropper";
 import { minScaleAt } from "../geometry/coverage";
 import { imagePlanes, panPlanes } from "../geometry/planes";
 import { holdCursor } from "./cursor";
@@ -189,7 +189,7 @@ const zoomHandlers = (
 
   const onEscape = (event: KeyboardEvent): void => {
     letGo();
-    cropper.rebase(owner);
+    (cropper as CropperInternals).rebase(owner);
     cropper.cancel(event, owner);
   };
 

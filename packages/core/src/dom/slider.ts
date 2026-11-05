@@ -1,4 +1,4 @@
-import type { ChangeReason, Cropper } from "../cropper";
+import type { ChangeReason, Cropper, CropperInternals } from "../cropper";
 
 type KeyHandlers = {
   onKeyDown: (event: KeyboardEvent) => void;
@@ -169,7 +169,7 @@ const sliderAria = (
   const off = [
     cropper.on("commit", aria),
     cropper.on("settle", aria),
-    cropper.on("accept", (_, details) => {
+    (cropper as CropperInternals).on("accept", (_, details) => {
       if (details.reason === "keyboard" || details.reason === reason) {
         aria();
       }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../src";
-import type { CropperEvents } from "../src";
+import type { CropperEvents, CropperInternals } from "../src";
 import { fakeClock } from "./fake-clock";
 
 const setup = () => {
@@ -239,7 +239,7 @@ describe("gesture and commit edges", () => {
     cropper.begin("dial", undefined, owner);
     cropper.setRotation(5, { reason: "dial" });
     cropper.run(() => true);
-    cropper.coast(owner, release);
+    (cropper as CropperInternals).coast(owner, release);
     cropper.setRotation(6, { reason: "dial" });
     expect(release).not.toHaveBeenCalled();
     cropper.flip("x");
@@ -260,7 +260,7 @@ describe("gesture and commit edges", () => {
 
     cropper.run(glide);
 
-    cropper.coast(owner, () => {
+    (cropper as CropperInternals).coast(owner, () => {
       cropper.end(undefined, owner);
     });
 
@@ -296,11 +296,11 @@ describe("gesture and commit edges", () => {
 
     cropper.begin("pan", undefined, owner);
     cropper.panBy(0.01, 0, { reason: "pan" });
-    expect(cropper.rebase(owner)).toBeFalsy();
+    expect((cropper as CropperInternals).rebase(owner)).toBeFalsy();
     cropper.setZoom(2);
-    expect(cropper.rebase({})).toBeFalsy();
-    expect(cropper.rebase(owner)).toBeTruthy();
-    expect(cropper.rebase(owner)).toBeFalsy();
+    expect((cropper as CropperInternals).rebase({})).toBeFalsy();
+    expect((cropper as CropperInternals).rebase(owner)).toBeTruthy();
+    expect((cropper as CropperInternals).rebase(owner)).toBeFalsy();
     const zoomed = cropper.getValue();
 
     cropper.panBy(0.01, 0, { reason: "pan" });

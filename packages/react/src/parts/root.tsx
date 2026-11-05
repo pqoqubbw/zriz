@@ -1,7 +1,7 @@
 "use client";
 
 import { createCropper } from "@zriz/core";
-import type { Cropper, CropperSnapshot } from "@zriz/core";
+import type { Cropper, CropperInternals, CropperSnapshot } from "@zriz/core";
 import {
   ZrizError,
   attachImage,
@@ -182,7 +182,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     setCropShape(cropper, shape);
 
     return shape === "circle"
-      ? cropper.retarget({ aspect: 1, lock: true })
+      ? (cropper as CropperInternals).retarget({ aspect: 1, lock: true })
       : undefined;
   }, [cropper, shape]);
 

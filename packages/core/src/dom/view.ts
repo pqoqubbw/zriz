@@ -1,4 +1,4 @@
-import type { Cropper, CropperSnapshot } from "../cropper";
+import type { Cropper, CropperInternals, CropperSnapshot } from "../cropper";
 import {
   applyHomography,
   invertMatrix3,
@@ -867,7 +867,7 @@ const viewOf = (cropper: Cropper): View => {
   };
 
   const offFrame = cropper.on("frame", publish);
-  const offAccept = cropper.on("accept", (_, details) => {
+  const offAccept = (cropper as CropperInternals).on("accept", (_, details) => {
     const kind = TRANSITION_BY_REASON[details.reason];
     const from = last;
 

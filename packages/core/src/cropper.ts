@@ -99,7 +99,6 @@ type CropperFrame = {
 
 type CropperEvents = {
   change: (value: CropValue, details: ChangeDetails) => void;
-  accept: (value: CropValue, details: ChangeDetails & { spin: number }) => void;
   commit: (value: CropValue, details: CommitDetails) => void;
   gesturestart: (reason: ChangeReason, event: Event | undefined) => void;
   gestureend: (reason: ChangeReason, event: Event | undefined) => void;
@@ -175,11 +174,7 @@ type Cropper = {
   begin: (reason: ChangeReason, event?: Event, owner?: unknown) => boolean;
   end: (event?: Event, owner?: unknown) => void;
   cancel: (event?: Event, owner?: unknown) => void;
-  coast: (owner: unknown, release: () => void) => void;
-  rebase: (owner: unknown) => boolean;
   getMaxZoom: () => number;
-  getMinSize: () => Size;
-  retarget: (value: Record<string, unknown>) => () => void;
   setCropState: (
     next: CropState,
     options?: ActionOptions & { keep?: "size" | "center" | undefined }
@@ -190,7 +185,19 @@ type Cropper = {
   destroy: () => void;
 };
 
-type Listeners = { [E in keyof CropperEvents]: Set<CropperEvents[E]> };
+type InternalEvents = CropperEvents & {
+  accept: (value: CropValue, details: ChangeDetails & { spin: number }) => void;
+};
+
+type CropperInternals = Cropper & {
+  on: (type: "accept", listener: InternalEvents["accept"]) => () => void;
+  coast: (owner: unknown, release: () => void) => void;
+  rebase: (owner: unknown) => boolean;
+  getMinSize: () => Size;
+  retarget: (value: Record<string, unknown>) => () => void;
+};
+
+type Listeners = { [E in keyof InternalEvents]: Set<InternalEvents[E]> };
 
 type Gesture = {
   reason: ChangeReason;
@@ -317,9 +324,9 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   let lastTime: number | null = null;
   let destroyed = false;
 
-  const emit = <E extends keyof CropperEvents>(
+  const emit = <E extends keyof InternalEvents>(
     type: E,
-    ...args: Parameters<CropperEvents[E]>
+    ...args: Parameters<InternalEvents[E]>
   ): void => {
     callAll(listeners[type], args);
   };
@@ -863,7 +870,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     );
   };
 
-  const cropper: Cropper = {
+  const cropper: CropperInternals = {
     begin(reason, event, owner) {
       if (gesture && gesture.owner !== owner && !disabled()) {
         stopCoast();
@@ -986,7 +993,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       return zoomOf(imagePlanes(state), state.crop);
     },
     invalidate,
-    on: (type, listener) =>
+    on: (type: keyof InternalEvents, listener: (...args: never[]) => void) =>
       join(listeners[type] as Set<typeof listener>, listener),
     panBy(dx, dy, action = {}) {
       if (!state || disabled()) {
@@ -1337,6 +1344,7 @@ export type {
   Cropper,
   CropperEvents,
   CropperFrame,
+  CropperInternals,
   CropperOptions,
   CropperPlugin,
   CropperSnapshot,

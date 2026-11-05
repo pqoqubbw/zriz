@@ -29,6 +29,7 @@ import type {
   CropValue,
   CropState,
   CropperEvents,
+  CropperInternals,
   CropperOptions,
 } from "../src";
 import type { QuarterTurns } from "../src/geometry";
@@ -2717,8 +2718,15 @@ describe("minSize on a free crop", () => {
   it("reports the minimum it holds", () => {
     const { cropper } = setup({ minSize: { height: 100, width: 5000 } });
 
-    expect(cropper.getMinSize()).toStrictEqual({ height: 100, width: 4000 });
-    expect(setup().cropper.getMinSize()).toStrictEqual({ height: 1, width: 1 });
+    expect((cropper as CropperInternals).getMinSize()).toStrictEqual({
+      height: 100,
+      width: 4000,
+    });
+
+    expect((setup().cropper as CropperInternals).getMinSize()).toStrictEqual({
+      height: 1,
+      width: 1,
+    });
   });
 });
 
@@ -3126,14 +3134,18 @@ describe("minSize across quarter turns", () => {
     const { cropper } = floored();
 
     cropper.rotate90();
-    expect(cropper.getMinSize()).toStrictEqual({ height: 1200, width: 630 });
+
+    expect((cropper as CropperInternals).getMinSize()).toStrictEqual({
+      height: 1200,
+      width: 630,
+    });
   });
 });
 
 const zoomed = () => {
   const time = fakeClock();
   const cropper = createCropper({ clock: time.clock, image: PHOTO });
-  const drop = cropper.retarget({ zoom: 2 });
+  const drop = (cropper as CropperInternals).retarget({ zoom: 2 });
 
   cropper.setZoom(2, { emit: false });
 
@@ -3175,6 +3187,24 @@ describe("a reset target with a zoom", () => {
 });
 
 describe("the cropper's public type", () => {
+  it("names eight events and keeps the internal calls out", () => {
+    expectTypeOf<keyof CropperEvents>().toEqualTypeOf<
+      | "change"
+      | "commit"
+      | "destroy"
+      | "frame"
+      | "gestureend"
+      | "gesturestart"
+      | "settle"
+      | "stop"
+    >();
+
+    expectTypeOf<Cropper>().not.toHaveProperty("coast");
+    expectTypeOf<Cropper>().not.toHaveProperty("getMinSize");
+    expectTypeOf<Cropper>().not.toHaveProperty("rebase");
+    expectTypeOf<Cropper>().not.toHaveProperty("retarget");
+  });
+
   it("lets setOptions take only the options it honours", () => {
     expectTypeOf<Parameters<Cropper["setOptions"]>[0]>().toEqualTypeOf<
       Pick<

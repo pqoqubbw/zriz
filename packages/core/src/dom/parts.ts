@@ -1,4 +1,4 @@
-import type { Cropper } from "../cropper";
+import type { Cropper, CropperInternals } from "../cropper";
 import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
 import { applyHomography, invertMatrix3 } from "../geometry/matrix";
@@ -489,7 +489,7 @@ const handleHandlers = (
 
   const onEscape = (event: KeyboardEvent): void => {
     drop();
-    cropper.rebase(owner);
+    (cropper as CropperInternals).rebase(owner);
     cropper.cancel(event, owner);
     view.release();
   };
@@ -589,7 +589,7 @@ const handleHandlers = (
         return;
       }
 
-      if (cropper.rebase(owner)) {
+      if ((cropper as CropperInternals).rebase(owner)) {
         view.release();
         const fresh = cropper.getCropState();
         const next = fresh && grab(event, fresh, drag.handle);
@@ -611,7 +611,7 @@ const handleHandlers = (
 
       const pointer = toWorking(event, drag.placement);
       const span = MIN_HANDLE_SPAN / drag.placement.scale;
-      const min = cropper.getMinSize();
+      const min = (cropper as CropperInternals).getMinSize();
       const planes = imagePlanes(state);
       const rect = dragHandle(
         drag.start,

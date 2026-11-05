@@ -23,6 +23,7 @@ export type {
   Cropper,
   CropperEvents,
   CropperFrame,
+  CropperInternals,
   CropperOptions,
   CropperPlugin,
   CropperSnapshot,

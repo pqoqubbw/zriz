@@ -1,4 +1,4 @@
-import type { Cropper } from "../cropper";
+import type { Cropper, CropperInternals } from "../cropper";
 import {
   inverseRubberBand,
   rubberBand,
@@ -423,7 +423,7 @@ const viewportController = (
           Math.max(Math.abs(turnRaw) - ROTATE_DEAD_ZONE, 0);
     const { crop } = begin.state;
     const from = 1 / largestFit(imagePlanes(begin.state), crop).scale;
-    const min = cropper.getMinSize();
+    const min = (cropper as CropperInternals).getMinSize();
     const max = cropper.getMaxZoom();
     const wanted = from * ratio;
     const ceiling = Math.max(
@@ -581,7 +581,7 @@ const viewportController = (
         return;
       }
 
-      if (cropper.rebase(owner)) {
+      if ((cropper as CropperInternals).rebase(owner)) {
         rebase();
       }
 
@@ -651,7 +651,7 @@ const viewportController = (
       return false;
     }
 
-    cropper.coast(owner, endWheel);
+    (cropper as CropperInternals).coast(owner, endWheel);
     wheelOwned = true;
     wheelPad = padStep(event);
 
@@ -826,7 +826,7 @@ const viewportController = (
 
     const frame = view.frame();
 
-    if (cropper.rebase(owner) && frame) {
+    if ((cropper as CropperInternals).rebase(owner) && frame) {
       safari = safariStart(event, frame.scale) ?? safari;
     }
 
@@ -883,7 +883,7 @@ const viewportController = (
     releaseCursor?.();
     releaseCursor = null;
     view.setOverscroll({ x: 0, y: 0 }, 1);
-    cropper.rebase(owner);
+    (cropper as CropperInternals).rebase(owner);
     cropper.cancel(event, owner);
   };
 

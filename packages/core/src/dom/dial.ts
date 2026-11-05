@@ -1,4 +1,4 @@
-import type { Cropper } from "../cropper";
+import type { Cropper, CropperInternals } from "../cropper";
 import { inverseRubberBand, rubberBand } from "../geometry/band";
 import { decay, spring, velocityTracker } from "../motion";
 import { clamp, positive } from "../value";
@@ -247,7 +247,7 @@ const dialHandlers = (
       settleOvershoot();
     };
 
-    cropper.coast(owner, stopGlide);
+    (cropper as CropperInternals).coast(owner, stopGlide);
   };
 
   const interrupted = (): void => {
@@ -271,7 +271,7 @@ const dialHandlers = (
     dial.stopSettle?.();
     dial.stopSettle = null;
     dial.set(0, false);
-    cropper.rebase(owner);
+    (cropper as CropperInternals).rebase(owner);
     cropper.cancel(event, owner);
   };
 
@@ -402,7 +402,7 @@ const dialHandlers = (
         return;
       }
 
-      if (cropper.rebase(owner)) {
+      if ((cropper as CropperInternals).rebase(owner)) {
         startRotation = cropper.getValue().rotation;
         startX = lastX;
         tracker.reset();

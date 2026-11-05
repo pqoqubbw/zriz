@@ -51,6 +51,21 @@ export default defineConfig({
       },
     },
     {
+      files: [
+        "packages/core/src/dom/controls.ts",
+        "packages/core/src/dom/dial.ts",
+        "packages/core/src/dom/parts.ts",
+        "packages/core/src/dom/slider.ts",
+        "packages/core/src/dom/view.ts",
+        "packages/core/src/dom/viewport.ts",
+        "packages/core/test/cropper.test.ts",
+        "packages/core/test/review.test.ts",
+        "packages/react/src/parts/root.tsx",
+        "packages/react/src/use-cropper.ts",
+      ],
+      rules: { "typescript/no-unsafe-type-assertion": "off" },
+    },
+    {
       files: ["apps/docs/lint/**"],
       rules: {
         "typescript/no-unsafe-argument": "off",
