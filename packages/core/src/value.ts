@@ -279,8 +279,8 @@ const holdCrop = (next: CropValue, held: CropValue, image: Size): CropValue => {
     },
     rotation: near(next.rotation, held.rotation, angle),
     size: {
-      height: near(next.size.height, held.size.height, y + ratio * x),
-      width: near(next.size.width, held.size.width, x + y / ratio),
+      height: near(next.size.height, held.size.height, 2 * (y + ratio * x)),
+      width: near(next.size.width, held.size.width, 2 * (x + y / ratio)),
     },
   });
 };
