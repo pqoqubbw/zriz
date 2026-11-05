@@ -6,7 +6,11 @@ const LiveLog = () => {
   const rows = usePlayground((state) => state.rows);
 
   if (rows.length === 0) {
-    return <div className="text-faint">no events yet</div>;
+    return (
+      <div className="grid h-full place-items-center text-faint">
+        no events yet
+      </div>
+    );
   }
 
   return rows.map((row) => (
