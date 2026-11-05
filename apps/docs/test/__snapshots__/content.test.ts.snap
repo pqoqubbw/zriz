@@ -5867,7 +5867,7 @@ renders a \`<button type="button">\`, with \`role="radio"\` inside \`AspectGroup
 | attribute | when |
 | - | - |
 | \`data-checked\` | while this ratio is the current one |
-| \`data-disabled\` | on a round crop, for every value but 1 |
+| \`data-disabled\` | on a round crop for every value but 1, or when you pass \`disabled\` to the item |
 
 ### \`Orientation\`
 
@@ -5876,6 +5876,7 @@ renders a \`<button type="button">\` anywhere inside \`Root\`. it has no props o
 | attribute | when |
 | - | - |
 | \`data-orientation\` | \`"landscape"\` above 1, \`"portrait"\` below 1, \`"square"\` at 1 and while the aspect is \`"free"\` or \`"original"\` |
+| \`data-disabled\` | while the aspect is 1, \`"free"\` or \`"original"\` |
 "
 `;
 
@@ -6190,15 +6191,15 @@ zriz ships them bare, with no paint and no icons. the demo above uses the icons 
 
 | part | what it does |
 | - | - |
-| \`Rotate\` | turns the photo 90°, easing out. a 3:2 crop becomes 2:3 |
+| \`Rotate\` | turns the photo 90° with a spring. a 3:2 crop becomes 2:3 |
 | \`Flip\` | mirrors the photo, left to right by default, with a spring |
-| \`Reset\` | springs back to where the crop started: \`defaultValue\` and the starting \`aspect\` and \`rotation\`, or the full photo |
+| \`Reset\` | springs back to where the crop started: \`defaultValue\` and the starting \`aspect\`, \`rotation\` and \`zoom\`, or the full photo |
 
 every button part sets \`touch-action: manipulation\` and \`user-select: none\` inline, so a double tap on a phone never zooms the page and a long press never selects the label and loses the click.
 
 while \`Root\` is disabled, a press does nothing, and before the photo loads only \`Reset\` acts. the buttons stay natively enabled and report \`aria-disabled\`, so style them from \`data-disabled\` on \`Root\`, as [root](https://zriz.dev/docs/root.md) shows.
 
-while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. during \`"rotate"\` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides \`Area\` and its handles. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.
+while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. a \`Reset\` across a quarter turn runs as \`"rotate"\`, and so does a \`Flip\` or \`Reset\` pressed while a rotate still runs. during \`"rotate"\` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides \`Area\` and its handles. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.
 
 ## rotate both ways
 
@@ -6414,14 +6415,14 @@ each handle's hit box is 44 px square, centred on the crop's edge. set \`--zriz-
 
 ## know when the grid shows
 
-the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while the dial moves:
+the grid hides at rest. it shows thirds (3 × 3) from the moment you press or move the crop, and a fine grid (9 × 9) while the dial moves:
 
 | when | what shows |
 | - | - |
-| move the crop | the thirds grid fades in. a drag, pinch, twist, wheel, handle, \`Zoom\` or a \`useZoom\` slider counts |
+| press or move the crop | the thirds grid fades in, even if a press never moves. a drag, pinch, twist, wheel, handle, \`Zoom\` or a \`useZoom\` slider counts |
 | drag the dial or press a key on it | the fine grid fades in once the angle moves. a press that stays still shows none |
 | press a key on \`Area\` or \`Zoom\` | no new grid. a grid that already shows stays |
-| stop moving the crop | it stays for a short hold, then fades out, see [accessibility](https://zriz.dev/docs/accessibility.md) |
+| let go or stop moving the crop | it stays for a short hold, then fades out, see [accessibility](https://zriz.dev/docs/accessibility.md) |
 | let go of the dial | the fine grid fades out at once, or when a flick's glide stops |
 
 ## make the straighten grid fainter
@@ -6479,9 +6480,9 @@ renders a \`<div role="application">\` inside \`Viewport\`, with \`tabIndex={0}\
 
 ### \`Handle\`
 
-renders an \`aria-hidden\` \`<div>\` inside \`Area\`, so a \`render\` element must not take focus. the stylesheet hides the corner handles on a circle only when they sit right inside \`Area\`. \`className\` and \`render\` get \`{ position, active }\`.
+renders an \`aria-hidden\` \`<div>\` inside \`Area\`, so a \`render\` element must not take focus. a drag stops at the photo edge, the viewport's padding and \`maxZoom\`. each side also stops at 88 px on screen or \`minSize\`, whichever is larger. a side already smaller stays put and can only grow. the stylesheet hides the corner handles on a circle only when they sit right inside \`Area\`. \`className\` and \`render\` get \`{ position, active }\`.
 
-- \`position\` \`HandleEdge\` required
+- \`position\` \`HandleProps["position"]\` required
 
   the corner or edge it drags: \`"top-left"\`, \`"top"\`, \`"top-right"\`, \`"right"\`, \`"bottom-right"\`, \`"bottom"\`, \`"bottom-left"\`, \`"left"\`
 
@@ -6809,7 +6810,7 @@ the stylesheet makes \`Dial\` 40 px tall and clips its ticks at the sides only, 
 
 ## drag and flick the ruler
 
-drag the ruler 4 px to turn 1°. a quick flick keeps it gliding after you let go, and past the limit it stretches and springs back. on touch, a vertical swipe scrolls the page instead.
+the first 10 px of a drag only pick up the ruler. after that, every 4 px turns 1°. a quick flick keeps it gliding after you let go, and past the limit it stretches and springs back. on touch, a vertical swipe scrolls the page instead.
 
 the photo zooms in as the angle grows. one gesture back to 0° restores the zoom. separate gestures keep it, as in ios photos, until \`Reset\` or \`Zoom\` takes it back.
 
@@ -8723,7 +8724,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
   the cors mode when the photo is on another domain
 - \`previewEdge\` \`number\`
 
-  the longest side of the preview in pixels. the default follows the screen, see [loading images](https://zriz.dev/docs/loading-images.md). a grid of small \`Root\`s saves memory with a low one
+  the longest side of the preview in pixels. the default follows the screen, see [loading images](https://zriz.dev/docs/loading-images.md). a grid of small \`Root\`s saves memory with a low one. a new \`previewEdge\`, \`crossOrigin\` or \`svg\` loads the photo again and fires \`onLoad\` again. the crop stays, so keep \`previewEdge\` steady
 - \`svg\` \`boolean\` = \`true\`
 
   \`false\` refuses svg files, which then fail with \`decode\`
@@ -8786,13 +8787,13 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
   milliseconds after a gesture before the crop recentres
 - \`dir\` \`"ltr" | "rtl"\`
 
-  the reading direction for keys and sliders. with no value, each part reads its computed \`direction\` at the press. with a value, \`Root\` also sets the html \`dir\` attribute
+  the reading direction for \`Dial\`, \`Zoom\` and \`AspectGroup\`. in rtl their left and right swap. \`Area\`'s arrow keys stay physical. with no value, each of these parts reads its computed \`direction\` at the press. with a value, \`Root\` also sets the html \`dir\` attribute
 - \`locale\` \`string\`
 
   formats the values screen readers hear
 - \`focalLength\` \`number\` = \`26\`
 
-  the lens as a 35 mm equivalent, used for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it
+  the lens as a 35 mm equivalent, used for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it. read once, when \`Root\` makes the cropper. \`cropper.setOptions()\` changes it, from the next \`setValue()\`, \`reset()\` or \`setImage()\`
 
 | attribute | when |
 | - | - |
@@ -10659,7 +10660,7 @@ to cap every way of zooming, set \`maxZoom\` on \`Root\` instead. both parts fol
 
 ## mark a step at the limit
 
-at 1× and at \`maxZoom\`, a press does nothing, but the button stays enabled. \`useZoom\` tells you where the zoom is. use \`aria-disabled\` for this, because \`disabled\` drops keyboard focus from the button at the limit. render this inside \`Root\`:
+at 1× and at \`maxZoom\`, a press does nothing, but the button stays enabled. a large \`minSize\` can stop the zoom below \`maxZoom\`, and \`useZoom\` does not report that stop, so this recipe does not mark it. \`useZoom\` tells you where the zoom is. use \`aria-disabled\` for this, because \`disabled\` drops keyboard focus from the button at the limit. render this inside \`Root\`:
 
 \`\`\`tsx
 "use client";

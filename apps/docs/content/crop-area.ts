@@ -42,7 +42,7 @@ const CROP_AREA_PAGE = defineDoc({
     section(
       "know when the grid shows",
       p(
-        "the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while the dial moves:"
+        "the grid hides at rest. it shows thirds (3 × 3) from the moment you press or move the crop, and a fine grid (9 × 9) while the dial moves:"
       ),
       table({
         columns: [
@@ -51,8 +51,8 @@ const CROP_AREA_PAGE = defineDoc({
         ],
         rows: [
           [
-            "move the crop",
-            "the thirds grid fades in. a drag, pinch, twist, wheel, handle, `Zoom` or a `useZoom` slider counts",
+            "press or move the crop",
+            "the thirds grid fades in, even if a press never moves. a drag, pinch, twist, wheel, handle, `Zoom` or a `useZoom` slider counts",
           ],
           [
             "drag the dial or press a key on it",
@@ -63,7 +63,7 @@ const CROP_AREA_PAGE = defineDoc({
             "no new grid. a grid that already shows stays",
           ],
           [
-            "stop moving the crop",
+            "let go or stop moving the crop",
             "it stays for a short hold, then fades out, see [accessibility](accessibility)",
           ],
           [
@@ -163,13 +163,13 @@ const CROP_AREA_PAGE = defineDoc({
       ),
       part(
         "Handle",
-        "renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. the stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
+        "renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. a drag stops at the photo edge, the viewport's padding and `maxZoom`. each side also stops at 88 px on screen or `minSize`, whichever is larger. a side already smaller stays put and can only grow. the stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
         props([
           {
             name: "position",
             required: true,
             text: 'the corner or edge it drags: `"top-left"`, `"top"`, `"top-right"`, `"right"`, `"bottom-right"`, `"bottom"`, `"bottom-left"`, `"left"`',
-            type: "HandleEdge",
+            type: 'HandleProps["position"]',
           },
         ]),
         table({

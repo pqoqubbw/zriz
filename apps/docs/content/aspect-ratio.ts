@@ -102,7 +102,7 @@ const ASPECT_RATIO_PAGE = defineDoc({
           { name: "data-checked", text: "while this ratio is the current one" },
           {
             name: "data-disabled",
-            text: "on a round crop, for every value but 1",
+            text: "on a round crop for every value but 1, or when you pass `disabled` to the item",
           },
         ])
       ),
@@ -113,6 +113,10 @@ const ASPECT_RATIO_PAGE = defineDoc({
           {
             name: "data-orientation",
             text: '`"landscape"` above 1, `"portrait"` below 1, `"square"` at 1 and while the aspect is `"free"` or `"original"`',
+          },
+          {
+            name: "data-disabled",
+            text: 'while the aspect is 1, `"free"` or `"original"`',
           },
         ])
       )

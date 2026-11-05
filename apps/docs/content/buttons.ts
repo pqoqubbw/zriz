@@ -32,14 +32,17 @@ const BUTTONS_PAGE = defineDoc({
           column("what it does", "prose"),
         ],
         rows: [
-          ["Rotate", "turns the photo 90°, easing out. a 3:2 crop becomes 2:3"],
+          [
+            "Rotate",
+            "turns the photo 90° with a spring. a 3:2 crop becomes 2:3",
+          ],
           [
             "Flip",
             "mirrors the photo, left to right by default, with a spring",
           ],
           [
             "Reset",
-            "springs back to where the crop started: `defaultValue` and the starting `aspect` and `rotation`, or the full photo",
+            "springs back to where the crop started: `defaultValue` and the starting `aspect`, `rotation` and `zoom`, or the full photo",
           ],
         ],
       }),
@@ -50,7 +53,7 @@ const BUTTONS_PAGE = defineDoc({
         "while `Root` is disabled, a press does nothing, and before the photo loads only `Reset` acts. the buttons stay natively enabled and report `aria-disabled`, so style them from `data-disabled` on `Root`, as [root](root) shows."
       ),
       p(
-        'while a move runs, `Root` carries `data-transition`: `"rotate"`, `"flip"` or `"morph"` for `Reset`. during `"rotate"` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides `Area` and its handles. [accessibility](accessibility) lists how long each move takes, with and without reduced motion.'
+        'while a move runs, `Root` carries `data-transition`: `"rotate"`, `"flip"` or `"morph"` for `Reset`. a `Reset` across a quarter turn runs as `"rotate"`, and so does a `Flip` or `Reset` pressed while a rotate still runs. during `"rotate"` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides `Area` and its handles. [accessibility](accessibility) lists how long each move takes, with and without reduced motion.'
       )
     ),
     section(

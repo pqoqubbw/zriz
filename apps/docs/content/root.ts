@@ -59,7 +59,7 @@ const ROOT_PAGE = defineDoc({
           },
           {
             name: "previewEdge",
-            text: "the longest side of the preview in pixels. the default follows the screen, see [loading images](loading-images). a grid of small `Root`s saves memory with a low one",
+            text: "the longest side of the preview in pixels. the default follows the screen, see [loading images](loading-images). a grid of small `Root`s saves memory with a low one. a new `previewEdge`, `crossOrigin` or `svg` loads the photo again and fires `onLoad` again. the crop stays, so keep `previewEdge` steady",
             type: "number",
           },
           {
@@ -171,7 +171,7 @@ const ROOT_PAGE = defineDoc({
           },
           {
             name: "dir",
-            text: "the reading direction for keys and sliders. with no value, each part reads its computed `direction` at the press. with a value, `Root` also sets the html `dir` attribute",
+            text: "the reading direction for `Dial`, `Zoom` and `AspectGroup`. in rtl their left and right swap. `Area`'s arrow keys stay physical. with no value, each of these parts reads its computed `direction` at the press. with a value, `Root` also sets the html `dir` attribute",
             type: '"ltr" | "rtl"',
           },
           {
@@ -182,7 +182,7 @@ const ROOT_PAGE = defineDoc({
           {
             default: "26",
             name: "focalLength",
-            text: "the lens as a 35 mm equivalent, used for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it",
+            text: "the lens as a 35 mm equivalent, used for perspective correction. at a strong tilt, zriz lengthens a lens too short to keep the photo in front of it. read once, when `Root` makes the cropper. `cropper.setOptions()` changes it, from the next `setValue()`, `reset()` or `setImage()`",
             type: "number",
           },
         ]),

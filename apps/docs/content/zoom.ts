@@ -44,7 +44,7 @@ const ZOOM_PAGE = defineDoc({
     section(
       "mark a step at the limit",
       p(
-        "at 1× and at `maxZoom`, a press does nothing, but the button stays enabled. `useZoom` tells you where the zoom is. use `aria-disabled` for this, because `disabled` drops keyboard focus from the button at the limit. render this inside `Root`:"
+        "at 1× and at `maxZoom`, a press does nothing, but the button stays enabled. a large `minSize` can stop the zoom below `maxZoom`, and `useZoom` does not report that stop, so this recipe does not mark it. `useZoom` tells you where the zoom is. use `aria-disabled` for this, because `disabled` drops keyboard focus from the button at the limit. render this inside `Root`:"
       ),
       code("zoom/steps.tsx"),
       p("the browser dims only `disabled`, so paint the off state yourself:"),
