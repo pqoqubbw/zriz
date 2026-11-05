@@ -318,6 +318,12 @@ const renderKernel = (): RenderKernel => {
 
       context.fill();
     }
+
+    if (job.type === "image/jpeg") {
+      context.globalCompositeOperation = "destination-over";
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, plan.width, plan.height);
+    }
   };
 
   const encode = async (

@@ -241,6 +241,75 @@ describe("load and export", () => {
     expect(result.type).toBe(result.blob.type);
   });
 
+  describe("a jpeg of a photo with clear pixels", () => {
+    const clear = async (): Promise<Blob> => {
+      const canvas = new OffscreenCanvas(64, 64);
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("no 2d context");
+      }
+
+      context.fillStyle = "#f00";
+      context.fillRect(16, 16, 32, 32);
+
+      return await canvas.convertToBlob({ type: "image/png" });
+    };
+
+    const WHITE = [255, 255, 255, 255];
+    const RED = [255, 0, 0, 255];
+
+    it("comes out white where the photo is clear by default", async () => {
+      const image = await loadImage(await clear());
+      const result = await exportImage(createCropper({ image }), image);
+      const [corner, centre] = await pixels(result.blob, [
+        [2, 2],
+        [32, 32],
+      ]);
+
+      expect(result.type).toBe("image/jpeg");
+      expect(near(corner, WHITE, 8)).toBeTruthy();
+      expect(near(centre, RED, 24)).toBeTruthy();
+    });
+
+    it("comes out white in the corners of a circle", async () => {
+      const image = await loadImage(await halves(400, 400));
+      const cropper = createCropper({ defaultValue: { aspect: 1 }, image });
+      const result = await exportImage(cropper, image, {
+        shape: "circle",
+        type: "image/jpeg",
+      });
+      const [corner] = await pixels(result.blob, [[0, 0]]);
+
+      expect(near(corner, WHITE, 8)).toBeTruthy();
+    });
+
+    it("comes out white through the perspective mesh", async () => {
+      const image = await loadImage(await clear());
+      const cropper = createCropper({ focalLength: 40, image });
+
+      cropper.setValue({ perspective: { horizontal: 8, vertical: 10 } });
+      const result = await exportImage(cropper, image);
+      const [corner, centre] = await pixels(result.blob, [
+        [1, 1],
+        [Math.floor(result.width / 2), Math.floor(result.height / 2)],
+      ]);
+
+      expect(near(corner, WHITE, 8)).toBeTruthy();
+      expect(near(centre, RED, 24)).toBeTruthy();
+    });
+
+    it("keeps clear pixels clear in a png", async () => {
+      const image = await loadImage(await clear());
+      const result = await exportImage(createCropper({ image }), image, {
+        type: "image/png",
+      });
+      const [corner] = await pixels(result.blob, [[2, 2]]);
+
+      expect(corner?.[3]).toBe(0);
+    });
+  });
+
   it("gives a round PNG for a round crop", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const cropper = createCropper({ defaultValue: { aspect: 1 }, image });

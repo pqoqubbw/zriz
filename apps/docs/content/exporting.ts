@@ -36,7 +36,7 @@ const EXPORTING_PAGE = defineDoc({
           {
             default: '"image/jpeg"',
             name: "type",
-            text: "the file format. a circle crop defaults to png",
+            text: "the file format. a circle crop defaults to png. jpeg has no transparency, so clear pixels come out white",
             type: '"image/jpeg" | "image/png" | "image/webp"',
           },
           {
@@ -58,7 +58,7 @@ const EXPORTING_PAGE = defineDoc({
           },
           {
             name: "shape",
-            text: '`"rect"` cuts a rectangle. `"circle"` cuts a circle with transparent corners. defaults to `shape` on `Root`',
+            text: '`"rect"` cuts a rectangle. `"circle"` cuts a circle, with transparent corners in png and webp and white ones in jpeg. defaults to `shape` on `Root`',
             type: '"rect" | "circle"',
           },
           {
