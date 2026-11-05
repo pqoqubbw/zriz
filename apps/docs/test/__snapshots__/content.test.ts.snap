@@ -205,88 +205,6 @@ export const PhotoCropper = () => {
 <span class=p>&gt;</span>",
   ],
   [
-    "playground",
-    "playground/root.jsx.tsx",
-    "<Cropper.Root
-  src={photo}
-  motion="reduce"
-  maxZoom={8}
-  onValueCommit={save}
->
-  <Cropper.Viewport wheel="zoom" style={{ height: 400 }}>
-    <Cropper.Image />
-    <Cropper.Mask />
-    <Cropper.Area aria-label="Crop area">
-      <Cropper.Grid />
-    </Cropper.Area>
-  </Cropper.Viewport>
-  <Cropper.DialValue
-    format={(angle) =>
-      \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
-    }
-  />
-  <Cropper.Dial aria-label="Straighten">
-    <Cropper.DialTicks />
-  </Cropper.Dial>
-  <Cropper.AspectGroup aria-label="Aspect ratio">
-    <Cropper.AspectItem value="free">free</Cropper.AspectItem>
-    <Cropper.AspectItem value={1}>1:1</Cropper.AspectItem>
-    <Cropper.AspectItem value={4 / 5}>4:5</Cropper.AspectItem>
-    <Cropper.AspectItem value={16 / 9}>16:9</Cropper.AspectItem>
-  </Cropper.AspectGroup>
-</Cropper.Root>",
-    "<span class=p>&lt;</span><span class=t>Cropper.Root</span>
-  <span class=a>src</span><span class=p>={</span>photo<span class=p>}</span>
-  <span class=a>motion</span><span class=p>="</span><span class=s>reduce</span><span class=p>"</span>
-  <span class=a>maxZoom</span><span class=p>={</span><span class=n>8</span><span class=p>}</span>
-  <span class=a>onValueCommit</span><span class=p>={</span>save<span class=p>}</span>
-<span class=p>&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>wheel</span><span class=p>="</span><span class=s>zoom</span><span class=p>" </span><span class=a>style</span><span class=p>={{</span> height<span class=p>: </span><span class=n>400 </span><span class=p>}}&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>"&gt;</span>
-      <span class=p>&lt;</span><span class=t>Cropper.Grid </span><span class=p>/&gt;</span>
-    <span class=p>&lt;/</span><span class=t>Cropper.Area</span><span class=p>&gt;</span>
-  <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.DialValue</span>
-    <span class=a>format</span><span class=p>={(</span>angle<span class=p>) =&gt;</span>
-      <span class=s>\`</span><span class=p>\${</span>Math<span class=p>.</span><span class=t>sign</span><span class=p>(</span>angle<span class=p>) *</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>Math<span class=p>.</span><span class=t>abs</span><span class=p>(</span>angle<span class=p>))}</span><span class=s>°\`</span>
-    <span class=p>}</span>
-  <span class=p>/&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.Dial </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
-  <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.AspectGroup </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Aspect ratio</span><span class=p>"&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.AspectItem </span><span class=a>value</span><span class=p>="</span><span class=s>free</span><span class=p>"&gt;</span>free<span class=p>&lt;/</span><span class=t>Cropper.AspectItem</span><span class=p>&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.AspectItem </span><span class=a>value</span><span class=p>={</span><span class=n>1</span><span class=p>}&gt;</span>1:1<span class=p>&lt;/</span><span class=t>Cropper.AspectItem</span><span class=p>&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.AspectItem </span><span class=a>value</span><span class=p>={</span><span class=n>4 </span><span class=p>/ </span><span class=n>5</span><span class=p>}&gt;</span>4:5<span class=p>&lt;/</span><span class=t>Cropper.AspectItem</span><span class=p>&gt;</span>
-    <span class=p>&lt;</span><span class=t>Cropper.AspectItem </span><span class=a>value</span><span class=p>={</span><span class=n>16 </span><span class=p>/ </span><span class=n>9</span><span class=p>}&gt;</span>16:9<span class=p>&lt;/</span><span class=t>Cropper.AspectItem</span><span class=p>&gt;</span>
-  <span class=p>&lt;/</span><span class=t>Cropper.AspectGroup</span><span class=p>&gt;</span>
-<span class=p>&lt;/</span><span class=t>Cropper.Root</span><span class=p>&gt;</span>",
-  ],
-  [
-    "playground",
-    "playground/value.ts",
-    "const value = {
-  center: { x: 0.52, y: 0.47 },
-  size: { width: 0.81, height: 0.81 },
-  rotation: 4,
-  quarterTurns: 0,
-  mirrored: false,
-  perspective: { vertical: 0, horizontal: 0 },
-  aspect: "free",
-};",
-    "<span class=k>const</span> value <span class=p>= {</span>
-  center<span class=p>: {</span> x<span class=p>: </span><span class=n>0.52</span><span class=p>,</span> y<span class=p>: </span><span class=n>0.47 </span><span class=p>},</span>
-  size<span class=p>: {</span> width<span class=p>: </span><span class=n>0.81</span><span class=p>,</span> height<span class=p>: </span><span class=n>0.81 </span><span class=p>},</span>
-  rotation<span class=p>: </span><span class=n>4</span><span class=p>,</span>
-  quarterTurns<span class=p>: </span><span class=n>0</span><span class=p>,</span>
-  mirrored<span class=p>: </span><span class=n>false</span><span class=p>,</span>
-  perspective<span class=p>: {</span> vertical<span class=p>: </span><span class=n>0</span><span class=p>,</span> horizontal<span class=p>: </span><span class=n>0 </span><span class=p>},</span>
-  aspect<span class=p>: </span><span class=s>"free"</span><span class=p>,</span>
-<span class=p>};</span>",
-  ],
-  [
     "root",
     "root/anatomy.jsx.tsx",
     "<Cropper.Root src={photo}>
@@ -5740,7 +5658,7 @@ exports[`content > writes aspect-ratio as markdown 1`] = `
 
 buttons that lock the crop to a ratio such as 1:1 or 4:5, and one that swaps portrait and landscape.
 
-the demo runs on the page at https\\://zriz.dev/docs/aspect-ratio.
+the page at https\\://zriz.dev/docs/aspect-ratio runs this cropper: a 3:2 photo, a track of free, original, 1:1, 4:5 and 16:9 with an orientation button, and open, reset and download in the corners.
 
 ## anatomy
 
@@ -5899,7 +5817,7 @@ exports[`content > writes avatar as markdown 1`] = `
 
 a profile photo picker: the visitor picks a file, moves it under a circle and saves a round png.
 
-the demo runs on the page at https\\://zriz.dev/docs/avatar.
+the page at https\\://zriz.dev/docs/avatar runs this cropper: a 2:3 photo under a round crop, a zoom slider with zoom out and zoom in, and open, reset and download in the corners.
 
 ## take a file from the visitor
 
@@ -6159,7 +6077,7 @@ exports[`content > writes buttons as markdown 1`] = `
 
 \`Rotate\` turns the photo a quarter turn, \`Flip\` mirrors it and \`Reset\` undoes every change.
 
-the demo runs on the page at https\\://zriz.dev/docs/buttons.
+the page at https\\://zriz.dev/docs/buttons runs this cropper: a 3:2 photo, rotate left, rotate right, flip and flip vertical buttons, and open, reset and download in the corners.
 
 ## anatomy
 
@@ -6379,7 +6297,7 @@ exports[`content > writes crop-area as markdown 1`] = `
 
 \`Area\` is the crop you keep. \`Handle\` resizes it and \`Grid\` draws guides while you work.
 
-the demo runs on the page at https\\://zriz.dev/docs/crop-area.
+the page at https\\://zriz.dev/docs/crop-area runs this cropper: a 3:2 photo with eight handles and a grid on the crop, and open, reset and download in the corners.
 
 ## anatomy
 
@@ -6835,7 +6753,7 @@ exports[`content > writes dial as markdown 1`] = `
 
 the ruler that levels a tilted photo, up to 45° each way, like the one in ios photos.
 
-the demo runs on the page at https\\://zriz.dev/docs/dial.
+the page at https\\://zriz.dev/docs/dial runs this cropper: a 3:2 photo, the straighten dial with its value, and open, reset and download in the corners.
 
 ## anatomy
 
@@ -7217,7 +7135,7 @@ exports[`content > writes exporting as markdown 1`] = `
 
 turn the crop into an image file in the browser, or send the crop value to your server and cut the original there.
 
-the demo runs on the page at https\\://zriz.dev/docs/exporting.
+the page at https\\://zriz.dev/docs/exporting runs this cropper: a 3:2 photo, a track of jpeg, png and webp, and open, reset and download in the corners.
 
 ## save the crop as a file
 
@@ -7526,7 +7444,7 @@ exports[`content > writes full-editor as markdown 1`] = `
 
 the crop area, the dial, zoom, aspect ratios, the buttons and a jpeg export in one component.
 
-the demo runs on the page at https\\://zriz.dev/docs/full-editor.
+the page at https\\://zriz.dev/docs/full-editor runs this cropper: a 3:2 photo, the straighten dial with rotate and flip, the aspect ratio track, and open, reset and download in the corners.
 
 ## lay out the crop area
 
@@ -8221,7 +8139,7 @@ exports[`content > writes introduction as markdown 1`] = `
 
 zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.
 
-the demo runs on the page at https\\://zriz.dev/docs/introduction.
+the page at https\\://zriz.dev/docs/introduction runs this cropper: a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners.
 
 ## what it does
 
@@ -8468,7 +8386,7 @@ exports[`content > writes playground as markdown 1`] = `
 
 change the main props on a live cropper and copy the code that matches what you see.
 
-the demo runs on the page at https\\://zriz.dev/docs/playground.
+the page at https\\://zriz.dev/docs/playground runs this cropper: a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. the controls under it change its props.
 
 ## change the props
 
@@ -8498,50 +8416,46 @@ perspective tilts the photo as if the camera leaned. no part sets it, so pass it
 the code builds the cropper in the demo, with only the props you changed from their defaults:
 
 \`\`\`tsx
-<Cropper.Root
-  src={photo}
-  motion="reduce"
-  maxZoom={8}
-  onValueCommit={save}
->
-  <Cropper.Viewport wheel="zoom" style={{ height: 400 }}>
+<Cropper.Root src={photo}>
+  <Cropper.Viewport style={{ height: 380 }}>
     <Cropper.Image />
     <Cropper.Mask />
-    <Cropper.Area aria-label="Crop area">
-      <Cropper.Grid />
-    </Cropper.Area>
+    <Cropper.Area aria-label="Crop area" />
   </Cropper.Viewport>
-  <Cropper.DialValue
-    format={(angle) =>
-      \`\${Math.sign(angle) * Math.round(Math.abs(angle))}°\`
-    }
-  />
+  <Cropper.Rotate aria-label="Rotate left" />
+  <Cropper.DialValue />
   <Cropper.Dial aria-label="Straighten">
     <Cropper.DialTicks />
   </Cropper.Dial>
-  <Cropper.AspectGroup aria-label="Aspect ratio">
-    <Cropper.AspectItem value="free">free</Cropper.AspectItem>
-    <Cropper.AspectItem value={1}>1:1</Cropper.AspectItem>
-    <Cropper.AspectItem value={4 / 5}>4:5</Cropper.AspectItem>
-    <Cropper.AspectItem value={16 / 9}>16:9</Cropper.AspectItem>
-  </Cropper.AspectGroup>
+  <Cropper.Flip aria-label="Flip" />
 </Cropper.Root>
 \`\`\`
+
+the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. it tilts the photo with \`setValue()\` and listens to \`onValueChange\` and \`onValueCommit\` for the value and the events below.
 
 ## watch the value
 
 the crop as you move it, the same object \`onValueChange\` and \`onValueCommit\` hand you:
 
-\`\`\`ts
-const value = {
-  center: { x: 0.52, y: 0.47 },
-  size: { width: 0.81, height: 0.81 },
-  rotation: 4,
-  quarterTurns: 0,
-  mirrored: false,
-  perspective: { vertical: 0, horizontal: 0 },
-  aspect: "free",
-};
+\`\`\`json
+{
+  "aspect": "free",
+  "center": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "mirrored": false,
+  "perspective": {
+    "horizontal": 0,
+    "vertical": 0
+  },
+  "quarterTurns": 0,
+  "rotation": 0,
+  "size": {
+    "height": 1,
+    "width": 1
+  }
+}
 \`\`\`
 
 ## watch the events
@@ -8624,7 +8538,7 @@ export const PhotoCropper = () => {
 
 \`Viewport\` needs a size, and the image and the mask fill it. the 24 px padding leaves room for the handles, see [viewport](https://zriz.dev/docs/viewport.md). the cropper now drags, pinches, resizes and straightens:
 
-the demo runs on the page at https\\://zriz.dev/docs/quick-start.
+the page at https\\://zriz.dev/docs/quick-start runs this cropper: a 3:2 photo with four corner handles, the straighten dial, and open, reset and download in the corners.
 
 the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles.
 
@@ -8705,7 +8619,7 @@ exports[`content > writes root as markdown 1`] = `
 
 \`Root\` loads the photo, keeps the crop and holds every other part.
 
-the demo runs on the page at https\\://zriz.dev/docs/root.
+the page at https\\://zriz.dev/docs/root runs this cropper: a 3:2 photo on a bare cropper, and open, reset and download in the corners. download locks the cropper while it saves.
 
 ## anatomy
 
@@ -8883,7 +8797,7 @@ exports[`content > writes saving-state as markdown 1`] = `
 
 keep the crop for each photo in local storage and bring it back on the next visit.
 
-the demo runs on the page at https\\://zriz.dev/docs/saving-state.
+the page at https\\://zriz.dev/docs/saving-state runs this cropper: a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. the crop is kept in local storage.
 
 ## read the saved crop before the cropper mounts
 
@@ -9160,7 +9074,7 @@ exports[`content > writes server-crop as markdown 1`] = `
 
 send the photo and its crop value to your server, and cut the full-size original there with sharp.
 
-the demo runs on the page at https\\://zriz.dev/docs/server-crop.
+the page at https\\://zriz.dev/docs/server-crop runs this cropper: a 3:2 photo, the straighten dial with rotate and flip, and open, reset and send in the corners. send shows the value and the sharp plan.
 
 ## install sharp
 
@@ -9860,7 +9774,7 @@ write a value with \`light-dark()\` to keep both schemes, or a single colour to 
 
 the parts follow the page's \`color-scheme\`. the light values above apply in light mode and the dark values in dark mode:
 
-the demo runs on the page at https\\://zriz.dev/docs/styling.
+the page at https\\://zriz.dev/docs/styling runs this cropper: a 3:2 photo, a track of default, ink and soft looks, and open, reset and download in the corners.
 
 with this rule on the page, the parts follow the system setting:
 
@@ -9906,7 +9820,7 @@ exports[`content > writes undo as markdown 1`] = `
 
 an undo button for the crop, built from what each commit hands you.
 
-the demo runs on the page at https\\://zriz.dev/docs/undo.
+the page at https\\://zriz.dev/docs/undo runs this cropper: a 3:2 photo, the straighten dial with undo and rotate, and open, reset and download in the corners.
 
 ## remember the crop before each gesture
 
@@ -10532,7 +10446,7 @@ exports[`content > writes viewport as markdown 1`] = `
 
 \`Viewport\` takes the gestures, \`Image\` draws the photo in it and \`Mask\` dims everything outside the crop.
 
-the demo runs on the page at https\\://zriz.dev/docs/viewport.
+the page at https\\://zriz.dev/docs/viewport runs this cropper: a 3:2 photo, a track that sets the wheel to pan or zoom, and open, reset and download in the corners.
 
 ## anatomy
 
@@ -10675,7 +10589,7 @@ exports[`content > writes zoom as markdown 1`] = `
 
 a zoom slider and step buttons, for people with no wheel or pinch.
 
-the demo runs on the page at https\\://zriz.dev/docs/zoom.
+the page at https\\://zriz.dev/docs/zoom runs this cropper: a 3:2 photo, a zoom slider up to 3× with zoom out and zoom in, and open, reset and download in the corners.
 
 ## anatomy
 
