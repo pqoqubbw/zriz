@@ -183,7 +183,7 @@ const CROPPER_PAGE = defineDoc({
           },
           {
             name: "setOptions",
-            text: "changes `disabled`, `maxZoom`, `minSize`, `focalLength` and the two callbacks. `image`, `value`, `defaultValue`, `clock` and `plugins` stay as created. a new `focalLength` takes effect on the next `setValue()`, `reset()` or `setImage()`. call `setImage()` for a new photo",
+            text: "changes `disabled`, `maxZoom`, `minSize`, `focalLength` and the two callbacks. the type takes only those six. `image`, `value`, `defaultValue`, `clock` and `plugins` stay as created. a new `focalLength` takes effect on the next `setValue()`, `reset()` or `setImage()`. call `setImage()` for a new photo",
             type: "(options) => void",
           },
         ],

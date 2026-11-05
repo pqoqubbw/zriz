@@ -6291,7 +6291,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   sets the photo's natural size. a new size refits the crop with reason \`coverage\`. a size that is not finite and positive counts as \`null\`
 - \`setOptions\` \`(options) => void\`
 
-  changes \`disabled\`, \`maxZoom\`, \`minSize\`, \`focalLength\` and the two callbacks. \`image\`, \`value\`, \`defaultValue\`, \`clock\` and \`plugins\` stay as created. a new \`focalLength\` takes effect on the next \`setValue()\`, \`reset()\` or \`setImage()\`. call \`setImage()\` for a new photo
+  changes \`disabled\`, \`maxZoom\`, \`minSize\`, \`focalLength\` and the two callbacks. the type takes only those six. \`image\`, \`value\`, \`defaultValue\`, \`clock\` and \`plugins\` stay as created. a new \`focalLength\` takes effect on the next \`setValue()\`, \`reset()\` or \`setImage()\`. call \`setImage()\` for a new photo
 
 every write keeps the crop valid, see [value](https://zriz.dev/docs/value.md). before the cropper has a photo, only \`setValue()\`, \`reset()\`, \`setImage()\` and \`setOptions()\` do anything.
 

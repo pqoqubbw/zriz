@@ -147,7 +147,17 @@ type Cropper = {
     listener: CropperEvents[E]
   ) => () => void;
   setImage: (image: Size | null) => void;
-  setOptions: (options: Partial<CropperOptions>) => void;
+  setOptions: (
+    options: Pick<
+      CropperOptions,
+      | "disabled"
+      | "focalLength"
+      | "maxZoom"
+      | "minSize"
+      | "onValueChange"
+      | "onValueCommit"
+    >
+  ) => void;
   setValue: (value: Partial<CropValue>, options?: ActionOptions) => void;
   setRotation: (degrees: number, options?: ActionOptions) => void;
   setZoom: (

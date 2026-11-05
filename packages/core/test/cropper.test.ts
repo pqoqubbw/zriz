@@ -14,7 +14,7 @@ import {
   record,
   tuple,
 } from "fast-check";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
   createCropper,
@@ -518,8 +518,9 @@ describe("events", () => {
       name: "second",
     };
     const cropper = createCropper({ plugins: [first] });
+    const late: CropperOptions = { plugins: [second] };
 
-    cropper.setOptions({ plugins: [second] });
+    cropper.setOptions(late);
     cropper.destroy();
     expect(first.destroy).toHaveBeenCalledOnce();
     expect(second.init).not.toHaveBeenCalled();
@@ -3170,5 +3171,21 @@ describe("a reset target with a zoom", () => {
     drop();
     cropper.reset();
     expect(cropper.getZoom()).toBeCloseTo(1, 6);
+  });
+});
+
+describe("the cropper's public type", () => {
+  it("lets setOptions take only the options it honours", () => {
+    expectTypeOf<Parameters<Cropper["setOptions"]>[0]>().toEqualTypeOf<
+      Pick<
+        CropperOptions,
+        | "disabled"
+        | "focalLength"
+        | "maxZoom"
+        | "minSize"
+        | "onValueChange"
+        | "onValueCommit"
+      >
+    >();
   });
 });
