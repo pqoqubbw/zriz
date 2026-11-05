@@ -438,6 +438,61 @@ describe("view motion", () => {
     expect(fixture.root.dataset.transition).toBeUndefined();
   });
 
+  it("a quarter turn follows the ios spring at tempo, peaking near 40 ms", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const angles: number[] = [];
+
+    time.frames(2);
+    const off = viewOf(fixture.cropper).onFrame((frame) => {
+      angles.push(Math.atan2(frame.matrix[3], frame.matrix[0]));
+    });
+
+    fixture.cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(12);
+    off();
+    const steps = spinSteps(angles);
+    const peak = steps.indexOf(Math.max(...steps));
+
+    expect(steps[0]).toBeLessThan(steps[peak] ?? 0);
+    expect(peak).toBeGreaterThanOrEqual(1);
+    expect(peak).toBeLessThanOrEqual(3);
+
+    const omega = 18.9 * 1.35;
+    const swept = steps.slice(0, 8).reduce((sum, step) => sum + step, 0);
+    const seconds = (8 * 1000) / 60 / 1000;
+    const expected =
+      90 * (1 - (1 + omega * seconds) * Math.exp(-omega * seconds));
+
+    expect(swept).toBeCloseTo(expected, -0.5);
+  });
+
+  it("taps on a turn build up speed without a jump", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const angles: number[] = [];
+
+    time.frames(2);
+    const off = viewOf(fixture.cropper).onFrame((frame) => {
+      angles.push(Math.atan2(frame.matrix[3], frame.matrix[0]));
+    });
+
+    for (let tap = 0; tap < 3; tap += 1) {
+      fixture.cropper.rotate90("cw", { reason: "rotate-90" });
+      time.frames(6);
+    }
+
+    time.frames(40);
+    off();
+    const steps = spinSteps(angles);
+    const moved = steps.filter((step) => step > 0.01);
+
+    expect(Math.min(...steps)).toBeGreaterThan(-0.01);
+    expect(moved[5]).toBeLessThan(moved[4] ?? 0);
+    expect(moved[10]).toBeLessThan(moved[9] ?? 0);
+    expect(steps.reduce((sum, step) => sum + step, 0)).toBeCloseTo(270, 0);
+  });
+
   it("an aspect change mid spin does not reverse the spin", () => {
     const time = fakeClock();
     const fixture = mount("always", time.clock);

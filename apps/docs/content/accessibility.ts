@@ -116,7 +116,11 @@ const ACCESSIBILITY_PAGE = defineDoc({
         ],
         rows: [
           ["recentre", "spring, about 460 ms", "spring, about 250 ms"],
-          ["rotate 90°, reset or undo across a turn", "about 300 ms", "150 ms"],
+          [
+            "rotate 90°, reset or undo across a turn",
+            "spring, about 390 ms",
+            "150 ms",
+          ],
           ["flip", "spring, about 420 ms", "150 ms"],
           ["aspect, reset", "spring, about 460 ms", "150 ms"],
         ],

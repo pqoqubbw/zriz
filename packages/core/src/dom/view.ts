@@ -136,7 +136,7 @@ const ZOOM_OMEGA = 17.3 * TEMPO;
 const RECENTRE_OMEGA = 16.1 * TEMPO;
 const RECENTER_DELAY_MS = 500;
 const CHROME_HOLD_MS = 1380;
-const ROTATE_MS = 410 / TEMPO;
+const ROTATE_OMEGA = 18.9 * TEMPO;
 const FLIP_OMEGA = 17.6 * TEMPO;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
@@ -466,6 +466,14 @@ const springProgress = (omega: number, ms: number): number => {
   return 1 - (1 + t) * Math.exp(-t);
 };
 
+const omegaOf = (shape: Transition): number => {
+  if (shape === "rotate") {
+    return ROTATE_OMEGA;
+  }
+
+  return shape === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA;
+};
+
 const leadOf = (
   kind: Transition,
   spin: number,
@@ -779,13 +787,9 @@ const viewOf = (cropper: Cropper): View => {
 
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
-      const t =
-        quick || shape === "rotate"
-          ? easeOut(Math.min(elapsed / (quick ? REDUCED_MS : ROTATE_MS), 1))
-          : springProgress(
-              kind === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA,
-              elapsed
-            );
+      const t = quick
+        ? easeOut(Math.min(elapsed / REDUCED_MS, 1))
+        : springProgress(omegaOf(shape), elapsed);
 
       if (t >= SETTLED_PROGRESS || !blend) {
         blend = null;
