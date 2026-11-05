@@ -379,8 +379,9 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     shape: "rect",
     snippet: null,
     summary:
-      "a 3:2 photo, a track of default, ink and soft looks, and open, reset and download in the corners",
+      "a 3:2 photo, the straighten dial with its value, a track of default, ink and soft colours, and open, reset and download in the corners",
     zones: [
+      { end: null, kind: "dial", start: null, value: true },
       {
         end: null,
         items: ["default", "ink", "soft"],

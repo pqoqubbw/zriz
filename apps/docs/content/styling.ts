@@ -105,14 +105,17 @@ const STYLING_PAGE = defineDoc({
       }),
       p(
         "write a value with `light-dark()` to keep both schemes, or a single colour to use it in both."
+      ),
+      demo("styling"),
+      p(
+        "the demo above switches between the stylesheet's colours and two light looks of its own. each look sets all five variables on `Root`. drag the dial to see the accent."
       )
     ),
     section(
       "follow dark mode",
       p(
-        "the parts follow the page's `color-scheme`. the light values above apply in light mode and the dark values in dark mode:"
+        "the parts follow the page's `color-scheme`. the light values above apply in light mode and the dark values in dark mode."
       ),
-      demo("styling"),
       p("with this rule on the page, the parts follow the system setting:"),
       code("styling/scheme.css"),
       p(
