@@ -346,7 +346,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     if (ticket === loading) {
       motionReady = true;
 
-      if (drawn === null && (blank || !isIdle())) {
+      if (moving || (drawn === null && (blank || !isIdle()))) {
         show(false);
       }
     }

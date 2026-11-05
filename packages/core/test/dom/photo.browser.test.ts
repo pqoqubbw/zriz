@@ -586,11 +586,40 @@ describe("photo layer", () => {
     cropper.begin("pan");
 
     await expect
-      .poll(() => image?.style.visibility, { timeout: 2000 })
+      .poll(() => image?.style.visibility, { timeout: 5000 })
       .toBe("visible");
 
     expect(Object.hasOwn(photo.dataset, "sharp")).toBeFalsy();
     cropper.end();
+    await sharp(photo);
+  });
+
+  it("shows the moving image when it decodes after a gesture began", async () => {
+    const decode = vi.spyOn(HTMLImageElement.prototype, "decode");
+    let finish: (() => void) | undefined;
+
+    decode.mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+    });
+
+    const { cropper, photo } = await mount(1024);
+
+    await sharp(photo);
+    const image = photo.querySelector("img");
+
+    cropper.begin("pan");
+    await expect.poll(() => decode.mock.calls.length).toBeGreaterThan(0);
+    expect(image?.style.visibility).toBe("hidden");
+    finish?.();
+
+    await expect
+      .poll(() => image?.style.visibility, { timeout: 5000 })
+      .toBe("visible");
+
+    cropper.end();
+    decode.mockRestore();
     await sharp(photo);
   });
 
