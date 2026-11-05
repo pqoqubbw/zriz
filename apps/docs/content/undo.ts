@@ -31,7 +31,9 @@ const UNDO_PAGE = defineDoc({
         ["const undo", "};"],
         ["<button", "</button>"]
       ),
-      p("the browser dims only `disabled`, so paint the off state yourself:"),
+      p(
+        "the browser dims only `disabled`, so paint the off state yourself. save this as `undo.css` next to the editor, which imports it:"
+      ),
       code("undo/undo.css")
     ),
     section(

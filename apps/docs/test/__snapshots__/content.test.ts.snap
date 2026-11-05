@@ -6288,7 +6288,7 @@ render the zriz parts as your own components, and add your own handlers next to 
 
 ## render your own element
 
-every part takes \`render\`. pass an element, and zriz renders that element with the part's props, ref and data attributes merged in. your component must spread the props it gets onto its root element and forward its ref. this one uses \`forwardRef\`, which works in react 18 and 19. in react 19 you can take \`ref\` as a plain prop instead:
+every part takes \`render\`. pass an element, and zriz renders that element with the part's props, ref and data attributes merged in. your component must spread the props it gets onto its root element and forward its ref. this one uses \`forwardRef\`, which works in react 18 and 19. in react 19 you can take \`ref\` as a plain prop instead. save it as \`icon-button.tsx\`, which the examples below import:
 
 \`\`\`tsx
 import { forwardRef } from "react";
@@ -7608,7 +7608,7 @@ const thumb = {
 </Cropper.Zoom>
 \`\`\`
 
-forced colours mode removes a gradient and a plain background, so the slider would vanish. this file brings both back in \`CanvasText\`. the styles above are inline, so it needs \`!important\`:
+forced colours mode removes a gradient and a plain background, so the slider would vanish. save this as \`forced-colors.css\` next to the editor, which imports it. it brings both back in \`CanvasText\`. the styles above are inline, so it needs \`!important\`:
 
 \`\`\`css
 @media (forced-colors: active) {
@@ -9943,7 +9943,7 @@ const undo = () => {
 </button>
 \`\`\`
 
-the browser dims only \`disabled\`, so paint the off state yourself:
+the browser dims only \`disabled\`, so paint the off state yourself. save this as \`undo.css\` next to the editor, which imports it:
 
 \`\`\`css
 .undo[aria-disabled="true"] {

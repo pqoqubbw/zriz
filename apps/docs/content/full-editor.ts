@@ -39,7 +39,7 @@ const FULL_EDITOR_PAGE = defineDoc({
         ["<Cropper.Zoom", "</Cropper.Zoom>"]
       ),
       p(
-        "forced colours mode removes a gradient and a plain background, so the slider would vanish. this file brings both back in `CanvasText`. the styles above are inline, so it needs `!important`:"
+        "forced colours mode removes a gradient and a plain background, so the slider would vanish. save this as `forced-colors.css` next to the editor, which imports it. it brings both back in `CanvasText`. the styles above are inline, so it needs `!important`:"
       ),
       code("full-editor/forced-colors.css")
     ),

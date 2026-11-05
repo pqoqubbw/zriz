@@ -5,7 +5,7 @@ const COMPOSITION_PAGE = defineDoc({
     section(
       "render your own element",
       p(
-        "every part takes `render`. pass an element, and zriz renders that element with the part's props, ref and data attributes merged in. your component must spread the props it gets onto its root element and forward its ref. this one uses `forwardRef`, which works in react 18 and 19. in react 19 you can take `ref` as a plain prop instead:"
+        "every part takes `render`. pass an element, and zriz renders that element with the part's props, ref and data attributes merged in. your component must spread the props it gets onto its root element and forward its ref. this one uses `forwardRef`, which works in react 18 and 19. in react 19 you can take `ref` as a plain prop instead. save it as `icon-button.tsx`, which the examples below import:"
       ),
       code("composition/icon-button.tsx"),
       p("then pass it to a part:"),
