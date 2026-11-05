@@ -109,7 +109,7 @@ const VALUE_PAGE = defineDoc({
         "`value` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from `onValueChange`. `Reset` still goes to `defaultValue`, not to the last `value`."
       ),
       p(
-        "during a gesture and until it commits, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in `onValueCommit`. a new `aspect` applies at once. the `aspect` and `rotation` from the first render become the reset target."
+        "during a gesture and until it commits, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in `onValueCommit`. a new `aspect` applies at once. the `aspect`, `rotation` and `zoom` from the first render become the reset target."
       )
     ),
     section(

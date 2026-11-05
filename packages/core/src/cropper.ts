@@ -284,6 +284,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   const targets = new Set<Record<string, unknown>>();
   let resetValue = firstReset;
   let resetFit = firstReset;
+  let resetZoom: number | undefined;
   let locked: Aspect | undefined;
   let image: Size | null = initial.image ?? null;
   let value = initial.value ? readValue(initial.value, resetValue) : resetValue;
@@ -792,8 +793,37 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     return [level, heldValue(level, flat)];
   };
 
+  const zoomedTo = (from: CropState, zoom: number): CropState => {
+    const k =
+      zoomOf(imagePlanes(from), from.crop) /
+      Math.min(Math.max(zoom, 1), zoomCap());
+
+    return constrain(
+      scaleToMin({
+        ...from,
+        crop: {
+          ...from.crop,
+          height: from.crop.height * k,
+          width: from.crop.width * k,
+        },
+      }),
+      "size"
+    );
+  };
+
   const fitReset = (): void => {
-    resetFit = image ? soundFit(resetValue, image)[1] : resetValue;
+    if (!image) {
+      resetFit = resetValue;
+
+      return;
+    }
+
+    const [fixed, kept] = soundFit(resetValue, image);
+
+    resetFit =
+      resetZoom === undefined
+        ? kept
+        : heldValue(zoomedTo(fixed, resetZoom), kept);
   };
 
   const disabled = (): boolean => destroyed || (options.disabled ?? false);
@@ -981,10 +1011,15 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     retarget(next) {
       const aim = (): void => {
         resetValue = firstReset;
+        resetZoom = undefined;
         locked = undefined;
 
         for (const patch of targets) {
           resetValue = readValue(patch, resetValue);
+
+          if (typeof patch.zoom === "number") {
+            resetZoom = patch.zoom;
+          }
 
           if (patch.lock === true) {
             locked = resetValue.aspect;
@@ -1208,7 +1243,6 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         return;
       }
 
-      const k = cropper.getZoom() / Math.min(Math.max(zoom, 1), zoomCap());
       const turned = turnedSize(state.image, state.turns);
       const anchor = action.anchor
         ? {
@@ -1216,17 +1250,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
             y: (action.anchor.y - 0.5) * turned.height,
           }
         : state.crop;
-      const sized = constrain(
-        scaleToMin({
-          ...state,
-          crop: {
-            ...state.crop,
-            height: state.crop.height * k,
-            width: state.crop.width * k,
-          },
-        }),
-        "size"
-      ).crop;
+      const sized = zoomedTo(state, zoom).crop;
       const reached = sized.width / state.crop.width;
       const next = {
         ...state,

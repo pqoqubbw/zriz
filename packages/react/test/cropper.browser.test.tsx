@@ -1167,6 +1167,64 @@ describe("controlled props", () => {
     expect(api.current?.getZoom()).toBeCloseTo(4, 6);
   });
 
+  it("a zoom from the first render is the reset target and sends nothing on load", async () => {
+    const api = createRef<CropperApi>();
+    const change = vi.fn<() => void>();
+    const commit = vi.fn<() => void>();
+    const screen = await render(
+      <Cropper.Root
+        actionsRef={api}
+        image={PHOTO}
+        onValueChange={change}
+        onValueCommit={commit}
+        zoom={2}
+      >
+        <Cropper.Reset>reset</Cropper.Reset>
+      </Cropper.Root>
+    );
+
+    await frames(3);
+    const reset = screen.container.querySelector("button");
+
+    expect({
+      changes: change.mock.calls.length,
+      commits: commit.mock.calls.length,
+      hidden: reset?.hidden,
+      zoom: api.current?.getZoom(),
+    }).toStrictEqual({ changes: 0, commits: 0, hidden: true, zoom: 2 });
+    api.current?.setZoom(5);
+    await frames(3);
+    expect(reset?.hidden).toBeFalsy();
+    reset?.click();
+    await frames(3);
+    expect(api.current?.getZoom()).toBeCloseTo(2, 6);
+    expect(reset?.hidden).toBeTruthy();
+  });
+
+  it("disabling after a reset leaves the first aspect alone", async () => {
+    const api = createRef<CropperApi>();
+    type HostProps = { aspect: number; disabled: boolean };
+    const Host = ({ aspect, disabled }: HostProps) => (
+      <Cropper.Root
+        actionsRef={api}
+        aspect={aspect}
+        disabled={disabled}
+        image={PHOTO}
+      />
+    );
+    const screen = await render(<Host aspect={1} disabled={false} />);
+
+    await frames(2);
+    await screen.rerender(<Host aspect={16 / 9} disabled={false} />);
+    await frames(2);
+    api.current?.reset();
+    expect(api.current?.getValue().aspect).toBe(1);
+    await screen.rerender(<Host aspect={16 / 9} disabled />);
+    await screen.rerender(<Host aspect={16 / 9} disabled={false} />);
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+  });
+
   it("uses first render props as the reset target on a cropper it was given", async () => {
     const cropper = createCropper({ image: PHOTO });
 

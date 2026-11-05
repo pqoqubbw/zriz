@@ -3128,3 +3128,48 @@ describe("minSize across quarter turns", () => {
     expect(cropper.getMinSize()).toStrictEqual({ height: 1200, width: 630 });
   });
 });
+
+describe("a reset target with a zoom", () => {
+  const zoomed = () => {
+    const time = fakeClock();
+    const cropper = createCropper({ clock: time.clock, image: PHOTO });
+    const drop = cropper.retarget({ zoom: 2 });
+
+    cropper.setZoom(2, { emit: false });
+
+    return { cropper, drop, time };
+  };
+
+  it("reads as pristine at that zoom", () => {
+    const { cropper } = zoomed();
+
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+
+  it("reset returns to that zoom", () => {
+    const { cropper } = zoomed();
+
+    cropper.setZoom(5);
+    expect(cropper.getState().pristine).toBeFalsy();
+    cropper.reset();
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+
+  it("follows a new photo", () => {
+    const { cropper } = zoomed();
+
+    cropper.setImage({ height: 1000, width: 3000 });
+    cropper.setZoom(2, { emit: false });
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+
+  it("goes away with its target", () => {
+    const { cropper, drop } = zoomed();
+
+    drop();
+    cropper.reset();
+    expect(cropper.getZoom()).toBeCloseTo(1, 6);
+  });
+});
+
