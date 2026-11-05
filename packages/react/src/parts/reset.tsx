@@ -11,7 +11,7 @@ import {
   useMergedRef,
 } from "../part";
 import type { Part, PartProps } from "../part";
-import { PRESS } from "../press";
+import { PRESS, usePressRef } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -68,7 +68,7 @@ const Reset: Part<ResetProps, HTMLButtonElement> = forwardRef<
       type: "button",
     },
     props,
-    useMergedRef<HTMLButtonElement>(box.set, ref),
+    usePressRef(useMergedRef<HTMLButtonElement>(box.set, ref)),
     { pristine }
   );
 });

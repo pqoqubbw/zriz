@@ -6,7 +6,7 @@ import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
-import { PRESS } from "../press";
+import { PRESS, usePressRef } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -49,7 +49,7 @@ const Orientation: Part<OrientationProps, HTMLButtonElement> = forwardRef<
       type: "button",
     },
     props,
-    ref,
+    usePressRef(ref),
     { orientation }
   );
 });

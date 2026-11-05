@@ -6,7 +6,7 @@ import { forwardRef, useCallback, useRef, useState } from "react";
 import { useCropperContext } from "../context";
 import { useIsomorphicLayoutEffect, useLatest, useMergedRef } from "../part";
 import type { Part, PartProps } from "../part";
-import { PRESS } from "../press";
+import { PRESS, usePressRef } from "../press";
 import { usePart } from "../use-render";
 
 type DialValueProps = Omit<
@@ -59,7 +59,7 @@ const DialValue: Part<DialValueProps, HTMLSpanElement> = forwardRef<
       style: PRESS,
     },
     bare,
-    useMergedRef(own, ref),
+    usePressRef(useMergedRef(own, ref)),
     {}
   );
 });

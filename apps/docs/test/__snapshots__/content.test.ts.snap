@@ -6107,10 +6107,10 @@ what each set of imports adds to your bundle, minified and compressed with brotl
 
 | set | imports | brotli |
 | - | - | - |
-| editor | every part from \`@zriz/react/cropper\` | 32.24 kB |
-| avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 25.68 kB |
-| root only | \`Root\` | 18.21 kB |
-| vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 21.09 kB |
+| editor | every part from \`@zriz/react/cropper\` | 32.31 kB |
+| avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 25.67 kB |
+| root only | \`Root\` | 18.20 kB |
+| vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 21.10 kB |
 | server | \`toSharp\` from \`@zriz/core\` | 723 B |
 | stylesheet | \`styles.css\`, which is optional | 893 B |
 
@@ -6129,7 +6129,7 @@ four chunks stay out of the first load and download the first time a photo needs
 | svg | the photo is an svg | 891 B |
 | source | you pass an \`img\`, \`video\`, \`canvas\` or \`OffscreenCanvas\` to \`loadImage\`. \`Root\` never loads it | 557 B |
 
-with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.97 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.67 kB.
+with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.96 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.67 kB.
 
 ## dependencies
 

@@ -28,6 +28,15 @@ const tree = (api: RefObject<CropperApi | null>, run: number): ReactElement => (
       <Cropper.ZoomThumb />
     </Cropper.Zoom>
     <Cropper.Announcer announce={() => "cropped"} />
+    <Cropper.Rotate />
+    <Cropper.Flip />
+    <Cropper.Reset />
+    <Cropper.Orientation />
+    <Cropper.ZoomStep factor={2} />
+    <Cropper.DialValue />
+    <Cropper.AspectGroup aria-label="Aspect">
+      <Cropper.AspectItem value={1} />
+    </Cropper.AspectGroup>
   </Cropper.Root>
 );
 
@@ -108,6 +117,27 @@ describe("server rendered parts under a strict style-src", () => {
       zoom: ["relative", "none"],
     });
 
+    root.unmount();
+  });
+
+  it("keeps the press styles on every button part after hydration", async () => {
+    const { host, root } = await hydrated();
+
+    await expect
+      .poll(() => refused.some((name) => name.startsWith("style-src")))
+      .toBeTruthy();
+
+    const presses = [
+      "rotate",
+      "flip",
+      "reset",
+      "orientation",
+      "zoom-step",
+      "dial-value",
+      "aspect-item",
+    ].map((name) => computed(host, `[data-zriz-item="${name}"]`).touchAction);
+
+    expect(new Set(presses)).toStrictEqual(new Set(["manipulation"]));
     root.unmount();
   });
 

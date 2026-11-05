@@ -5,7 +5,7 @@ import type { MouseEvent } from "react";
 
 import { useCropperContext } from "../context";
 import type { Part, PartProps } from "../part";
-import { PRESS } from "../press";
+import { PRESS, usePressRef } from "../press";
 import { useAriaDisabled, useCropperState } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -41,7 +41,7 @@ const Flip: Part<FlipProps, HTMLButtonElement> = forwardRef<
       type: "button",
     },
     props,
-    ref,
+    usePressRef(ref),
     { mirrored }
   );
 });
