@@ -8127,7 +8127,7 @@ export const LiveAngle = () => {
   is the \`max\` option, or the cropper's \`maxZoom\`, 15 by default. \`max\` sets the slider's range only. the cropper still stops at \`maxZoom\`
 - \`dragging\` \`boolean\`
 
-  is \`true\` from a press on any \`Zoom\` of this cropper until release, and while this slider changes the zoom, until release or 150 ms after its last change
+  is \`true\` while the cropper has a \`zoom-control\` gesture open, so every \`Zoom\` and every \`useZoom\` on one cropper reads the same. a press on \`Zoom\` holds it until release. a \`useZoom\` change holds it until the last held pointer or key lifts, or, with nothing held, 150 ms after the last change
 - \`onValueChange\` \`(zoom) => void\`
 
   starts the gesture on the first call and sets the zoom. with no pointer or key held, the gesture ends 150 ms after the last call
