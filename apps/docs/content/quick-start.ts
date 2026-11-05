@@ -46,11 +46,11 @@ const QUICK_START_PAGE = defineDoc({
     section(
       "get the crop",
       p(
-        "add `onValueCommit` to `Root` in the picker above. it fires once when a gesture ends, a key press on the crop or the dial included, or on the frame after a write such as `rotate90()`. a photo the user never touches sends no commit, see [events](events)."
+        "add `onValueCommit` to `Root` in the picker above. it fires once when a gesture ends, a key press on the crop or the dial included, or on the frame after a write such as `rotate90()`. the first photo sends no commit until the user touches it, and a later photo sends one only when it has to refit the crop, see [events](events)."
       ),
       excerpt("quick-start/commit.tsx", ["<Cropper.Root", ">"]),
       p(
-        "`value` is the crop as fractions of the photo, ready to store and load back. [value](value) lists every field. `details.pixelCrop` is the same crop in source pixels. `getPixelCrop()` on the cropper from `actionsRef` reads it for an untouched photo, see [hooks](hooks). [exporting](exporting) turns the crop into a file in the browser or on your server."
+        "`value` is the crop as fractions of the photo, ready to store and load back. [value](value) lists every field. `details.pixelCrop` is the export plan for that crop in source pixels, or `null` before a photo loads. its `pixelRect` is the crop rectangle, and it is `null` with a straighten angle or perspective. `getPixelCrop()` on the cropper from `actionsRef` reads it for an untouched photo, see [hooks](hooks). [exporting](exporting) turns the crop into a file in the browser or on your server."
       ),
       p(
         "[playground](playground) changes the main props live, and [full editor](full-editor) puts every part in one component."

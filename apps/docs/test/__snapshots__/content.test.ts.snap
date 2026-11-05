@@ -7398,11 +7398,17 @@ short answers, each with a link to the page that covers it in full.
 
 ### what does zriz need
 
-react 18.2 or newer, 19 included, from one build. both packages ship types, and \`@types/react\` 18.2 or newer is an optional peer. [quick start](https://zriz.dev/docs/quick-start.md) has the install.
+react 18.2 or newer, 19 included, from one build. both packages ship types, and \`@types/react\` 18.2.6 or newer is an optional peer. [quick start](https://zriz.dev/docs/quick-start.md) has the install.
 
 ### which browsers does it run in
 
-chrome, edge and firefox in their latest two versions, safari and ios safari 18 and newer, and chrome and samsung internet on android. a two-finger trackpad twist rotates only in safari. other browsers rotate with the dial and the keys.
+chrome, edge and firefox in their latest two versions, safari and ios safari 18 and newer, and chrome and samsung internet on android. a two-finger trackpad twist rotates only in safari. on a trackpad in other browsers, rotate with the dial and the keys. two fingers on a touch screen rotate in every browser.
+
+### does it work without a bundler
+
+yes, with an import map. map \`react\`, \`react/jsx-runtime\`, \`@zriz/react\`, \`@zriz/react/cropper\`, \`@zriz/core\` and \`@zriz/core/dom\`. the parts also import \`@zriz/react/warn\`, so point that at \`@zriz/react/dist/warn-off.js\`.
+
+to keep the warnings during development, point it at \`dist/warn.js\` and run \`window.process = { env: {} }\` before the modules load. without a \`process\` global, \`dist/warn.js\` stays silent too.
 
 ### does it work with the next.js app router
 
@@ -7426,7 +7432,7 @@ yes. pass it to \`render\` on any part, and zriz merges its props and ref into y
 
 ### can i test it with jsdom
 
-jsdom has no \`ResizeObserver\`, so \`Viewport\` and \`DialTicks\` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use \`createCropper\` with a manual clock, as [cropper](https://zriz.dev/docs/cropper.md) shows.
+jsdom has no \`ResizeObserver\`, so \`Viewport\`, \`Image\` and \`DialTicks\` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use \`createCropper\` with a manual clock, as [cropper](https://zriz.dev/docs/cropper.md) shows.
 
 \`\`\`ts
 globalThis.ResizeObserver ??= class {
@@ -7444,7 +7450,7 @@ safari decodes heic, so iphone photos open there. in other browsers the load fai
 
 ### how do i get the cropped file
 
-call \`exportCrop\` from \`@zriz/core/dom\` with the cropper from \`actionsRef\`. it resolves with a \`Blob\` and its width and height. [exporting](https://zriz.dev/docs/exporting.md) has the code.
+call \`exportCrop\` from \`@zriz/core/dom\` with the cropper from \`actionsRef\`. it resolves with an object that holds the file in \`blob\`, next to its \`width\` and \`height\`. [exporting](https://zriz.dev/docs/exporting.md) has the code.
 
 ### can i put it in a dialog or a drawer
 
@@ -8615,7 +8621,7 @@ export const PhotoCropper = () => {
 
 ## get the crop
 
-add \`onValueCommit\` to \`Root\` in the picker above. it fires once when a gesture ends, a key press on the crop or the dial included, or on the frame after a write such as \`rotate90()\`. a photo the user never touches sends no commit, see [events](https://zriz.dev/docs/events.md).
+add \`onValueCommit\` to \`Root\` in the picker above. it fires once when a gesture ends, a key press on the crop or the dial included, or on the frame after a write such as \`rotate90()\`. the first photo sends no commit until the user touches it, and a later photo sends one only when it has to refit the crop, see [events](https://zriz.dev/docs/events.md).
 
 \`\`\`tsx
 <Cropper.Root
@@ -8627,7 +8633,7 @@ add \`onValueCommit\` to \`Root\` in the picker above. it fires once when a gest
 >
 \`\`\`
 
-\`value\` is the crop as fractions of the photo, ready to store and load back. [value](https://zriz.dev/docs/value.md) lists every field. \`details.pixelCrop\` is the same crop in source pixels. \`getPixelCrop()\` on the cropper from \`actionsRef\` reads it for an untouched photo, see [hooks](https://zriz.dev/docs/hooks.md). [exporting](https://zriz.dev/docs/exporting.md) turns the crop into a file in the browser or on your server.
+\`value\` is the crop as fractions of the photo, ready to store and load back. [value](https://zriz.dev/docs/value.md) lists every field. \`details.pixelCrop\` is the export plan for that crop in source pixels, or \`null\` before a photo loads. its \`pixelRect\` is the crop rectangle, and it is \`null\` with a straighten angle or perspective. \`getPixelCrop()\` on the cropper from \`actionsRef\` reads it for an untouched photo, see [hooks](https://zriz.dev/docs/hooks.md). [exporting](https://zriz.dev/docs/exporting.md) turns the crop into a file in the browser or on your server.
 
 [playground](https://zriz.dev/docs/playground.md) changes the main props live, and [full editor](https://zriz.dev/docs/full-editor.md) puts every part in one component.
 "

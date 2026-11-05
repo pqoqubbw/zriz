@@ -7,13 +7,22 @@ const FAQ_PAGE = defineDoc({
       qa(
         "what does zriz need",
         p(
-          "react 18.2 or newer, 19 included, from one build. both packages ship types, and `@types/react` 18.2 or newer is an optional peer. [quick start](quick-start) has the install."
+          "react 18.2 or newer, 19 included, from one build. both packages ship types, and `@types/react` 18.2.6 or newer is an optional peer. [quick start](quick-start) has the install."
         )
       ),
       qa(
         "which browsers does it run in",
         p(
-          "chrome, edge and firefox in their latest two versions, safari and ios safari 18 and newer, and chrome and samsung internet on android. a two-finger trackpad twist rotates only in safari. other browsers rotate with the dial and the keys."
+          "chrome, edge and firefox in their latest two versions, safari and ios safari 18 and newer, and chrome and samsung internet on android. a two-finger trackpad twist rotates only in safari. on a trackpad in other browsers, rotate with the dial and the keys. two fingers on a touch screen rotate in every browser."
+        )
+      ),
+      qa(
+        "does it work without a bundler",
+        p(
+          "yes, with an import map. map `react`, `react/jsx-runtime`, `@zriz/react`, `@zriz/react/cropper`, `@zriz/core` and `@zriz/core/dom`. the parts also import `@zriz/react/warn`, so point that at `@zriz/react/dist/warn-off.js`."
+        ),
+        p(
+          "to keep the warnings during development, point it at `dist/warn.js` and run `window.process = { env: {} }` before the modules load. without a `process` global, `dist/warn.js` stays silent too."
         )
       ),
       qa(
@@ -49,7 +58,7 @@ const FAQ_PAGE = defineDoc({
       qa(
         "can i test it with jsdom",
         p(
-          "jsdom has no `ResizeObserver`, so `Viewport` and `DialTicks` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use `createCropper` with a manual clock, as [cropper](cropper) shows."
+          "jsdom has no `ResizeObserver`, so `Viewport`, `Image` and `DialTicks` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use `createCropper` with a manual clock, as [cropper](cropper) shows."
         ),
         code("faq/resize-observer.ts")
       )
@@ -65,7 +74,7 @@ const FAQ_PAGE = defineDoc({
       qa(
         "how do i get the cropped file",
         p(
-          "call `exportCrop` from `@zriz/core/dom` with the cropper from `actionsRef`. it resolves with a `Blob` and its width and height. [exporting](exporting) has the code."
+          "call `exportCrop` from `@zriz/core/dom` with the cropper from `actionsRef`. it resolves with an object that holds the file in `blob`, next to its `width` and `height`. [exporting](exporting) has the code."
         )
       ),
       qa(
