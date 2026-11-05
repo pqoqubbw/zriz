@@ -43,6 +43,9 @@ const STYLING_PAGE = defineDoc({
         "every rule sits in `:where()` inside `@layer components.zriz`. a class with no layer wins in any import order, and so does a class in your `components` or `utilities` layer, tailwind included. a class in any other layer wins only when that layer is declared after the stylesheet. `@zriz/core/styles.css` is the same file for [vanilla js](vanilla-js)."
       ),
       p(
+        "a page-wide `transition` cannot make the crop trail your finger. zriz sets `transition-property` inline to `none` on `Area`, `DialTicks` and `ZoomThumb`, and to `opacity` on `Mask`, so the mask keeps its fade. a transition of your own on those parts needs `!important`."
+      ),
+      p(
         "the first line of the file names `properties`, `theme`, `base`, `components` and `utilities`, so a stylesheet loaded first sets the order of those layers on your page. to keep your own order, and to let every layer of yours win, import it into a layer of its own:"
       ),
       code("styling/layer.css")

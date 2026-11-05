@@ -366,6 +366,101 @@ describe("a turn of the whole crop", () => {
   });
 });
 
+describe("a page-wide transition", () => {
+  const rule = document.createElement("style");
+
+  rule.textContent = "*,*::before,*::after{transition:all .2s}";
+
+  afterEach(async () => {
+    rule.remove();
+    await cleanup();
+  });
+
+  const running = (selector: string): string[] =>
+    pick(selector)
+      .getAnimations()
+      .map((animation) =>
+        animation instanceof CSSTransition ? animation.transitionProperty : ""
+      );
+
+  const Moving = ({ api }: EditorProps) => (
+    <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+      <Cropper.Viewport
+        style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+      >
+        <Cropper.Mask />
+        <Cropper.Area aria-label="Crop" />
+      </Cropper.Viewport>
+      <Cropper.Dial aria-label="Straighten" style={{ height: 40, width: 361 }}>
+        <Cropper.DialTicks />
+      </Cropper.Dial>
+      <Cropper.Zoom aria-label="Zoom" style={{ height: 20, width: 200 }}>
+        <Cropper.ZoomThumb />
+      </Cropper.Zoom>
+    </Cropper.Root>
+  );
+
+  it("leaves every per-frame write on the crop, the ruler and the thumb instant", async () => {
+    document.head.append(rule);
+    const api = createRef<CropperApi>();
+
+    await render(<Moving api={api} />);
+    await frames(2);
+    await expect.poll(() => document.getAnimations().length).toBe(0);
+    api.current?.setRotation(9);
+    api.current?.setZoom(2);
+    const state = api.current?.getCropState();
+
+    if (state) {
+      api.current?.setCropState({
+        ...state,
+        crop: { ...state.crop, width: state.crop.width - 40 },
+      });
+    }
+
+    await frames(2);
+    const area = pick('[data-zriz-item="area"]');
+
+    expect(running('[data-zriz-item="area"]')).toStrictEqual([]);
+    expect(running('[data-zriz-item="dial-ticks"]')).toStrictEqual([]);
+    expect(running('[data-zriz-item="zoom-thumb"]')).toStrictEqual([]);
+    expect(running('[data-zriz-item="mask"]')).not.toContain("clip-path");
+    expect(area.getBoundingClientRect().width).toBeCloseTo(
+      Number.parseFloat(area.style.width),
+      1
+    );
+  });
+
+  it("keeps the fade of the scrim during a gesture", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(<Moving api={api} />);
+    await frames(2);
+    api.current?.begin("pan");
+    await expect
+      .poll(() => running('[data-zriz-item="mask"]'))
+      .toContain("opacity");
+    api.current?.end();
+  });
+
+  it("hides the area at once when a turn starts", async () => {
+    document.head.append(rule);
+    const api = createRef<CropperApi>();
+
+    await render(<Moving api={api} />);
+    await frames(2);
+    await expect.poll(() => document.getAnimations().length).toBe(0);
+    api.current?.rotate90();
+    const area = pick('[data-zriz-item="area"]');
+
+    await expect
+      .poll(() => pick('[data-zriz-item="root"]').dataset.transition)
+      .toBe("rotate");
+    expect(getComputedStyle(area).opacity).toBe("0");
+    expect(area.getAnimations()).toStrictEqual([]);
+  });
+});
+
 describe("layer order on the page", () => {
   const held: HTMLIFrameElement[] = [];
 

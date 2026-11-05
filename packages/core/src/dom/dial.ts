@@ -588,6 +588,7 @@ const bindDialTicks = (
 
   strip.setAttribute("aria-hidden", "true");
   strip.style.position = "absolute";
+  strip.style.transitionProperty = "none";
   strip.style.top = "0";
   strip.style.bottom = "0";
   strip.style.left = "0";

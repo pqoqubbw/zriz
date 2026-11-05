@@ -226,6 +226,7 @@ const bindMask = (
   style.position = "absolute";
   style.inset = "0";
   style.pointerEvents = "none";
+  style.transitionProperty = "opacity";
   let last = "";
   let gradient = false;
 
@@ -303,6 +304,7 @@ const bindArea = (
   const { style } = element;
 
   style.position = "absolute";
+  style.transitionProperty = "none";
 
   if (options.shape === "circle") {
     style.borderRadius = "50%";

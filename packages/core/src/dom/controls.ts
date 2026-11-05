@@ -313,6 +313,7 @@ const bindZoomThumb = (
   options: ZoomOptions = {}
 ): (() => void) => {
   element.style.position = "absolute";
+  element.style.transitionProperty = "none";
   let last = "";
 
   const write = (): void => {
