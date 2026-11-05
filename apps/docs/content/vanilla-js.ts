@@ -55,7 +55,13 @@ const VANILLA_JS_PAGE = defineDoc({
         'on a right-to-left page, the arrows and the drag swap. pass `{ dir: "rtl" }` or `{ dir: "ltr" }` as the third argument of `bindDial` to set it yourself.'
       ),
       p(
-        "the same argument takes `locale` and `format` for the spoken angle, and `ownText: true` to keep an `aria-valuetext` of yours, which `bindDial` overwrites otherwise. it also takes `gain`, the pixels of drag per degree, 4 by default, `slop`, the pixels a drag travels before the dial moves, 10 by default, and `tau`, how long a flick glides in ms, 95 by default."
+        "the same argument takes `locale` and `format` for the spoken angle, and `ownText: true` to keep an `aria-valuetext` of yours, which `bindDial` overwrites otherwise. it also takes `gain`, the pixels of drag per degree, 4 by default, `slop`, the pixels a drag travels before the dial moves, 10 by default, and `tau`, the time constant of a flick in ms, 95 by default."
+      ),
+      p(
+        "after a flick, the speed falls to about a third every `tau` ms, and the glide stops once it drops under 0.5° a second. it ends about the flick's speed times `tau` past where you let go, so a flick at 100° a second glides about 9.5°."
+      ),
+      p(
+        "`locale`, `format` and `ownText` belong to that element. `dir`, `gain`, `slop` and `tau` belong to the cropper: a second `bindDial` merges its values over the first, and both dials follow them. `bindDialTicks` spaces the ticks `gain` times 2.25 px apart, so it redraws when `gain` changes. when the last dial unbinds, the defaults come back."
       ),
       p(
         "`bindDialTicks(cropper, strip, count)` makes 41 ticks by default, and uses the children when the strip already has some."
