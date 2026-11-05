@@ -30,6 +30,7 @@ import { photoUrl } from "@/demos/shell/photo";
 import { exportRun, useDownload } from "@/demos/shell/use-download";
 import type { DemoRun } from "@/demos/shell/use-download";
 import { usePhoto } from "@/demos/shell/use-photo";
+import { cn } from "@/lib/cn";
 
 type HandlePosition = HandleProps["position"];
 
@@ -45,6 +46,8 @@ type DemoShellProps = Omit<
 > & {
   /** The controls under the stage. */
   children?: ReactNode;
+  /** Classes for Root, such as colour variables. */
+  className?: string;
   /** Export options for the download chip. */
   exportOptions?: ExportOptions;
   /** Draw the crop grid. */
@@ -96,6 +99,7 @@ const announce = (_: CropValue, details: CommitDetails): string | null =>
 
 const DemoShell = ({
   children,
+  className,
   exportOptions,
   grid = true,
   handles = HANDLES,
@@ -108,8 +112,8 @@ const DemoShell = ({
 }: DemoShellProps) => {
   const spec = DEMO_SPECS[name];
   const actions = useRef<CropperApi>(null);
-  const photo = usePhoto(photoUrl(spec.photo));
   const download = useDownload(actions, onAction ?? exportRun(exportOptions));
+  const photo = usePhoto(photoUrl(spec.photo), download.abort);
   const { dropping } = photo;
   const locked = lock && download.busy;
   const busy = photo.loading || dropping;
@@ -121,7 +125,7 @@ const DemoShell = ({
         {...root}
         {...(lock ? { disabled: locked } : null)}
         actionsRef={actions}
-        className="flex w-full flex-col items-center"
+        className={cn("flex w-full flex-col items-center", className)}
         onError={photo.handleError}
         onLoad={photo.handleLoad}
         shape={shape ?? spec.shape}

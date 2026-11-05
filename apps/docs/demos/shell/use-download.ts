@@ -11,6 +11,7 @@ import { SAVED_MS } from "@/demos/shell/sizes";
 type DemoRun = (cropper: Cropper, signal: AbortSignal) => Promise<void>;
 
 type Download = {
+  abort: () => void;
   busy: boolean;
   done: boolean;
   run: () => Promise<void>;
@@ -79,6 +80,9 @@ const useDownload = (
   );
 
   return {
+    abort: () => {
+      running.current?.abort();
+    },
     busy,
     done,
     run: async () => {

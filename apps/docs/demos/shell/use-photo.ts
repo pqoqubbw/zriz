@@ -41,7 +41,7 @@ const ERROR_TEXT: Partial<Record<ZrizError["code"], string>> = {
 const hasFiles = (event: DragEvent): boolean =>
   event.dataTransfer.types.includes("Files");
 
-const usePhoto = (initial: string): Photo => {
+const usePhoto = (initial: string, onOpen: () => void): Photo => {
   const [src, setSrc] = useState<Blob | string>(initial);
   const [status, setStatus] = useState<PhotoStatus>("first");
   const [loaded, setLoaded] = useState(false);
@@ -79,6 +79,7 @@ const usePhoto = (initial: string): Photo => {
     }
 
     show(null);
+    onOpen();
     setSrc(file);
     setStatus(loaded ? "replacing" : "first");
   };
