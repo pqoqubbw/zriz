@@ -105,7 +105,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "22154 B",
+      "limit": "23056 B",
       "entry": [
         "index"
       ]
@@ -120,7 +120,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "19851 B",
+      "limit": "20600 B",
       "entry": [
         "index"
       ]
@@ -135,13 +135,13 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "24103 B"
+      "limit": "24895 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "4170 B",
+      "limit": "4928 B",
       "entry": [
         "index"
       ]
@@ -150,7 +150,7 @@
       "name": "exportCrop",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "600 B",
+      "limit": "623 B",
       "entry": [
         "index"
       ]
@@ -159,13 +159,13 @@
       "name": "exportCrop total (with render chunk)",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "3800 B"
+      "limit": "3859 B"
     },
     {
       "name": "loadImage",
       "path": "dist/dom/index.js",
       "import": "{ loadImage }",
-      "limit": "3670 B",
+      "limit": "4445 B",
       "entry": [
         "index"
       ]
@@ -174,13 +174,13 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3500 B"
+      "limit": "3554 B"
     },
     {
       "name": "lazy chunk dom/svg",
       "path": "dist/dom/svg.js",
       "import": "*",
-      "limit": "1340 B"
+      "limit": "1352 B"
     },
     {
       "name": "lazy chunk dom/source",
@@ -192,7 +192,7 @@
       "name": "lazy chunk dom/sharpen",
       "path": "dist/dom/sharpen.js",
       "import": "*",
-      "limit": "2360 B"
+      "limit": "3029 B"
     }
   ]
 }
