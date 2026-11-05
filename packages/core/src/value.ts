@@ -136,13 +136,18 @@ const sameAspect = (a: Aspect, b: Aspect): boolean =>
     typeof b === "number" &&
     Math.abs(a - b) <= 1e-12 * Math.max(a, b));
 
+const sameStep = (a: number, b: number): boolean => Math.abs(a - b) < 1.5e-12;
+
 const fieldEqual = (a: CropValue, b: CropValue, field: ValueField): boolean => {
   if (field === "center") {
-    return a.center.x === b.center.x && a.center.y === b.center.y;
+    return sameStep(a.center.x, b.center.x) && sameStep(a.center.y, b.center.y);
   }
 
   if (field === "size") {
-    return a.size.width === b.size.width && a.size.height === b.size.height;
+    return (
+      sameStep(a.size.width, b.size.width) &&
+      sameStep(a.size.height, b.size.height)
+    );
   }
 
   if (field === "perspective") {

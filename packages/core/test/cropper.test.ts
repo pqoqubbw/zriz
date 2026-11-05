@@ -2443,6 +2443,16 @@ describe("round trips", () => {
     expect(cropper.getState().pristine).toBeTruthy();
   });
 
+  it("is pristine again after four turns when a side rounds to the next step", () => {
+    const { cropper } = setup({ defaultValue: { aspect: 6.650816071338371 } });
+
+    for (let turn = 0; turn < 4; turn += 1) {
+      cropper.rotate90();
+    }
+
+    expect(cropper.getState().pristine).toBeTruthy();
+  });
+
   it("is pristine again after four turns on a ratio whose inverse drifts", () => {
     fcAssert(
       property(double({ max: 8, min: 0.125, noNaN: true }), (ratio) => {
