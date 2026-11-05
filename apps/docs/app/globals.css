@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../app";
 @source "../components";
+@source "../demos";
 @source not inline("table transform");
 
 @custom-variant thumb {
@@ -52,6 +53,13 @@
   --color-surface: rgb(0 0 0 / 0.03);
   --color-white: #ffffff;
   --color-hover: #f7f7f7;
+  --color-button-hover: #efefef;
+  --color-button-press: #e6e6e6;
+  --color-press: rgb(0 0 0 / 0.1);
+  --color-rail: rgb(0 0 0 / 0.08);
+  --color-error: #b42318;
+  --color-error-hover: #fbeae8;
+  --color-veil: rgb(253 253 252 / 0.94);
   --color-accent: #a1335c;
   --color-code-ink: #1d1d1f;
   --color-code-comment: #6a6a70;
@@ -101,17 +109,33 @@
 
   --radius-chip: 4px;
   --radius-kbd: 5px;
+  --radius-button: 6px;
   --radius-item: 7px;
   --radius-control: 8px;
   --radius-group: 9px;
   --radius-panel: 10px;
-  --radius-demo: 16px;
+  --radius-demo: 12px;
 
   --shadow-raised: 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-button: 0 0 0 1px rgb(0 0 0 / 0.1), 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-error: 0 0 0 1px rgb(180 35 24 / 0.24), 0 1px 2px rgb(0 0 0 / 0.06);
   --inset-shadow-rule: inset 0 1px 0 rgb(0 0 0 / 0.06);
+  --inset-shadow-edge: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+  --inset-shadow-focus: inset 0 0 0 2px #111111;
 
   --container-page: 35rem;
+  --container-demo-wide: 34.5rem;
+  --container-demo: 25rem;
+  --container-demo-narrow: 21rem;
+
+  --animate-spinner: spinner 0.8s steps(8) infinite;
+
+  @keyframes spinner {
+    to {
+      rotate: 1turn;
+    }
+  }
 }
 
 :root {
@@ -322,4 +346,113 @@
 
 @utility transition-weight {
   transition-property: color, font-weight, letter-spacing;
+}
+
+@utility corners-none {
+  border-image-source: none;
+}
+
+@utility dial-paint {
+  & [data-zriz-item="dial-ticks"] > *,
+  & [data-slot="dial-ticks"] > * {
+    top: 12px;
+    height: 8px;
+  }
+
+  & [data-zriz-item="dial-ticks"] > [data-major],
+  & [data-slot="dial-ticks"] > [data-major] {
+    top: 9px;
+    height: 14px;
+  }
+
+  & [data-zero]::before {
+    top: -5px;
+    left: -1.5px;
+    width: 4px;
+    height: 4px;
+  }
+
+  &[data-dragging] [data-zero]::before {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: var(--zriz-line, #000000);
+  }
+
+  &::after {
+    top: 9px;
+    width: 2px;
+    height: 18px;
+    border-radius: 1px;
+  }
+
+  &[data-slot="dial"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    translate: -50% 0;
+    background: #000000;
+  }
+
+  & [data-slot="dial-ticks"] {
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    width: 361px;
+    translate: -50% 0;
+    background-image:
+      repeating-linear-gradient(to right, #000000 0 1px, transparent 1px 90px),
+      repeating-linear-gradient(to right, #949494 0 1px, transparent 1px 9px);
+    background-position:
+      0 9px,
+      0 12px;
+    background-size:
+      100% 14px,
+      100% 8px;
+    background-repeat: no-repeat;
+    mask-image: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.25) 0 4px,
+      rgb(0 0 0 / 0.5) 4px 13px,
+      rgb(0 0 0 / 0.75) 13px 22px,
+      #000000 22px calc(100% - 22px),
+      rgb(0 0 0 / 0.75) calc(100% - 22px) calc(100% - 13px),
+      rgb(0 0 0 / 0.5) calc(100% - 13px) calc(100% - 4px),
+      rgb(0 0 0 / 0.25) calc(100% - 4px)
+    );
+  }
+
+  @container (width < 34.5rem) {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000000 24px,
+      #000000 calc(100% - 24px),
+      transparent
+    );
+  }
+}
+
+@utility spinner {
+  & > * {
+    position: absolute;
+    inset: 0;
+  }
+
+  & > *::before {
+    content: "";
+    position: absolute;
+    top: 0.5px;
+    left: 9px;
+    width: 2px;
+    height: 6px;
+    border-radius: 1px;
+    background-color: var(--color-ink);
+  }
+}
+
+@utility grid-hold {
+  [data-zriz-item="root"]:has([data-zriz-item="dial"][data-dragging]) & {
+    opacity: 1;
+  }
 }

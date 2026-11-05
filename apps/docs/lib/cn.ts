@@ -2,9 +2,18 @@ import { createCn } from "cn/config";
 
 const CN_THEME = {
   "font-weight": ["regular", "book", "medium", "strong", "semibold"],
-  "inset-shadow": ["rule"],
-  radius: ["chip", "kbd", "item", "control", "group", "panel", "demo"],
-  shadow: ["raised", "button"],
+  "inset-shadow": ["rule", "edge", "focus"],
+  radius: [
+    "chip",
+    "kbd",
+    "button",
+    "item",
+    "control",
+    "group",
+    "panel",
+    "demo",
+  ],
+  shadow: ["raised", "button", "lift", "error"],
   text: [
     "title",
     "heading",

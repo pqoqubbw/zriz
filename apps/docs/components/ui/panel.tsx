@@ -10,7 +10,7 @@ type PanelProps = HTMLAttributes<HTMLElement> &
   };
 
 const panelVariants = cva(
-  "bg-surface max-sm:-mx-4 max-sm:rounded-none print:outline print:outline-edge forced-colors:outline forced-colors:-outline-offset-1",
+  "bg-surface print:outline print:outline-edge forced-colors:outline forced-colors:-outline-offset-1",
   {
     defaultVariants: { layout: "block", radius: "panel" },
     variants: {
@@ -21,7 +21,10 @@ const panelVariants = cva(
         list: "flex flex-col px-4",
         prompt: "flex items-start gap-3 py-4 pr-3 pl-4",
       },
-      radius: { demo: "rounded-demo", panel: "rounded-panel" },
+      radius: {
+        demo: "rounded-demo",
+        panel: "rounded-panel max-sm:-mx-4 max-sm:rounded-none",
+      },
     },
   }
 );
