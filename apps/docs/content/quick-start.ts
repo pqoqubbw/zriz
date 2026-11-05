@@ -33,7 +33,10 @@ const QUICK_START_PAGE = defineDoc({
       p(
         "`Viewport` needs a size, and the image and the mask fill it. the 24 px padding leaves room for the handles, see [viewport](viewport). the cropper now drags, pinches, resizes and straightens:"
       ),
-      demo("quick-start")
+      demo("quick-start"),
+      p(
+        "the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles."
+      )
     ),
     section(
       "let the user pick a photo",
