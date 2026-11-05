@@ -8920,6 +8920,10 @@ export const SavedCrop = ({ id, src }: Props) => {
   );
 };
 \`\`\`
+
+the demo above saves its crop in this browser under \`zriz-docs:saving-state:\` and an id for the photo. change the crop and reload the page, and it comes back. the demo never renders on the server, so it reads storage as it mounts and skips the empty render.
+
+it adds the dial, rotate, flip, handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site.
 "
 `;
 
@@ -9095,6 +9099,8 @@ pnpm add sharp @zriz/core
 use sharp 0.35.5 or newer and keep it updated. it bundles libvips and every image decoder, so an old sharp means old decoders. [security](https://zriz.dev/docs/security.md) lists the advisories.
 
 ## send the file and the value
+
+the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the \`toSharp\` steps under the dial.
 
 \`getValue()\` returns the crop value, and \`serialize\` turns it into a small json string. send that, not the export plan, so the server works out which pixels to keep on its own. the upload button waits for \`onLoad\`, because a value means nothing without its photo.
 
@@ -9689,6 +9695,8 @@ export const POST = async (request: Request) => {
   }
 };
 \`\`\`
+
+the demo above keeps the limits and parts of \`crop-upload.tsx\`. it adds rotate, flip, handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site.
 "
 `;
 
@@ -9971,6 +9979,8 @@ export const UndoEditor = ({ src }: { src: string }) => (
   <Editor key={src} src={src} />
 );
 \`\`\`
+
+the demo above runs this file with a rotate button, so a turn is one more step to undo. it adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site.
 "
 `;
 
