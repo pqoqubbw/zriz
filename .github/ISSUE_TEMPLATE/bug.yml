@@ -14,7 +14,6 @@ body:
       placeholder: https://stackblitz.com/edit/...
     validations:
       required: true
-      min_length: 20
   - type: textarea
     id: steps
     attributes:
