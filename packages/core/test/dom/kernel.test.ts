@@ -239,6 +239,132 @@ describe("image kernel", () => {
     ).rejects.toThrow(/^zriz:too-large:/u);
   });
 
+  it("counts the largest gif frame, not the screen size in the header", async () => {
+    const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
+
+    file.writeUInt16LE(1, 6);
+    file.writeUInt16LE(1, 8);
+
+    await expect(
+      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+
+    expect(decoded).toHaveLength(0);
+  });
+
+  it("keeps reading a gif past its extension blocks", async () => {
+    const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
+    const table = 3 * 2 ** (((file[10] ?? 0) & 7) + 1);
+    const at = 13 + table;
+    const comment = Buffer.from([0x21, 0xfe, 2, 1, 2, 0]);
+    const longer = Buffer.concat([
+      file.subarray(0, at),
+      comment,
+      file.subarray(at),
+    ]);
+
+    longer.writeUInt16LE(1, 6);
+    longer.writeUInt16LE(1, 8);
+
+    await expect(
+      imageKernel().decode(blobOf(longer), 4096, undefined, PIXELS - 1)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+  });
+
+  it("stops at a gif cut off inside a block", async () => {
+    const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
+
+    await expect(
+      imageKernel().decode(
+        blobOf(file.subarray(0, 14)),
+        4096,
+        undefined,
+        PIXELS
+      )
+    ).resolves.toHaveProperty("width", 8);
+  });
+
+  it.each([
+    [
+      "little",
+      (bytes: Buffer, at: number, v: number) => bytes.writeUInt16LE(v, at),
+    ],
+    [
+      "big",
+      (bytes: Buffer, at: number, v: number) => bytes.writeUInt16BE(v, at),
+    ],
+  ])("reads the pixel count of a %s endian tiff", async (name, put) => {
+    const file = Buffer.alloc(8 + 2 + 24 + 4);
+    const entry = (at: number, tag: number): void => {
+      put(file, at, tag);
+      put(file, at + 2, 3);
+      put(file, at + (name === "little" ? 4 : 6), 1);
+      put(file, at + 8, 16);
+    };
+
+    file.write(name === "little" ? "II" : "MM", 0);
+    put(file, 2, 42);
+    put(file, name === "little" ? 4 : 6, 8);
+    put(file, 8, 2);
+    entry(10, 256);
+    entry(22, 257);
+
+    await expect(
+      imageKernel().decode(blobOf(file), 4096, undefined, 255)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+  });
+
+  it("refuses a tiff over the limit from any of its pages", async () => {
+    const tiff = Buffer.alloc(8 + 2 * (2 + 24 + 4));
+    const entry = (at: number, tag: number, value: number): void => {
+      tiff.writeUInt16LE(tag, at);
+      tiff.writeUInt16LE(3, at + 2);
+      tiff.writeUInt32LE(1, at + 4);
+      tiff.writeUInt16LE(value, at + 8);
+    };
+
+    tiff.write("II", 0);
+    tiff.writeUInt16LE(42, 2);
+    tiff.writeUInt32LE(8, 4);
+    tiff.writeUInt16LE(2, 8);
+    entry(10, 256, 1);
+    entry(22, 257, 1);
+    tiff.writeUInt32LE(38, 34);
+    tiff.writeUInt16LE(2, 38);
+    entry(40, 256, 200);
+    entry(52, 257, 200);
+
+    await expect(
+      imageKernel().decode(blobOf(tiff), 4096, undefined, 100)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+
+    expect(decoded).toHaveLength(0);
+  });
+
+  it("ends the walk over a tiff whose pages point back at each other", async () => {
+    const tiff = Buffer.alloc(8 + 2 + 4);
+
+    tiff.write("II", 0);
+    tiff.writeUInt16LE(42, 2);
+    tiff.writeUInt32LE(8, 4);
+    tiff.writeUInt16LE(0, 8);
+    tiff.writeUInt32LE(8, 10);
+
+    await expect(
+      imageKernel().decode(blobOf(tiff), 4096, undefined, PIXELS)
+    ).resolves.toHaveProperty("width", 8);
+  });
+
+  it("refuses an image over the limit once decoded when its header gives no count", async () => {
+    const file = Buffer.from([0xff, 0x0a, 0, 0, 0, 0, 0, 0]);
+
+    await expect(
+      imageKernel().decode(blobOf(file), 4096, undefined, 8 * 8 - 1)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+
+    expect(decoded.map(({ closed }) => closed)).toStrictEqual([1]);
+  });
+
   it("reads the pixel count of a bmp stored top down", async () => {
     await expect(
       imageKernel().decode(blobOf(bmp()), 4096, undefined, PIXELS - 1)

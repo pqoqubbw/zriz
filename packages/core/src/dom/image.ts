@@ -292,6 +292,7 @@ const loadImage = async (
     : cancel.signal;
   const held: ImageBitmap[] = [];
   const ms = options.timeout ?? TIMEOUT_MS;
+  const maxPixels = options.maxPixels ?? MAX_PIXELS;
   const limit = deadline(ms, options.signal);
   let inHook = false;
 
@@ -378,12 +379,7 @@ const loadImage = async (
         async () => {
           resume();
 
-          return await decodeOff(
-            blob,
-            edge,
-            id,
-            options.maxPixels ?? MAX_PIXELS
-          );
+          return await decodeOff(blob, edge, id, maxPixels);
         },
         ms,
         signal
@@ -399,6 +395,14 @@ const loadImage = async (
         const full = own(await options.decode(blob));
 
         inHook = false;
+
+        if (full.width * full.height > maxPixels) {
+          throw new ZrizError(
+            "too-large",
+            `zriz: this image has over ${maxPixels} pixels`
+          );
+        }
+
         const { assertReadable } = await import("./source");
 
         assertReadable(full);

@@ -81,7 +81,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         ],
       }),
       p(
-        "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif or bmp over `maxPixels` fails with `too-large`. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it."
+        "before it decodes, zriz reads the pixel count from the file's header. a jpeg, png, webp, avif, heic, gif, bmp or tiff over `maxPixels` fails with `too-large`. a gif counts its largest frame. a jpeg xl has no count zriz can read, so it fails after the decode, and so does what a `decode` function returns. the limit is 268402689 pixels, which opens every camera photo and matches sharp. pass `maxPixels` to `loadImage` to change it."
       ),
       p(
         "a load has one time limit. a download stays inside it while bytes keep arriving, and the decode gets what is left after the last byte. past it the load fails with `timeout`, and [errors](errors) gives the number. zriz runs six downloads and three decodes at a time, and a photo waiting for its turn is not on the clock. a url that hangs holds one of the six until the limit. to allow more time, load the photo yourself and pass `timeout`, as in the heic section below."

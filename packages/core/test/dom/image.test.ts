@@ -1021,6 +1021,21 @@ describe("the pixel limit", () => {
     expect(codeOf(error)).toBe("too-large");
     expect(decode).not.toHaveBeenCalled();
   });
+
+  it("refuses what a decode function returns over the limit and closes it", async () => {
+    decodeFails = true;
+    const close = vi.fn<() => void>();
+    const bitmap = { close, height: 100, width: 100 } as unknown as ImageBitmap;
+    const error = await failure(
+      loadImage(new Blob([Uint8Array.of(0)]), {
+        decode: async () => await Promise.resolve(bitmap),
+        maxPixels: 9999,
+      })
+    );
+
+    expect(codeOf(error)).toBe("too-large");
+    expect(close).toHaveBeenCalledOnce();
+  });
 });
 
 describe("the time limit", () => {

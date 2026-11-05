@@ -46,7 +46,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "too-large",
-            "the file's header asks for more pixels than `maxPixels`, 268402689 by default",
+            "the file's header or the decoded image has more pixels than `maxPixels`, 268402689 by default. this also covers a `decode` function",
             "send a smaller file. to open it anyway, load the photo yourself with a higher `maxPixels`, as in [loading images](loading-images)",
           ],
           [

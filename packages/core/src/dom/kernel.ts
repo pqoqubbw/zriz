@@ -246,6 +246,68 @@ const imageKernel = (): Kernel => {
     return (little(b, 26, 2) % 16_384) * (little(b, 28, 2) % 16_384);
   };
 
+  const pastBlocks = (b: Uint8Array, from: number): number => {
+    let at = from;
+
+    while (at < b.length && b[at] !== 0) {
+      at += (b[at] ?? 0) + 1;
+    }
+
+    return at + 1;
+  };
+
+  const colourTable = (flags: number): number =>
+    flags >= 128 ? 3 * 2 ** ((flags % 8) + 1) : 0;
+
+  const gifPixels = (b: Uint8Array): number => {
+    let most = little(b, 6, 2) * little(b, 8, 2);
+    let at = 13 + colourTable(b[10] ?? 0);
+
+    while (at < b.length) {
+      if (b[at] === 0x2c) {
+        most = Math.max(
+          most,
+          (little(b, at + 1, 2) + little(b, at + 5, 2)) *
+            (little(b, at + 3, 2) + little(b, at + 7, 2))
+        );
+        at = pastBlocks(b, at + 11 + colourTable(b[at + 9] ?? 0));
+      } else if (b[at] === 0x21) {
+        at = pastBlocks(b, at + 2);
+      } else {
+        break;
+      }
+    }
+
+    return most;
+  };
+
+  const tiffPixels = (b: Uint8Array): number => {
+    const read = b[0] === 0x49 ? little : big;
+    let most = 0;
+    let before = 0;
+    let at = read(b, 4, 4);
+
+    while (at > before && at + 2 <= b.length) {
+      const count = read(b, at, 2);
+      const sides = [0, 0];
+
+      for (let i = 0; i < count; i += 1) {
+        const entry = at + 2 + i * 12;
+        const tag = read(b, entry, 2) - 256;
+
+        if (tag === 0 || tag === 1) {
+          sides[tag] = read(b, entry + 8, read(b, entry + 2, 2) === 3 ? 2 : 4);
+        }
+      }
+
+      most = Math.max(most, (sides[0] ?? 0) * (sides[1] ?? 0));
+      before = at;
+      at = read(b, at + 2 + count * 12, 4);
+    }
+
+    return most;
+  };
+
   const measure = (b: Uint8Array): Shape => {
     const start = big(b, 0, 2);
 
@@ -262,7 +324,11 @@ const imageKernel = (): Kernel => {
     }
 
     if (start === 0x47_49) {
-      return [little(b, 6, 2) * little(b, 8, 2), true];
+      return [gifPixels(b), true];
+    }
+
+    if (start === 0x49_49 || start === 0x4d_4d) {
+      return [tiffPixels(b), true];
     }
 
     if (start === 0x42_4d) {
@@ -286,10 +352,12 @@ const imageKernel = (): Kernel => {
 
   return {
     async decode(blob, edge, keep, maxPixels = Number.POSITIVE_INFINITY) {
+      const tooLarge = (): Error =>
+        fail("too-large", `this image has over ${maxPixels} pixels`);
       const [pixels, whole] = measure(new Uint8Array(await blob.arrayBuffer()));
 
       if (pixels > maxPixels) {
-        throw fail("too-large", `this image has over ${maxPixels} pixels`);
+        throw tooLarge();
       }
 
       if (!whole) {
@@ -297,6 +365,12 @@ const imageKernel = (): Kernel => {
       }
 
       const full = await decodeFull(blob);
+
+      if (full.width * full.height > maxPixels) {
+        full.close();
+        throw tooLarge();
+      }
+
       const scale = Math.min(1, edge / Math.max(full.width, full.height));
       const { width, height } = full;
       let preview = full;
