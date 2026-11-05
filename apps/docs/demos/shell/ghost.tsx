@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 const ghostVariants = cva(
-  "relative flex size-8 shrink-0 items-center justify-center rounded-button text-ink aria-disabled:*:opacity-40 data-disabled:*:opacity-40",
+  "relative flex size-8 shrink-0 items-center justify-center rounded-button text-ink aria-disabled:not-in-data-dim:*:opacity-40 data-disabled:not-in-data-dim:*:opacity-40",
   {
     defaultVariants: { live: true },
     variants: {
