@@ -56,14 +56,14 @@ type DemoAction = {
   label: string;
 };
 
-type SnippetInput = "callback" | "photo";
+type SnippetInput = "callback" | "flag" | "photo";
 
 type DemoSnippet = {
   differences: readonly string[];
   export: string;
   file: string;
   inputs: Readonly<Record<string, SnippetInput>>;
-  kind: "component" | "fragment";
+  kind: "component" | "fragment" | "parts";
 };
 
 type DemoSpec = {
@@ -124,7 +124,27 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Area",
+        "+Grid",
+        "+Handle",
+        "+Image",
+        "+Instructions",
+        "+Mask",
+        "+Viewport",
+        "Flip.aria-label",
+        "Flip.axis",
+        "Reset.aria-label",
+        "Rotate.aria-label",
+        "Rotate.direction",
+      ],
+      export: "example",
+      file: "buttons/anatomy.jsx.tsx",
+      inputs: {},
+      kind: "parts",
+    },
     summary:
       "a 3:2 photo, rotate left, rotate right, flip and flip vertical buttons, and open, reset and download in the corners",
     zones: [
@@ -154,7 +174,24 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Area",
+        "+Grid",
+        "+Handle",
+        "+Image",
+        "+Instructions",
+        "+Mask",
+        "+Reset",
+        "+Viewport",
+        "DialValue.format",
+      ],
+      export: "example",
+      file: "dial/anatomy.jsx.tsx",
+      inputs: {},
+      kind: "parts",
+    },
     summary:
       "a 3:2 photo, the straighten dial with its value, and open, reset and download in the corners",
     zones: [{ end: null, kind: "dial", start: null, value: true }],
@@ -181,7 +218,20 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "-Zoom",
+        "-ZoomThumb",
+        "Flip.aria-label",
+        "Orientation.aria-label",
+        "Reset.aria-label",
+        "Rotate.aria-label",
+      ],
+      export: "Editor",
+      file: "full-editor/editor.tsx",
+      inputs: { onSave: "callback", src: "photo" },
+      kind: "component",
+    },
     summary:
       "a 3:2 photo, the straighten dial with rotate and flip, the aspect ratio track, and open, reset and download in the corners",
     zones: [EDITOR_ZONE, ASPECT_ZONE],
@@ -226,7 +276,13 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: true,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: ["+Announcer", "+Instructions", "+Reset"],
+      export: "PhotoCropper",
+      file: "quick-start/pick.tsx",
+      inputs: {},
+      kind: "component",
+    },
     summary:
       "a 3:2 photo with four corner handles, the straighten dial, and open, reset and download in the corners",
     zones: [{ end: null, kind: "dial", start: null, value: false }],
@@ -236,7 +292,19 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+      ],
+      export: "example",
+      file: "root/disabled.jsx.tsx",
+      inputs: { photo: "photo", saving: "flag" },
+      kind: "fragment",
+    },
     summary:
       "a 3:2 photo on a bare cropper, and open, reset and download in the corners. download locks the cropper while it saves",
     zones: [],

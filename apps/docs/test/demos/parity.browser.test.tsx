@@ -66,7 +66,7 @@ const record = (): Recorded => {
     const own = out.get(name) ?? new Map<string, unknown>();
 
     for (const [key, value] of Object.entries(props)) {
-      if (!IGNORED.has(key)) {
+      if (!IGNORED.has(key) && !key.startsWith("data-")) {
         own.set(key, value);
       }
     }
@@ -79,8 +79,13 @@ const record = (): Recorded => {
   return out;
 };
 
-const inputOf = (kind: SnippetInput): unknown =>
-  kind === "photo" ? new Blob() : () => {};
+const INPUTS: Record<SnippetInput, () => unknown> = {
+  callback: () => () => {},
+  flag: () => false,
+  photo: () => new Blob(),
+};
+
+const inputOf = (kind: SnippetInput): unknown => INPUTS[kind]();
 
 const isComponent = (
   value: unknown
@@ -113,13 +118,18 @@ const renderSnippet = async (snippet: DemoSnippet): Promise<Recorded> => {
     Object.entries(snippet.inputs).map(([key, kind]) => [key, inputOf(kind)])
   );
 
-  if (snippet.kind === "fragment") {
+  if (snippet.kind !== "component") {
     Object.assign(globalThis, props);
   }
 
   const loaded = await load();
   const exported = loaded[snippet.export];
-  const element = elementOf(exported, props);
+  const shown = elementOf(exported, props);
+  const { Root } = await import("@zriz/react/cropper");
+  const element =
+    snippet.kind === "parts"
+      ? createElement(Root, { src: new Blob() }, shown)
+      : shown;
 
   calls.parts.length = 0;
   await render(element);
