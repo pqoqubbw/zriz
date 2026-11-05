@@ -87,7 +87,7 @@
       "name": "createCropper",
       "path": "dist/index.js",
       "import": "{ createCropper }",
-      "limit": "6780 B"
+      "limit": "6800 B"
     },
     {
       "name": "value",

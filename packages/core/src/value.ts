@@ -256,7 +256,7 @@ const holdCrop = (next: CropValue, held: CropValue, image: Size): CropValue => {
   const pixels = 2e-8 + 2e-11 * Math.max(width, height);
   const x = pixels / width;
   const y = pixels / height;
-  const angle = Math.min(1e-8, x + y);
+  const angle = Math.min(1e-8, x + y, 50 * Math.min(x, y));
   const ratio = next.size.height / next.size.width;
 
   return seal({

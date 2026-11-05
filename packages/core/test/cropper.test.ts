@@ -2431,6 +2431,21 @@ describe("round trips", () => {
     );
   });
 
+  it("stays quiet when a held tilt moved the crop limit on a long photo", () => {
+    const { change, cropper, time } = setup({
+      image: { height: 100, width: 20_000 },
+    });
+
+    cropper.setRotation(1.2095e-9);
+    cropper.setZoom(14.999999945559717);
+    cropper.panBy(0.4666666666875, 0.23333333334375);
+    time.frames(2);
+    change.mockClear();
+    cropper.setValue(cropper.getValue());
+    time.frames(2);
+    expect(change).not.toHaveBeenCalled();
+  });
+
   it("stays pristine when the default crop is written back", () => {
     const { cropper, time } = setup({
       defaultValue: { center: { x: 0.9, y: 0.9 }, rotation: 12 },
