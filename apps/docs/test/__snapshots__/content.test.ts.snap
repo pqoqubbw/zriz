@@ -9433,9 +9433,9 @@ export const Editor = ({ src }: { src: string }) => {
 };
 \`\`\`
 
-\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and calls \`onValueChange\` with what zriz applied, so your state matches the screen. a rotation of 60 reports 45. zoom runs from 1 up to \`maxZoom\`. the move also commits, so \`onValueCommit\` runs too. a prop applied as the photo arrives is silent.
+\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and commits, so \`onValueCommit\` runs. \`onValueChange\` runs only when zriz applied something other than what you passed: a rotation of 60 reports 45. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. mirror from \`onValueChange\`, not \`onValueCommit\`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to \`maxZoom\`. a prop applied as the photo arrives is silent.
 
-\`value\` sets the whole object without calling either callback. each new object moves the crop, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
+\`value\` sets the whole object without calling either callback. each new object moves the crop, unless zriz reported that same object in the last 2 s, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
 
 during a gesture and until it commits, zriz ignores a new \`value\`, \`rotation\` or \`zoom\`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in \`onValueCommit\`. a new \`aspect\` applies at once. the \`aspect\`, \`rotation\` and \`zoom\` from the first render become the reset target.
 

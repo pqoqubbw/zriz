@@ -37,6 +37,44 @@ type UseCropperOptions = Omit<CropperOptions, "clock"> & {
 type Slot = {
   prop?: number | undefined;
   at?: number;
+  sent: number[];
+};
+
+const ANSWER_WINDOW = 2000;
+
+const answered = <T>(
+  sent: T[],
+  prop: T,
+  same: (a: T, b: T) => boolean,
+  last: number
+): boolean => {
+  const index =
+    performance.now() - last > ANSWER_WINDOW
+      ? -1
+      : sent.findIndex((item) => same(item, prop));
+
+  sent.splice(0, index + 1 || sent.length);
+
+  return index >= 0;
+};
+
+const remember = <T>(
+  sent: T[],
+  next: T,
+  prop: T | undefined,
+  same: (a: T, b: T) => boolean
+): void => {
+  const end = sent.at(-1);
+
+  if (
+    !(
+      (prop !== undefined && sent.length === 0 && same(next, prop)) ||
+      (end !== undefined && same(end, next))
+    ) &&
+    sent.push(next) > 256
+  ) {
+    sent.shift();
+  }
 };
 
 type Applied = {
@@ -44,6 +82,10 @@ type Applied = {
   busy: boolean;
   options: Set<string>;
   aspect?: Aspect | undefined;
+  aspects: Aspect[];
+  values: CropValue[];
+  last: number;
+  wrote: boolean;
   rotation: Slot;
   zoom: Slot;
   width?: number | undefined;
@@ -58,6 +100,10 @@ type Controlled = {
   zoom: number | undefined;
 };
 
+type Listened = Callbacks & Controlled & { value: CropValue | undefined };
+
+const same = Object.is;
+
 const near = (a: number, b = 0): boolean => Math.abs(a - b) <= 1e-6;
 
 const applyNumber = (
@@ -65,15 +111,23 @@ const applyNumber = (
   prop: number | undefined,
   read: () => number,
   write: (prop: number) => void,
-  forced: boolean
+  forced: boolean,
+  last: number
 ): void => {
   const now = read();
+  const fresh = prop !== slot.prop;
 
   if (
     prop !== undefined &&
-    (prop !== slot.prop || forced || near(now, slot.at))
+    (fresh || forced || (near(now, slot.at) && slot.sent.length === 0))
   ) {
     slot.prop = prop;
+
+    if (fresh && !forced && answered(slot.sent, prop, near, last)) {
+      slot.at = now;
+
+      return;
+    }
 
     if (!near(now, prop)) {
       write(prop);
@@ -83,6 +137,34 @@ const applyNumber = (
   } else if (prop === undefined) {
     slot.prop = undefined;
   }
+};
+
+const applyAspect = (
+  cropper: Cropper,
+  mine: Applied,
+  aspect: Aspect | undefined,
+  emit: boolean
+): ChangeReason => {
+  const moved =
+    aspect !== undefined &&
+    (mine.aspect === undefined || !sameAspect(aspect, mine.aspect));
+
+  mine.aspect = aspect;
+
+  if (
+    moved &&
+    !answered(mine.aspects, aspect, sameAspect, mine.last) &&
+    !sameAspect(cropper.getValue().aspect, aspect)
+  ) {
+    mine.wrote = emit;
+    cropper.setAspect(aspect, { emit, reason: "aspect" });
+
+    if (cropper.getState().interacting === null) {
+      return "aspect";
+    }
+  }
+
+  return "controlled";
 };
 
 const applyProps = (
@@ -105,20 +187,7 @@ const applyProps = (
 
   mine.busy = true;
   const emit = mine.had;
-  let reason: ChangeReason = "controlled";
-  const aspectMoved =
-    aspect !== undefined &&
-    (mine.aspect === undefined || !sameAspect(aspect, mine.aspect));
-
-  mine.aspect = aspect;
-
-  if (aspectMoved && !sameAspect(cropper.getValue().aspect, aspect)) {
-    cropper.setAspect(aspect, { emit, reason: "aspect" });
-
-    if (cropper.getState().interacting === null) {
-      reason = "aspect";
-    }
-  }
+  const reason = applyAspect(cropper, mine, aspect, emit);
 
   if (rotation !== mine.rotation.prop || relaxed) {
     applyNumber(
@@ -126,9 +195,11 @@ const applyProps = (
       rotation,
       () => cropper.getValue().rotation,
       (next) => {
+        mine.wrote = emit;
         cropper.setRotation(next, { emit, reason });
       },
-      false
+      false,
+      mine.last
     );
   }
 
@@ -146,12 +217,15 @@ const applyProps = (
       zoom,
       cropper.getZoom,
       (next) => {
+        mine.wrote = emit;
+
         cropper.setZoom(next, {
           emit,
           reason: swapped && kept ? "coverage" : reason,
         });
       },
-      swapped
+      swapped,
+      mine.last
     );
   }
 
@@ -165,11 +239,15 @@ const appliedOf = (
   given: boolean
 ): Applied => {
   const known = memory.get(cropper) ?? {
+    aspects: [],
     busy: false,
     had: given && cropper.getState().ready && !cropper.getState().pristine,
+    last: 0,
     options: new Set(),
-    rotation: {},
-    zoom: {},
+    rotation: { sent: [] },
+    values: [],
+    wrote: false,
+    zoom: { sent: [] },
   };
 
   memory.set(cropper, known);
@@ -194,10 +272,35 @@ const syncProps = (
 
 const listen = (
   cropper: Cropper,
-  latest: { readonly current: Callbacks }
+  latest: { readonly current: Listened },
+  mine: Applied
 ): (() => void) => {
   const offChange = cropper.on("change", (next, details) => {
-    latest.current.onValueChange?.(next, details);
+    const { aspect, onValueChange, onValueCommit, rotation, value, zoom } =
+      latest.current;
+    const { wrote } = mine;
+    const level = cropper.getZoom();
+
+    mine.wrote = false;
+
+    if (onValueChange || onValueCommit) {
+      mine.last = performance.now();
+      remember(mine.aspects, next.aspect, aspect, sameAspect);
+      remember(mine.rotation.sent, next.rotation, rotation, near);
+      remember(mine.zoom.sent, level, zoom, near);
+      remember(mine.values, next, value, same);
+    }
+
+    if (
+      !(
+        wrote &&
+        (aspect === undefined || sameAspect(next.aspect, aspect)) &&
+        (rotation === undefined || near(next.rotation, rotation)) &&
+        (zoom === undefined || near(level, zoom))
+      )
+    ) {
+      onValueChange?.(next, details);
+    }
   });
   const offCommit = cropper.on("commit", (next, details) => {
     latest.current.onValueCommit?.(next, details);
@@ -290,6 +393,7 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
     onValueChange,
     onValueCommit,
     rotation,
+    value,
     zoom,
   });
   const [memory] = useState(() => new WeakMap<Cropper, Applied>());
@@ -308,7 +412,12 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
     [own]
   );
 
-  useHold(useCallback(() => listen(cropper, latest), [cropper, latest]));
+  useHold(
+    useCallback(
+      () => listen(cropper, latest, appliedOf(memory, cropper, given)),
+      [cropper, given, latest, memory]
+    )
+  );
 
   useIsomorphicLayoutEffect(() => {
     startPlugins(own, plugins);
@@ -346,10 +455,16 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
   ]);
 
   useIsomorphicLayoutEffect(() => {
-    if (value !== undefined && value !== cropper.getValue()) {
+    const mine = appliedOf(memory, cropper, given);
+
+    if (
+      value !== undefined &&
+      value !== cropper.getValue() &&
+      !answered(mine.values, value, same, mine.last)
+    ) {
       cropper.setValue(value, { emit: false, reason: "controlled" });
     }
-  }, [cropper, value]);
+  }, [cropper, given, memory, value]);
 
   useIsomorphicLayoutEffect(() => {
     const { aspect: first, rotation: angle, zoom: close } = latest.current;

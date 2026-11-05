@@ -1077,7 +1077,7 @@ describe("controlled props", () => {
     expect(api.current?.getZoom()).toBeCloseTo(2, 6);
     await screen.rerender(<Host aspect={16 / 9} zoom={3} />);
     await frames(3);
-    expect([changes, commits]).toStrictEqual([["controlled"], ["controlled"]]);
+    expect([changes, commits]).toStrictEqual([[], ["controlled"]]);
   });
 
   it("reports aspect for a preset that also changes rotation or zoom", async () => {
@@ -1104,7 +1104,7 @@ describe("controlled props", () => {
     await frames(2);
     await screen.rerender(<Host aspect={16 / 9} rotation={5} />);
     await frames(3);
-    expect(changes).toStrictEqual(["aspect"]);
+    expect(changes).toStrictEqual([]);
     expect(commits).toStrictEqual(["aspect"]);
     expect(api.current?.getValue().rotation).toBe(5);
   });
@@ -2267,6 +2267,337 @@ const press = (id: string, type: string, pointerId: number): void => {
     })
   );
 };
+
+const LATE_MS = 100;
+
+type LateParent = {
+  api: { current: CropperApi | null };
+  commits: number[];
+  trail: number[];
+  press: () => Promise<void>;
+  prop: () => number;
+  write: (rotation: number) => Promise<void>;
+};
+
+const lateParent = async (
+  wait: number,
+  shape: (rotation: number) => number = (rotation) => rotation,
+  mirror = true
+): Promise<LateParent> => {
+  const api = createRef<CropperApi>();
+  const commits: number[] = [];
+  const trail: number[] = [];
+  const state: { prop: number; write: (rotation: number) => void } = {
+    prop: 0,
+    write: () => {},
+  };
+
+  const Host = () => {
+    const [rotation, setRotation] = useState(0);
+
+    useLayoutEffect(() => {
+      state.prop = rotation;
+      state.write = setRotation;
+    }, [rotation]);
+
+    return (
+      <Cropper.Root
+        actionsRef={api}
+        image={PHOTO}
+        onValueChange={(value) => {
+          if (mirror) {
+            setTimeout(() => {
+              setRotation(shape(value.rotation));
+            }, wait);
+          }
+        }}
+        onValueCommit={(value) => {
+          commits.push(value.rotation);
+        }}
+        rotation={rotation}
+      >
+        <Cropper.Dial aria-label="straighten" id="late-dial" />
+      </Cropper.Root>
+    );
+  };
+
+  await render(<Host />);
+  await frames(3);
+
+  api.current?.on("frame", ({ value }) => {
+    if (trail.at(-1) !== value.rotation) {
+      trail.push(value.rotation);
+    }
+  });
+
+  return {
+    api,
+    commits,
+    press: async () => {
+      const dial = document.querySelector("#late-dial");
+
+      dial?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "ArrowRight",
+        })
+      );
+
+      dial?.dispatchEvent(
+        new KeyboardEvent("keyup", {
+          bubbles: true,
+          cancelable: true,
+          key: "ArrowRight",
+        })
+      );
+
+      await frames(2);
+    },
+    prop: () => state.prop,
+    trail,
+    write: async (rotation) => {
+      flushSync(() => {
+        state.write(rotation);
+      });
+
+      await frames(3);
+    },
+  };
+};
+
+const quietFor = async (ms: number): Promise<void> => {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+describe("a controlled parent that answers late", () => {
+  afterEach(async () => {
+    await cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("keeps two quick presses and stops once the answers arrive", async () => {
+    const parent = await lateParent(LATE_MS);
+
+    await parent.press();
+    await parent.press();
+    await expect.poll(parent.prop).toBe(2);
+    await quietFor(LATE_MS * 4);
+    expect(parent.commits).toStrictEqual([1, 2]);
+    expect(parent.trail).toStrictEqual([1, 2]);
+    expect(parent.api.current?.getValue().rotation).toBe(2);
+  });
+
+  it("settles on the last press when answers come back in another order", async () => {
+    const api = createRef<CropperApi>();
+    const commits: number[] = [];
+    let answers = 0;
+
+    const Host = () => {
+      const [rotation, setRotation] = useState(0);
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          image={PHOTO}
+          onValueChange={(value) => {
+            answers += 1;
+
+            setTimeout(
+              () => {
+                setRotation(value.rotation);
+              },
+              answers % 2 === 1 ? 130 : 70
+            );
+          }}
+          onValueCommit={(value) => {
+            commits.push(value.rotation);
+          }}
+          rotation={rotation}
+        />
+      );
+    };
+
+    await render(<Host />);
+    await frames(3);
+    api.current?.setRotation(1);
+    await frames(1);
+    api.current?.setRotation(2);
+    await frames(1);
+    api.current?.setRotation(3);
+    await quietFor(600);
+    const settled = commits.length;
+
+    await quietFor(600);
+    expect(commits).toHaveLength(settled);
+    expect(settled).toBeLessThan(12);
+  });
+
+  it("converges on a parent that rounds what it hears", async () => {
+    const parent = await lateParent(LATE_MS, Math.round);
+    const cropper = parent.api.current;
+
+    cropper?.setRotation(1.3);
+    await frames(1);
+    cropper?.setRotation(2.3);
+    await quietFor(LATE_MS * 6);
+    const settled = parent.commits.length;
+
+    await quietFor(LATE_MS * 6);
+    expect(parent.commits).toHaveLength(settled);
+    expect(settled).toBeLessThanOrEqual(4);
+  });
+
+  it("does not rewind for a parent slower than the first press", async () => {
+    const parent = await lateParent(400);
+
+    await parent.press();
+    await parent.press();
+    await expect.poll(parent.prop, { timeout: 2000 }).toBe(2);
+    await quietFor(600);
+    expect(parent.trail).toStrictEqual([1, 2]);
+    expect(parent.commits).toStrictEqual([1, 2]);
+  });
+
+  it("treats a reported value as an answer within 2 s of the last report", async () => {
+    const parent = await lateParent(0, undefined, false);
+
+    await parent.press();
+    await parent.press();
+    await parent.write(1);
+    expect(parent.api.current?.getValue().rotation).toBe(2);
+  });
+
+  it("moves the crop for a reported value more than 2 s after the last report", async () => {
+    const parent = await lateParent(0, undefined, false);
+
+    await parent.press();
+    await parent.press();
+    const now = performance.now();
+    const later = vi.spyOn(performance, "now");
+
+    later.mockReturnValue(now + 3000);
+    await parent.write(1);
+    expect(parent.api.current?.getValue().rotation).toBe(1);
+  });
+
+  it("sends no change for a prop that lands exactly, and commits", async () => {
+    const changes: number[] = [];
+    const commits: number[] = [];
+    const api = createRef<CropperApi>();
+
+    type HostProps = { rotation: number };
+
+    const Host = ({ rotation }: HostProps) => (
+      <Cropper.Root
+        actionsRef={api}
+        image={PHOTO}
+        onValueChange={(value) => {
+          changes.push(value.rotation);
+        }}
+        onValueCommit={(value) => {
+          commits.push(value.rotation);
+        }}
+        rotation={rotation}
+      />
+    );
+    const screen = await render(<Host rotation={0} />);
+
+    await frames(3);
+    await screen.rerender(<Host rotation={10} />);
+    await frames(3);
+    expect(changes).toStrictEqual([]);
+    expect(commits).toStrictEqual([10]);
+  });
+
+  it("reports the first move after a prop applied silently at load", async () => {
+    const api = createRef<CropperApi>();
+    const changes: string[] = [];
+
+    await render(
+      <Cropper.Root
+        actionsRef={api}
+        image={PHOTO}
+        onValueChange={(_, details) => {
+          changes.push(details.reason);
+        }}
+        zoom={2}
+      />
+    );
+
+    await frames(3);
+    api.current?.panBy(0.01, 0);
+    await frames(2);
+    expect(changes).toStrictEqual(["pan"]);
+  });
+
+  it("reports what zriz applied when a prop lands elsewhere", async () => {
+    const changes: number[] = [];
+
+    type HostProps = { rotation: number };
+
+    const Host = ({ rotation }: HostProps) => (
+      <Cropper.Root
+        image={PHOTO}
+        onValueChange={(value) => {
+          changes.push(value.rotation);
+        }}
+        rotation={rotation}
+      />
+    );
+    const screen = await render(<Host rotation={0} />);
+
+    await frames(3);
+    await screen.rerender(<Host rotation={60} />);
+    await frames(3);
+    expect(changes).toStrictEqual([45]);
+  });
+
+  it("treats a reported value object as an answer, so value mirrors do not rewind", async () => {
+    const api = createRef<CropperApi>();
+    const trail: number[] = [];
+    const held: { value?: CropValue | undefined } = {};
+
+    const Host = () => {
+      const [value, setValue] = useState<CropValue>();
+
+      useLayoutEffect(() => {
+        held.value = value;
+      });
+
+      return (
+        <Cropper.Root
+          actionsRef={api}
+          image={PHOTO}
+          onValueChange={(next) => {
+            setTimeout(() => {
+              setValue(next);
+            }, LATE_MS);
+          }}
+          {...(value ? { value } : {})}
+        />
+      );
+    };
+
+    await render(<Host />);
+    await frames(3);
+
+    api.current?.on("frame", (frame) => {
+      if (trail.at(-1) !== frame.value.rotation) {
+        trail.push(frame.value.rotation);
+      }
+    });
+
+    api.current?.setRotation(1);
+    await frames(1);
+    api.current?.setRotation(2);
+    await expect.poll(() => held.value?.rotation).toBe(2);
+    await quietFor(LATE_MS * 3);
+    expect(trail).toStrictEqual([1, 2]);
+  });
+});
 
 const CIRCLE_PHOTO = { height: 800, width: 1000 };
 
