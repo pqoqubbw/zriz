@@ -331,9 +331,13 @@ describe("docs recipes", () => {
 
       await whenPhoto();
 
-      const area = find(item("area")).getBoundingClientRect();
-
       await settled();
+
+      await expect
+        .poll(() => find(item("area")).getBoundingClientRect().height)
+        .toBeGreaterThan(0);
+
+      const area = find(item("area")).getBoundingClientRect();
 
       const full = {
         height: area.height,
