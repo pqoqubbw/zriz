@@ -75,7 +75,9 @@ const EXPORTING_PAGE = defineDoc({
       p(
         "exports run one at a time, in the order you call them. an aborted export stops waiting at once, but one the browser already started holds the next one back until it ends."
       ),
-      p("the browser drops exif, gps data and 16-bit depth from the file.")
+      p(
+        "the browser draws pixels onto a canvas and encodes them, so exif, gps, xmp, thumbnails, gain maps and bytes after the image never reach the file, and neither does 16-bit depth. safari writes a small exif block of its own, with only the crop's size and colour space. [security](security) covers the original, which keeps all of it."
+      )
     ),
     section(
       "export an exact size",
@@ -155,7 +157,7 @@ const EXPORTING_PAGE = defineDoc({
       )
     ),
   ],
-  lede: "turn the crop into an image file in the browser, or send the export plan to your server and cut the original there.",
+  lede: "turn the crop into an image file in the browser, or send the crop value to your server and cut the original there.",
 });
 
 export { EXPORTING_PAGE };

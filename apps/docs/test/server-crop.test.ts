@@ -11,6 +11,8 @@ import {
 import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { cleanCopy } from "../snippets/security/clean-copy";
+import { serveUpload } from "../snippets/security/serve-upload";
 import { POST } from "../snippets/server-crop/app/api/crop/route";
 
 const gradient = (width: number, height: number) => {
@@ -77,6 +79,38 @@ const clientPlan = (patch: Parameters<typeof createCropper>[0]) => {
     value: serialize(cropper.getValue()),
   };
 };
+
+describe("the security recipes", () => {
+  it("cleanCopy drops the blocks of an upload and turns it upright", async () => {
+    const input = await gradient(64, 48)
+      .jpeg()
+      .withExif({ IFD0: { Copyright: "a-marker" } })
+      .withMetadata({ orientation: 6 })
+      .toBuffer();
+    const out = await cleanCopy(
+      Buffer.concat([input, Buffer.from("a-marker")])
+    );
+    const meta = await sharp(out).metadata();
+
+    expect(out.includes("a-marker")).toBeFalsy();
+    expect(meta.exif).toBeUndefined();
+    expect([meta.width, meta.height]).toStrictEqual([48, 64]);
+  });
+
+  it("serveUpload names the type and turns off sniffing and scripts", async () => {
+    const response = serveUpload(Buffer.from([1, 2, 3]));
+
+    expect(response.headers.get("content-type")).toBe("image/jpeg");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("content-security-policy")).toContain(
+      "sandbox"
+    );
+    await expect(response.arrayBuffer()).resolves.toHaveProperty(
+      "byteLength",
+      3
+    );
+  });
+});
 
 describe("the documented crop route", () => {
   afterEach(() => {

@@ -2437,6 +2437,60 @@ export const Editor = ({ src }: { src: string }) => {
 <span class=p>};</span>",
   ],
   [
+    "security",
+    "security/clean-copy.ts",
+    "import sharp from "sharp";
+
+export const cleanCopy = async (input: Buffer) =>
+  await sharp(input, { limitInputPixels: 120_000_000 })
+    .rotate()
+    .jpeg({ quality: 92 })
+    .toBuffer();",
+    "<span class=k>import</span> sharp <span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
+
+<span class=k>export const </span><span class=t>cleanCopy </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>) =&gt;</span>
+  <span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>: </span><span class=n>120_000_000 </span><span class=p>})</span>
+    <span class=p>.</span><span class=t>rotate</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
+    <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>",
+  ],
+  [
+    "security",
+    "security/serve-upload.ts",
+    "export const serveUpload = (jpeg: Buffer) =>
+  new Response(new Uint8Array(jpeg), {
+    headers: {
+      "content-type": "image/jpeg",
+      "content-disposition": 'inline; filename="photo.jpg"',
+      "content-security-policy": "default-src 'none'; sandbox",
+      "x-content-type-options": "nosniff",
+    },
+  });",
+    "<span class=k>export const </span><span class=t>serveUpload </span><span class=p>= (</span>jpeg<span class=p>:</span> Buffer<span class=p>) =&gt;</span>
+  <span class=k>new </span><span class=t>Response</span><span class=p>(</span><span class=k>new </span><span class=t>Uint8Array</span><span class=p>(</span>jpeg<span class=p>), {</span>
+    headers<span class=p>: {</span>
+      <span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg"</span><span class=p>,</span>
+      <span class=s>"</span>content-disposition<span class=s>"</span><span class=p>: </span><span class=s>'inline; filename="photo.jpg"'</span><span class=p>,</span>
+      <span class=s>"</span>content-security-policy<span class=s>"</span><span class=p>: </span><span class=s>"default-src 'none'; sandbox"</span><span class=p>,</span>
+      <span class=s>"</span>x-content-type-options<span class=s>"</span><span class=p>: </span><span class=s>"nosniff"</span><span class=p>,</span>
+    <span class=p>},</span>
+  <span class=p>});</span>",
+  ],
+  [
+    "security",
+    "security/cropper-policy.ts",
+    "export const cropperPolicy = [
+  "img-src 'self' blob: data:",
+  "worker-src blob:",
+  "connect-src 'self'",
+].join("; ");",
+    "<span class=k>export const</span> cropperPolicy <span class=p>= [</span>
+  <span class=s>"img-src 'self' blob: data:"</span><span class=p>,</span>
+  <span class=s>"worker-src blob:"</span><span class=p>,</span>
+  <span class=s>"connect-src 'self'"</span><span class=p>,</span>
+<span class=p>].</span><span class=t>join</span><span class=p>(</span><span class=s>"; "</span><span class=p>);</span>",
+  ],
+  [
     "vanilla-js",
     "vanilla-js/markup.html",
     "<div id="cropper" data-zriz-item="root">
@@ -6842,7 +6896,7 @@ exports[`content > writes exporting as markdown 1`] = `
 
 > [llms.txt](https://zriz.dev/llms.txt)
 
-turn the crop into an image file in the browser, or send the export plan to your server and cut the original there.
+turn the crop into an image file in the browser, or send the crop value to your server and cut the original there.
 
 the demo runs on the page at https\\://zriz.dev/docs/exporting.
 
@@ -6958,7 +7012,7 @@ with \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
 
 exports run one at a time, in the order you call them. an aborted export stops waiting at once, but one the browser already started holds the next one back until it ends.
 
-the browser drops exif, gps data and 16-bit depth from the file.
+the browser draws pixels onto a canvas and encodes them, so exif, gps, xmp, thumbnails, gain maps and bytes after the image never reach the file, and neither does 16-bit depth. safari writes a small exif block of its own, with only the crop's size and colour space. [security](https://zriz.dev/docs/security.md) covers the original, which keeps all of it.
 
 ## export an exact size
 
@@ -7971,7 +8025,7 @@ a strict \`style-src\` also refuses \`style\` attributes in server html. the par
 
 ## open heic on every browser
 
-to decode a format the browser cannot, call \`loadImage\` yourself and pass a \`decode\` function. zriz calls it only when the browser's own decode fails. it gets the \`Blob\` and returns an \`ImageBitmap\`. save this as \`decoder.ts\`. its \`convert\` sends the file to a route on your server that turns it into jpeg. \`loadImage\` and \`attachImage\` come from \`@zriz/core/dom\`, so add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md):
+to decode a format the browser cannot, call \`loadImage\` yourself and pass a \`decode\` function. zriz calls it only when the browser's own decode fails. it gets the \`Blob\` and returns an \`ImageBitmap\`. save this as \`decoder.ts\`. its \`convert\` sends the file to a route on your server that turns it into jpeg, so the original leaves the device. [security](https://zriz.dev/docs/security.md) says how to treat it. \`loadImage\` and \`attachImage\` come from \`@zriz/core/dom\`, so add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md):
 
 \`\`\`ts
 import { attachImage, loadImage } from "@zriz/core/dom";
@@ -8613,6 +8667,153 @@ export const SavedCrop = ({ id, src }: Props) => {
   );
 };
 \`\`\`
+"
+`;
+
+exports[`content > writes security as markdown 1`] = `
+"# security
+
+> [llms.txt](https://zriz.dev/llms.txt)
+
+what zriz handles about hostile files and private photos, and what stays your job.
+
+## what zriz does on its own
+
+zriz sends nothing anywhere. the photo stays in the browser until your code uploads something. the browser decodes it in a worker, and an export draws pixels onto a canvas and encodes them, so only the crop's pixels reach the file.
+
+we ran files carrying each of these blocks through \`exportCrop\` in chromium, firefox and webkit, through the [server crop](https://zriz.dev/docs/server-crop.md) route, and through plain sharp, then parsed the results:
+
+| in the upload | \\\`exportCrop\\\` | server crop route | sharp with \\\`keepMetadata()\\\` |
+| - | - | - | - |
+| gps and exif | gone | gone | kept |
+| exif thumbnail of the whole photo | gone | gone | kept |
+| xmp and iptc | gone | gone | kept |
+| pixels outside the crop | gone | gone | gone |
+| a second image, video or other bytes after the image | gone | gone | gone |
+| gain map | gone | gone | gone, and \`keepGainMap()\` keeps a cropped one |
+
+safari writes a small exif block of its own into a jpeg or png, with only the crop's size and colour space.
+
+## treat the original as private
+
+cropping hides part of a photo, and the original still holds all of it. the file a person picks carries their location, the time, the camera, a thumbnail of the uncropped frame, and on many phones a short video. someone who crops a face or a street sign out expects it to be gone.
+
+what to do, best first:
+
+| choice | what you do |
+| - | - |
+| upload the export | send the blob from \`exportCrop\` and never the file. the original stays on the device |
+| cut on the server and drop the original | use [server crop](https://zriz.dev/docs/server-crop.md), store the answer and let the upload go when the request ends. don't write it to disk, to a queue or to logs |
+| keep a copy to crop again later | store the copy below in a private bucket, never at a public url and never beside the crop, and tell the person you keep the whole frame. delete it when they delete the crop |
+
+\`cleanCopy\` decodes the upload and encodes it again, which drops every block in the table. it keeps every pixel, so it is still the whole photo:
+
+\`\`\`ts
+import sharp from "sharp";
+
+export const cleanCopy = async (input: Buffer) =>
+  await sharp(input, { limitInputPixels: 120_000_000 })
+    .rotate()
+    .jpeg({ quality: 92 })
+    .toBuffer();
+\`\`\`
+
+on a pipeline opened from an upload, never call \`keepMetadata()\`, \`keepExif()\`, \`withMetadata()\`, \`withExif()\` or \`withExifMerge()\`. each one kept the exif thumbnail in our test, so a crop can carry a small picture of the frame it cut away. to write your own tags, cut the photo to raw pixels first, as the route does, and add them to a new pipeline.
+
+the crop value and \`details.pixelCrop\` tell where the crop sits and how large the original is. keep them out of public urls when that matters.
+
+## apple and phone formats
+
+| file | what happens |
+| - | - |
+| heic and heif | only safari decodes them. other browsers fail with \`unsupported-format\`, and prebuilt sharp has no hevc decoder, so the route answers 415. a \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), sends the original to your server, so the rules above apply to it |
+| live photo | the still and the video are two files. zriz gets the file you pass and never sees the other. if your own picker uploads both, you upload the video too |
+| motion photo | the video sits after the image in one file. exports and the route drop it, and the original keeps it |
+| gain map, mpf | a second image in the file for hdr screens, covering the whole frame. exports and the route drop it, and the exported photo is sdr |
+| p3 and other icc profiles | the colour is converted on decode. an export is srgb unless you ask for \`display-p3\`, and the only profile in the file is the browser's own |
+
+## decoder bugs
+
+zriz has no image decoder of its own. in the browser the decoding is done by the browser and the operating system, and a page cannot patch them or see their version. bugs there are real. CVE-2023-4863 in libwebp was exploited through chrome before 116.0.5845.187, and CVE-2023-41064 in apple's imageio was used against iphones with no click. opening a file in a cropper is the same exposure as showing it in an \`img\`. tell people to keep their browser and system updated.
+
+on your server, sharp is your decoder and you own its patches. use 0.35.5 or newer, which bundles libvips 8.18.7. versions before 0.35.0 are open to GHSA-f88m-g3jw-g9cj. run \`npm audit\` in ci, and turn off the decoders you don't need with \`sharp.block()\`, as the route does. don't point sharp at a libvips from your system, because that one brings its own loaders and its own patch level.
+
+zriz reads the pixel count before it decodes and refuses a file over \`maxPixels\`. lower it if your page only needs small photos, as in [loading images](https://zriz.dev/docs/loading-images.md).
+
+## svg
+
+zriz draws an svg through an \`img\` from a data url, so the browser runs no script in it and fetches nothing it points at. we tried scripts, event attributes, \`foreignObject\`, external images, stylesheets, fonts and \`use\` in all three engines, with no script run and no request sent. the export is a bitmap, so nothing from the svg source survives in it.
+
+an svg still draws on the main thread, and a heavy one can freeze the tab. pass \`svg={false}\` to \`Root\` when people upload photos and you have no use for svg.
+
+the danger is your own code using the source. a blob url of a file runs with your origin when it opens as a document, so a script inside the svg acts as your site. an \`img\` is safe. these are not:
+
+| never do this with an uploaded file |
+| - |
+| \`dangerouslySetInnerHTML\` or \`innerHTML\` with the text of the file |
+| \`object\`, \`embed\` or \`iframe\` with its url |
+| a link or \`window.open\` to its \`blob:\` url |
+
+## serve what people upload
+
+the file name, the extension and the mime type come from the client, and a file can be a valid image and valid html at once. zriz reads the format from the bytes, and so does sharp, but your upload route decides how a file comes back to a browser.
+
+for every file you serve back:
+
+| rule | why |
+| - | - |
+| encode it again and serve that, as \`cleanCopy\` does | extra bytes in the file don't survive |
+| set \`content-type\` from what you encoded, never from the upload | a declared \`text/html\` or \`image/svg+xml\` would run |
+| send \`x-content-type-options: nosniff\` | the browser won't guess a type from the bytes |
+| send \`content-security-policy: default-src 'none'; sandbox\` | if a file does open as a document, it runs nothing |
+| serve from a separate domain, such as \`yourappusercontent.com\` | a file that slips through can't reach your cookies or your storage |
+| name the stored file with a random id | a name from the client can hold \`../\` or overwrite another file |
+
+\`\`\`ts
+export const serveUpload = (jpeg: Buffer) =>
+  new Response(new Uint8Array(jpeg), {
+    headers: {
+      "content-type": "image/jpeg",
+      "content-disposition": 'inline; filename="photo.jpg"',
+      "content-security-policy": "default-src 'none'; sandbox",
+      "x-content-type-options": "nosniff",
+    },
+  });
+\`\`\`
+
+## set a content security policy
+
+these sources let the cropper work with its worker. merge them into your own policy. [loading images](https://zriz.dev/docs/loading-images.md) says what each one enables, and what falls back when it is missing.
+
+\`\`\`ts
+export const cropperPolicy = [
+  "img-src 'self' blob: data:",
+  "worker-src blob:",
+  "connect-src 'self'",
+].join("; ");
+\`\`\`
+
+zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`style-src\` and \`script-src\` need nothing for it. with trusted types, add \`zriz\` to \`trusted-types\`.
+
+## urls you pass as src
+
+zriz fetches a string \`src\`, and the fetch sends cookies to your own origin. never pass a url a visitor typed, because it makes other visitors' browsers call any path on your site, and a host of the visitor's choice learns the ip address and page origin of everyone who opens it. check the host against your own list first.
+
+pass \`crossOrigin="use-credentials"\` only for hosts you trust. to hide your page from the host, set \`referrerpolicy\` for the page with \`<meta name="referrer" content="no-referrer">\`.
+
+don't add a url field to a server route. fetching a url from a client lets them reach your internal network. the [server crop](https://zriz.dev/docs/server-crop.md) route takes a file for that reason.
+
+a \`ZrizError\` message for a failed url holds its host and path, without the query. if a secret sits in your path, don't log the message.
+
+## protect the server route
+
+the [server crop](https://zriz.dev/docs/server-crop.md) route refuses forged values, oversize bodies and unused decoders. it can't know who is calling, so connect \`canCrop\` to your session check, add a rate limit per user, and set a body limit at your proxy too.
+
+a saved value is client input as well. \`parse\` returns a clean object or \`null\` for anything in \`localStorage\` or a database, and a cropper keeps a value inside the photo, so a tampered one can only move the crop.
+
+## report a problem
+
+report it privately at \\[github]\\(https\\://github.com/pqoqubbw/zriz/security/advisories/new), not in a public issue.
 "
 `;
 

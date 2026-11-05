@@ -121,7 +121,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
     section(
       "open heic on every browser",
       p(
-        "to decode a format the browser cannot, call `loadImage` yourself and pass a `decode` function. zriz calls it only when the browser's own decode fails. it gets the `Blob` and returns an `ImageBitmap`. save this as `decoder.ts`. its `convert` sends the file to a route on your server that turns it into jpeg. `loadImage` and `attachImage` come from `@zriz/core/dom`, so add `@zriz/core` as in [exporting](exporting):"
+        "to decode a format the browser cannot, call `loadImage` yourself and pass a `decode` function. zriz calls it only when the browser's own decode fails. it gets the `Blob` and returns an `ImageBitmap`. save this as `decoder.ts`. its `convert` sends the file to a route on your server that turns it into jpeg, so the original leaves the device. [security](security) says how to treat it. `loadImage` and `attachImage` come from `@zriz/core/dom`, so add `@zriz/core` as in [exporting](exporting):"
       ),
       code("loading-images/decoder.ts"),
       p(

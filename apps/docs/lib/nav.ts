@@ -35,6 +35,7 @@ const NAV_GROUPS = [
       { slug: "composition", title: "composition" },
       { slug: "exporting", title: "exporting" },
       { slug: "accessibility", title: "accessibility" },
+      { slug: "security", title: "security" },
       { slug: "vanilla-js", title: "vanilla js" },
     ],
     title: "guides",
