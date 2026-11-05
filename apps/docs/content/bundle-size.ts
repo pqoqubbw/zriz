@@ -11,13 +11,13 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           column("brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["editor", "every part from `@zriz/react/cropper`", "29.13 kB"],
-          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "22.78 kB"],
-          ["root only", "`Root`", "15.56 kB"],
+          ["editor", "every part from `@zriz/react/cropper`", "29.19 kB"],
+          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "22.82 kB"],
+          ["root only", "`Root`", "15.6 kB"],
           [
             "vanilla avatar",
             "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
-            "19.05 kB",
+            "19.07 kB",
           ],
           ["server", "`toSharp` from `@zriz/core`", "563 B"],
           ["stylesheet", "`styles.css`, which is optional", "857 B"],
@@ -59,7 +59,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
         ],
       }),
       p(
-        "with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 27.03 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: `render` is 3.50 kB."
+        "with all four chunks, even `source`, which `Root` never loads, the avatar set comes to 27.07 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: `render` is 3.50 kB."
       )
     ),
     section(
