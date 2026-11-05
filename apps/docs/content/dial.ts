@@ -28,6 +28,9 @@ const DIAL_PAGE = defineDoc({
       "drag and flick the ruler",
       p(
         "drag the ruler 4 px to turn 1°. a quick flick keeps it gliding after you let go, and past the limit it stretches and springs back. on touch, a vertical swipe scrolls the page instead."
+      ),
+      p(
+        "the photo zooms in as the angle grows. one gesture back to 0° restores the zoom. separate gestures keep it, as in ios photos, until `Reset` or `Zoom` takes it back."
       )
     ),
     section(
