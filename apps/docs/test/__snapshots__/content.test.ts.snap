@@ -3980,8 +3980,8 @@ useEffect(
   [result]
 
 const upload = async () => {
-  const plan = actions.current?.getPixelCrop();
-  if (!file || !plan) return;
+  const value = actions.current?.getValue();
+  if (!file || !value) return;
   last.current?.abort();
   const controller = new AbortController();
   const { signal } = controller;
@@ -3990,7 +3990,7 @@ const upload = async () => {
   setResult(null);
   const form = new FormData();
   form.append("file", file);
-  form.append("plan", JSON.stringify(plan));
+  form.append("value", serialize(value));
   try {
     const response = await fetch("/api/crop", {
       method: "POST",
@@ -4032,6 +4032,8 @@ const upload = async () => {
 <Cropper.Root
   key={picks}
   actionsRef={actions}
+  maxZoom={MAX_ZOOM}
+  minSize={MIN_SIZE}
   src={file}
   onLoad={() => setReady(true)}
   onError={() => setError(unreadable)}
@@ -4055,8 +4057,8 @@ const upload = async () => {
   <span class=p>[</span>result<span class=p>]</span>
 
 const <span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-  <span class=k>const</span> plan <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getPixelCrop</span><span class=p>();</span>
-  <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>plan<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+  <span class=k>const</span> value <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getValue</span><span class=p>();</span>
+  <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>value<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
   <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
   <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
@@ -4065,7 +4067,7 @@ const <span class=t>upload </span><span class=p>= </span><span class=k>async </s
   <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
   form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
-  form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"plan"</span><span class=p>,</span> JSON<span class=p>.</span><span class=t>stringify</span><span class=p>(</span>plan<span class=p>));</span>
+  form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"value"</span><span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
       method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
@@ -4107,6 +4109,8 @@ const <span class=t>upload </span><span class=p>= </span><span class=k>async </s
 <span class=p>&lt;</span><span class=t>Cropper.Root</span>
   <span class=a>key</span><span class=p>={</span>picks<span class=p>}</span>
   <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
+  <span class=a>maxZoom</span><span class=p>={</span>MAX_ZOOM<span class=p>}</span>
+  <span class=a>minSize</span><span class=p>={</span>MIN_SIZE<span class=p>}</span>
   <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
   <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
   <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setError</span><span class=p>(</span>unreadable<span class=p>)}</span>
@@ -4128,17 +4132,36 @@ const open = (image: Raw) =>
 const raw = (pipeline: Sharp) =>
   pipeline.raw().toBuffer({ resolveWithObject: true });
 
-const cut = async (input: Buffer, plan: ExportPlan) => {
+const cut = async (input: Buffer, value: string) => {
+  const saved = parse(value);
+  if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(sharp(input).rotate());
+  const cropper = createCropper({
+    image: upright.info,
+    maxZoom: MAX_ZOOM,
+    minSize: MIN_SIZE,
+  });
+  cropper.setValue(saved);
+  const plan = cropper.getPixelCrop();
+  if (!plan || plan.homography)
+    throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
   if (steps.kind === "extract") {
-    return open(upright)
-      .extract(steps.extract)
-      .flop(steps.flop)
-      .rotate(steps.rotate);
+    const turned = await raw(
+      open(upright)
+        .extract(steps.extract)
+        .flop(steps.flop)
+        .rotate(steps.rotate)
+    );
+    return open(turned).resize({
+      ...steps.resize,
+      fit: "fill",
+    });
   }
   const [[a, b], [c, d]] = steps.affine;
-  const padded = await raw(open(upright).extend(steps.extend));
+  const padded = await raw(
+    open(upright).extract(steps.source).extend(steps.extend)
+  );
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
@@ -4153,17 +4176,36 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 <span class=k>const </span><span class=t>raw </span><span class=p>= (</span>pipeline<span class=p>:</span> Sharp<span class=p>) =&gt;</span>
   pipeline<span class=p>.</span><span class=t>raw</span><span class=p>().</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
 
-<span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> plan<span class=p>:</span> ExportPlan<span class=p>) =&gt; {</span>
+<span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
+  <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
+  <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
   <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>sharp</span><span class=p>(</span>input<span class=p>).</span><span class=t>rotate</span><span class=p>());</span>
+  <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
+    image<span class=p>:</span> upright<span class=p>.</span>info<span class=p>,</span>
+    maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
+    minSize<span class=p>:</span> MIN_SIZE<span class=p>,</span>
+  <span class=p>});</span>
+  cropper<span class=p>.</span><span class=t>setValue</span><span class=p>(</span>saved<span class=p>);</span>
+  <span class=k>const</span> plan <span class=p>=</span> cropper<span class=p>.</span><span class=t>getPixelCrop</span><span class=p>();</span>
+  <span class=k>if </span><span class=p>(!</span>plan <span class=p>||</span> plan<span class=p>.</span>homography<span class=p>)</span>
+    <span class=k>throw new </span><span class=t>RangeError</span><span class=p>(</span><span class=s>"no flat plan"</span><span class=p>);</span>
   <span class=k>const</span> steps <span class=p>= </span><span class=t>toSharp</span><span class=p>(</span>plan<span class=p>,</span> upright<span class=p>.</span>info<span class=p>);</span>
   <span class=k>if </span><span class=p>(</span>steps<span class=p>.</span>kind <span class=p>=== </span><span class=s>"extract"</span><span class=p>) {</span>
-    <span class=k>return </span><span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
-      <span class=p>.</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>)</span>
-      <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
-      <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>);</span>
+    <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+      <span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
+        <span class=p>.</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>)</span>
+        <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
+        <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>)</span>
+    <span class=p>);</span>
+    <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>resize</span><span class=p>({</span>
+      <span class=p>...</span>steps<span class=p>.</span>resize<span class=p>,</span>
+      fit<span class=p>: </span><span class=s>"fill"</span><span class=p>,</span>
+    <span class=p>});</span>
   <span class=p>}</span>
   <span class=k>const </span><span class=p>[[</span>a<span class=p>,</span> b<span class=p>], [</span>c<span class=p>,</span> d<span class=p>]] =</span> steps<span class=p>.</span>affine<span class=p>;</span>
-  <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>));</span>
+  <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+    <span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>source<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>)</span>
+  <span class=p>);</span>
   <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>padded<span class=p>).</span><span class=t>affine</span><span class=p>([</span>a<span class=p>,</span> b<span class=p>,</span> c<span class=p>,</span> d<span class=p>],</span> steps<span class=p>.</span>options<span class=p>)</span>
   <span class=p>);</span>
@@ -4174,11 +4216,17 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
     "server-crop",
     "server-crop/app/api/crop/route.ts",
     "export const POST = async (request: Request) => {
+  const length = Number(request.headers.get("content-length"));
+  if (!length || length > MAX_BODY) {
+    return new Response("this upload is too large.", {
+      status: 413,
+    });
+  }
   const form = await request.formData();
   const file = form.get("file");
-  const plan = form.get("plan");
-  if (!(file instanceof File) || typeof plan !== "string") {
-    return new Response("send a file and a plan.", {
+  const value = form.get("value");
+  if (!(file instanceof File) || typeof value !== "string") {
+    return new Response("send a file and a crop value.", {
       status: 400,
     });
   }
@@ -4191,11 +4239,16 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
       status: 400,
     });
   }
-  try {
-    const crop = await cut(
-      input,
-      JSON.parse(plan) as ExportPlan
+  if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
+    return new Response(
+      "save this webp without an orientation tag.",
+      {
+        status: 422,
+      }
     );
+  }
+  try {
+    const crop = await cut(input, value);
     const jpeg = await crop
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
@@ -4204,17 +4257,23 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
       headers: { "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this plan does not fit this photo.", {
+    return new Response("this crop does not fit this photo.", {
       status: 422,
     });
   }
 };",
     "<span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+  <span class=k>if </span><span class=p>(!</span>length <span class=p>||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, {</span>
+      status<span class=p>: </span><span class=n>413</span><span class=p>,</span>
+    <span class=p>});</span>
+  <span class=p>}</span>
   <span class=k>const</span> form <span class=p>= </span><span class=k>await</span> request<span class=p>.</span><span class=t>formData</span><span class=p>();</span>
   <span class=k>const</span> file <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
-  <span class=k>const</span> plan <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"plan"</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> plan <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a plan."</span><span class=p>, {</span>
+  <span class=k>const</span> value <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, {</span>
       status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
@@ -4227,11 +4286,16 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
       status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
-  <span class=k>try </span><span class=p>{</span>
-    <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>
-      input<span class=p>,</span>
-      JSON<span class=p>.</span><span class=t>parse</span><span class=p>(</span>plan<span class=p>) </span><span class=k>as</span> ExportPlan
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span>
+      <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
+      <span class=p>{</span>
+        status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
+      <span class=p>}</span>
     <span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
@@ -4240,7 +4304,7 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
       headers<span class=p>: { </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this plan does not fit this photo."</span><span class=p>, {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, {</span>
       status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
@@ -4248,13 +4312,23 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
   ],
   [
     "server-crop",
+    "server-crop/crop-limits.ts",
+    "export const MIN_SIZE = { width: 1, height: 1 };
+export const MAX_ZOOM = 15;",
+    "<span class=k>export const</span> MIN_SIZE <span class=p>= {</span> width<span class=p>: </span><span class=n>1</span><span class=p>,</span> height<span class=p>: </span><span class=n>1 </span><span class=p>};</span>
+<span class=k>export const</span> MAX_ZOOM <span class=p>= </span><span class=n>15</span><span class=p>;</span>",
+  ],
+  [
+    "server-crop",
     "server-crop/crop-upload.tsx",
     ""use client";
 
+import { serialize } from "@zriz/core";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useEffect, useRef, useState } from "react";
+import { MAX_ZOOM, MIN_SIZE } from "./crop-limits";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -4277,8 +4351,8 @@ export const CropUpload = () => {
   );
 
   const upload = async () => {
-    const plan = actions.current?.getPixelCrop();
-    if (!file || !plan) return;
+    const value = actions.current?.getValue();
+    if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
@@ -4287,7 +4361,7 @@ export const CropUpload = () => {
     setResult(null);
     const form = new FormData();
     form.append("file", file);
-    form.append("plan", JSON.stringify(plan));
+    form.append("value", serialize(value));
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
@@ -4330,6 +4404,8 @@ export const CropUpload = () => {
       <Cropper.Root
         key={picks}
         actionsRef={actions}
+        maxZoom={MAX_ZOOM}
+        minSize={MIN_SIZE}
         src={file}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
@@ -4358,10 +4434,12 @@ export const CropUpload = () => {
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
 
+<span class=k>import </span><span class=p>{</span> serialize <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> Cropper <span class=k>as</span> CropperApi <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>* </span><span class=k>as</span> Cropper <span class=k>from </span><span class=s>"@zriz/react/cropper"</span><span class=p>;</span>
 <span class=k>import </span><span class=s>"@zriz/react/styles.css"</span><span class=p>;</span>
 <span class=k>import </span><span class=p>{</span> useEffect<span class=p>,</span> useRef<span class=p>,</span> useState <span class=p>} </span><span class=k>from </span><span class=s>"react"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> MAX_ZOOM<span class=p>,</span> MIN_SIZE <span class=p>} </span><span class=k>from </span><span class=s>"./crop-limits"</span><span class=p>;</span>
 
 <span class=k>const</span> unreadable <span class=p>=</span>
   <span class=s>"this photo does not open. pick a jpeg, png, webp or avif."</span><span class=p>;</span>
@@ -4384,8 +4462,8 @@ export const CropUpload = () => {
   <span class=p>);</span>
 
   <span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
-    <span class=k>const</span> plan <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getPixelCrop</span><span class=p>();</span>
-    <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>plan<span class=p>) </span><span class=k>return</span><span class=p>;</span>
+    <span class=k>const</span> value <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getValue</span><span class=p>();</span>
+    <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>value<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
     <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
@@ -4394,7 +4472,7 @@ export const CropUpload = () => {
     <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
     <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
     form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
-    form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"plan"</span><span class=p>,</span> JSON<span class=p>.</span><span class=t>stringify</span><span class=p>(</span>plan<span class=p>));</span>
+    form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"value"</span><span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
         method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
@@ -4437,6 +4515,8 @@ export const CropUpload = () => {
       <span class=p>&lt;</span><span class=t>Cropper.Root</span>
         <span class=a>key</span><span class=p>={</span>picks<span class=p>}</span>
         <span class=a>actionsRef</span><span class=p>={</span>actions<span class=p>}</span>
+        <span class=a>maxZoom</span><span class=p>={</span>MAX_ZOOM<span class=p>}</span>
+        <span class=a>minSize</span><span class=p>={</span>MIN_SIZE<span class=p>}</span>
         <span class=a>src</span><span class=p>={</span>file<span class=p>}</span>
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
         <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setError</span><span class=p>(</span>unreadable<span class=p>)}</span>
@@ -4467,10 +4547,12 @@ export const CropUpload = () => {
   [
     "server-crop",
     "server-crop/app/api/crop/route.ts",
-    "import { toSharp } from "@zriz/core";
-import type { ExportPlan } from "@zriz/core";
+    "import { createCropper, parse, toSharp } from "@zriz/core";
 import sharp from "sharp";
 import type { OutputInfo, Sharp } from "sharp";
+import { MAX_ZOOM, MIN_SIZE } from "../../../crop-limits";
+
+const MAX_BODY = 50 * 1024 * 1024;
 
 type Raw = { data: Buffer; info: OutputInfo };
 const open = (image: Raw) =>
@@ -4481,17 +4563,36 @@ const open = (image: Raw) =>
 const raw = (pipeline: Sharp) =>
   pipeline.raw().toBuffer({ resolveWithObject: true });
 
-const cut = async (input: Buffer, plan: ExportPlan) => {
+const cut = async (input: Buffer, value: string) => {
+  const saved = parse(value);
+  if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(sharp(input).rotate());
+  const cropper = createCropper({
+    image: upright.info,
+    maxZoom: MAX_ZOOM,
+    minSize: MIN_SIZE,
+  });
+  cropper.setValue(saved);
+  const plan = cropper.getPixelCrop();
+  if (!plan || plan.homography)
+    throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
   if (steps.kind === "extract") {
-    return open(upright)
-      .extract(steps.extract)
-      .flop(steps.flop)
-      .rotate(steps.rotate);
+    const turned = await raw(
+      open(upright)
+        .extract(steps.extract)
+        .flop(steps.flop)
+        .rotate(steps.rotate)
+    );
+    return open(turned).resize({
+      ...steps.resize,
+      fit: "fill",
+    });
   }
   const [[a, b], [c, d]] = steps.affine;
-  const padded = await raw(open(upright).extend(steps.extend));
+  const padded = await raw(
+    open(upright).extract(steps.source).extend(steps.extend)
+  );
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
@@ -4499,11 +4600,17 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 };
 
 export const POST = async (request: Request) => {
+  const length = Number(request.headers.get("content-length"));
+  if (!length || length > MAX_BODY) {
+    return new Response("this upload is too large.", {
+      status: 413,
+    });
+  }
   const form = await request.formData();
   const file = form.get("file");
-  const plan = form.get("plan");
-  if (!(file instanceof File) || typeof plan !== "string") {
-    return new Response("send a file and a plan.", {
+  const value = form.get("value");
+  if (!(file instanceof File) || typeof value !== "string") {
+    return new Response("send a file and a crop value.", {
       status: 400,
     });
   }
@@ -4516,11 +4623,16 @@ export const POST = async (request: Request) => {
       status: 400,
     });
   }
-  try {
-    const crop = await cut(
-      input,
-      JSON.parse(plan) as ExportPlan
+  if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
+    return new Response(
+      "save this webp without an orientation tag.",
+      {
+        status: 422,
+      }
     );
+  }
+  try {
+    const crop = await cut(input, value);
     const jpeg = await crop
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
@@ -4529,15 +4641,17 @@ export const POST = async (request: Request) => {
       headers: { "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this plan does not fit this photo.", {
+    return new Response("this crop does not fit this photo.", {
       status: 422,
     });
   }
 };",
-    "<span class=k>import </span><span class=p>{</span> toSharp <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
-<span class=k>import type </span><span class=p>{</span> ExportPlan <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
+    "<span class=k>import </span><span class=p>{</span> createCropper<span class=p>,</span> parse<span class=p>,</span> toSharp <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import</span> sharp <span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> OutputInfo<span class=p>,</span> Sharp <span class=p>} </span><span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
+<span class=k>import </span><span class=p>{</span> MAX_ZOOM<span class=p>,</span> MIN_SIZE <span class=p>} </span><span class=k>from </span><span class=s>"../../../crop-limits"</span><span class=p>;</span>
+
+<span class=k>const</span> MAX_BODY <span class=p>= </span><span class=n>50 </span><span class=p>* </span><span class=n>1024 </span><span class=p>* </span><span class=n>1024</span><span class=p>;</span>
 
 <span class=k>type</span> Raw <span class=p>= {</span> data<span class=p>:</span> Buffer<span class=p>;</span> info<span class=p>:</span> OutputInfo <span class=p>};</span>
 <span class=k>const </span><span class=t>open </span><span class=p>= (</span>image<span class=p>:</span> Raw<span class=p>) =&gt;</span>
@@ -4548,17 +4662,36 @@ export const POST = async (request: Request) => {
 <span class=k>const </span><span class=t>raw </span><span class=p>= (</span>pipeline<span class=p>:</span> Sharp<span class=p>) =&gt;</span>
   pipeline<span class=p>.</span><span class=t>raw</span><span class=p>().</span><span class=t>toBuffer</span><span class=p>({</span> resolveWithObject<span class=p>: </span><span class=n>true </span><span class=p>});</span>
 
-<span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> plan<span class=p>:</span> ExportPlan<span class=p>) =&gt; {</span>
+<span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
+  <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
+  <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
   <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>sharp</span><span class=p>(</span>input<span class=p>).</span><span class=t>rotate</span><span class=p>());</span>
+  <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
+    image<span class=p>:</span> upright<span class=p>.</span>info<span class=p>,</span>
+    maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
+    minSize<span class=p>:</span> MIN_SIZE<span class=p>,</span>
+  <span class=p>});</span>
+  cropper<span class=p>.</span><span class=t>setValue</span><span class=p>(</span>saved<span class=p>);</span>
+  <span class=k>const</span> plan <span class=p>=</span> cropper<span class=p>.</span><span class=t>getPixelCrop</span><span class=p>();</span>
+  <span class=k>if </span><span class=p>(!</span>plan <span class=p>||</span> plan<span class=p>.</span>homography<span class=p>)</span>
+    <span class=k>throw new </span><span class=t>RangeError</span><span class=p>(</span><span class=s>"no flat plan"</span><span class=p>);</span>
   <span class=k>const</span> steps <span class=p>= </span><span class=t>toSharp</span><span class=p>(</span>plan<span class=p>,</span> upright<span class=p>.</span>info<span class=p>);</span>
   <span class=k>if </span><span class=p>(</span>steps<span class=p>.</span>kind <span class=p>=== </span><span class=s>"extract"</span><span class=p>) {</span>
-    <span class=k>return </span><span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
-      <span class=p>.</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>)</span>
-      <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
-      <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>);</span>
+    <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+      <span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
+        <span class=p>.</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>)</span>
+        <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
+        <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>)</span>
+    <span class=p>);</span>
+    <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>resize</span><span class=p>({</span>
+      <span class=p>...</span>steps<span class=p>.</span>resize<span class=p>,</span>
+      fit<span class=p>: </span><span class=s>"fill"</span><span class=p>,</span>
+    <span class=p>});</span>
   <span class=p>}</span>
   <span class=k>const </span><span class=p>[[</span>a<span class=p>,</span> b<span class=p>], [</span>c<span class=p>,</span> d<span class=p>]] =</span> steps<span class=p>.</span>affine<span class=p>;</span>
-  <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span><span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>));</span>
+  <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
+    <span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>source<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>)</span>
+  <span class=p>);</span>
   <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>padded<span class=p>).</span><span class=t>affine</span><span class=p>([</span>a<span class=p>,</span> b<span class=p>,</span> c<span class=p>,</span> d<span class=p>],</span> steps<span class=p>.</span>options<span class=p>)</span>
   <span class=p>);</span>
@@ -4566,11 +4699,17 @@ export const POST = async (request: Request) => {
 <span class=p>};</span>
 
 <span class=k>export const </span><span class=t>POST </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
+  <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+  <span class=k>if </span><span class=p>(!</span>length <span class=p>||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, {</span>
+      status<span class=p>: </span><span class=n>413</span><span class=p>,</span>
+    <span class=p>});</span>
+  <span class=p>}</span>
   <span class=k>const</span> form <span class=p>= </span><span class=k>await</span> request<span class=p>.</span><span class=t>formData</span><span class=p>();</span>
   <span class=k>const</span> file <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
-  <span class=k>const</span> plan <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"plan"</span><span class=p>);</span>
-  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> plan <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a plan."</span><span class=p>, {</span>
+  <span class=k>const</span> value <span class=p>=</span> form<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+  <span class=k>if </span><span class=p>(!(</span>file <span class=k>instanceof</span> File<span class=p>) || </span><span class=k>typeof</span> value <span class=p>!== </span><span class=s>"string"</span><span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, {</span>
       status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
@@ -4583,11 +4722,16 @@ export const POST = async (request: Request) => {
       status<span class=p>: </span><span class=n>400</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
-  <span class=k>try </span><span class=p>{</span>
-    <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>
-      input<span class=p>,</span>
-      JSON<span class=p>.</span><span class=t>parse</span><span class=p>(</span>plan<span class=p>) </span><span class=k>as</span> ExportPlan
+  <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span>
+      <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
+      <span class=p>{</span>
+        status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
+      <span class=p>}</span>
     <span class=p>);</span>
+  <span class=p>}</span>
+  <span class=k>try </span><span class=p>{</span>
+    <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
@@ -4596,7 +4740,7 @@ export const POST = async (request: Request) => {
       headers<span class=p>: { </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
-    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this plan does not fit this photo."</span><span class=p>, {</span>
+    <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, {</span>
       status<span class=p>: </span><span class=n>422</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
@@ -6876,7 +7020,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
 
 ## cut the original on a server
 
-call \`getPixelCrop()\` when you upload, because a photo the user never touches sends no commit. it returns the export plan in source pixels, or \`null\` until a photo loads. each commit also carries it as \`details.pixelCrop\`. send the whole plan with the file, because \`pixelRect\` is \`null\` with a straighten angle or perspective.
+to cut on a server, send the crop value from \`getValue()\` and let the server recompute the plan, as in [server crop](https://zriz.dev/docs/server-crop.md). never trust a plan a client sends. \`getPixelCrop()\` returns the export plan in source pixels, or \`null\` until a photo loads, and each commit carries it as \`details.pixelCrop\`. use it for your own tools, and read all of it, because \`pixelRect\` is \`null\` with a straighten angle or perspective.
 
 - \`width\` \`number\`
 
@@ -6900,7 +7044,7 @@ call \`getPixelCrop()\` when you upload, because a photo the user never touches 
 
   the 3 by 3 perspective matrix \`H\`, row by row, or \`null\` with no perspective. divide by the third coordinate after you apply it
 
-with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn.
+with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn. \`pixelRect\` is the truth for the file: its edges land on whole source pixels, so on a very small photo the frame on screen can sit up to half a source pixel from the file edge. a side never goes below 1 px, so a thin crop can come out slightly over \`maxSize\`.
 
 \`toSharp\` from \`@zriz/core\` turns the plan into sharp steps. [server crop](https://zriz.dev/docs/server-crop.md) shows the route for a level crop and a straightened one.
 "
@@ -6975,7 +7119,7 @@ vaul starts with focus on the page, and the first presses of tab land behind the
 
 ### can i crop on the server
 
-yes. send the original file and the plan from \`getPixelCrop()\`, then turn that plan into sharp calls with \`toSharp\`. [server crop](https://zriz.dev/docs/server-crop.md) has the route.
+yes. send the original file and the value from \`getValue()\`, recompute the plan on the server, then turn that plan into sharp calls with \`toSharp\`. [server crop](https://zriz.dev/docs/server-crop.md) has the route.
 "
 `;
 
@@ -7775,12 +7919,12 @@ if that server wants a token in a header, fetch the photo yourself with that hea
 | jpeg, png, webp, avif, gif | open in every current browser |
 | bmp | opens in every current browser, but safari cannot open some bmp files with a v4 or v5 header. those fail with \`decode\`. pass a \`decode\` function to open them, or convert the file to jpeg first |
 | heic, jpeg xl, tiff | open where the browser decodes them. they fail with \`unsupported-format\` elsewhere, and when the file is damaged |
-| svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. a side it cannot find falls back to 300 by 150 on that side. zriz draws it once at that size, at most the preview size, and exports from that drawing |
+| svg | takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. a missing width opens at 300 and a missing height at 150. zriz draws it once at that size, at most the preview size, and exports from that drawing |
 | animated gif, png, webp, avif | open on their first frame. \`animated\` on the loaded image is \`true\`, and always for a gif. an \`img\` already playing opens on the frame it shows in safari, so pass a \`Blob\` for the first frame |
 
 zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with \`decode\` in every browser. data after the end of the file still opens. firefox opens a cut gif, and firefox and safari open a cut bmp, with the missing part painted in.
 
-every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo.
+zriz measures the crop value and the export plan in the photo as the browser shows it. every exif orientation in a jpeg opens upright in every browser. chromium and firefox ignore the orientation of a webp and safari honours it, so a tagged webp opens differently per browser, and the route in [server crop](https://zriz.dev/docs/server-crop.md) refuses it.
 
 ## handle large photos
 
@@ -8458,7 +8602,7 @@ exports[`content > writes server-crop as markdown 1`] = `
 
 > [llms.txt](https://zriz.dev/llms.txt)
 
-send the photo and its crop plan to your server, and cut the full-size original there with sharp.
+send the photo and its crop value to your server, and cut the full-size original there with sharp.
 
 the demo runs on the page at https\\://zriz.dev/docs/server-crop.
 
@@ -8472,9 +8616,11 @@ the route runs on your server and needs \`sharp\`. add it and \`@zriz/core\` as 
 pnpm add sharp @zriz/core
 \`\`\`
 
-## send the file and the plan
+## send the file and the value
 
-\`getPixelCrop()\` returns the export plan, a small json object that says which source pixels to keep. it returns \`null\` until the photo loads, so upload waits for \`onLoad\`.
+\`getValue()\` returns the crop value, and \`serialize\` turns it into a small json string. send that, not the export plan, so the server works out which pixels to keep on its own. the upload button waits for \`onLoad\`, because a value means nothing without its photo.
+
+\`crop-limits.ts\` holds \`minSize\` and \`maxZoom\` for \`Root\` and for the route, so the server recomputes the plan the client saw. change them there, and both ends stay the same.
 
 a bad request comes back as text, and the alert shows it. a photo the browser cannot open shows the same alert.
 
@@ -8498,8 +8644,8 @@ useEffect(
   [result]
 
 const upload = async () => {
-  const plan = actions.current?.getPixelCrop();
-  if (!file || !plan) return;
+  const value = actions.current?.getValue();
+  if (!file || !value) return;
   last.current?.abort();
   const controller = new AbortController();
   const { signal } = controller;
@@ -8508,7 +8654,7 @@ const upload = async () => {
   setResult(null);
   const form = new FormData();
   form.append("file", file);
-  form.append("plan", JSON.stringify(plan));
+  form.append("value", serialize(value));
   try {
     const response = await fetch("/api/crop", {
       method: "POST",
@@ -8550,6 +8696,8 @@ const upload = async () => {
 <Cropper.Root
   key={picks}
   actionsRef={actions}
+  maxZoom={MAX_ZOOM}
+  minSize={MIN_SIZE}
   src={file}
   onLoad={() => setReady(true)}
   onError={() => setError(unreadable)}
@@ -8562,13 +8710,13 @@ const upload = async () => {
 
 ## cut the original with sharp
 
-\`rotate()\` with no angle turns the upload upright from its exif tag. \`toSharp\` takes the plan and the size of that upright image and returns the steps for sharp.
+\`rotate()\` with no angle turns the upload upright from its exif tag. the route reads the value with \`parse\`, builds a cropper at the size of that upright image and asks it for the plan. a value out of range lands inside the photo, the way it does in the browser. \`toSharp\` then turns the plan into steps for sharp.
 
-a crop with no straighten and no perspective comes back as \`"extract"\`: a rectangle, a flop and a turn in steps of 90°. any other crop comes back as \`"affine"\`: pad at least 2 px on each side by copying the edge, turn with a bicubic affine, then extract the crop.
+a crop with no straighten comes back as \`"extract"\`: a rectangle, a flop, a turn in steps of 90° and a resize to the size of the plan. a straightened crop comes back as \`"affine"\`: extract the \`source\` window, the part of the photo the crop can touch, pad at least 2 px on each side by copying the edge, turn with a bicubic affine, then extract the crop.
 
 in one pipeline sharp runs \`extend()\` after \`affine()\`, and \`affine()\` after \`extract()\` and \`rotate()\`, so the route ends each stage as a raw buffer and opens a new pipeline for the next one. each new pipeline passes \`limitInputPixels: false\`, since the upload already passed the check and a turned crop can grow past it.
 
-\`toSharp\` does not apply perspective. if you set \`perspective\` with \`setValue()\`, export in the browser instead.
+\`toSharp\` does not apply perspective, so the route answers 422 for a value with \`perspective\`. export those in the browser instead.
 
 \`\`\`ts
 type Raw = { data: Buffer; info: OutputInfo };
@@ -8580,17 +8728,36 @@ const open = (image: Raw) =>
 const raw = (pipeline: Sharp) =>
   pipeline.raw().toBuffer({ resolveWithObject: true });
 
-const cut = async (input: Buffer, plan: ExportPlan) => {
+const cut = async (input: Buffer, value: string) => {
+  const saved = parse(value);
+  if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(sharp(input).rotate());
+  const cropper = createCropper({
+    image: upright.info,
+    maxZoom: MAX_ZOOM,
+    minSize: MIN_SIZE,
+  });
+  cropper.setValue(saved);
+  const plan = cropper.getPixelCrop();
+  if (!plan || plan.homography)
+    throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
   if (steps.kind === "extract") {
-    return open(upright)
-      .extract(steps.extract)
-      .flop(steps.flop)
-      .rotate(steps.rotate);
+    const turned = await raw(
+      open(upright)
+        .extract(steps.extract)
+        .flop(steps.flop)
+        .rotate(steps.rotate)
+    );
+    return open(turned).resize({
+      ...steps.resize,
+      fit: "fill",
+    });
   }
   const [[a, b], [c, d]] = steps.affine;
-  const padded = await raw(open(upright).extend(steps.extend));
+  const padded = await raw(
+    open(upright).extract(steps.source).extend(steps.extend)
+  );
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
@@ -8600,17 +8767,25 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 
 ## answer the request
 
-the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 400 when the form lacks the file or the plan, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the plan does not fit it, and otherwise a jpeg at quality 92 with clear pixels filled white. \`toSharp\` throws a \`RangeError\` on a plan with no \`pixelRect\` that is not a plain turn and scale of the photo. it does not check a plan with a \`pixelRect\`, and a plan that is not an object throws a \`TypeError\`. the route's catch answers all of these with 422 too.
+the route is a next.js route handler saved as \`app/api/crop/route.ts\`. it answers 413 for a body over 50 mb or with no \`content-length\`, 400 when the form lacks the file or the value, 400 when sharp cannot open the file, a photo over the pixel limit included, 422 when the crop cannot be cut, and otherwise a jpeg at quality 92 with clear pixels filled white.
 
-the plan comes from the browser, so treat it as client input. a plan that passes \`toSharp\` can still need far more memory than the photo, so keep the route behind your own auth and a rate limit.
+chromium and firefox ignore the orientation tag of a webp and safari honours it, so the value can describe a different frame from the one sharp turns upright. the route answers 422 for a webp with an orientation above 1 instead of cutting the wrong pixels.
+
+the value and the file come from the browser, so treat them as client input. decoding a large photo still costs memory, so keep the route behind your own auth and a rate limit.
 
 \`\`\`ts
 export const POST = async (request: Request) => {
+  const length = Number(request.headers.get("content-length"));
+  if (!length || length > MAX_BODY) {
+    return new Response("this upload is too large.", {
+      status: 413,
+    });
+  }
   const form = await request.formData();
   const file = form.get("file");
-  const plan = form.get("plan");
-  if (!(file instanceof File) || typeof plan !== "string") {
-    return new Response("send a file and a plan.", {
+  const value = form.get("value");
+  if (!(file instanceof File) || typeof value !== "string") {
+    return new Response("send a file and a crop value.", {
       status: 400,
     });
   }
@@ -8623,11 +8798,16 @@ export const POST = async (request: Request) => {
       status: 400,
     });
   }
-  try {
-    const crop = await cut(
-      input,
-      JSON.parse(plan) as ExportPlan
+  if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
+    return new Response(
+      "save this webp without an orientation tag.",
+      {
+        status: 422,
+      }
     );
+  }
+  try {
+    const crop = await cut(input, value);
     const jpeg = await crop
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
@@ -8636,24 +8816,33 @@ export const POST = async (request: Request) => {
       headers: { "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this plan does not fit this photo.", {
+    return new Response("this crop does not fit this photo.", {
       status: 422,
     });
   }
 };
 \`\`\`
 
-## both files
+## all three files
+
+\`crop-limits.ts\` is shared by both:
+
+\`\`\`ts
+export const MIN_SIZE = { width: 1, height: 1 };
+export const MAX_ZOOM = 15;
+\`\`\`
 
 \`crop-upload.tsx\` runs in the browser:
 
 \`\`\`tsx
 "use client";
 
+import { serialize } from "@zriz/core";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useEffect, useRef, useState } from "react";
+import { MAX_ZOOM, MIN_SIZE } from "./crop-limits";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -8676,8 +8865,8 @@ export const CropUpload = () => {
   );
 
   const upload = async () => {
-    const plan = actions.current?.getPixelCrop();
-    if (!file || !plan) return;
+    const value = actions.current?.getValue();
+    if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
@@ -8686,7 +8875,7 @@ export const CropUpload = () => {
     setResult(null);
     const form = new FormData();
     form.append("file", file);
-    form.append("plan", JSON.stringify(plan));
+    form.append("value", serialize(value));
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
@@ -8729,6 +8918,8 @@ export const CropUpload = () => {
       <Cropper.Root
         key={picks}
         actionsRef={actions}
+        maxZoom={MAX_ZOOM}
+        minSize={MIN_SIZE}
         src={file}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
@@ -8760,10 +8951,12 @@ export const CropUpload = () => {
 \`app/api/crop/route.ts\` runs on the server:
 
 \`\`\`ts
-import { toSharp } from "@zriz/core";
-import type { ExportPlan } from "@zriz/core";
+import { createCropper, parse, toSharp } from "@zriz/core";
 import sharp from "sharp";
 import type { OutputInfo, Sharp } from "sharp";
+import { MAX_ZOOM, MIN_SIZE } from "../../../crop-limits";
+
+const MAX_BODY = 50 * 1024 * 1024;
 
 type Raw = { data: Buffer; info: OutputInfo };
 const open = (image: Raw) =>
@@ -8774,17 +8967,36 @@ const open = (image: Raw) =>
 const raw = (pipeline: Sharp) =>
   pipeline.raw().toBuffer({ resolveWithObject: true });
 
-const cut = async (input: Buffer, plan: ExportPlan) => {
+const cut = async (input: Buffer, value: string) => {
+  const saved = parse(value);
+  if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(sharp(input).rotate());
+  const cropper = createCropper({
+    image: upright.info,
+    maxZoom: MAX_ZOOM,
+    minSize: MIN_SIZE,
+  });
+  cropper.setValue(saved);
+  const plan = cropper.getPixelCrop();
+  if (!plan || plan.homography)
+    throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
   if (steps.kind === "extract") {
-    return open(upright)
-      .extract(steps.extract)
-      .flop(steps.flop)
-      .rotate(steps.rotate);
+    const turned = await raw(
+      open(upright)
+        .extract(steps.extract)
+        .flop(steps.flop)
+        .rotate(steps.rotate)
+    );
+    return open(turned).resize({
+      ...steps.resize,
+      fit: "fill",
+    });
   }
   const [[a, b], [c, d]] = steps.affine;
-  const padded = await raw(open(upright).extend(steps.extend));
+  const padded = await raw(
+    open(upright).extract(steps.source).extend(steps.extend)
+  );
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
@@ -8792,11 +9004,17 @@ const cut = async (input: Buffer, plan: ExportPlan) => {
 };
 
 export const POST = async (request: Request) => {
+  const length = Number(request.headers.get("content-length"));
+  if (!length || length > MAX_BODY) {
+    return new Response("this upload is too large.", {
+      status: 413,
+    });
+  }
   const form = await request.formData();
   const file = form.get("file");
-  const plan = form.get("plan");
-  if (!(file instanceof File) || typeof plan !== "string") {
-    return new Response("send a file and a plan.", {
+  const value = form.get("value");
+  if (!(file instanceof File) || typeof value !== "string") {
+    return new Response("send a file and a crop value.", {
       status: 400,
     });
   }
@@ -8809,11 +9027,16 @@ export const POST = async (request: Request) => {
       status: 400,
     });
   }
-  try {
-    const crop = await cut(
-      input,
-      JSON.parse(plan) as ExportPlan
+  if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
+    return new Response(
+      "save this webp without an orientation tag.",
+      {
+        status: 422,
+      }
     );
+  }
+  try {
+    const crop = await cut(input, value);
     const jpeg = await crop
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
@@ -8822,7 +9045,7 @@ export const POST = async (request: Request) => {
       headers: { "content-type": "image/jpeg" },
     });
   } catch {
-    return new Response("this plan does not fit this photo.", {
+    return new Response("this crop does not fit this photo.", {
       status: 422,
     });
   }

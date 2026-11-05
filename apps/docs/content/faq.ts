@@ -83,7 +83,7 @@ const FAQ_PAGE = defineDoc({
       qa(
         "can i crop on the server",
         p(
-          "yes. send the original file and the plan from `getPixelCrop()`, then turn that plan into sharp calls with `toSharp`. [server crop](server-crop) has the route."
+          "yes. send the original file and the value from `getValue()`, recompute the plan on the server, then turn that plan into sharp calls with `toSharp`. [server crop](server-crop) has the route."
         )
       )
     ),

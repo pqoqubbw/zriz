@@ -514,11 +514,7 @@ describe("Root load results", () => {
     const onLoad = vi.fn<(image: LoadedImage) => void>();
 
     await render(
-      <Cropper.Root
-        onLoad={onLoad}
-        previewEdge={64}
-        src={await photo(400, 300)}
-      >
+      <Cropper.Root onLoad={onLoad} previewEdge={64} src={await photo()}>
         <Cropper.Viewport style={{ height: 300, width: 400 }}>
           <Cropper.Image />
         </Cropper.Viewport>

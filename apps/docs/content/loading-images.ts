@@ -47,7 +47,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "svg",
-            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. a side it cannot find falls back to 300 by 150 on that side. zriz draws it once at that size, at most the preview size, and exports from that drawing",
+            "takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. a missing width opens at 300 and a missing height at 150. zriz draws it once at that size, at most the preview size, and exports from that drawing",
           ],
           [
             "animated gif, png, webp, avif",
@@ -59,7 +59,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
         "zriz walks the structure of a jpeg, png, avif or heic before it decodes, so a file cut short fails with `decode` in every browser. data after the end of the file still opens. firefox opens a cut gif, and firefox and safari open a cut bmp, with the missing part painted in."
       ),
       p(
-        "every exif orientation opens upright. zriz measures the crop value and the export plan in the upright photo."
+        "zriz measures the crop value and the export plan in the photo as the browser shows it. every exif orientation in a jpeg opens upright in every browser. chromium and firefox ignore the orientation of a webp and safari honours it, so a tagged webp opens differently per browser, and the route in [server crop](server-crop) refuses it."
       )
     ),
     section(

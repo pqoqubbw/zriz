@@ -92,7 +92,7 @@ export default defineConfig({
     maxWorkers: 2,
     projects: [
       {
-        resolve: { alias: [{ find: /^@\//u, replacement: docs }] },
+        resolve: { alias: [{ find: /^@\//u, replacement: docs }, ...core] },
         test: {
           environment: "node",
           include: ["apps/docs/test/**/*.test.ts"],

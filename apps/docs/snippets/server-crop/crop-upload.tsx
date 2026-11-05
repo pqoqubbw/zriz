@@ -1,9 +1,11 @@
 "use client";
 
+import { serialize } from "@zriz/core";
 import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import "@zriz/react/styles.css";
 import { useEffect, useRef, useState } from "react";
+import { MAX_ZOOM, MIN_SIZE } from "./crop-limits";
 
 const unreadable =
   "this photo does not open. pick a jpeg, png, webp or avif.";
@@ -26,8 +28,8 @@ export const CropUpload = () => {
   );
 
   const upload = async () => {
-    const plan = actions.current?.getPixelCrop();
-    if (!file || !plan) return;
+    const value = actions.current?.getValue();
+    if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
@@ -36,7 +38,7 @@ export const CropUpload = () => {
     setResult(null);
     const form = new FormData();
     form.append("file", file);
-    form.append("plan", JSON.stringify(plan));
+    form.append("value", serialize(value));
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
@@ -79,6 +81,8 @@ export const CropUpload = () => {
       <Cropper.Root
         key={picks}
         actionsRef={actions}
+        maxZoom={MAX_ZOOM}
+        minSize={MIN_SIZE}
         src={file}
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}

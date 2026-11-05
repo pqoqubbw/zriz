@@ -230,6 +230,58 @@ describe("export plan with perspective", () => {
 });
 
 describe(toSharp, () => {
+  it.each([0.5, 1, 2])(
+    "outputs the plan size for a level crop at scale %d",
+    async (scale) => {
+      const cropper = createCropper({
+        defaultValue: { quarterTurns: 1 },
+        image: { height: 300, width: 401 },
+      });
+      const plan = cropper.getPixelCrop(scale);
+
+      if (!plan) {
+        throw new Error("no plan");
+      }
+
+      const output = await runSharp(coordinateImage(401, 300), plan, {
+        height: 300,
+        width: 401,
+      });
+      const { info } = await output.raw().toBuffer({ resolveWithObject: true });
+
+      expect([info.width, info.height]).toStrictEqual([
+        plan.width,
+        plan.height,
+      ]);
+    }
+  );
+
+  it("keeps the source window to what a tilted crop can sample", () => {
+    const image = { height: 1000, width: 16_000 };
+    const plan = createCropper({
+      defaultValue: { rotation: 45 },
+      image,
+    }).getPixelCrop();
+
+    if (!plan) {
+      throw new Error("no plan");
+    }
+
+    const recipe = toSharp(plan, image);
+
+    if (recipe.kind !== "affine") {
+      throw new Error("not affine");
+    }
+
+    expect(recipe.source.width).toBeLessThan(1500);
+    expect(recipe.source.height).toBeLessThanOrEqual(image.height);
+    expect(recipe.source.left).toBeGreaterThan(6000);
+
+    expect(recipe.source.left + recipe.source.width).toBeLessThanOrEqual(
+      image.width
+    );
+  });
+
   it("reproduces the axis-aligned export pixel for pixel", async () => {
     await assert(
       asyncProperty(

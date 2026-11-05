@@ -75,7 +75,7 @@
       "name": "toSharp",
       "path": "dist/index.js",
       "import": "{ toSharp }",
-      "limit": "570 B"
+      "limit": "723 B"
     },
     {
       "name": "geometry",

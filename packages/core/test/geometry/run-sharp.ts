@@ -12,13 +12,21 @@ const runSharp = async (
   const recipe = toSharp(plan, image);
 
   if (recipe.kind === "extract") {
-    return input
+    const turned = await input
       .extract(recipe.extract)
       .flop(recipe.flop)
-      .rotate(recipe.rotate);
+      .rotate(recipe.rotate)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    return sharp(turned.data, { raw: turned.info }).resize({
+      ...recipe.resize,
+      fit: "fill",
+    });
   }
 
   const padded = await input
+    .extract(recipe.source)
     .extend(recipe.extend)
     .raw()
     .toBuffer({ resolveWithObject: true });

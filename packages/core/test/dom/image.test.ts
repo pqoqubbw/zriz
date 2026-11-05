@@ -742,9 +742,7 @@ describe("fetching a url", () => {
 
 const { promise: never } = deferred<never>();
 
-type Fresh = typeof import("../../src/dom");
-
-const freshDom = async (): Promise<Fresh> => {
+const freshDom = async () => {
   vi.resetModules();
 
   return await import("../../src/dom");
@@ -870,7 +868,7 @@ describe("the download clock", () => {
     const { source } = await run;
 
     expect(source).toBeInstanceOf(Blob);
-    expect((source as Blob).type).toBe("image/jpeg");
+    expect(source).toHaveProperty("type", "image/jpeg");
   });
 
   it("runs six downloads at a time and starts the next as one ends", async () => {

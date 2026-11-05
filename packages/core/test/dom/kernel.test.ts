@@ -113,6 +113,9 @@ const app1 = (size: number): Buffer => {
   return segment;
 };
 
+const blobOf = (...parts: Buffer[]): Blob =>
+  new Blob(parts.map((part) => new Uint8Array(part)));
+
 const CUTS = [0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
 
 describe("image kernel", () => {
@@ -149,7 +152,7 @@ describe("image kernel", () => {
           const part = file.subarray(0, Math.floor(file.length * cut));
 
           await expect(
-            imageKernel().decode(new Blob([part]), 4096)
+            imageKernel().decode(blobOf(part), 4096)
           ).rejects.toThrow("zriz:decode:the file is cut off");
         })
       );
@@ -169,8 +172,7 @@ describe("image kernel", () => {
           Buffer.alloc(9, 0xfe),
           Buffer.alloc(3),
         ].map(
-          async (tail) =>
-            await imageKernel().decode(new Blob([file, tail]), 4096)
+          async (tail) => await imageKernel().decode(blobOf(file, tail), 4096)
         )
       );
 
@@ -183,7 +185,7 @@ describe("image kernel", () => {
     const fixed = Buffer.concat([file.subarray(0, 2), file.subarray(4)]);
 
     await expect(
-      imageKernel().decode(new Blob([fixed]), 4096)
+      imageKernel().decode(blobOf(fixed), 4096)
     ).resolves.toHaveProperty("width", 8);
   });
 
@@ -196,7 +198,7 @@ describe("image kernel", () => {
     const file = await jpegWithSegment(thumbnail);
     const part = file.subarray(0, -200);
 
-    await expect(imageKernel().decode(new Blob([part]), 4096)).rejects.toThrow(
+    await expect(imageKernel().decode(blobOf(part), 4096)).rejects.toThrow(
       "the file is cut off"
     );
   });
@@ -207,7 +209,7 @@ describe("image kernel", () => {
 
     stuck.writeUInt32BE(1, 0);
     stuck.write("free", 4);
-    const result = await imageKernel().decode(new Blob([file, stuck]), 4096);
+    const result = await imageKernel().decode(blobOf(file, stuck), 4096);
 
     expect(result.width).toBe(8);
   });
@@ -218,13 +220,13 @@ describe("image kernel", () => {
       const file = (await FILES[format]?.()) ?? Buffer.alloc(0);
 
       await expect(
-        imageKernel().decode(new Blob([file]), 4096, undefined, PIXELS - 1)
+        imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
       ).rejects.toThrow(/^zriz:too-large:/u);
 
       expect(decoded).toHaveLength(0);
 
       await expect(
-        imageKernel().decode(new Blob([file]), 4096, undefined, PIXELS)
+        imageKernel().decode(blobOf(file), 4096, undefined, PIXELS)
       ).resolves.toHaveProperty("width", 8);
     }
   );
@@ -233,13 +235,13 @@ describe("image kernel", () => {
     const file = (await FILES.gif?.()) ?? Buffer.alloc(0);
 
     await expect(
-      imageKernel().decode(new Blob([file]), 4096, undefined, PIXELS - 1)
+      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
     ).rejects.toThrow(/^zriz:too-large:/u);
   });
 
   it("reads the pixel count of a bmp stored top down", async () => {
     await expect(
-      imageKernel().decode(new Blob([bmp()]), 4096, undefined, PIXELS - 1)
+      imageKernel().decode(blobOf(bmp()), 4096, undefined, PIXELS - 1)
     ).rejects.toThrow(/^zriz:too-large:/u);
   });
 
@@ -247,7 +249,7 @@ describe("image kernel", () => {
     const file = await jpegWithSegment(app1(60_000));
 
     await expect(
-      imageKernel().decode(new Blob([file]), 4096, undefined, PIXELS - 1)
+      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
     ).rejects.toThrow(/^zriz:too-large:/u);
   });
 

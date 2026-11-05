@@ -6,10 +6,12 @@ type SharpExtractRecipe = {
   readonly extract: PixelRect;
   readonly flop: boolean;
   readonly rotate: number;
+  readonly resize: Size;
 };
 
 type SharpAffineRecipe = {
   readonly kind: "affine";
+  readonly source: PixelRect;
   readonly extend: {
     readonly top: number;
     readonly bottom: number;
@@ -58,6 +60,7 @@ const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
       extract: plan.pixelRect,
       flop: plan.rotateExpand.flop,
       kind: "extract",
+      resize: { height: plan.height, width: plan.width },
       rotate: Math.round(plan.rotateExpand.degrees / 90) * 90,
     };
   }
@@ -85,15 +88,39 @@ const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     throw new RangeError(NOT_A_PLAN);
   }
 
-  const e = e0 - (a + c) * pad;
-  const f = f0 - (b + d) * pad;
+  const det = a * d - b * c;
+  const us: number[] = [];
+  const vs: number[] = [];
+
+  for (const x of [0, width]) {
+    for (const y of [0, height]) {
+      us.push((d * (x - e0) - c * (y - f0)) / det);
+      vs.push((a * (y - f0) - b * (x - e0)) / det);
+    }
+  }
+
+  const left = Math.max(0, Math.floor(Math.min(...us)) - MARGIN - 1);
+  const top = Math.max(0, Math.floor(Math.min(...vs)) - MARGIN - 1);
+  const right = Math.min(image.width, Math.ceil(Math.max(...us)) + MARGIN + 1);
+  const bottom = Math.min(
+    image.height,
+    Math.ceil(Math.max(...vs)) + MARGIN + 1
+  );
+
+  if (right <= left || bottom <= top) {
+    throw new RangeError(NOT_A_PLAN);
+  }
+
+  const source = { height: bottom - top, left, top, width: right - left };
+  const e = e0 + a * left + c * top - (a + c) * pad;
+  const f = f0 + b * left + d * top - (b + d) * pad;
   const bx = a * 0.5 + c * 0.5 + e - 0.5;
   const by = b * 0.5 + d * 0.5 + f - 0.5;
   const ix = Math.floor(bx);
   const iy = Math.floor(by);
   const origin = affineOrigin([a, c, b, d], {
-    height: image.height + 2 * pad,
-    width: image.width + 2 * pad,
+    height: source.height + 2 * pad,
+    width: source.width + 2 * pad,
   });
 
   return {
@@ -116,6 +143,7 @@ const toSharp = (plan: ExportPlan, image: Size): SharpRecipe => {
     },
     kind: "affine",
     options: { interpolator: "bicubic", odx: bx - ix, ody: by - iy },
+    source,
   };
 };
 

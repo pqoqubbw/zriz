@@ -105,7 +105,7 @@ const EXPORTING_PAGE = defineDoc({
     section(
       "cut the original on a server",
       p(
-        "call `getPixelCrop()` when you upload, because a photo the user never touches sends no commit. it returns the export plan in source pixels, or `null` until a photo loads. each commit also carries it as `details.pixelCrop`. send the whole plan with the file, because `pixelRect` is `null` with a straighten angle or perspective."
+        "to cut on a server, send the crop value from `getValue()` and let the server recompute the plan, as in [server crop](server-crop). never trust a plan a client sends. `getPixelCrop()` returns the export plan in source pixels, or `null` until a photo loads, and each commit carries it as `details.pixelCrop`. use it for your own tools, and read all of it, because `pixelRect` is `null` with a straighten angle or perspective."
       ),
       props(
         [
@@ -148,7 +148,7 @@ const EXPORTING_PAGE = defineDoc({
         "field"
       ),
       p(
-        "with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn."
+        "with no straighten and no perspective, the plan comes down to plain numbers that any tool can use: the rectangle, the flop and the turn. `pixelRect` is the truth for the file: its edges land on whole source pixels, so on a very small photo the frame on screen can sit up to half a source pixel from the file edge. a side never goes below 1 px, so a thin crop can come out slightly over `maxSize`."
       ),
       p(
         "`toSharp` from `@zriz/core` turns the plan into sharp steps. [server crop](server-crop) shows the route for a level crop and a straightened one."
