@@ -25,7 +25,6 @@
   :where([data-zriz-item="mask"]) {
     background: var(--zriz-scrim, light-dark(#f7f7f7eb, #000000c7));
     transition: opacity 0.3s;
-    forced-color-adjust: none;
   }
   :where([data-zriz-item="mask"][data-interacting]) {
     opacity: 0.6;

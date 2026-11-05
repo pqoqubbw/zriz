@@ -502,6 +502,28 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
     expect(paintedColours()).toStrictEqual(everyPart(system("CanvasText")));
   });
 
+  it("puts the scrim on the forced palette, whatever a theme wrapper says", async () => {
+    await commands.forcedColors("active");
+
+    for (const theme of ["light", "dark"]) {
+      const api = createRef<CropperApi>();
+      const screen = await render(
+        <div data-theme={theme}>
+          <Editor api={api} />
+        </div>
+      );
+
+      await frames(2);
+      const scrim = background('[data-zriz-item="mask"]');
+      const canvas = system("Canvas");
+
+      expect(scrim.match(/\d+/gu)?.slice(0, 3)).toStrictEqual(
+        canvas.match(/\d+/gu)?.slice(0, 3)
+      );
+      await screen.unmount();
+    }
+  });
+
   it("keeps the dial line on Highlight during a drag with a custom accent", async () => {
     page.textContent = '[data-zriz-item="dial"] { --zriz-accent: #0a84ff; }';
     document.head.append(page);
