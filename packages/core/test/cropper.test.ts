@@ -2264,7 +2264,13 @@ describe("large photos", () => {
           });
 
           cropper.setValue({ center: { x, y } });
-          expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
+
+          expect(
+            isCropCovered(
+              cropState(cropper.getCropState()),
+              Math.max(1e-9, 2e-8 / Math.max(width, height))
+            )
+          ).toBeTruthy();
         }
       )
     );
