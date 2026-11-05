@@ -69,7 +69,7 @@ You don't need a changelog entry or a version bump. If a user could notice your 
 
 ## Code rules
 
-- No new runtime dependencies. `@zriz/core` depends on nothing, `@zriz/react` only on `@zriz/core`.
+- No new runtime dependencies. `@zriz/core` depends on nothing. `@zriz/react` has `@zriz/core` and `react` as peers.
 - Don't add, remove or upgrade dependencies in a pull request that is about something else.
 - No code comments, TSDoc included. The one exception is a single short line on public props of React parts, because the docs build their API tables from it.
 - Every export in `packages/` needs an explicit type (`isolatedDeclarations`).

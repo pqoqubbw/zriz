@@ -25,7 +25,7 @@ Builds the tarballs on GitHub from the current `main` and publishes nothing.
 
 1. `gh workflow run release.yml --ref main -f rehearse=true`. This run is the only one this skill may start.
 2. Wait for it: find the id with `gh run list --workflow release.yml --limit 1`, then `gh run watch <id> --exit-status`.
-3. `gh run download <id> --name tarballs --dir ~/Desktop/lab/zriz-tarballs/<short sha>`.
+3. `dir=$(mktemp -d) && gh run download <id> --name tarballs --dir "$dir"`.
 4. Show how to try them in another project, with absolute paths filled in:
 
 ```json
