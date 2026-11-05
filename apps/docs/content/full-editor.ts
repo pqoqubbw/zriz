@@ -110,7 +110,10 @@ const FULL_EDITOR_PAGE = defineDoc({
     section(
       "the whole file",
       p("`Editor` takes a photo url and hands `onSave` the jpeg:"),
-      code("full-editor/editor.tsx")
+      code("full-editor/editor.tsx"),
+      p(
+        "the demo above runs this file with the icons and styles from the zriz site. it shows the angle to one decimal and calls square 1:1. its aspect labels turn with the orientation, as on [aspect ratio](aspect-ratio). it leaves out the zoom slider, and wheel and pinch still zoom."
+      )
     ),
   ],
   lede: "the crop area, the dial, zoom, aspect ratios, the buttons and a jpeg export in one component.",
