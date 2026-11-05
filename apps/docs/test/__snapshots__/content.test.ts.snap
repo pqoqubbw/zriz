@@ -6026,6 +6026,8 @@ export const AvatarPicker = ({ onSave }: Props) => {
   );
 };
 \`\`\`
+
+the demo above runs this file with the styles from the zriz site. its open, reset and download buttons take the place of the input, the alerts and save. it adds a zoom slider with step buttons, and \`maxZoom\` on \`Root\` stops the zoom at 3×.
 "
 `;
 
@@ -6320,6 +6322,8 @@ the page at https\\://zriz.dev/docs/crop-area runs this cropper: a 3:2 photo wit
 leave out the handles you do not need. with \`shape="circle"\`, the stylesheet hides the four corner handles.
 
 \`Area\` points \`aria-describedby\` at the \`Instructions\` part. render it with your own help text. without it, the reference points at nothing and screen readers skip it. [accessibility](https://zriz.dev/docs/accessibility.md) covers it and \`Announcer\`.
+
+the demo above uses the styles from the zriz site.
 
 ## recolour the focus ring
 
@@ -10618,6 +10622,8 @@ put \`ZoomThumb\` inside \`Zoom\`. the steps go anywhere inside \`Root\`:
 
 zriz paints nothing here and gives these parts no size. give \`Zoom\` a width and a height, then style the track and the thumb. a press on the track jumps the zoom to that point. [full editor](https://zriz.dev/docs/full-editor.md) paints a track and a thumb you can copy.
 
+the demo above stops the zoom at 3× with \`maxZoom\` on \`Root\`, marks a step at the limit as shown below and uses the styles from the zriz site.
+
 ## centre the thumb
 
 zriz sets the thumb's \`inset-inline-start\` on a log scale, so 2× sits 26% along a 15× track. this centres a round thumb on that point:
@@ -10740,7 +10746,7 @@ these keys work while \`Zoom\` has focus:
 | \`left\` or \`right\` | move 1/20 of the track. right zooms in, left in rtl |
 | \`up\` or \`down\` | move 1/20 of the track. up zooms in |
 | \`shift\` + \`arrow keys\` | move half the track |
-| \`page up\` or \`page down\` | move half the track |
+| \`page up\` or \`page down\` | the same as shift and an arrow key |
 | \`home\` or \`end\` | go to 1× or to \`max\` |
 
 each step multiplies the zoom by the same amount, about 1.14× on a 15× track.
