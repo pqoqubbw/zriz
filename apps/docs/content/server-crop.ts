@@ -115,7 +115,7 @@ const SERVER_CROP_PAGE = defineDoc({
       ),
       excerpt("server-crop/app/api/crop/route.ts", ["const MAX_BODY", "});"]),
       p(
-        "a small png can ask for a huge image, and the bytes on the wire say nothing about the memory it takes. a photo at `MAX_PIXELS` peaked at about 2 gb in our test, for a 460 kb upload at a 45° tilt, so give the server that much per running crop. raise `MAX_PIXELS` only with memory to match. 120 million covers a 108 megapixel phone photo, and a 200 megapixel one gets 413. `MAX_RUNNING` counts one process, so add a rate limit per user on top."
+        "a small png can ask for a huge image, and the bytes on the wire say nothing about the memory it takes. a photo at `MAX_PIXELS` peaked at about 2 gb in our test, for a 460 kb upload at a 45° tilt, so give the server that much per running crop. `MAX_PIXELS` is the one constant to raise, and only with memory to match. 120 million covers a 108 megapixel phone photo, and a 200 megapixel one gets 413. `MAX_RUNNING` counts one process, so add a rate limit per user on top."
       ),
       p(
         "`sharp.block()` turns off every decoder but jpeg, png, webp and avif for the whole process, because the route never needs svg, tiff, gif or the others. move it if another route in the same process does."

@@ -111,6 +111,9 @@ const SECURITY_PAGE = defineDoc({
         "on your server, sharp is your decoder and you own its patches. use 0.35.5 or newer, which bundles libvips 8.18.7. versions before 0.35.0 are open to GHSA-f88m-g3jw-g9cj. run `npm audit` in ci, and turn off the decoders you don't need with `sharp.block()`, as the route does. don't point sharp at a libvips from your system, because that one brings its own loaders and its own patch level."
       ),
       p(
+        "the [server crop](server-crop) route answers 413 for a photo over 120 megapixels. `MAX_PIXELS` is the one constant to raise. a photo at that limit peaked at about 2 gb in our test, so raise it only with memory to match."
+      ),
+      p(
         "zriz reads the pixel count before it decodes and refuses a file over `maxPixels`. lower it if your page only needs small photos, as in [loading images](loading-images). it sets no limit on bytes, so check `file.size` before you pass a file."
       )
     ),
