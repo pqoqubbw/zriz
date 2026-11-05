@@ -26,8 +26,10 @@ const CROP_AREA_PAGE = defineDoc({
       )
     ),
     section(
-      "add a focus ring",
-      p("the browser draws its default ring on `Area`. to draw your own:"),
+      "recolour the focus ring",
+      p(
+        "the stylesheet draws a two-tone ring inside `Area` on keyboard focus, so a crop flush with the viewport keeps it. without the stylesheet, the browser draws its default ring. to recolour it:"
+      ),
       code("crop-area/focus.css")
     ),
     section(

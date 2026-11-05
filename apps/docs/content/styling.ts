@@ -24,7 +24,7 @@ const STYLING_PAGE = defineDoc({
         rows: [
           ["Viewport", "`overflow: clip` and a grab cursor"],
           ["Mask", "the scrim colour. it fades to 60% during a gesture"],
-          ["Area", "a 1 px outline inside the crop"],
+          ["Area", "a 1 px outline inside the crop, and a two-tone ring on keyboard focus"],
           [
             "Handle",
             'a corner mark of two short lines or an edge bar, and a resize cursor. corners hide with `shape="circle"`',

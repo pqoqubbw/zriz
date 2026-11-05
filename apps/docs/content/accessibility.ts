@@ -93,7 +93,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
         "a key pressed in a focusable child of `Area`, `Dial` or `Zoom` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on `Area`, which resizes the crop."
       ),
       p(
-        "zriz adds no focus style and removes none, so the browser's default ring shows on `Area`, `Dial` and `Zoom`. [crop area](crop-area) shows a ring of your own."
+        "on keyboard focus, the stylesheet draws a two-tone ring inside `Area` in `Canvas` and `CanvasText`, so it shows on any photo and at padding 0. a mouse press adds nothing. without the stylesheet, and on `Dial` and `Zoom`, the browser's default ring shows. [crop area](crop-area) shows how to recolour the ring."
       )
     ),
     section(

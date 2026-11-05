@@ -6,7 +6,7 @@ import type { Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { commands, server } from "vitest/browser";
+import { commands, server, userEvent } from "vitest/browser";
 
 import { maskGradient } from "../../core/src/dom/parts";
 import * as Cropper from "../src/cropper";
@@ -362,6 +362,78 @@ describe("a turn of the whole crop", () => {
     api.current?.rotate90();
     await expect.poll(() => getComputedStyle(area).opacity).toBe("0");
     await expect.poll(() => getComputedStyle(area).opacity).toBe("1");
+  });
+});
+
+describe("the focus ring on the crop", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  const ring = () => {
+    const area = pick('[data-zriz-item="area"]');
+    const own = getComputedStyle(area);
+    const line = getComputedStyle(area, "::after");
+
+    return {
+      inner: [line.outlineStyle, line.outlineWidth, line.top, line.left],
+      outer: [own.outlineStyle, own.outlineWidth, own.outlineOffset],
+    };
+  };
+
+  const flush = (
+    <Cropper.Root image={{ height: 300, width: 400 }}>
+      <Cropper.Viewport
+        style={{ height: 300, padding: 0, position: "relative", width: 400 }}
+      >
+        <Cropper.Area aria-label="Crop" />
+      </Cropper.Viewport>
+    </Cropper.Root>
+  );
+
+  it("draws two tones inside the crop on keyboard focus, at padding 0", async () => {
+    await render(flush);
+    await frames(2);
+    await userEvent.tab();
+    await expect
+      .poll(() => pick('[data-zriz-item="area"]').matches(":focus-visible"))
+      .toBeTruthy();
+
+    expect(ring()).toStrictEqual({
+      inner: ["solid", "3px", "5px", "5px"],
+      outer: ["solid", "2px", "-2px"],
+    });
+  });
+
+  it("keeps the plain frame on a mouse press", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(<Editor api={api} />);
+    await frames(2);
+    const area = pick('[data-zriz-item="area"]');
+    const plain = ring();
+
+    await userEvent.click(area);
+    await expect.poll(() => document.activeElement).toBe(area);
+    expect(area.matches(":focus-visible")).toBeFalsy();
+    expect(ring()).toStrictEqual(plain);
+    expect(plain.inner.slice(0, 2)).toStrictEqual(["solid", "1px"]);
+  });
+
+  it("hides with the area during a turn and comes back after it", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(<Editor api={api} />);
+    await frames(2);
+    await userEvent.tab();
+    const area = pick('[data-zriz-item="area"]');
+
+    await expect.poll(() => area.matches(":focus-visible")).toBeTruthy();
+    api.current?.rotate90();
+    await expect.poll(() => getComputedStyle(area).opacity).toBe("0");
+    expect(area.matches(":focus-visible")).toBeTruthy();
+    await expect.poll(() => getComputedStyle(area).opacity).toBe("1");
+    expect(ring().outer).toStrictEqual(["solid", "2px", "-2px"]);
   });
 });
 

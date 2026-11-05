@@ -40,6 +40,14 @@
     outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
     border-radius: inherit;
   }
+  :where([data-zriz-item="area"]:focus-visible) {
+    outline: 2px solid Canvas;
+    outline-offset: -2px;
+  }
+  :where([data-zriz-item="area"]:focus-visible)::after {
+    inset: 5px;
+    outline: 3px solid CanvasText;
+  }
   :where([data-zriz-item="handle"]) {
     cursor: nwse-resize;
   }
