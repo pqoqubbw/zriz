@@ -64,7 +64,7 @@ const SECURITY_PAGE = defineDoc({
         ],
       }),
       p(
-        "`cleanCopy` decodes the upload and encodes it again, which drops every block in the table. it keeps every pixel, so it is still the whole photo:"
+        "`cleanCopy` decodes the upload and encodes it again, which drops every block in the table. it keeps every pixel and fills clear ones white, as the route does, so it is still the whole photo:"
       ),
       code("security/clean-copy.ts"),
       p(
@@ -183,7 +183,7 @@ const SECURITY_PAGE = defineDoc({
       ),
       code("security/cropper-policy.ts"),
       p(
-        "zriz injects no `style` tag and calls no `innerHTML` or `eval`, so `style-src` and `script-src` need nothing for it. with trusted types, add `zriz` to `trusted-types`."
+        "zriz injects no `style` tag and calls no `innerHTML` or `eval`, so `script-src` needs nothing for it, and `style-src` needs nothing for the parts' own styles. a `style` prop of yours on a server rendered part stays refused, and the recipes size `Viewport` and `Dial` that way. add `style-src-attr 'unsafe-inline'`, or size them with a class from your stylesheet, see [loading images](loading-images). with trusted types, add `zriz` to `trusted-types`."
       )
     ),
     section(
@@ -204,7 +204,7 @@ const SECURITY_PAGE = defineDoc({
     section(
       "protect the server route",
       p(
-        "the [server crop](server-crop) route refuses forged values, oversize bodies and unused decoders. it can't know who is calling, so connect `canCrop` to your session check, add a rate limit per user, and set a body limit at your proxy too."
+        "the [server crop](server-crop) route refuses values it cannot read, oversize bodies and unused decoders. it keeps any other value inside the photo, so a forged one can only move the crop. it can't know who is calling, so connect `canCrop` to your session check, add a rate limit per user, and set a body limit at your proxy too."
       ),
       p(
         "a saved value is client input as well. `parse` returns a clean object or `null` for anything in `localStorage` or a database, and a cropper keeps a value inside the photo, so a tampered one can only move the crop."

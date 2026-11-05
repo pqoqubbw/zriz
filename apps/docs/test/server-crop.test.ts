@@ -90,6 +90,24 @@ const clientPlan = (patch: Parameters<typeof createCropper>[0]) => {
 };
 
 describe("the security recipes", () => {
+  it("cleanCopy fills clear pixels white, as the route does", async () => {
+    const input = await sharp({
+      create: {
+        background: { alpha: 0, b: 0, g: 0, r: 255 },
+        channels: 4,
+        height: 4,
+        width: 4,
+      },
+    })
+      .png()
+      .toBuffer();
+    const pixels = await sharp(await cleanCopy(input))
+      .raw()
+      .toBuffer();
+
+    expect([...pixels.subarray(0, 3)]).toStrictEqual([255, 255, 255]);
+  });
+
   it("cleanCopy drops the blocks of an upload and turns it upright", async () => {
     const input = await gradient(64, 48)
       .jpeg()

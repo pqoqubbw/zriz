@@ -2444,6 +2444,7 @@ export const Editor = ({ src }: { src: string }) => {
 export const cleanCopy = async (input: Buffer) =>
   await sharp(input, { limitInputPixels: 120_000_000 })
     .rotate()
+    .flatten({ background: "#ffffff" })
     .jpeg({ quality: 92 })
     .toBuffer();",
     "<span class=k>import</span> sharp <span class=k>from </span><span class=s>"sharp"</span><span class=p>;</span>
@@ -2451,6 +2452,7 @@ export const cleanCopy = async (input: Buffer) =>
 <span class=k>export const </span><span class=t>cleanCopy </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>) =&gt;</span>
   <span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>: </span><span class=n>120_000_000 </span><span class=p>})</span>
     <span class=p>.</span><span class=t>rotate</span><span class=p>()</span>
+    <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
     <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
     <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>",
   ],
@@ -9015,7 +9017,7 @@ what to do, best first:
 | cut on the server and drop the original | use [server crop](https://zriz.dev/docs/server-crop.md), store the answer and let the upload go when the request ends. don't write it to disk, to a queue or to logs |
 | keep a copy to crop again later | store the copy below in a private bucket, never at a public url and never beside the crop, and tell the person you keep the whole frame. delete it when they delete the crop |
 
-\`cleanCopy\` decodes the upload and encodes it again, which drops every block in the table. it keeps every pixel, so it is still the whole photo:
+\`cleanCopy\` decodes the upload and encodes it again, which drops every block in the table. it keeps every pixel and fills clear ones white, as the route does, so it is still the whole photo:
 
 \`\`\`ts
 import sharp from "sharp";
@@ -9023,6 +9025,7 @@ import sharp from "sharp";
 export const cleanCopy = async (input: Buffer) =>
   await sharp(input, { limitInputPixels: 120_000_000 })
     .rotate()
+    .flatten({ background: "#ffffff" })
     .jpeg({ quality: 92 })
     .toBuffer();
 \`\`\`
@@ -9104,7 +9107,7 @@ export const cropperPolicy = [
 ].join("; ");
 \`\`\`
 
-zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`style-src\` and \`script-src\` need nothing for it. with trusted types, add \`zriz\` to \`trusted-types\`.
+zriz injects no \`style\` tag and calls no \`innerHTML\` or \`eval\`, so \`script-src\` needs nothing for it, and \`style-src\` needs nothing for the parts' own styles. a \`style\` prop of yours on a server rendered part stays refused, and the recipes size \`Viewport\` and \`Dial\` that way. add \`style-src-attr 'unsafe-inline'\`, or size them with a class from your stylesheet, see [loading images](https://zriz.dev/docs/loading-images.md). with trusted types, add \`zriz\` to \`trusted-types\`.
 
 ## urls you pass as src
 
@@ -9118,7 +9121,7 @@ a \`ZrizError\` message for an error status holds the url as you passed it, cut 
 
 ## protect the server route
 
-the [server crop](https://zriz.dev/docs/server-crop.md) route refuses forged values, oversize bodies and unused decoders. it can't know who is calling, so connect \`canCrop\` to your session check, add a rate limit per user, and set a body limit at your proxy too.
+the [server crop](https://zriz.dev/docs/server-crop.md) route refuses values it cannot read, oversize bodies and unused decoders. it keeps any other value inside the photo, so a forged one can only move the crop. it can't know who is calling, so connect \`canCrop\` to your session check, add a rate limit per user, and set a body limit at your proxy too.
 
 a saved value is client input as well. \`parse\` returns a clean object or \`null\` for anything in \`localStorage\` or a database, and a cropper keeps a value inside the photo, so a tampered one can only move the crop.
 
