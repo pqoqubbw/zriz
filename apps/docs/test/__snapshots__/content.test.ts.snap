@@ -6549,7 +6549,7 @@ renders a \`<div role="slider">\` anywhere inside \`Root\`. every part also take
 
 | attribute | when |
 | - | - |
-| \`data-dragging\` | while a pointer drags the ruler |
+| \`data-dragging\` | while a pointer drags any \`Dial\` of this cropper, so a second copy lights up too |
 | \`data-snapped\` | while the angle rests at exactly 0°, from the start too. the zero dot hides then. a drag through 0° leaves it as it was until you let go |
 
 | variable | what it sets |
@@ -6631,9 +6631,9 @@ every \`ZrizError\` has a \`code\` from the table below, and its message starts 
 | \`decode\` | the url answered with an error status, the file cannot be read, the file is cut short, the bytes are not an image, safari refused a bmp with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an svg or a display-p3 export, the browser gave no 2d canvas, or an export could not decode the original again. open the url and check the response. if you are offline, try again once the network is back. if the same error comes back, reload the page, because a browser can keep a failed chunk until then. wait for \`loadeddata\` before you pass a \`video\`. [loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
 | \`too-large\` | the file's header asks for more pixels than \`maxPixels\`, 268402689 by default. send a smaller file. to open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`timeout\` | a url sent no bytes for 15 s, a photo took over 15 s to decode after its last byte, or an export took over 30 s. time spent waiting behind other photos or exports does not count. send a smaller file or export a smaller \`maxSize\`. for a slow network, load the photo yourself with a longer \`timeout\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
-| \`aborted\` | the \`signal\` you passed fired, or a new photo replaced the one being exported. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
+| \`aborted\` | the \`signal\` you passed fired while the photo was still attached, or a new photo arrived after the export had started drawing. \`Root\` also aborts its own load when \`src\` changes and never reports it. nothing. skip this code in your catch |
 | \`blank\` | the browser drew an empty canvas at the export size, then at half and a quarter of it. this is the canvas memory limit, mostly on phones. set \`maxSize\` to 2048 by 2048 or less |
-| \`no-image\` | an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. disable the export button until \`onLoad\` fires. load a freed photo again. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
+| \`no-image\` | an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of \`@zriz/core\` and the export came from the one that never got the photo. a detach in the same tick as the export, even with an aborted signal, gives this code. disable the export button until \`onLoad\` fires. load a freed photo again. keep \`@zriz/core\` at the same version as \`@zriz/react\` |
 
 ## thrown errors
 
@@ -6682,6 +6682,8 @@ two callbacks on \`Root\` report crop changes: \`onValueChange\` for live ui and
 ## save when the user lets go
 
 a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on \`Area\`, \`Dial\` or \`Zoom\` commits once when it comes up, however long it was held, or when focus leaves. a write such as \`rotate90()\` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. loading a photo fits the crop without a commit, so a photo the user never touches sends none. to save it anyway, read \`getValue()\` or \`getPixelCrop()\` from the cropper in \`actionsRef\`, see [cropper](https://zriz.dev/docs/cropper.md).
+
+\`stop()\` and unmount commit synchronously. react warns if \`onValueCommit\` calls \`flushSync\` inside that unmount, so leave \`flushSync\` out of the handler.
 
 \`\`\`tsx
 <Cropper.Root
@@ -6789,7 +6791,7 @@ every change and commit names its reason. inside a gesture, a write without its 
 | \`reset\` | \`Reset\` and \`reset()\` |
 | \`coverage\` | a later photo of another size, or new options, that refit the crop. the first photo sends nothing |
 | \`history\` | your own writes only. zriz never sends it, so [undo](https://zriz.dev/docs/undo.md) can skip those writes. \`Root\` animates them like \`reset()\` |
-| \`controlled\` | the \`rotation\` and \`zoom\` props. a new \`value\` prop sends nothing |
+| \`controlled\` | the \`rotation\` and \`zoom\` props, on the commit and on a change when zriz applied another value. a new \`value\` prop sends nothing |
 | \`imperative\` | \`setValue()\`, \`setRotation()\`, \`setZoom()\` and \`setCropState()\` called outside a gesture without a reason |
 
 ## listen on the cropper
@@ -9439,6 +9441,10 @@ export const Editor = ({ src }: { src: string }) => {
 
 during a gesture and until it commits, zriz ignores a new \`value\`, \`rotation\` or \`zoom\`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in \`onValueCommit\`. a new \`aspect\` applies at once. the \`aspect\`, \`rotation\` and \`zoom\` from the first render become the reset target.
 
+a prop acts when it changes. a write ignored during a gesture is not replayed. to limit a gesture, call \`details.cancel()\`. \`rotation={5}\` with no handler sets the angle once and the user can move away from it.
+
+a photo after \`null\` counts as a first photo: zriz fits your \`value\` to it and sends nothing. read \`getValue()\` if you keep the fitted crop.
+
 ## turn it into text and back
 
 save a crop as text and read it back:
@@ -9800,6 +9806,8 @@ the demo runs on the page at https\\://zriz.dev/docs/viewport.
 </Cropper.Viewport>
 \`\`\`
 
+one \`Viewport\` per cropper. a second one takes over the layout, and zriz warns in development. draw a live preview with \`useCropperFrame\`.
+
 zriz makes it \`position: relative\` when it is static and sets \`touch-action: none\`, so the page does not scroll under a finger. \`Image\` clips the photo to the box by itself. the stylesheet also clips the viewport, so a handle at its edge never hangs outside it.
 
 ## leave room around the crop
@@ -10097,7 +10105,7 @@ renders a \`<div role="slider">\` anywhere inside \`Root\`. every part also take
 
 | attribute | when |
 | - | - |
-| \`data-dragging\` | while a pointer holds the track or a \`useZoom\` slider moves |
+| \`data-dragging\` | while a pointer holds any \`Zoom\` track of this cropper or a \`useZoom\` slider moves, so a second copy lights up too |
 
 ### \`ZoomThumb\`
 

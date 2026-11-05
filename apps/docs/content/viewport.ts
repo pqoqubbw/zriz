@@ -22,6 +22,9 @@ const VIEWPORT_PAGE = defineDoc({
       ),
       code("viewport/anatomy.jsx.tsx"),
       p(
+        "one `Viewport` per cropper. a second one takes over the layout, and zriz warns in development. draw a live preview with `useCropperFrame`."
+      ),
+      p(
         "zriz makes it `position: relative` when it is static and sets `touch-action: none`, so the page does not scroll under a finger. `Image` clips the photo to the box by itself. the stylesheet also clips the viewport, so a handle at its edge never hangs outside it."
       )
     ),

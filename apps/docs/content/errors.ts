@@ -56,7 +56,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "aborted",
-            "the `signal` you passed fired, or a new photo replaced the one being exported. `Root` also aborts its own load when `src` changes and never reports it",
+            "the `signal` you passed fired while the photo was still attached, or a new photo arrived after the export had started drawing. `Root` also aborts its own load when `src` changes and never reports it",
             "nothing. skip this code in your catch",
           ],
           [
@@ -66,7 +66,7 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "no-image",
-            "an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo",
+            "an export ran before a photo loaded, the app attached a photo that was already freed, or the app has two copies of `@zriz/core` and the export came from the one that never got the photo. a detach in the same tick as the export, even with an aborted signal, gives this code",
             "disable the export button until `onLoad` fires. load a freed photo again. keep `@zriz/core` at the same version as `@zriz/react`",
           ],
         ],

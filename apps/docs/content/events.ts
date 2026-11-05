@@ -22,6 +22,9 @@ const EVENTS_PAGE = defineDoc({
       p(
         "a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on `Area`, `Dial` or `Zoom` commits once when it comes up, however long it was held, or when focus leaves. a write such as `rotate90()` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. loading a photo fits the crop without a commit, so a photo the user never touches sends none. to save it anyway, read `getValue()` or `getPixelCrop()` from the cropper in `actionsRef`, see [cropper](cropper)."
       ),
+      p(
+        "`stop()` and unmount commit synchronously. react warns if `onValueCommit` calls `flushSync` inside that unmount, so leave `flushSync` out of the handler."
+      ),
       code("events/commit.jsx.tsx")
     ),
     section(
@@ -162,7 +165,7 @@ const EVENTS_PAGE = defineDoc({
           ],
           [
             "controlled",
-            "the `rotation` and `zoom` props. a new `value` prop sends nothing",
+            "the `rotation` and `zoom` props, on the commit and on a change when zriz applied another value. a new `value` prop sends nothing",
           ],
           [
             "imperative",

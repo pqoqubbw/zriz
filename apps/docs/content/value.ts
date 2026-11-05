@@ -110,6 +110,12 @@ const VALUE_PAGE = defineDoc({
       ),
       p(
         "during a gesture and until it commits, zriz ignores a new `value`, `rotation` or `zoom`, so a slow render cannot fight the finger. to snap the crop after a gesture, write it in `onValueCommit`. a new `aspect` applies at once. the `aspect`, `rotation` and `zoom` from the first render become the reset target."
+      ),
+      p(
+        "a prop acts when it changes. a write ignored during a gesture is not replayed. to limit a gesture, call `details.cancel()`. `rotation={5}` with no handler sets the angle once and the user can move away from it."
+      ),
+      p(
+        "a photo after `null` counts as a first photo: zriz fits your `value` to it and sends nothing. read `getValue()` if you keep the fitted crop."
       )
     ),
     section(

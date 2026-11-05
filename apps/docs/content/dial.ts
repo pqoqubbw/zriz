@@ -99,7 +99,10 @@ const DIAL_PAGE = defineDoc({
           },
         ]),
         attrs([
-          { name: "data-dragging", text: "while a pointer drags the ruler" },
+          {
+            name: "data-dragging",
+            text: "while a pointer drags any `Dial` of this cropper, so a second copy lights up too",
+          },
           {
             name: "data-snapped",
             text: "while the angle rests at exactly 0°, from the start too. the zero dot hides then. a drag through 0° leaves it as it was until you let go",

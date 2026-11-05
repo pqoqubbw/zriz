@@ -107,7 +107,7 @@ const ZOOM_PAGE = defineDoc({
         attrs([
           {
             name: "data-dragging",
-            text: "while a pointer holds the track or a `useZoom` slider moves",
+            text: "while a pointer holds any `Zoom` track of this cropper or a `useZoom` slider moves, so a second copy lights up too",
           },
         ])
       ),
