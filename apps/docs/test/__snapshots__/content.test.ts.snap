@@ -6206,7 +6206,7 @@ export const bind = (input: HTMLInputElement) => {
 
 - \`begin\` \`(reason, event?, owner?) => boolean\`
 
-  starts a gesture and stops any animation that holds the commit. returns \`false\` when the cropper is disabled or another owner holds a gesture
+  starts a gesture and stops any animation that holds the commit. returns \`false\` when the cropper is disabled or another owner holds a gesture. a dial glide or a wheel turn gives way to it
 - \`end\` \`(event?, owner?) => void\`
 
   ends the gesture. the commit follows once blocking tasks stop

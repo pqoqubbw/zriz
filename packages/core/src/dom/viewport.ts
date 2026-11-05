@@ -651,6 +651,7 @@ const viewportController = (
       return false;
     }
 
+    cropper.coast(owner, endWheel);
     wheelOwned = true;
     wheelPad = padStep(event);
 

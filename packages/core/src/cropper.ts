@@ -817,6 +817,10 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const cropper: Cropper = {
     begin(reason, event, owner) {
+      if (gesture && gesture.owner !== owner && !disabled()) {
+        stopCoast();
+      }
+
       if (disabled() || (gesture !== null && gesture.owner !== owner)) {
         return false;
       }

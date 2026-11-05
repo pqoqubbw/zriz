@@ -249,6 +249,40 @@ describe("gesture and commit edges", () => {
     expect(commit.mock.calls[0]?.[1].reason).toBe("flip");
   });
 
+  it("begin from another owner ends a coasting gesture at once", () => {
+    const { commit, cropper, time } = setup();
+    const owner = {};
+    const other = {};
+
+    cropper.begin("dial", undefined, owner);
+    cropper.setRotation(5, { reason: "dial" });
+    const glide = vi.fn<() => boolean>(() => true);
+
+    cropper.run(glide);
+    cropper.coast(owner, () => {
+      cropper.end(undefined, owner);
+    });
+
+    expect(cropper.begin("pan", undefined, other)).toBeTruthy();
+    expect(cropper.getState().interacting).toBe("pan");
+    expect(commit).toHaveBeenCalledOnce();
+    expect(commit.mock.calls[0]?.[1].reason).toBe("dial");
+    expect(cropper.getValue().rotation).toBe(5);
+    time.frames(3);
+    expect(glide).not.toHaveBeenCalled();
+    cropper.end(undefined, other);
+  });
+
+  it("begin from another owner stays refused while the gesture is held", () => {
+    const { cropper } = setup();
+    const owner = {};
+
+    cropper.begin("resize", undefined, owner);
+    expect(cropper.begin("pan", undefined, {})).toBeFalsy();
+    expect(cropper.getState().interacting).toBe("resize");
+    cropper.end(undefined, owner);
+  });
+
   it("rebase tells a gesture about outside writes only once", () => {
     const { cropper, time } = setup();
     const owner = {};

@@ -19,6 +19,7 @@ import type { ViewportOptions } from "../../src/dom";
 import { visualScale } from "../../src/dom/view";
 import { applyHomography, invertMatrix3 } from "../../src/geometry";
 import { fakeClock } from "../fake-clock";
+import type { FakeClock } from "../fake-clock";
 
 const PHOTO = { height: 3000, width: 4000 };
 const cleanups: (() => void)[] = [];
@@ -1020,6 +1021,113 @@ describe("dom binders", () => {
       }
     );
   });
+});
+
+describe("inputs that give way", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  const flick = (fixture: Fixture, time: FakeClock): void => {
+    const handlers = dialHandlers(fixture.cropper, {}, () => fixture.viewport);
+    const at = (type: string, x: number, timeStamp: number): PointerEvent => {
+      const event = new PointerEvent(type, {
+        button: 0,
+        buttons: 1,
+        clientX: x,
+        pointerId: 9,
+      });
+
+      Object.defineProperty(event, "timeStamp", { value: timeStamp });
+
+      return event;
+    };
+
+    handlers.onPointerDown(at("pointerdown", 100, 0));
+
+    for (let i = 1; i <= 8; i += 1) {
+      handlers.onPointerMove(at("pointermove", 100 + i * 15, i * 8));
+    }
+
+    handlers.onPointerUp(at("pointerup", 220, 66));
+    time.frames(3);
+    expect(fixture.cropper.getState().interacting).toBe("dial");
+  };
+
+  it("a photo press during a dial glide stops the glide and drags", () => {
+    const time = fakeClock();
+    const fixture = mount(400, 300, false, time.clock);
+
+    fixture.cropper.setZoom(2);
+    time.frames(2);
+    flick(fixture, time);
+    const held = fixture.cropper.getValue().rotation;
+    const { x } = fixture.cropper.getValue().center;
+
+    pointer(fixture, "pointerdown", 1, 200, 150);
+    expect(fixture.cropper.getState().interacting).toBe("pan");
+    time.frames(5);
+    expect(fixture.cropper.getValue().rotation).toBe(held);
+    pointer(fixture, "pointermove", 1, 240, 150);
+    expect(fixture.cropper.getValue().center.x).not.toBe(x);
+    pointer(fixture, "pointerup", 1, 240, 150);
+    expect(fixture.cropper.getState().interacting).toBeNull();
+  });
+
+  it("a handle press during a dial glide starts the resize", () => {
+    const time = fakeClock();
+    const fixture = mount(400, 300, false, time.clock);
+
+    time.frames(2);
+    flick(fixture, time);
+    const handle = fixture.area.querySelector<HTMLElement>("[data-handle]");
+    const box = handle?.getBoundingClientRect();
+
+    handle?.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        buttons: 1,
+        clientX: box?.x,
+        clientY: box?.y,
+        pointerId: 3,
+      })
+    );
+    expect(fixture.cropper.getState().interacting).toBe("resize");
+    handle?.dispatchEvent(
+      new PointerEvent("pointerup", { bubbles: true, pointerId: 3 })
+    );
+  });
+
+  it.each(["dial", "handle", "zoom"])(
+    "a %s press right after a wheel turn takes the gesture",
+    async (part) => {
+      const fixture = mount();
+
+      fixture.cropper.setZoom(2, { emit: false });
+      await frames();
+      expect(wheel(fixture, { deltaY: 40 })).toBeFalsy();
+      expect(fixture.cropper.getState().interacting).toBe("wheel");
+      pressers[part]?.(
+        fixture.cropper,
+        fixture.viewport
+      )(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          buttons: 1,
+          clientX: 100,
+          clientY: 100,
+          pointerId: 4,
+        })
+      );
+      expect(fixture.cropper.getState().interacting).not.toBe("wheel");
+      await wait(200);
+      expect(fixture.cropper.getState().interacting).not.toBeNull();
+      fixture.cropper.stop();
+    }
+  );
 });
 
 describe("viewport resize during a pan", () => {

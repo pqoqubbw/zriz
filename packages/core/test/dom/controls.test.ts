@@ -234,6 +234,61 @@ describe("dial bounce", () => {
     expect(cropper.getState().settling).toBeFalsy();
   });
 
+  it("a press on the zoom track during a glide takes hold at once", () => {
+    const { cropper, time } = setup();
+    const handlers = dialHandlers(cropper, {}, () => track);
+    const box = cast(
+      { ...track, getBoundingClientRect: () => ({ left: 0, width: 361 }) },
+      isElement
+    );
+    const zoom = zoomHandlers(cropper, {}, () => box);
+
+    handlers.onPointerDown(pointer(0, 0));
+
+    for (let i = 1; i <= 8; i += 1) {
+      handlers.onPointerMove(pointer(15 + i * 15, i * 8));
+    }
+
+    handlers.onPointerUp(pointer(135, 66));
+    time.frames(3);
+    expect(cropper.getState().interacting).toBe("dial");
+    const held = cropper.getValue().rotation;
+
+    zoom.onPointerDown(pointer(180, 90));
+    expect(cropper.getState().interacting).toBe("zoom-control");
+    expect(cropper.getZoom()).toBeGreaterThan(1.5);
+    time.frames(5);
+    expect(cropper.getValue().rotation).toBe(held);
+    zoom.onPointerUp(pointer(180, 90));
+  });
+
+  it("an area key during a glide acts and keeps the key from the page", () => {
+    const { cropper, time } = setup();
+    const handlers = dialHandlers(cropper, {}, () => track);
+    const keys = areaKeyHandlers(cropper);
+
+    cropper.setZoom(2);
+    handlers.onPointerDown(pointer(0, 0));
+
+    for (let i = 1; i <= 8; i += 1) {
+      handlers.onPointerMove(pointer(15 + i * 15, i * 8));
+    }
+
+    handlers.onPointerUp(pointer(135, 66));
+    time.frames(3);
+    const { x } = cropper.getValue().center;
+    const prevent = vi.fn<() => void>();
+
+    keys.onKeyDown({
+      ...key({ key: "ArrowRight" }),
+      preventDefault: prevent,
+    });
+    expect(prevent).toHaveBeenCalledOnce();
+    expect(cropper.getState().interacting).toBe("keyboard");
+    expect(cropper.getValue().center.x).not.toBe(x);
+    keys.onKeyUp(key({ key: "ArrowRight" }));
+  });
+
   it("still springs back when a key lands during the bounce", () => {
     const { cropper, time } = setup();
     const keys = pastTheStop(cropper);

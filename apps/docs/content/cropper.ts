@@ -230,7 +230,7 @@ const CROPPER_PAGE = defineDoc({
         [
           {
             name: "begin",
-            text: "starts a gesture and stops any animation that holds the commit. returns `false` when the cropper is disabled or another owner holds a gesture",
+            text: "starts a gesture and stops any animation that holds the commit. returns `false` when the cropper is disabled or another owner holds a gesture. a dial glide or a wheel turn gives way to it",
             type: "(reason, event?, owner?) => boolean",
           },
           {
