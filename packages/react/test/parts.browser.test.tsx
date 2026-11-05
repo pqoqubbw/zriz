@@ -2,7 +2,7 @@ import type { ChangeReason, Cropper as CropperApi } from "@zriz/core";
 import { viewOf } from "@zriz/core/dom";
 import { createRef } from "react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 
 import type { RootProps } from "../src";
@@ -79,6 +79,42 @@ const GESTURES: [ChangeReason, string][] = [
   ["wheel", "data-zooming"],
   ["zoom-control", "data-zooming"],
 ];
+
+describe("a second viewport", () => {
+  afterEach(async () => {
+    await cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("warns in development when two viewports with a size share a cropper", async () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+
+    await render(
+      <div style={{ height: 200, width: 200 }}>
+        <Cropper.Root>
+          <Cropper.Viewport style={{ height: 100 }} />
+          <Cropper.Viewport style={{ display: "none" }} />
+        </Cropper.Root>
+      </div>
+    );
+
+    expect(warn).not.toHaveBeenCalled();
+    await cleanup();
+
+    await render(
+      <div style={{ height: 200, width: 200 }}>
+        <Cropper.Root>
+          <Cropper.Viewport style={{ height: 100 }} />
+          <Cropper.Viewport style={{ height: 50 }} />
+        </Cropper.Root>
+      </div>
+    );
+
+    expect(warn.mock.calls.flat().join(",")).toContain(
+      "one <Cropper.Viewport>"
+    );
+  });
+});
 
 describe("buttons and state attributes", () => {
   afterEach(async () => {

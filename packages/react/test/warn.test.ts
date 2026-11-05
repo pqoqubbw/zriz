@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { warnUnlabelled } from "../src/warn";
+import { warnUnlabelled, warnViewports } from "../src/warn";
+import { warnViewports as warnViewportsOff } from "../src/warn-off";
 
 const isElement = (value: unknown): value is Element =>
   typeof value === "object" && value !== null;
@@ -42,5 +43,52 @@ describe(warnUnlabelled, () => {
     expect(warn).toHaveBeenCalledOnce();
     warnUnlabelled("Other", element(null));
     expect(warn).toHaveBeenCalledTimes(2);
+  });
+});
+
+const box = (clientWidth: number): Element => {
+  const node: unknown = { clientWidth };
+
+  if (!isElement(node)) {
+    throw new Error("unreachable");
+  }
+
+  return node;
+};
+
+describe(warnViewports, () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("stays quiet for one viewport, a hidden copy and one that left", () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+    const cropper = {};
+    const leave = warnViewports(cropper, box(640));
+
+    warnViewports(cropper, box(0));
+    leave();
+    warnViewports(cropper, box(640));
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("warns once when a second viewport with a size joins one cropper", () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+    const cropper = {};
+
+    warnViewports({}, box(640));
+    warnViewports(cropper, box(640));
+    warnViewports(cropper, box(160));
+    warnViewports(cropper, box(80));
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it("does nothing in production", () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+    const cropper = {};
+
+    warnViewportsOff(cropper, box(640))();
+    warnViewportsOff(cropper, box(640))();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

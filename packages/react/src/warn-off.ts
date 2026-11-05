@@ -7,4 +7,9 @@ const warnFormat = (
   _format: Intl.NumberFormatOptions | undefined
 ): void => undefined;
 
-export { warnFormat, warnUnlabelled };
+const stay = (): void => undefined;
+
+const warnViewports = (_cropper: object, _element: Element): (() => void) =>
+  stay;
+
+export { warnFormat, warnUnlabelled, warnViewports };

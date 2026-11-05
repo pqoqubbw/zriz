@@ -55,4 +55,28 @@ const warnFormat = (
   }
 };
 
-export { warnFormat, warnUnlabelled };
+const viewports = new WeakMap<object, Set<Element>>();
+
+const warnViewports = (cropper: object, element: Element): (() => void) => {
+  const live = viewports.get(cropper) ?? new Set();
+
+  viewports.set(cropper, live);
+
+  if (element.clientWidth > 0) {
+    live.add(element);
+  }
+
+  if (live.size > 1 && !warned.has("Viewport") && isDev()) {
+    warned.add("Viewport");
+
+    console.warn(
+      "zriz: one <Cropper.Viewport> per cropper. A second one takes over the layout. Draw a live preview with useCropperFrame."
+    );
+  }
+
+  return () => {
+    live.delete(element);
+  };
+};
+
+export { warnFormat, warnUnlabelled, warnViewports };

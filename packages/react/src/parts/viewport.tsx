@@ -2,6 +2,7 @@
 
 import { viewportController } from "@zriz/core/dom";
 import type { WheelMode } from "@zriz/core/dom";
+import { warnViewports } from "@zriz/react/warn";
 import { forwardRef, useCallback, useEffect, useMemo } from "react";
 
 import { useCropperContext } from "../context";
@@ -35,12 +36,14 @@ const Viewport: Part<ViewportProps, HTMLDivElement> = forwardRef<
   const own = useCallback(
     (element: HTMLDivElement) => {
       controller.setElement(element);
+      const leave = warnViewports(cropper, element);
 
       return () => {
+        leave();
         controller.setElement(null);
       };
     },
-    [controller]
+    [controller, cropper]
   );
   const interacting = useCropperState((s) => s.interacting !== null);
   const { handlers } = controller;
