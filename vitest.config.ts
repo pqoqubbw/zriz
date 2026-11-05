@@ -110,9 +110,12 @@ export default defineConfig({
         },
       },
       {
+        css: { postcss: docs },
         optimizeDeps,
         plugins: [react()],
-        resolve: { alias: [warn, ...core] },
+        resolve: {
+          alias: [{ find: /^@\//u, replacement: docs }, warn, ...core],
+        },
         test: {
           browser: browser(),
           include: [
