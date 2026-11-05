@@ -3,13 +3,15 @@ import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 import { CodeFigure } from "@/components/doc/code-figure";
-import { Controls } from "@/components/doc/controls";
-import {
-  CopyAction,
-  CopyButton,
-  PlaygroundCopy,
-} from "@/components/doc/copy-button";
+import { CopyAction, CopyButton } from "@/components/doc/copy-button";
 import { Demo } from "@/components/doc/demo";
+import {
+  Controls,
+  DownloadAction,
+  LiveCode,
+  LiveLog,
+  PlaygroundCopy,
+} from "@/components/doc/playground-blocks";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
 import { TableBlock } from "@/components/doc/tables/grid-table";
 import { PairTable } from "@/components/doc/tables/pair-table";
@@ -17,9 +19,6 @@ import { Text } from "@/components/doc/text";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Panel } from "@/components/ui/panel";
-import { DownloadAction } from "@/demos/playground/download-action";
-import { LiveCode } from "@/demos/playground/live-code";
-import { LiveLog } from "@/demos/playground/live-log";
 import { cn } from "@/lib/cn";
 import type { Anchors } from "@/lib/doc/anchors";
 import { BLOCK_SLOTS, gap } from "@/lib/doc/flow";

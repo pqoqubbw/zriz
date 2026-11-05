@@ -5,7 +5,6 @@ import type { MouseEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { playground } from "@/demos/playground/store";
 import { cn } from "@/lib/cn";
 
 type CopiedStatusProps = {
@@ -99,8 +98,4 @@ const CopyAction = ({ label, read }: CopyActionProps) => {
   );
 };
 
-const PlaygroundCopy = ({ label }: CopyProps) => (
-  <CopyAction label={label} read={playground.copyText} />
-);
-
-export { CopyAction, CopyButton, PlaygroundCopy };
+export { CopyAction, CopyButton };

@@ -7,13 +7,14 @@ import { commands as browser, page, server, userEvent } from "vitest/browser";
 import "../app/globals.css";
 
 import { Controls } from "../components/doc/controls";
-import { CopyAction, PlaygroundCopy } from "../components/doc/copy-button";
+import { CopyAction } from "../components/doc/copy-button";
 import { Demo } from "../components/doc/demo";
 import { PLAYGROUND_PAGE } from "../content/playground";
 import { codeText, jsonText } from "../demos/playground/code";
 import { DownloadAction } from "../demos/playground/download-action";
 import { LiveCode } from "../demos/playground/live-code";
 import { LiveLog } from "../demos/playground/live-log";
+import { PlaygroundCopy } from "../demos/playground/playground-copy";
 import { DEFAULT_KNOBS, playground } from "../demos/playground/store";
 import { walkBlocks } from "../lib/doc/anchors";
 import type { Control } from "../lib/doc/schema";
