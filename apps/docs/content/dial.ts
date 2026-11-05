@@ -41,7 +41,10 @@ const DIAL_PAGE = defineDoc({
       p(
         "`Dial` fills its parent's width. ticks sit 9 px apart, one every 2.25°, so 361 px fits all 41 ticks:"
       ),
-      code("dial/width.jsx.tsx")
+      code("dial/width.jsx.tsx"),
+      p(
+        "the demo above is 360 px wide, as on the zriz site, so its outermost ticks fall on the edges."
+      )
     ),
     section(
       "add a degree sign",
