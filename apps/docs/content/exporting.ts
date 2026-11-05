@@ -6,11 +6,11 @@ const EXPORTING_PAGE = defineDoc({
     section(
       "save the crop as a file",
       p(
-        "`exportCrop` comes from `@zriz/core/dom`. `@zriz/react` depends on `@zriz/core` and re-exports the types an editor needs, such as `CropValue`, `Cropper` and `ChangeReason`. functions and the other core types, such as `ExportPlan`, come from `@zriz/core`, so add it to your own dependencies:"
+        "`exportCrop` comes from `@zriz/core/dom`. `@zriz/react` needs `@zriz/core` as a peer dependency and re-exports the types an editor needs, such as `CropValue`, `Cropper` and `ChangeReason`. functions and the other core types, such as `ExportPlan`, come from `@zriz/core`. [quick start](quick-start) installs it. without react, add it alone:"
       ),
       code("exporting/install.sh"),
       p(
-        "keep it at the same version as `@zriz/react`. a second copy of `@zriz/core` cannot see the photo, see `no-image` on [errors](errors)."
+        "keep it at the version `@zriz/react` asks for. a second copy of `@zriz/core` cannot see the photo, see `no-image` on [errors](errors)."
       ),
       p(
         "pass a ref to `actionsRef` on `Root`, and pass `cropper.current` to `exportCrop` from a save button. the button stays disabled until `onLoad` fires for this file, because an export before the photo loads rejects with `no-image`:"

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { createCropper } from "@zriz/core";
 import { createElement, version } from "react";
 import type { ElementType } from "react";
@@ -7,6 +9,21 @@ import { describe, expect, it, vi } from "vitest";
 import { useRender, useZoom } from "../src";
 import * as Cropper from "../src/cropper";
 import { mergeProps, preventZrizHandler } from "../src/merge-props";
+
+describe("the package manifest", () => {
+  it("peers core, so an app holds one copy shared with its own imports", () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf-8")
+    );
+
+    expect(manifest).toMatchObject({
+      devDependencies: { "@zriz/core": "workspace:^" },
+      peerDependencies: { "@zriz/core": "workspace:^" },
+    });
+
+    expect(manifest).not.toHaveProperty("dependencies");
+  });
+});
 
 describe("server rendering", () => {
   it("renders every part without window", () => {

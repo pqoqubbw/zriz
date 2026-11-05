@@ -83,7 +83,7 @@ const FULL_EDITOR_PAGE = defineDoc({
     section(
       "export a jpeg",
       p(
-        "`exportCrop` makes a jpeg unless the crop is a circle. the button stays off until `onLoad` fires, because an export before that rejects. `exportCrop` comes from `@zriz/core/dom`. add `@zriz/core` as in [exporting](exporting)."
+        "`exportCrop` makes a jpeg unless the crop is a circle. the button stays off until `onLoad` fires, because an export before that rejects. `exportCrop` comes from `@zriz/core/dom`."
       ),
       p(
         "an export can still fail on a very large photo, so `save` shows its own alert when it does. `onError` shows a second one when the photo does not open. [errors](errors) lists the codes."

@@ -57,14 +57,12 @@
     "lint:package": "publint --strict && attw --pack . --profile esm-only --exclude-entrypoints ./styles.css",
     "size": "size-limit"
   },
-  "dependencies": {
-    "@zriz/core": "workspace:^"
-  },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@size-limit/preset-small-lib": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@zriz/core": "workspace:^",
     "magic-string": "1.4.5",
     "publint": "catalog:",
     "react": "catalog:",
@@ -75,6 +73,7 @@
   },
   "peerDependencies": {
     "@types/react": "^18.2.6 || ^19.0.0",
+    "@zriz/core": "workspace:^",
     "react": "^18.2.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {

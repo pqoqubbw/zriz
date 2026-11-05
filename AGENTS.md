@@ -43,7 +43,7 @@ All of check, type, test, lint:package and size must pass before a commit. CI ru
 
 ## Rules
 
-- Zero runtime dependencies. `@zriz/core` depends on nothing, `@zriz/react` only on `@zriz/core`, with `react` 18.2+ as a peer and one build for 18 and 19. Write it ourselves. A new runtime dependency needs a maintainer's yes in an issue first. Dev dependencies are fine.
+- Zero runtime dependencies. `@zriz/core` depends on nothing. `@zriz/react` has `@zriz/core` and `react` 18.2+ as peers, with one build for 18 and 19. Write it ourselves. A new runtime dependency needs a maintainer's yes in an issue first. Dev dependencies are fine.
 - Don't add, remove or upgrade dependencies unless the task asks for it. Reviewers read every lockfile change.
 - No code comments, TSDoc included. The one exception: a single short line on public props of React parts, because the docs generate API tables from it. Never restate what the code or the name already says.
 - Per-frame values never go through React state. Use refs, CSS variables and subscriptions.

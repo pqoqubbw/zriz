@@ -31,8 +31,8 @@ exports[`content > shows the approved code and colours 1`] = `
   [
     "quick-start",
     "quick-start/install.sh",
-    "pnpm add @zriz/react",
-    "<span class=t>pnpm </span>add @zriz/react",
+    "pnpm add @zriz/react @zriz/core",
+    "<span class=t>pnpm </span>add @zriz/react @zriz/core",
   ],
   [
     "quick-start",
@@ -5616,7 +5616,7 @@ const unreadable =
 
 ## save a png
 
-\`exportCrop\` reads the circle from \`Root\` and returns a png with transparent corners, at most 512 by 512. it comes from \`@zriz/core/dom\`. add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md).
+\`exportCrop\` reads the circle from \`Root\` and returns a png with transparent corners, at most 512 by 512. it comes from \`@zriz/core/dom\`.
 
 an export can still fail on a very large photo, so \`save\` shows its own alert when it does.
 
@@ -5799,7 +5799,7 @@ with all four chunks, even \`source\`, which \`Root\` never loads, the avatar se
 
 ## dependencies
 
-\`@zriz/react\` depends only on \`@zriz/core\`, which has no dependencies. both packages mark only their css as a side effect, so your bundler drops every part you do not import.
+\`@zriz/react\` has \`@zriz/core\` and react as peers and no dependencies. \`@zriz/core\` has none either. both packages mark only their css as a side effect, so your bundler drops every part you do not import.
 "
 `;
 
@@ -6828,13 +6828,13 @@ the demo runs on the page at https\\://zriz.dev/docs/exporting.
 
 ## save the crop as a file
 
-\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` depends on \`@zriz/core\` and re-exports the types an editor needs, such as \`CropValue\`, \`Cropper\` and \`ChangeReason\`. functions and the other core types, such as \`ExportPlan\`, come from \`@zriz/core\`, so add it to your own dependencies:
+\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` needs \`@zriz/core\` as a peer dependency and re-exports the types an editor needs, such as \`CropValue\`, \`Cropper\` and \`ChangeReason\`. functions and the other core types, such as \`ExportPlan\`, come from \`@zriz/core\`. [quick start](https://zriz.dev/docs/quick-start.md) installs it. without react, add it alone:
 
 \`\`\`sh
 pnpm add @zriz/core
 \`\`\`
 
-keep it at the same version as \`@zriz/react\`. a second copy of \`@zriz/core\` cannot see the photo, see \`no-image\` on [errors](https://zriz.dev/docs/errors.md).
+keep it at the version \`@zriz/react\` asks for. a second copy of \`@zriz/core\` cannot see the photo, see \`no-image\` on [errors](https://zriz.dev/docs/errors.md).
 
 pass a ref to \`actionsRef\` on \`Root\`, and pass \`cropper.current\` to \`exportCrop\` from a save button. the button stays disabled until \`onLoad\` fires for this file, because an export before the photo loads rejects with \`no-image\`:
 
@@ -7297,7 +7297,7 @@ const instructions = [
 
 ## export a jpeg
 
-\`exportCrop\` makes a jpeg unless the crop is a circle. the button stays off until \`onLoad\` fires, because an export before that rejects. \`exportCrop\` comes from \`@zriz/core/dom\`. add \`@zriz/core\` as in [exporting](https://zriz.dev/docs/exporting.md).
+\`exportCrop\` makes a jpeg unless the crop is a circle. the button stays off until \`onLoad\` fires, because an export before that rejects. \`exportCrop\` comes from \`@zriz/core/dom\`.
 
 an export can still fail on a very large photo, so \`save\` shows its own alert when it does. \`onError\` shows a second one when the photo does not open. [errors](https://zriz.dev/docs/errors.md) lists the codes.
 
@@ -8168,13 +8168,13 @@ go from an empty project to a cropper that hands you the crop.
 paste this prompt into claude code, cursor or any other coding agent. it reads this page and does the steps below for you:
 
 \`\`\`text
-add zriz to this project. read https://zriz.dev/docs/quick-start.md and follow it: install @zriz/react, import its stylesheet and render a cropper with corner handles, the straighten dial and a file picker for the photo. build it from the zriz parts, not a crop box of your own, and give every part that asks for one an aria-label. when it works, show me where onValueCommit hands back the crop.
+add zriz to this project. read https://zriz.dev/docs/quick-start.md and follow it: install @zriz/react and @zriz/core, import its stylesheet and render a cropper with corner handles, the straighten dial and a file picker for the photo. build it from the zriz parts, not a crop box of your own, and give every part that asks for one an aria-label. when it works, show me where onValueCommit hands back the crop.
 \`\`\`
 
 ## install
 
 \`\`\`sh
-pnpm add @zriz/react
+pnpm add @zriz/react @zriz/core
 \`\`\`
 
 npm, yarn and bun work too. [faq](https://zriz.dev/docs/faq.md) lists what zriz needs.
@@ -8480,7 +8480,7 @@ the demo runs on the page at https\\://zriz.dev/docs/saving-state.
 
 each photo gets its own key, built from an \`id\` you pass, such as the photo's id in your database. \`parse\` turns the stored string back into a crop, or returns \`null\` when there is none. [value](https://zriz.dev/docs/value.md) shows what it does with broken input.
 
-\`parse\` and \`serialize\` come from \`@zriz/core\`. add it as in [exporting](https://zriz.dev/docs/exporting.md).
+\`parse\` and \`serialize\` come from \`@zriz/core\`, which [quick start](https://zriz.dev/docs/quick-start.md) installs.
 
 \`Root\` reads \`defaultValue\` once, when it mounts. the component renders nothing until it has read storage for this \`id\`. that empty render unmounts the old cropper, so each photo starts fresh.
 

@@ -2,6 +2,7 @@ import type { SizeLimitConfig } from "size-limit";
 
 const production = (config: object): object => ({
   ...config,
+  external: /^(?:react|react-dom)(?:$|\/)/u,
   resolve: { conditionNames: ["production", "browser", "import", "default"] },
 });
 

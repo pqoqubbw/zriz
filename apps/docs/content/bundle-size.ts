@@ -65,7 +65,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
     section(
       "dependencies",
       p(
-        "`@zriz/react` depends only on `@zriz/core`, which has no dependencies. both packages mark only their css as a side effect, so your bundler drops every part you do not import."
+        "`@zriz/react` has `@zriz/core` and react as peers and no dependencies. `@zriz/core` has none either. both packages mark only their css as a side effect, so your bundler drops every part you do not import."
       )
     ),
   ],

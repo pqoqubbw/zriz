@@ -9,7 +9,7 @@ const SAVING_STATE_PAGE = defineDoc({
         "each photo gets its own key, built from an `id` you pass, such as the photo's id in your database. `parse` turns the stored string back into a crop, or returns `null` when there is none. [value](value) shows what it does with broken input."
       ),
       p(
-        "`parse` and `serialize` come from `@zriz/core`. add it as in [exporting](exporting)."
+        "`parse` and `serialize` come from `@zriz/core`, which [quick start](quick-start) installs."
       ),
       p(
         "`Root` reads `defaultValue` once, when it mounts. the component renders nothing until it has read storage for this `id`. that empty render unmounts the old cropper, so each photo starts fresh."

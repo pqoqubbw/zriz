@@ -37,7 +37,7 @@ const AVATAR_PAGE = defineDoc({
     section(
       "save a png",
       p(
-        "`exportCrop` reads the circle from `Root` and returns a png with transparent corners, at most 512 by 512. it comes from `@zriz/core/dom`. add `@zriz/core` as in [exporting](exporting)."
+        "`exportCrop` reads the circle from `Root` and returns a png with transparent corners, at most 512 by 512. it comes from `@zriz/core/dom`."
       ),
       p(
         "an export can still fail on a very large photo, so `save` shows its own alert when it does."

@@ -197,10 +197,6 @@ importers:
         version: 7.0.2
 
   packages/react:
-    dependencies:
-      '@zriz/core':
-        specifier: workspace:^
-        version: link:../core
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
@@ -214,6 +210,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
+      '@zriz/core':
+        specifier: workspace:^
+        version: link:../core
       magic-string:
         specifier: 1.4.5
         version: 1.4.5

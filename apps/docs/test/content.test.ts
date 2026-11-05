@@ -64,6 +64,12 @@ describe("content", () => {
     expect(stopped).toStrictEqual([]);
   });
 
+  it("installs core beside react, since react peers it", () => {
+    expect(pageMarkdown("quick-start")).toContain(
+      "pnpm add @zriz/react @zriz/core"
+    );
+  });
+
   it.each(PAGE_ORDER)("writes %s as markdown", (slug) => {
     expect(pageMarkdown(slug)).toMatchSnapshot();
   });

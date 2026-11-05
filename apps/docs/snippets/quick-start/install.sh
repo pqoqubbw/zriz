@@ -1,1 +1,1 @@
-pnpm add @zriz/react
+pnpm add @zriz/react @zriz/core

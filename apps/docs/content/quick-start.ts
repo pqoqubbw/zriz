@@ -16,7 +16,7 @@ const QUICK_START_PAGE = defineDoc({
         "paste this prompt into claude code, cursor or any other coding agent. it reads this page and does the steps below for you:"
       ),
       prompt(
-        "add zriz to this project. read https://zriz.dev/docs/quick-start.md and follow it: install @zriz/react, import its stylesheet and render a cropper with corner handles, the straighten dial and a file picker for the photo. build it from the zriz parts, not a crop box of your own, and give every part that asks for one an aria-label. when it works, show me where onValueCommit hands back the crop."
+        "add zriz to this project. read https://zriz.dev/docs/quick-start.md and follow it: install @zriz/react and @zriz/core, import its stylesheet and render a cropper with corner handles, the straighten dial and a file picker for the photo. build it from the zriz parts, not a crop box of your own, and give every part that asks for one an aria-label. when it works, show me where onValueCommit hands back the crop."
       )
     ),
     section(
