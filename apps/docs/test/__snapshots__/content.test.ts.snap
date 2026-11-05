@@ -8399,7 +8399,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
   controls the zoom alone. 1 is the largest crop
 - \`shape\` \`"rect" | "circle"\` = \`"rect"\`
 
-  the crop shape. a circle locks the aspect to 1, draws a round mask and exports a round png, and the stylesheet hides the corner handles, see [avatar](https://zriz.dev/docs/avatar.md)
+  the crop shape. a circle locks the aspect to 1, draws a round mask and exports a round png, and the stylesheet hides the corner handles, see [avatar](https://zriz.dev/docs/avatar.md). back to \`"rect"\`, the crop takes the aspect it held before. a \`Root\` that started as a circle takes \`defaultValue\` or \`"free"\`, and reset follows
 - \`minSize\` \`Size\` = \`{ width: 1, height: 1 }\`
 
   the smallest crop in source pixels, along the photo's own sides. a large one narrows the straighten range. [exporting](https://zriz.dev/docs/exporting.md) says when a crop can come out smaller

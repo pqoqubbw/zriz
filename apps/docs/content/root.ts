@@ -101,7 +101,7 @@ const ROOT_PAGE = defineDoc({
           {
             default: '"rect"',
             name: "shape",
-            text: "the crop shape. a circle locks the aspect to 1, draws a round mask and exports a round png, and the stylesheet hides the corner handles, see [avatar](avatar)",
+            text: 'the crop shape. a circle locks the aspect to 1, draws a round mask and exports a round png, and the stylesheet hides the corner handles, see [avatar](avatar). back to `"rect"`, the crop takes the aspect it held before. a `Root` that started as a circle takes `defaultValue` or `"free"`, and reset follows',
             type: '"rect" | "circle"',
           },
           {

@@ -32,7 +32,7 @@ import {
   useLatest,
 } from "../part";
 import type { ElementBox, Part, PartProps, RootContextValue } from "../part";
-import { useCropper, useCropperState } from "../use-cropper";
+import { useCircleAspect, useCropper, useCropperState } from "../use-cropper";
 import type { UseCropperOptions } from "../use-cropper";
 import { usePart } from "../use-render";
 
@@ -185,6 +185,8 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       ? (cropper as CropperInternals).retarget({ aspect: 1, lock: true })
       : undefined;
   }, [cropper, shape]);
+
+  useCircleAspect(cropper, shape, aspect, defaultValue?.aspect, !!external);
 
   useIsomorphicLayoutEffect(() => {
     view.setOptions({ motion, recenterDelay });

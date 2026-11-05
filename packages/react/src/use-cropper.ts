@@ -15,6 +15,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -437,6 +438,49 @@ const useCropperValue = (cropper?: Cropper): CropValue => {
   );
 };
 
+const useCircleAspect = (
+  cropper: Cropper,
+  shape: "rect" | "circle",
+  aspect: Aspect | undefined,
+  defaultAspect: Aspect | undefined,
+  given: boolean
+): void => {
+  const before = cropper.getValue().aspect;
+  const [start] = useState(() => {
+    const fallback = given ? before : (defaultAspect ?? "free");
+
+    return shape === "circle" ? fallback : null;
+  });
+  const held = useRef({ aspect: start ?? before, due: start !== null });
+  const disabled = useCropperState((s) => s.disabled, cropper);
+  const { ready } = cropper.getState();
+
+  useIsomorphicLayoutEffect(() => {
+    const kept = held.current;
+
+    if (shape === "circle" && !kept.due) {
+      kept.aspect = before;
+      kept.due = true;
+    } else if (shape !== "circle" && kept.due && !disabled) {
+      kept.due = false;
+
+      if (aspect === undefined && ready) {
+        cropper.setAspect(kept.aspect, { reason: "aspect" });
+      } else if (aspect === undefined) {
+        cropper.setValue({ aspect: kept.aspect }, { emit: false });
+      }
+    }
+  }, [cropper, disabled, shape]);
+
+  useIsomorphicLayoutEffect(
+    () =>
+      start === null || shape === "circle"
+        ? undefined
+        : (cropper as CropperInternals).retarget({ aspect: aspect ?? start }),
+    [cropper, shape, start]
+  );
+};
+
 const useCropperFrame = (
   listener: (frame: CropperFrame) => void,
   cropper?: Cropper
@@ -458,6 +502,7 @@ export {
   firstCommitted,
   firstZoom,
   useAriaDisabled,
+  useCircleAspect,
   useCropper,
   useCropperFrame,
   useCropperState,

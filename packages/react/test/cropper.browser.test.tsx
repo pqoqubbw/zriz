@@ -28,6 +28,7 @@ import {
   useCropperValue,
   useZoom,
 } from "../src";
+import type { RootProps } from "../src";
 import * as Cropper from "../src/cropper";
 
 const photoCropper = () =>
@@ -2267,6 +2268,56 @@ const press = (id: string, type: string, pointerId: number): void => {
   );
 };
 
+const CIRCLE_PHOTO = { height: 800, width: 1000 };
+
+const leaveCircle = async (
+  props: Partial<RootProps>,
+  first: "rect" | "circle",
+  before?: (cropper: CropperApi) => void
+) => {
+  const api = createRef<CropperApi>();
+
+  type HostProps = { shape: "rect" | "circle" };
+
+  const Host = ({ shape }: HostProps) => (
+    <Cropper.Root
+      actionsRef={api}
+      image={CIRCLE_PHOTO}
+      shape={shape}
+      {...props}
+    />
+  );
+  const screen = await render(<Host shape={first} />);
+
+  await frames(2);
+
+  if (api.current) {
+    before?.(api.current);
+  }
+
+  await frames(2);
+
+  if (first === "rect") {
+    await screen.rerender(<Host shape="circle" />);
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(1);
+  }
+
+  await screen.rerender(<Host shape="rect" />);
+  await frames(2);
+  const left = api.current?.getValue().aspect;
+  const plan = api.current?.getPixelCrop();
+
+  api.current?.reset();
+  await frames(2);
+
+  return {
+    left,
+    pixels: [plan?.width, plan?.height],
+    reset: api.current?.getValue().aspect,
+  };
+};
+
 describe("a circle holds its aspect", () => {
   afterEach(async () => {
     await cleanup();
@@ -2309,6 +2360,103 @@ describe("a circle holds its aspect", () => {
     api.current?.setAspect(2);
     await frames();
     expect(api.current?.getValue().aspect).toBe(2);
+  });
+
+  it("restores a free crop held before the circle, and reset stays free", async () => {
+    const out = await leaveCircle({}, "rect");
+
+    expect(out.left).toBe("free");
+    expect(out.reset).toBe("free");
+  });
+
+  it("restores an aspect set before the circle, and reset goes to the default", async () => {
+    const out = await leaveCircle({}, "rect", (cropper) => {
+      cropper.setAspect(4 / 3);
+    });
+
+    expect(out.left).toBe(4 / 3);
+    expect(out.pixels).toStrictEqual([1000, 750]);
+    expect(out.reset).toBe("free");
+  });
+
+  it("restores the default aspect, and reset follows it", async () => {
+    const out = await leaveCircle({ defaultValue: { aspect: 16 / 9 } }, "rect");
+
+    expect(out.left).toBe(16 / 9);
+    expect(out.reset).toBe(16 / 9);
+  });
+
+  it("restores free on a Root that started as a circle, and reset follows", async () => {
+    const out = await leaveCircle({}, "circle");
+
+    expect(out.left).toBe("free");
+    expect(out.reset).toBe("free");
+  });
+
+  it("restores defaultValue on a Root that started as a circle, and reset follows", async () => {
+    const out = await leaveCircle(
+      { defaultValue: { aspect: 16 / 9 } },
+      "circle"
+    );
+
+    expect(out.left).toBe(16 / 9);
+    expect(out.reset).toBe(16 / 9);
+  });
+
+  it("gives way to an aspect prop when the circle goes", async () => {
+    const out = await leaveCircle({ aspect: 4 / 3 }, "rect");
+
+    expect(out.left).toBe(4 / 3);
+    expect(out.reset).toBe(4 / 3);
+  });
+
+  it("restores the aspect when the circle goes while disabled", async () => {
+    const api = createRef<CropperApi>();
+
+    type HostProps = { disabled: boolean; shape: "rect" | "circle" };
+
+    const Host = ({ disabled, shape }: HostProps) => (
+      <Cropper.Root
+        actionsRef={api}
+        disabled={disabled}
+        image={CIRCLE_PHOTO}
+        shape={shape}
+      />
+    );
+    const screen = await render(<Host disabled={false} shape="rect" />);
+
+    await frames(2);
+    api.current?.setAspect(4 / 3);
+    await frames(2);
+    await screen.rerender(<Host disabled={false} shape="circle" />);
+    await frames(2);
+    await screen.rerender(<Host disabled={true} shape="circle" />);
+    await frames(2);
+    await screen.rerender(<Host disabled={true} shape="rect" />);
+    await frames(2);
+    await screen.rerender(<Host disabled={false} shape="rect" />);
+    await frames(2);
+    expect(api.current?.getValue().aspect).toBe(4 / 3);
+  });
+
+  it("restores free with no commit when the circle goes before the photo", async () => {
+    const api = createRef<CropperApi>();
+    const commit = vi.fn<() => void>();
+
+    type HostProps = { shape: "rect" | "circle" };
+
+    const Host = ({ shape }: HostProps) => (
+      <Cropper.Root actionsRef={api} onValueCommit={commit} shape={shape} />
+    );
+    const screen = await render(<Host shape="circle" />);
+
+    await frames(2);
+    await screen.rerender(<Host shape="rect" />);
+    await frames(2);
+    api.current?.setImage(CIRCLE_PHOTO);
+    await frames(3);
+    expect(api.current?.getValue().aspect).toBe("free");
+    expect(commit).not.toHaveBeenCalled();
   });
 
   it("starts clean on a cropper from useCropper with a photo in it", async () => {
