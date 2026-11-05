@@ -6199,7 +6199,7 @@ each one is a button that goes anywhere inside \`Root\`. put an icon or a word i
 <Cropper.Reset>reset</Cropper.Reset>
 \`\`\`
 
-zriz ships them bare, with no paint and no icons. the demo above uses the icons and styles from the zriz site.
+zriz ships them bare, with no paint and no icons. the demo above adds a right turn and a vertical flip, and uses the icons and styles from the zriz site.
 
 ## see what each button moves
 
@@ -6849,6 +6849,8 @@ put \`DialTicks\` inside \`Dial\`. \`Dial\` and \`DialValue\` go anywhere inside
 \`\`\`
 
 the stylesheet makes \`Dial\` 40 px tall and clips its ticks at the sides only, so the zero dot above them stays in view. it draws the ticks and the centre line. \`DialValue\` ships bare.
+
+the demo above shows the angle to one decimal with a degree sign and uses the styles from the zriz site.
 
 ## drag and flick the ruler
 
@@ -7945,6 +7947,8 @@ export const Editor = ({ src, onSave }: Props) => {
   );
 };
 \`\`\`
+
+the demo above runs this file with the icons and styles from the zriz site. it shows the angle to one decimal and calls square 1:1. its aspect labels turn with the orientation, as on [aspect ratio](https://zriz.dev/docs/aspect-ratio.md). it leaves out the zoom slider, and wheel and pinch still zoom.
 "
 `;
 
@@ -8622,6 +8626,8 @@ export const PhotoCropper = () => {
 
 the demo runs on the page at https\\://zriz.dev/docs/quick-start.
 
+the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles.
+
 ## let the user pick a photo
 
 keep the chosen file in state and pass it to \`src\`:
@@ -8747,6 +8753,8 @@ grey out the buttons while it is set:
   pointer-events: none;
 }
 \`\`\`
+
+the demo above sets \`disabled\` while its download runs. it adds handles, a grid and the styles from the zriz site.
 
 ## dim the controls during a gesture
 
