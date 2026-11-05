@@ -3064,3 +3064,64 @@ describe("the aspect it already has", () => {
     expect(commit).toHaveBeenCalledOnce();
   });
 });
+
+describe("minSize across quarter turns", () => {
+  const MIN = { height: 630, width: 1200 };
+
+  const floored = () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { aspect: 1200 / 630 },
+      image: PHOTO,
+      minSize: MIN,
+    });
+
+    cropper.setZoom(15);
+    time.frames(2);
+
+    return { cropper, time };
+  };
+
+  it("reads along the photo's sides, so a turn keeps the crop at the floor", () => {
+    const { cropper } = floored();
+    const zoom = cropper.getZoom();
+
+    expect(cropper.getPixelCrop()?.width).toBe(1200);
+    cropper.rotate90();
+    expect(cropper.getZoom()).toBeCloseTo(zoom, 6);
+    expect(cropper.getPixelCrop()?.width).toBe(630);
+    expect(cropper.getPixelCrop()?.height).toBe(1200);
+  });
+
+  it("four turns restore the crop", () => {
+    const { cropper } = floored();
+    const before = cropper.getValue();
+
+    for (let i = 0; i < 4; i += 1) {
+      cropper.rotate90();
+    }
+
+    expect(valuesEqual(cropper.getValue(), before)).toBeTruthy();
+  });
+
+  it("zoom still works after a turn when the floor leaves room", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { quarterTurns: 1 },
+      image: { height: 1000, width: 4000 },
+      minSize: { height: 500, width: 3000 },
+    });
+
+    cropper.setZoom(1.2);
+    expect(cropper.getZoom()).toBeCloseTo(1.2, 6);
+  });
+
+  it("the crop floor and getMinSize agree with the turn", () => {
+    const { cropper } = floored();
+
+    cropper.rotate90();
+    expect(cropper.getMinSize()).toStrictEqual({ height: 1200, width: 630 });
+  });
+});

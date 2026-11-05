@@ -96,7 +96,7 @@ const ROOT_PAGE = defineDoc({
           {
             default: "{ width: 1, height: 1 }",
             name: "minSize",
-            text: "the smallest crop in source pixels. a large one narrows the straighten range",
+            text: "the smallest crop in source pixels, along the photo's own sides. a large one narrows the straighten range. [exporting](exporting) says when a crop can come out smaller",
             type: "Size",
           },
           {

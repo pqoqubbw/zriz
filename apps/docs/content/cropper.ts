@@ -34,7 +34,7 @@ const CROPPER_PAGE = defineDoc({
           {
             default: "{ width: 1, height: 1 }",
             name: "minSize",
-            text: "sets the smallest crop in source pixels",
+            text: "sets the smallest crop in source pixels, along the photo's own sides",
             type: "Size",
           },
           {

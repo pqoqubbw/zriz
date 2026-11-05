@@ -81,6 +81,9 @@ const EXPORTING_PAGE = defineDoc({
       "export an exact size",
       p(
         "`maxSize` never scales up, so a crop smaller than the box comes out smaller. set `minSize` on `Root` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with `minSize` and `maxSize` both at 512 by 512 exports at 512 by 512."
+      ),
+      p(
+        "`minSize` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free and the crop does not grow back on its own."
       )
     ),
     section(

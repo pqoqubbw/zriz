@@ -330,9 +330,12 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     width: minSide(options.minSize?.width, size.width),
   });
 
+  const floorOf = (next: CropState): Size =>
+    turnedSize(minSize(next.image), next.turns);
+
   const scaleToMin = (next: CropState): CropState => {
     const { width, height } = next.crop;
-    const min = minSize(next.image);
+    const min = floorOf(next);
     const grow = Math.max(1, min.width / width, min.height / height);
 
     return {
@@ -375,7 +378,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       width = height * shaped.aspect;
     }
 
-    const asked = minSize(shaped.image);
+    const asked = floorOf(shaped);
     const short = Math.max(1, largestFit(planes, asked).scale);
     const min = { height: asked.height / short, width: asked.width / short };
     const free = shaped.aspect === null;
@@ -925,7 +928,8 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     },
     getCropState: () => state,
     getMaxZoom: zoomCap,
-    getMinSize: () => minSize(image ?? { height: 1, width: 1 }),
+    getMinSize: () =>
+      state ? floorOf(state) : minSize(image ?? { height: 1, width: 1 }),
     getPixelCrop: (scale) => (state ? exportPlan(state, scale) : null),
     getRotationLimit: rotationLimit,
     getState: () => snapshot,

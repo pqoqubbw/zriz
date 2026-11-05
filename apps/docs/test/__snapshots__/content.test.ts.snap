@@ -6064,7 +6064,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   merges over the core \`defaultValue\`. the cropper starts here and \`reset()\` returns here. read once
 - \`minSize\` \`Size\` = \`{ width: 1, height: 1 }\`
 
-  sets the smallest crop in source pixels
+  sets the smallest crop in source pixels, along the photo's own sides
 - \`maxZoom\` \`number\` = \`15\`
 
   sets the largest zoom. 1 is the largest crop
@@ -6797,6 +6797,8 @@ the browser drops exif, gps data and 16-bit depth from the file.
 ## export an exact size
 
 \`maxSize\` never scales up, so a crop smaller than the box comes out smaller. set \`minSize\` on \`Root\` to the same size, and every crop is at least that big in source pixels. on a photo at least that big, a square crop with \`minSize\` and \`maxSize\` both at 512 by 512 exports at 512 by 512.
+
+\`minSize\` reads along the photo's own sides, so after a quarter turn a 1200 by 630 minimum can export at 630 by 1200. while you straighten a crop of another shape than the minimum, covering the photo comes first, so that crop can drop below it. the angle stays free and the crop does not grow back on its own.
 
 ## handle a failed export
 
@@ -8242,7 +8244,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
   the crop shape. a circle locks the aspect to 1, draws a round mask and exports a round png, and the stylesheet hides the corner handles, see [avatar](https://zriz.dev/docs/avatar.md)
 - \`minSize\` \`Size\` = \`{ width: 1, height: 1 }\`
 
-  the smallest crop in source pixels. a large one narrows the straighten range
+  the smallest crop in source pixels, along the photo's own sides. a large one narrows the straighten range. [exporting](https://zriz.dev/docs/exporting.md) says when a crop can come out smaller
 - \`maxZoom\` \`number\` = \`15\`
 
   the deepest zoom. every gesture, key and control stops there
