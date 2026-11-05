@@ -26,7 +26,7 @@ pnpm test
 
 On Linux, add `--with-deps` to the Playwright command so it also installs the system libraries the browsers need. The three browsers take about 800 MB and only need installing again when Playwright updates.
 
-`pnpm check`, `pnpm type` and `pnpm test` read the packages from `dist`. Run `pnpm build:packages` again after you change `packages/core`.
+`pnpm check`, `pnpm type` and `pnpm test` read the packages from `dist`, except the docs app and snippets type checks, which read source. Run `pnpm build:packages` again after you change `packages/core` or `packages/react`.
 
 `pnpm dev` serves the docs on http://localhost:4777 and reloads as you edit the packages. If the port is taken, run `pnpm dev -p 4800`.
 
@@ -71,11 +71,11 @@ You don't need a changelog entry or a version bump. If a user could notice your 
 
 - No new runtime dependencies. `@zriz/core` depends on nothing. `@zriz/react` has `@zriz/core` and `react` as peers.
 - Don't add, remove or upgrade dependencies in a pull request that is about something else.
-- No code comments, TSDoc included. The one exception is a single short line on public props of React parts, because the docs build their API tables from it.
+- No code comments, TSDoc included. The one exception is a single short line on public props of React parts. API tables are hand-written in `apps/docs/content/<slug>.ts`, so change them there too.
 - Every export in `packages/` needs an explicit type (`isolatedDeclarations`).
 - Files in `packages/react` that use hooks or browser APIs start with `"use client"`. Nothing in `packages/core` does.
 - Values that change every frame never go through React state. Use refs, CSS variables and subscriptions.
-- A fix comes with a test. `*.test.ts` runs in node, `*.browser.test.tsx` runs in the three browsers.
+- A fix comes with a test. `*.test.ts` runs in node, `*.browser.test.ts` and `*.browser.test.tsx` run in the three browsers. In `apps/docs`, only `.browser.test.tsx` reaches the browsers.
 
 ## Pull requests
 

@@ -16,7 +16,7 @@ const scale = useCoverScale({
 
 ## Without a bundler
 
-The parts import their dev-only accessibility warning from `@zriz/react/warn`. An import map needs an entry for it next to `@zriz/react/cropper`, `@zriz/core` and `@zriz/core/dom`:
+The parts import their dev-only warnings from `@zriz/react/warn`. An import map needs an entry for it next to `@zriz/react/cropper`, `@zriz/core`, `@zriz/core/dom`, `react` and `react/jsx-runtime`:
 
 ```json
 {
@@ -26,4 +26,4 @@ The parts import their dev-only accessibility warning from `@zriz/react/warn`. A
 }
 ```
 
-Point it at `dist/warn.js` during development to keep the warning.
+Point it at `dist/warn.js` during development to keep the warnings, and run `window.process = { env: {} }` before the modules load. Without a `process` global, `dist/warn.js` stays silent too.

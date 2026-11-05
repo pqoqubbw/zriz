@@ -6,7 +6,7 @@ The pages in `apps/docs/content` are the spec for public behaviour and API. If t
 
 ## Layout
 
-- `packages/core`: `@zriz/core`, framework-agnostic TypeScript with zero dependencies. The root entry holds the maths, the store, the springs and the value format, and their tests run in node. `@zriz/core/dom` holds one binder per part, image loading and export. Never import React here, never add `"use client"`.
+- `packages/core`: `@zriz/core`, framework-agnostic TypeScript with zero dependencies. The root entry holds the maths, the store, the frame clock, the decay and velocity helpers and the value format, and their tests run in node. Springs stay internal in `src/motion.ts`. `@zriz/core/dom` holds the binders and handlers behind the parts, image loading and export. Never import React here, never add `"use client"`.
 - `packages/react`: `@zriz/react`, unstyled React parts in the style of Base UI. Apps import parts only as `import * as Cropper from "@zriz/react/cropper"`. The root entry exports hooks, helpers and types, never parts. Every file that uses hooks or browser APIs starts with `"use client"`.
 - `apps/docs`: the Next.js site for zriz.dev. Each page is typed data in `content/<slug>.ts`, built from the blocks in `lib/doc/define.ts`. One renderer turns it into HTML (`components/doc/blocks.tsx`) and one into markdown for agents (`lib/doc/markdown.ts`); a new block kind fails to compile until both handle it. Code shown on a page lives in `snippets/<slug>/` as real, type-checked files, and excerpts are cut from them by anchor lines. Nav order and titles are in `lib/nav.ts`. Demos are grey placeholders for now.
 - `test/react18`: React 18.3 and `@types/react` 18, for the second test run and a consumer type check.
@@ -17,11 +17,11 @@ The pages in `apps/docs/content` are the spec for public behaviour and API. If t
 1. Node from `.nvmrc`. Any version in `engines.node` works. pnpm 10 or newer switches itself to the version in `packageManager`.
 2. `pnpm install`
 3. `pnpm exec playwright install --only-shell chromium firefox webkit`, once per Playwright version. On Linux, add `--with-deps`.
-4. `pnpm build:packages`. Type checks, lint and tests resolve `@zriz/core` and `@zriz/react` from `dist`, so build again after you change a package that another one imports.
+4. `pnpm build:packages`. Lint, tests and the package type checks resolve `@zriz/core` and `@zriz/react` from `dist`, so build again after you change either package. The docs app and snippets type-check against source.
 
 ## Commands
 
-- `pnpm dev` runs the docs on http://localhost:4777 against package source, so edits reload live. `pnpm dev -p 4800` uses another port. The `PORT` variable has no effect.
+- `pnpm dev` runs the docs on http://localhost:4777 against package source, so edits reload live, except `@zriz/react/warn`, which comes from `dist`. `pnpm dev -p 4800` uses another port. The `PORT` variable has no effect.
 - `pnpm check` and `pnpm fix` run ultracite (oxlint type-aware and oxfmt).
 - `pnpm type` type-checks every workspace and writes the Next.js route types that `pnpm check` needs. On a fresh clone, run `build:packages`, then `type`, then `check`.
 - `pnpm test` runs unit tests in node and browser tests in chromium, firefox and webkit. `pnpm test:unit` skips the browsers.
@@ -37,7 +37,7 @@ All of check, type, test, lint:package and size must pass before a commit. CI ru
 - The docs app stays on TypeScript 5.9, because Next.js type-checks through the TypeScript compiler API, which TypeScript 7 lacks until 7.1.
 - The packages build with tsdown in unbundle mode, ESM only, per-file output, so `"use client"` stays on each file. tsdown warns that the directive "may not be preserved". It is preserved; check `dist` if in doubt.
 - pnpm refuses releases younger than one day (`minimumReleaseAge`). Pin the previous version instead of turning it off.
-- Test files: `*.test.ts` run in node, `*.browser.test.tsx` run in the three browsers. Property tests for maths use fast-check.
+- Test files: `*.test.ts` run in node, `*.browser.test.ts` and `*.browser.test.tsx` run in the three browsers. In `apps/docs`, only `.browser.test.tsx` reaches the browsers. Property tests for maths use fast-check.
 - The `unit-react18` and `browser-react18` projects run the React tests again on React 18.3, installed in `test/react18`. That folder also type-checks a consumer file against `@types/react` 18.
 - For Next.js APIs, read the docs that ship with the installed version in `apps/docs/node_modules/next/dist/docs/`. `next.config.ts` sets `agentRules: false`, so `next dev` never writes its own agent file.
 
@@ -45,7 +45,7 @@ All of check, type, test, lint:package and size must pass before a commit. CI ru
 
 - Zero runtime dependencies. `@zriz/core` depends on nothing. `@zriz/react` has `@zriz/core` and `react` 18.2+ as peers, with one build for 18 and 19. Write it ourselves. A new runtime dependency needs a maintainer's yes in an issue first. Dev dependencies are fine.
 - Don't add, remove or upgrade dependencies unless the task asks for it. Reviewers read every lockfile change.
-- No code comments, TSDoc included. The one exception: a single short line on public props of React parts, because the docs generate API tables from it. Never restate what the code or the name already says.
+- No code comments, TSDoc included. The one exception: a single short line on public props of React parts. API tables are hand-written in `apps/docs/content/<slug>.ts`, so change them there too. Never restate what the code or the name already says.
 - Per-frame values never go through React state. Use refs, CSS variables and subscriptions.
 - Every rule in the stylesheet sits in `:where()` inside `@layer components.zriz`, so any user class wins.
 - Icons in the docs are hand-drawn SVG in `apps/docs/components/ui/icon.tsx`. Don't add an icon library.

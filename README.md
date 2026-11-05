@@ -16,7 +16,7 @@ pnpm install
 pnpm dev
 ```
 
-See `AGENTS.md` for every command.
+See `AGENTS.md` for the common commands.
 
 ## License
 
