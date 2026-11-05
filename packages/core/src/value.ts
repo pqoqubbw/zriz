@@ -299,7 +299,7 @@ const parse = (input: unknown): CropValue | null => {
     }
   }
 
-  if (!isRecord(raw)) {
+  if (!isRecord(raw) || (raw.v !== undefined && raw.v !== 1)) {
     return null;
   }
 

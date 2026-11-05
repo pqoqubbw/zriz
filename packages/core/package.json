@@ -93,7 +93,7 @@
       "name": "value",
       "path": "dist/index.js",
       "import": "{ parse, serialize }",
-      "limit": "590 B"
+      "limit": "599 B"
     },
     {
       "name": "motion",

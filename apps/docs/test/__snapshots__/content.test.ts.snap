@@ -9454,7 +9454,7 @@ const text = serialize(cropper.getValue());
 const saved = parse(text);
 \`\`\`
 
-\`serialize\` adds a version field, \`v: 1\`. \`parse\` takes the text or an object you already parsed, and returns \`null\` when it is not json or not an object. it fills missing fields with defaults, clamps \`rotation\` to 45 and \`perspective\` to 30 each way, and turns a bad \`aspect\` into \`"free"\`. the full flow is on [saving state](https://zriz.dev/docs/saving-state.md).
+\`serialize\` adds a version field, \`v: 1\`. \`parse\` takes the text or an object you already parsed, and returns \`null\` when it is not json, not an object or carries a \`v\` other than 1. a value with no \`v\` still reads. it fills missing fields with defaults, clamps \`rotation\` to 45 and \`perspective\` to 30 each way, and turns a bad \`aspect\` into \`"free"\`. the full flow is on [saving state](https://zriz.dev/docs/saving-state.md).
 
 ## helpers
 

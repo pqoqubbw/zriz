@@ -72,6 +72,18 @@ describe(parse, () => {
     expect(serialize(value)).toContain('"v":1');
     expect(parse(serialize(value))).toStrictEqual(value);
   });
+
+  it("reads no crop written by another version of the format", () => {
+    for (const v of [2, 0, "1", null]) {
+      expect(parse({ rotation: 3, v })).toBeNull();
+      expect(parse(JSON.stringify({ rotation: 3, v }))).toBeNull();
+    }
+  });
+
+  it("still reads a crop with version 1 or with no version", () => {
+    expect(parse({ rotation: 3, v: 1 })?.rotation).toBe(3);
+    expect(parse({ rotation: 3 })?.rotation).toBe(3);
+  });
 });
 
 describe("value and state", () => {

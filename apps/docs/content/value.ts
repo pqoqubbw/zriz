@@ -117,7 +117,7 @@ const VALUE_PAGE = defineDoc({
       p("save a crop as text and read it back:"),
       code("value/serialize.ts"),
       p(
-        '`serialize` adds a version field, `v: 1`. `parse` takes the text or an object you already parsed, and returns `null` when it is not json or not an object. it fills missing fields with defaults, clamps `rotation` to 45 and `perspective` to 30 each way, and turns a bad `aspect` into `"free"`. the full flow is on [saving state](saving-state).'
+        '`serialize` adds a version field, `v: 1`. `parse` takes the text or an object you already parsed, and returns `null` when it is not json, not an object or carries a `v` other than 1. a value with no `v` still reads. it fills missing fields with defaults, clamps `rotation` to 45 and `perspective` to 30 each way, and turns a bad `aspect` into `"free"`. the full flow is on [saving state](saving-state).'
       )
     ),
     section(
