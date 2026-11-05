@@ -45,7 +45,13 @@ const SAVING_STATE_PAGE = defineDoc({
     section(
       "the whole file",
       p("`SavedCrop` takes a photo url and an id to store its crop under:"),
-      code("saving-state/saved-crop.tsx")
+      code("saving-state/saved-crop.tsx"),
+      p(
+        "the demo above saves its crop in this browser under `zriz-docs:saving-state:` and an id for the photo. change the crop and reload the page, and it comes back. the demo never renders on the server, so it reads storage as it mounts and skips the empty render."
+      ),
+      p(
+        "it adds the dial, rotate, flip, handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site."
+      )
     ),
   ],
   lede: "keep the crop for each photo in local storage and bring it back on the next visit.",
