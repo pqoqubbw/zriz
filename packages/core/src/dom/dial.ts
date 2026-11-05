@@ -330,12 +330,16 @@ const dialHandlers = (
       return () => {
         interrupted();
 
+        const before = cropper.getValue().rotation;
+
         cropper.setRotation(clamp(next, limit), {
           event,
           reason: "keyboard",
         });
 
-        showFineGrid(cropper);
+        if (cropper.getValue().rotation !== before) {
+          showFineGrid(cropper);
+        }
       };
     },
     owner,

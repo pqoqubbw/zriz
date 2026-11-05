@@ -164,6 +164,20 @@ describe("the fine grid", () => {
     expect(view.chrome().grid).toBe("none");
   });
 
+  it("stays off for a dial key that leaves the angle where it is", () => {
+    const { cropper, view } = gridRig();
+    const keys = dialHandlers(cropper, {}, () => track);
+
+    keys.onKeyDown(key({ key: "0" }));
+    expect(view.chrome().grid).toBe("none");
+    keys.onKeyUp(key({ key: "0" }));
+
+    cropper.setRotation(cropper.getRotationLimit(), { emit: false });
+    keys.onKeyDown(key({ key: "ArrowRight" }));
+    expect(view.chrome().grid).toBe("none");
+    keys.onKeyUp(key({ key: "ArrowRight" }));
+  });
+
   it("stays off for an area key", () => {
     const { cropper, time, view } = gridRig();
     const keys = areaKeyHandlers(cropper);
