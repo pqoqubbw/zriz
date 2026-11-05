@@ -66,7 +66,7 @@ const STYLING_PAGE = defineDoc({
     section(
       "style with data attributes",
       p(
-        "every part's outer element carries `data-zriz-item` with its part name in kebab case, such as `aspect-item` or `dial-ticks`. the ticks and grid lines inside carry none, so select them through their part, as [dial](dial) shows. `Root` also marks the gesture in progress with `data-rotating`, `data-panning`, `data-pinching`, `data-resizing` or `data-zooming`. this rule hides the handles while the dial is dragged or thrown:"
+        "every part's outer element carries `data-zriz-item` with its part name in kebab case, such as `aspect-item` or `dial-ticks`. the ticks and grid lines inside carry none, so select them through their part, as [dial](dial) shows. `Root` also marks the gesture in progress with `data-rotating`, `data-panning`, `data-pinching`, `data-resizing` or `data-zooming`. this rule hides the handles from a press on the dial until the pointer lets go, and while the dial glides:"
       ),
       code("styling/attributes.css"),
       p("each component page lists the attributes that part sets.")

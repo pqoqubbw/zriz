@@ -88,7 +88,7 @@ const CROP_AREA_PAGE = defineDoc({
         { keys: [["shift", "arrow keys"]], text: "move it by 10%" },
         {
           keys: [["alt", "arrow keys"]],
-          text: "resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. a free crop changes that side only, and stops at the photo edge, `minSize` or 88 px on screen. the centre stays put",
+          text: "resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. a free crop changes that side only, and stops at the photo edge, `minSize`, `maxZoom` or 88 px on screen. the centre stays put",
         },
         { keys: [["+"], ["="]], text: "zoom in 1.1×" },
         { keys: [["-"], ["_"]], text: "zoom out 1.1×" },

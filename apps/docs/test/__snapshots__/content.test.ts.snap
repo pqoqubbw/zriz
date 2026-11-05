@@ -6445,7 +6445,7 @@ these keys work while \`Area\` has focus, never on the window:
 | - | - |
 | \`arrow keys\` | move the crop by 1% of its size |
 | \`shift\` + \`arrow keys\` | move it by 10% |
-| \`alt\` + \`arrow keys\` | resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. a free crop changes that side only, and stops at the photo edge, \`minSize\` or 88 px on screen. the centre stays put |
+| \`alt\` + \`arrow keys\` | resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. a free crop changes that side only, and stops at the photo edge, \`minSize\`, \`maxZoom\` or 88 px on screen. the centre stays put |
 | \`+\` or \`=\` | zoom in 1.1× |
 | \`-\` or \`_\` | zoom out 1.1× |
 | \`0\` | jump back to where \`Reset\` goes, with no spring |
@@ -7205,7 +7205,7 @@ the demo runs on the page at https\\://zriz.dev/docs/exporting.
 
 ## save the crop as a file
 
-\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` needs \`@zriz/core\` as a peer dependency and re-exports the types an editor needs, such as \`CropValue\`, \`Cropper\` and \`ChangeReason\`. functions and the other core types, such as \`ExportPlan\`, come from \`@zriz/core\`. [quick start](https://zriz.dev/docs/quick-start.md) installs it. without react, add it alone:
+\`exportCrop\` comes from \`@zriz/core/dom\`. \`@zriz/react\` needs \`@zriz/core\` as a peer dependency and re-exports the types an editor needs, such as \`CropValue\`, \`Cropper\` and \`ChangeReason\`. the types of \`exportCrop\` and \`loadImage\`, such as \`ExportOptions\`, \`ExportResult\`, \`LoadedImage\` and \`ZrizErrorCode\`, come from \`@zriz/core/dom\` too. pure functions and the other core types, such as \`parse\` and \`ExportPlan\`, come from \`@zriz/core\`. [quick start](https://zriz.dev/docs/quick-start.md) installs it. without react, add it alone:
 
 \`\`\`sh
 pnpm add @zriz/core
@@ -8429,7 +8429,7 @@ export const Heic = ({ onSave }: Props) => {
 
 \`ready\` turns the save button on once the photo is attached. \`onSave\` gets the cropper for \`exportCrop\`, as in [exporting](https://zriz.dev/docs/exporting.md). a new pick or an unmount aborts the load still running, so a slow file never replaces a newer one or lands on a cropper that left.
 
-\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`maxPixels\`, \`svg\`, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a frame with nothing opaque in it counts as no frame.
+\`loadImage\` also takes \`timeout\` in milliseconds, \`previewEdge\`, the longest side of the preview in pixels, \`maxPixels\`, \`svg\`, \`crossOrigin\` and an abort \`signal\`. it accepts an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` as its source. a \`video\` needs a current frame, so wait for \`loadeddata\` or \`seeked\`, or the load fails with \`decode\`. a fully transparent frame counts as no frame.
 
 \`attachImage\` frees a photo when it leaves its last cropper, and \`destroy()\` does the same for the photo on that cropper. attaching to a destroyed cropper frees the photo at once. a freed photo cannot be attached again, so load it again. a photo that never reached a cropper holds memory until you call \`discardImage(image)\`, for example after your own stale check or an \`exportImage\` with no \`attachImage\`. it does nothing while a cropper holds the photo.
 
@@ -8834,11 +8834,11 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
 | attribute | when |
 | - | - |
 | \`data-interacting\` | during a gesture and for a short hold after it, see [accessibility](https://zriz.dev/docs/accessibility.md) |
-| \`data-panning\` | while a pointer drags the photo |
+| \`data-panning\` | from a press on the photo until the pointer lets go, even if it never moves |
 | \`data-pinching\` | while two fingers pinch or twist on a touch screen, or a trackpad pinches in safari |
-| \`data-resizing\` | while a handle resizes the crop |
-| \`data-rotating\` | while a pointer drags the dial and while it glides after |
-| \`data-zooming\` | while the wheel pans or zooms, a pointer drags \`Zoom\`, or a \`useZoom\` slider moves |
+| \`data-resizing\` | from a press on a handle until the pointer lets go, even if it never moves |
+| \`data-rotating\` | from a press on the dial until the pointer lets go, even if it never moves, and while the dial glides after |
+| \`data-zooming\` | while the wheel pans or zooms, from a press on \`Zoom\` until the pointer lets go, or while a \`useZoom\` slider moves |
 | \`data-settling\` | while any animation runs: a glide, a spring back, a recentre or a button's move |
 | \`data-changed\` | while \`Reset\` has a change to undo |
 | \`data-mirrored\` | while the photo is flipped |
@@ -9795,7 +9795,7 @@ return \`undefined\` from the function for no class. to swap the element itself,
 
 ## style with data attributes
 
-every part's outer element carries \`data-zriz-item\` with its part name in kebab case, such as \`aspect-item\` or \`dial-ticks\`. the ticks and grid lines inside carry none, so select them through their part, as [dial](https://zriz.dev/docs/dial.md) shows. \`Root\` also marks the gesture in progress with \`data-rotating\`, \`data-panning\`, \`data-pinching\`, \`data-resizing\` or \`data-zooming\`. this rule hides the handles while the dial is dragged or thrown:
+every part's outer element carries \`data-zriz-item\` with its part name in kebab case, such as \`aspect-item\` or \`dial-ticks\`. the ticks and grid lines inside carry none, so select them through their part, as [dial](https://zriz.dev/docs/dial.md) shows. \`Root\` also marks the gesture in progress with \`data-rotating\`, \`data-panning\`, \`data-pinching\`, \`data-resizing\` or \`data-zooming\`. this rule hides the handles from a press on the dial until the pointer lets go, and while the dial glides:
 
 \`\`\`css
 [data-rotating] [data-zriz-item="handle"] {
@@ -10462,7 +10462,7 @@ to turn the crop into a file, pass the cropper to \`exportCrop\` as in [exportin
 | - | - |
 | dial value | \`bindDialValue(cropper, element, format)\` writes the angle as text. without \`format\`, it writes whole degrees |
 | grid | no binder. \`bindState\` writes \`data-grid\` on the root as \`"none"\`, \`"coarse"\` or \`"fine"\`. draw the lines in css. the stylesheet keeps \`data-zriz-item="grid"\` at opacity 0 without \`data-visible\`, and no binder sets it, so set \`opacity\` from \`[data-grid]\` on the root or leave that attribute off the element |
-| state attributes | \`bindState\` writes every attribute [root](https://zriz.dev/docs/root.md) lists on your element, except \`data-shape\`. set that one in your markup. \`data-interacting\` on the area and \`data-active\` on a handle come only from the react parts |
+| state attributes | \`bindState\` writes every attribute [root](https://zriz.dev/docs/root.md) lists on your element, except \`data-shape\`. set that one in your markup. only the react parts write \`data-interacting\` on the area, \`data-active\` on a handle, \`data-ready\` on the image, \`data-dragging\` on zoom and \`data-shape\` on the area and mask. leave out the fade rule on [viewport](https://zriz.dev/docs/viewport.md), which would keep the photo hidden here |
 | buttons | no binder. call \`rotate90()\`, \`flip()\`, \`reset()\` or \`setAspect(1)\` on the cropper from a click |
 | your own img | \`bindImage(cropper, element)\` sizes and moves an element of yours with the photo. you set its \`src\` |
 | round crop | pass \`"circle"\` as the third argument of \`bindMask\` and \`{ shape: "circle" }\` as the third argument of \`bindArea\`. set \`aspect: 1\` in \`defaultValue\`. the stylesheet hides the corner handles when the area has \`data-shape="circle"\`, which \`bindArea\` leaves to your markup |

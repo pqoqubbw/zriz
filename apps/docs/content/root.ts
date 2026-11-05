@@ -191,19 +191,25 @@ const ROOT_PAGE = defineDoc({
             name: "data-interacting",
             text: "during a gesture and for a short hold after it, see [accessibility](accessibility)",
           },
-          { name: "data-panning", text: "while a pointer drags the photo" },
+          {
+            name: "data-panning",
+            text: "from a press on the photo until the pointer lets go, even if it never moves",
+          },
           {
             name: "data-pinching",
             text: "while two fingers pinch or twist on a touch screen, or a trackpad pinches in safari",
           },
-          { name: "data-resizing", text: "while a handle resizes the crop" },
+          {
+            name: "data-resizing",
+            text: "from a press on a handle until the pointer lets go, even if it never moves",
+          },
           {
             name: "data-rotating",
-            text: "while a pointer drags the dial and while it glides after",
+            text: "from a press on the dial until the pointer lets go, even if it never moves, and while the dial glides after",
           },
           {
             name: "data-zooming",
-            text: "while the wheel pans or zooms, a pointer drags `Zoom`, or a `useZoom` slider moves",
+            text: "while the wheel pans or zooms, from a press on `Zoom` until the pointer lets go, or while a `useZoom` slider moves",
           },
           {
             name: "data-settling",

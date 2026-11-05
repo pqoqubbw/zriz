@@ -98,7 +98,7 @@ const VANILLA_JS_PAGE = defineDoc({
           ],
           [
             "state attributes",
-            "`bindState` writes every attribute [root](root) lists on your element, except `data-shape`. set that one in your markup. `data-interacting` on the area and `data-active` on a handle come only from the react parts",
+            "`bindState` writes every attribute [root](root) lists on your element, except `data-shape`. set that one in your markup. only the react parts write `data-interacting` on the area, `data-active` on a handle, `data-ready` on the image, `data-dragging` on zoom and `data-shape` on the area and mask. leave out the fade rule on [viewport](viewport), which would keep the photo hidden here",
           ],
           [
             "buttons",
