@@ -67,6 +67,7 @@ export type {
   Inset,
   Layout,
   Placement,
+  Quad,
   Transition,
   View,
   ViewFrame,

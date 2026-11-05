@@ -99,7 +99,7 @@ type CropperFrame = {
 
 type CropperEvents = {
   change: (value: CropValue, details: ChangeDetails) => void;
-  accept: (value: CropValue, details: ChangeDetails) => void;
+  accept: (value: CropValue, details: ChangeDetails & { spin: number }) => void;
   commit: (value: CropValue, details: CommitDetails) => void;
   gesturestart: (reason: ChangeReason, event: Event | undefined) => void;
   gestureend: (reason: ChangeReason, event: Event | undefined) => void;
@@ -302,6 +302,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   let commitPending: { reason: ChangeReason; event: Event | undefined } | null =
     null;
   let frameDirty = false;
+  let spun = 0;
   let handle: number | null = null;
   let lastTime: number | null = null;
   let destroyed = false;
@@ -539,6 +540,9 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     }
 
     dirty = false;
+    const spin = spun;
+
+    spun = 0;
     let phase: ChangePhase = "instant";
 
     if (gesture || hasBlockingTask()) {
@@ -590,7 +594,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       emittedState = sentState;
     }
 
-    emit("accept", sent, details);
+    emit("accept", sent, { ...details, spin });
   };
 
   const tick = (time: number): void => {
@@ -1046,6 +1050,10 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       const next = direction === "ccw" ? rotateLeft(state) : rotateRight(state);
       const aspect =
         typeof value.aspect === "number" ? 1 / value.aspect : value.aspect;
+
+      if (action.emit !== false) {
+        spun += direction === "ccw" ? -1 : 1;
+      }
 
       commitState(next, "size", action, "rotate-90", aspect);
     },

@@ -17,11 +17,12 @@ import {
   imageMatrix,
   viewOf,
 } from "../../src/dom/view";
-import type { Box, Layout, Placement } from "../../src/dom/view";
+import type { Box, Layout, Placement, ViewFrame } from "../../src/dom/view";
 import type { CropState, Size } from "../../src/geometry";
 import {
   applyHomography,
   cropCorners,
+  invertMatrix3,
   workingToSource,
 } from "../../src/geometry";
 import { spring } from "../../src/motion";
@@ -1559,5 +1560,333 @@ describe("view under perspective", () => {
     expect(view.frame()?.rect).toStrictEqual(fit);
     vi.useRealTimers();
     view.destroy();
+  });
+});
+
+const clipped = (frames: readonly ViewFrame[]): ViewFrame[] =>
+  frames.filter((frame) => frame.clip !== null);
+
+describe("a turn of the whole crop", () => {
+  const PHOTO = { height: 1200, width: 1600 };
+  const LAYOUT: Layout = {
+    dpr: 1,
+    height: 480,
+    inset: { bottom: 0, left: 0, right: 0, top: 0 },
+    width: 640,
+  };
+  const CORNER = {
+    center: { x: 0.2525, y: 0.733 },
+    quarterTurns: 1,
+    size: { height: 0.505, width: 0.505 },
+  } as const;
+
+  const rig = (options: CropperOptions = {}) => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: PHOTO,
+      ...options,
+    });
+    const view = viewOf(cropper);
+
+    view.setLayout(LAYOUT);
+    view.setOptions({ motion: "always" });
+    time.frame();
+    const frames: ViewFrame[] = [];
+
+    view.onFrame((frame) => {
+      frames.push(frame);
+    });
+
+    return { cropper, frames, time, view };
+  };
+
+  const onPhoto = (frame: ViewFrame): number => {
+    let worst = 0;
+    const inverse = invertMatrix3(frame.matrix);
+
+    for (const corner of frame.clip ?? []) {
+      const point = applyHomography(inverse, corner);
+
+      worst = Math.max(
+        worst,
+        -point.x,
+        -point.y,
+        point.x - PHOTO.width,
+        point.y - PHOTO.height
+      );
+    }
+
+    return worst;
+  };
+
+  it("rotate clips to the crop turning with the photo, on every frame", () => {
+    const { cropper, frames, time, view } = rig();
+
+    cropper.rotate90("ccw", { reason: "rotate-90" });
+    time.frames(40);
+    const moving = clipped(frames);
+
+    expect(moving.length).toBeGreaterThan(10);
+    expect(Math.max(...moving.map(onPhoto))).toBeLessThan(1e-6);
+
+    for (const frame of moving) {
+      const inverse = invertMatrix3(frame.matrix);
+      const first = applyHomography(inverse, frame.clip?.[0] ?? { x: 0, y: 0 });
+
+      expect(first.x).toBeCloseTo(0, 6);
+      expect(first.y).toBeCloseTo(0, 6);
+    }
+
+    expect(view.frame()?.clip).toBeNull();
+    expect(view.chrome().transition).toBeNull();
+  });
+
+  it("rotate holds the same photo pixels from a crop in a corner", () => {
+    const { cropper, frames, time } = rig({ defaultValue: CORNER });
+
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(40);
+    expect(Math.max(...clipped(frames).map(onPhoto))).toBeLessThan(1e-6);
+  });
+
+  it("the clip starts on the old rect and ends on the new one", () => {
+    const { cropper, frames, time, view } = rig();
+    const before = view.frame();
+
+    cropper.rotate90("ccw", { reason: "rotate-90" });
+    time.frames(40);
+    const moving = clipped(frames);
+    const first = moving[0]?.clip ?? [];
+    const last = moving.at(-1)?.clip ?? [];
+    const rect = view.frame()?.rect;
+    const xs = last.map((corner) => corner.x);
+
+    expect(Math.abs(Math.min(...xs) - (rect?.x ?? 0))).toBeLessThan(2);
+
+    expect(
+      Math.abs(Math.max(...xs) - (rect?.x ?? 0) - (rect?.width ?? 0))
+    ).toBeLessThan(2);
+
+    expect(Math.abs((first[0]?.x ?? 0) - (before?.rect.x ?? 0))).toBeLessThan(
+      40
+    );
+  });
+
+  it.each([
+    [
+      "undo",
+      (c: Cropper) => {
+        c.setValue(CORNER, { reason: "history" });
+      },
+    ],
+    [
+      "reset",
+      (c: Cropper) => {
+        c.reset({ reason: "reset" });
+      },
+    ],
+  ])("%s across a quarter turn takes the same path", (_, act) => {
+    const { cropper, frames, time, view } = rig();
+
+    cropper.setValue(
+      {
+        center: { x: 0.733, y: 0.7475 },
+        size: { height: 0.505, width: 0.505 },
+      },
+      { emit: false }
+    );
+
+    cropper.rotate90("cw", { emit: false });
+    time.frames(2);
+
+    if (_ === "undo") {
+      cropper.setValue(
+        {
+          center: { x: 0.733, y: 0.7475 },
+          quarterTurns: 0,
+          size: { height: 0.505, width: 0.505 },
+        },
+        { emit: false }
+      );
+
+      time.frames(2);
+    }
+
+    frames.length = 0;
+    const seen: (string | null)[] = [];
+
+    view.onChrome(() => {
+      seen.push(view.chrome().transition);
+    });
+
+    act(cropper);
+    time.frames(50);
+    const moving = clipped(frames);
+
+    expect(seen[0]).toBe("rotate");
+    expect(moving.length).toBeGreaterThan(5);
+    expect(Math.max(...moving.map(onPhoto))).toBeLessThan(1e-6);
+    expect(view.frame()?.clip).toBeNull();
+  });
+
+  it("reset from a straightened crop stays a morph with no clip", () => {
+    const { cropper, frames, time, view } = rig();
+    const seen: (string | null)[] = [];
+
+    cropper.setRotation(45, { emit: false });
+    time.frames(2);
+    frames.length = 0;
+
+    view.onChrome(() => {
+      seen.push(view.chrome().transition);
+    });
+
+    cropper.reset({ reason: "reset" });
+    time.frames(50);
+    expect(seen[0]).toBe("morph");
+    expect(clipped(frames)).toHaveLength(0);
+  });
+
+  it("flip stays a flip with no clip after quarter turns", () => {
+    const { cropper, frames, time, view } = rig();
+    const seen: (string | null)[] = [];
+
+    cropper.rotate90("cw", { emit: false });
+    time.frames(2);
+    frames.length = 0;
+
+    view.onChrome(() => {
+      seen.push(view.chrome().transition);
+    });
+
+    cropper.flip("x", { reason: "flip" });
+    time.frames(50);
+    expect(seen[0]).toBe("flip");
+    expect(clipped(frames)).toHaveLength(0);
+  });
+
+  it("an aspect pick stays a morph with no clip", () => {
+    const { cropper, frames, time } = rig();
+
+    cropper.setAspect(1, { reason: "aspect" });
+    time.frames(50);
+    expect(clipped(frames)).toHaveLength(0);
+  });
+
+  it("a gesture during the turn ends the clip at once", () => {
+    const { cropper, time, view } = rig();
+
+    cropper.rotate90("ccw", { reason: "rotate-90" });
+    time.frames(5);
+    expect(view.frame()?.clip).not.toBeNull();
+    cropper.begin("pan", undefined, "pan");
+    expect(view.frame()?.clip).toBeNull();
+    cropper.end(undefined, "pan");
+  });
+});
+
+const spin = (
+  direction: "ccw" | "cw",
+  gap: number,
+  presses: number,
+  mirrored = false
+) => {
+  const time = fakeClock();
+  const cropper = createCropper({
+    clock: time.clock,
+    defaultValue: { mirrored },
+    image: { height: 3000, width: 4000 },
+  });
+  const view = viewOf(cropper);
+
+  view.setLayout({
+    dpr: 1,
+    height: 300,
+    inset: { bottom: 0, left: 0, right: 0, top: 0 },
+    width: 400,
+  });
+
+  view.setOptions({ motion: "always" });
+  time.frame();
+  const angles: number[] = [];
+  let last: number | null = null;
+  let total = 0;
+
+  view.onFrame((frame) => {
+    const now = Math.atan2(-frame.matrix[1], frame.matrix[4]);
+
+    if (last !== null) {
+      let step = now - last;
+
+      step -= 2 * Math.PI * Math.round(step / (2 * Math.PI));
+      total += step;
+    }
+
+    last = now;
+    angles.push(total);
+  });
+
+  for (let i = 0; i < presses; i += 1) {
+    cropper.rotate90(direction, { reason: "rotate-90" });
+    time.frames(gap);
+  }
+
+  time.frames(40);
+
+  return angles;
+};
+
+describe("a running turn", () => {
+  it.each([
+    ["ccw", -1, 1],
+    ["ccw", -1, 2],
+    ["ccw", -1, 3],
+    ["cw", 1, 1],
+    ["cw", 1, 2],
+    ["cw", 1, 3],
+  ] as const)(
+    "%s presses spin one way at gaps of %i, %i frames",
+    (name, sign, gap) => {
+      const angles = spin(name, gap, 4);
+
+      for (const [i, angle] of angles.entries()) {
+        expect(sign * (angle - (angles[i - 1] ?? 0))).toBeGreaterThan(-1e-9);
+      }
+
+      expect(sign * (angles.at(-1) ?? 0)).toBeCloseTo(2 * Math.PI, 3);
+    }
+  );
+
+  it("two clockwise turns in one frame spin clockwise", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 3000, width: 4000 },
+    });
+    const view = viewOf(cropper);
+
+    view.setLayout({
+      dpr: 1,
+      height: 300,
+      inset: { bottom: 0, left: 0, right: 0, top: 0 },
+      width: 400,
+    });
+
+    view.setOptions({ motion: "always" });
+    time.frame();
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(3);
+    const matrix = view.frame()?.matrix ?? [];
+    const angle = Math.atan2(matrix[3] ?? 0, matrix[0] ?? 0);
+
+    expect(angle).toBeGreaterThan(0);
+  });
+
+  it("a mirrored photo still turns the way the button says", () => {
+    const angles = spin("ccw", 4, 2, true);
+
+    expect(angles.at(-1)).toBeCloseTo(-Math.PI, 3);
   });
 });

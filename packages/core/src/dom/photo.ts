@@ -5,8 +5,9 @@ import { imageOf, onImage } from "./image-store";
 import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
+import { cropShapeOf } from "./shape";
 import { TIMEOUT_MS, noop, withTimeout } from "./turn";
-import { LAYER_BOX, cssMatrix, isAffine, viewOf } from "./view";
+import { LAYER_BOX, clipPath, cssMatrix, isAffine, viewOf } from "./view";
 import type { Layout, ViewFrame } from "./view";
 import { motionOff } from "./worker";
 
@@ -116,6 +117,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
   let boxed = container.clientWidth > 0;
   let held: LoadedImage | null = null;
   let shown = "";
+  let clipped = "";
 
   const show = (canvas: boolean, fallback = canvas): void => {
     const next = `${canvas}${fallback}${motionReady}`;
@@ -287,6 +289,13 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     sameBox(drawn.layout, frame.layout);
 
   const write = (frame: ViewFrame): void => {
+    const clip = clipPath(frame.clip, cropShapeOf(cropper));
+
+    if (clip !== clipped) {
+      clipped = clip;
+      container.style.clipPath = clip;
+    }
+
     if (!image || !boxed) {
       return;
     }
@@ -472,6 +481,7 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     clearMotion();
     rest.width = 0;
     rest.height = 0;
+    container.style.clipPath = "";
   };
 };
 

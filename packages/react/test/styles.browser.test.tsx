@@ -346,6 +346,25 @@ const withPhoto = (ref: React.Ref<CropperApi>) => (
   </Cropper.Root>
 );
 
+describe("a turn of the whole crop", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("hides the area and its handles until the turn ends", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(<Editor api={api} />);
+    await frames(2);
+    const area = pick('[data-zriz-item="area"]');
+
+    expect(getComputedStyle(area).opacity).toBe("1");
+    api.current?.rotate90();
+    await expect.poll(() => getComputedStyle(area).opacity).toBe("0");
+    await expect.poll(() => getComputedStyle(area).opacity).toBe("1");
+  });
+});
+
 describe("before the photo is placed", () => {
   afterEach(() => {
     document.body.replaceChildren();

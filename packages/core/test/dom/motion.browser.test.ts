@@ -8,6 +8,7 @@ import {
   bindHandle,
   bindImage,
   bindMask,
+  bindPhoto,
   bindState,
   bindViewport,
   viewOf,
@@ -107,6 +108,9 @@ const mount = (
 
   return fixture;
 };
+
+const clipOf = (node: Element | null): string =>
+  node ? getComputedStyle(node).clipPath : "";
 
 const centreOf = (frame: ViewFrame | null): { x: number; y: number } => ({
   x: (frame?.rect.x ?? 0) + (frame?.rect.width ?? 0) / 2,
@@ -274,6 +278,115 @@ describe("view motion", () => {
     expect(seen.size).toBeGreaterThan(5);
     expect(fixture.changes).toBe(1);
     expect(fixture.commits).toBe(1);
+  });
+
+  it("a quarter turn clips the mask and the photo to the turning crop", () => {
+    const time = fakeClock();
+    const fixture = mount("always", time.clock);
+    const image = fixture.root.children.item(0);
+    const mask = fixture.root.children.item(1);
+
+    time.frames(2);
+    fixture.cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(6);
+    const frame = viewOf(fixture.cropper).frame();
+    const a = frame?.clip?.[0] ?? { x: 0, y: 0 };
+    const b = frame?.clip?.[1] ?? { x: 0, y: 0 };
+
+    expect(Math.abs(a.y - b.y)).toBeGreaterThan(20);
+
+    expect({
+      image: clipOf(image).startsWith("polygon("),
+      mask: clipOf(mask).includes(a.x.toFixed(2).slice(0, -1)),
+      transition: fixture.root.dataset.transition,
+    }).toStrictEqual({ image: true, mask: true, transition: "rotate" });
+
+    time.frames(40);
+
+    expect({
+      image: clipOf(image),
+      mask: clipOf(mask).includes("evenodd"),
+      transition: fixture.root.dataset.transition,
+    }).toStrictEqual({ image: "none", mask: true, transition: undefined });
+  });
+
+  it("a photo layer follows the turning crop in its own box", async () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      image: { height: 300, width: 400 },
+    });
+    const root = document.createElement("div");
+
+    root.style.cssText =
+      "position:relative;width:400px;height:300px;overflow:hidden;";
+
+    const image = document.createElement("div");
+
+    root.append(image);
+    document.body.append(root);
+    const off = [bindViewport(cropper, root), bindPhoto(cropper, image)];
+
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+
+      cropper.destroy();
+      root.remove();
+    });
+
+    viewOf(cropper).setOptions({ motion: "always" });
+    await expect.poll(() => viewOf(cropper).frame()).not.toBeNull();
+    time.frames(2);
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(6);
+    expect(image.style.clipPath).toContain("polygon(");
+    time.frames(40);
+    expect(image.style.clipPath).toBe("");
+  });
+
+  it("a circle stays a circle through a quarter turn", () => {
+    const time = fakeClock();
+    const cropper = createCropper({
+      clock: time.clock,
+      defaultValue: { aspect: 1 },
+      image: { height: 3000, width: 4000 },
+    });
+    const root = document.createElement("div");
+
+    root.style.cssText =
+      "position:relative;width:400px;height:300px;overflow:hidden;";
+
+    const image = document.createElement("div");
+    const mask = document.createElement("div");
+
+    root.append(image, mask);
+    document.body.append(root);
+    const off = [
+      bindViewport(cropper, root),
+      bindImage(cropper, image),
+      bindMask(cropper, mask, "circle"),
+    ];
+
+    cleanups.push(() => {
+      for (const stop of off) {
+        stop();
+      }
+
+      cropper.destroy();
+      root.remove();
+    });
+
+    viewOf(cropper).setOptions({ motion: "always" });
+    time.frames(2);
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    time.frames(6);
+    expect(image.style.clipPath).toContain("ellipse(");
+
+    expect(mask.style.clipPath + mask.style.maskImage).not.toContain(
+      "polygon("
+    );
   });
 
   it("passes through zero width when flipping", async () => {

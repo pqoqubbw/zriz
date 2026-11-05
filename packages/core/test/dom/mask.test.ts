@@ -60,6 +60,21 @@ describe("round mask", () => {
     vi.unstubAllGlobals();
   });
 
+  it("cuts the turning crop out of the mask when a frame has a clip", async () => {
+    const { maskClip } = await load();
+
+    expect(
+      maskClip(BOX, "rect", [
+        { x: 10, y: 0 },
+        { x: 20, y: 10 },
+        { x: 10, y: 20 },
+        { x: 0, y: 10 },
+      ])
+    ).toBe(
+      "polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 10px 0px, 20px 10px, 10px 20px, 0px 10px, 10px 0px)"
+    );
+  });
+
   it("cuts an even-odd hole with two half-circle arcs", async () => {
     const { maskClip } = await load();
 

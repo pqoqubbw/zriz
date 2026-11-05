@@ -351,14 +351,16 @@ const useCropper = (options: UseCropperOptions = {}): Cropper => {
 
   useIsomorphicLayoutEffect(() => {
     const { aspect: first, rotation: angle, zoom: close } = latest.current;
+    const empty =
+      close === undefined && (!given || (first ?? angle) === undefined);
 
-    if (close === undefined && (!given || (first ?? angle) === undefined)) {
-      return undefined;
-    }
-
-    return cropper.retarget(
-      given ? { aspect: first, rotation: angle, zoom: close } : { zoom: close }
-    );
+    return empty
+      ? undefined
+      : cropper.retarget(
+          given
+            ? { aspect: first, rotation: angle, zoom: close }
+            : { zoom: close }
+        );
   }, [cropper, given, latest]);
 
   useIsomorphicLayoutEffect(

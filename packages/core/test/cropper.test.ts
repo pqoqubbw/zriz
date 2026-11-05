@@ -3129,17 +3129,17 @@ describe("minSize across quarter turns", () => {
   });
 });
 
+const zoomed = () => {
+  const time = fakeClock();
+  const cropper = createCropper({ clock: time.clock, image: PHOTO });
+  const drop = cropper.retarget({ zoom: 2 });
+
+  cropper.setZoom(2, { emit: false });
+
+  return { cropper, drop, time };
+};
+
 describe("a reset target with a zoom", () => {
-  const zoomed = () => {
-    const time = fakeClock();
-    const cropper = createCropper({ clock: time.clock, image: PHOTO });
-    const drop = cropper.retarget({ zoom: 2 });
-
-    cropper.setZoom(2, { emit: false });
-
-    return { cropper, drop, time };
-  };
-
   it("reads as pristine at that zoom", () => {
     const { cropper } = zoomed();
 
@@ -3172,4 +3172,3 @@ describe("a reset target with a zoom", () => {
     expect(cropper.getZoom()).toBeCloseTo(1, 6);
   });
 });
-

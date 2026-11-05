@@ -1,11 +1,13 @@
 import type { Cropper } from "../cropper";
 import { dragHandle } from "../geometry/constraints";
 import type { CropHandle } from "../geometry/constraints";
+import { applyHomography, invertMatrix3 } from "../geometry/matrix";
 import { imagePlanes } from "../geometry/planes";
 import type {
   Crop,
   CropState,
   HalfPlane,
+  Matrix3,
   Point,
   Rect,
 } from "../geometry/types";
@@ -26,8 +28,15 @@ import {
 import type { PointerHandlers } from "./input";
 import { cropShapeOf, setCropShape } from "./shape";
 import { followDisabled } from "./slider";
-import { LAYER_BOX, cssMatrix, stateAttributes, viewOf } from "./view";
-import type { Box, Layout, Placement, ViewFrame } from "./view";
+import {
+  LAYER_BOX,
+  clipBox,
+  clipPath,
+  cssMatrix,
+  stateAttributes,
+  viewOf,
+} from "./view";
+import type { Box, Layout, Placement, Quad, ViewFrame } from "./view";
 
 type MaskShape = "rect" | "circle";
 
@@ -83,7 +92,12 @@ const supportsShape = (): boolean => {
 
 const px = (value: number): string => `${value}px`;
 
-const maskClip = (rect: Box, shape: MaskShape): string => {
+const maskClip = (
+  given: Box,
+  shape: MaskShape,
+  clip: Quad | null = null
+): string => {
+  const rect = clip ? clipBox(clip) : given;
   const x0 = px(rect.x);
   const y0 = px(rect.y);
 
@@ -96,8 +110,11 @@ const maskClip = (rect: Box, shape: MaskShape): string => {
 
   const x1 = px(rect.x + rect.width);
   const y1 = px(rect.y + rect.height);
+  const hole = clip
+    ? clip.map((point) => `${px(point.x)} ${px(point.y)}`)
+    : [`${x0} ${y0}`, `${x1} ${y0}`, `${x1} ${y1}`, `${x0} ${y1}`];
 
-  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x0} ${y0}, ${x1} ${y0}, ${x1} ${y1}, ${x0} ${y1}, ${x0} ${y0})`;
+  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${[...hole, hole[0]].join(", ")})`;
 };
 
 const maskGradient = (rect: Box, dpr: number): string => {
@@ -120,6 +137,17 @@ const follow = (
   return view.onFrame(write);
 };
 
+const localQuad = ([a, b, c, d]: Quad, matrix: Matrix3): Quad => {
+  const inverse = invertMatrix3(matrix);
+
+  return [
+    applyHomography(inverse, a),
+    applyHomography(inverse, b),
+    applyHomography(inverse, c),
+    applyHomography(inverse, d),
+  ];
+};
+
 const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
   const { style } = element;
 
@@ -135,6 +163,7 @@ const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
   let transform = "";
   let width = 0;
   let height = 0;
+  let clipped = "";
   const stop = follow(cropper, (frame) => {
     const { image } = frame.state;
 
@@ -149,6 +178,16 @@ const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
     if (next !== transform) {
       transform = next;
       style.transform = next;
+    }
+
+    const clip = clipPath(
+      frame.clip && localQuad(frame.clip, frame.matrix),
+      cropShapeOf(cropper)
+    );
+
+    if (clip !== clipped) {
+      clipped = clip;
+      style.clipPath = clip;
     }
   });
   let moving = false;
@@ -169,6 +208,7 @@ const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
   return () => {
     stop();
     offState();
+    style.clipPath = "";
   };
 };
 
@@ -212,8 +252,11 @@ const bindMask = (
     const current = shape ?? cropShapeOf(cropper);
     const round = current === "circle" && !supportsShape();
     const next = round
-      ? maskGradient(frame.rect, frame.layout.dpr)
-      : maskClip(frame.rect, current);
+      ? maskGradient(
+          frame.clip ? clipBox(frame.clip) : frame.rect,
+          frame.layout.dpr
+        )
+      : maskClip(frame.rect, current, frame.clip);
 
     if (next === last) {
       return;

@@ -65,6 +65,7 @@ const refined = async (
     1,
   ];
   const frame: ViewFrame = {
+    clip: null,
     layout: {
       dpr: 1,
       height: stage.height,

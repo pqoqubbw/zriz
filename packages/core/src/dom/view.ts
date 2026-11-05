@@ -41,8 +41,11 @@ type Placement = {
   offset: Point;
 };
 
+type Quad = readonly [Point, Point, Point, Point];
+
 type ViewFrame = {
   rect: Box;
+  clip: Quad | null;
   matrix: Matrix3;
   scale: number;
   state: CropState;
@@ -91,9 +94,24 @@ type Pose = {
   centre: Point;
   anchor: Point;
   angle: number;
+  lead: number;
   mirror: number;
   sx: number;
   sy: number;
+};
+
+type Span = {
+  centre: Point;
+  u: Point;
+  v: Point;
+};
+
+type Blend = {
+  from: Pose;
+  t: number;
+  lead: number;
+  start: Span | null;
+  span: Span | null;
 };
 
 const LAYER_BOX: Record<string, string> = {
@@ -284,6 +302,7 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
     anchor: applyHomography(invertMatrix3(matrix), centre),
     angle: Math.atan2(c, mirror * a),
     centre,
+    lead: 0,
     mirror,
     rect,
     sx,
@@ -291,10 +310,18 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
   };
 };
 
-const blendPose = (from: Pose, to: Pose, t: number): Pose => {
-  let turn = to.angle - from.angle;
+const shortTurn = (from: Pose, to: Pose): number => {
+  const turn = to.angle - from.angle;
 
-  turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
+  return turn - 2 * Math.PI * Math.round(turn / (2 * Math.PI));
+};
+
+const blendPose = (from: Pose, to: Pose, t: number, lead: number): Pose => {
+  let turn = shortTurn(from, to);
+
+  if (lead !== 0) {
+    turn += 2 * Math.PI * Math.round((lead - turn) / (2 * Math.PI));
+  }
 
   return {
     anchor: {
@@ -306,6 +333,7 @@ const blendPose = (from: Pose, to: Pose, t: number): Pose => {
       x: lerp(from.centre.x, to.centre.x, t),
       y: lerp(from.centre.y, to.centre.y, t),
     },
+    lead: turn * (1 - t),
     mirror: lerp(from.mirror, to.mirror, t),
     rect: lerpBox(from.rect, to.rect, t),
     sx: lerp(from.sx, to.sx, t),
@@ -339,6 +367,84 @@ const poseMatrix = ({
     0,
     1,
   ];
+};
+
+const spanOf = (rect: Box, matrix: Matrix3): Span => {
+  const inverse = invertMatrix3(matrix);
+  const x = rect.x + rect.width / 2;
+  const y = rect.y + rect.height / 2;
+  const centre = applyHomography(inverse, { x, y });
+
+  const from = (point: Point): Point => {
+    const { x: px, y: py } = applyHomography(inverse, point);
+
+    return { x: px - centre.x, y: py - centre.y };
+  };
+
+  return {
+    centre,
+    u: from({ x: rect.x + rect.width, y }),
+    v: from({ x, y: rect.y + rect.height }),
+  };
+};
+
+const dot = (a: Point, b: Point): number => a.x * b.x + a.y * b.y;
+
+const towards = (axis: Point, from: Point): Point =>
+  dot(axis, from) < 0 ? { x: -axis.x, y: -axis.y } : axis;
+
+const blendSpan = (a: Span, b: Span, t: number): Span => {
+  const straight =
+    Math.abs(dot(a.u, b.u)) / Math.hypot(b.u.x, b.u.y) >=
+    Math.abs(dot(a.u, b.v)) / Math.hypot(b.v.x, b.v.y);
+  const u = towards(straight ? b.u : b.v, a.u);
+  const v = towards(straight ? b.v : b.u, a.v);
+  const mix = (p: Point, q: Point): Point => ({
+    x: lerp(p.x, q.x, t),
+    y: lerp(p.y, q.y, t),
+  });
+
+  return {
+    centre: mix(a.centre, b.centre),
+    u: mix(a.u, u),
+    v: mix(a.v, v),
+  };
+};
+
+const spanCorners = ({ centre, u, v }: Span, matrix: Matrix3): Quad => {
+  const at = (a: number, b: number): Point =>
+    applyHomography(matrix, {
+      x: centre.x + a * u.x + b * v.x,
+      y: centre.y + a * u.y + b * v.y,
+    });
+
+  return [at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)];
+};
+
+const clipBox = ([a, b, c, d]: Quad): Box => {
+  const width = Math.hypot(b.x - a.x, b.y - a.y);
+  const height = Math.hypot(d.x - a.x, d.y - a.y);
+
+  return {
+    height,
+    width,
+    x: (a.x + c.x - width) / 2,
+    y: (a.y + c.y - height) / 2,
+  };
+};
+
+const clipPath = (clip: Quad | null, shape: "rect" | "circle"): string => {
+  if (!clip) {
+    return "";
+  }
+
+  if (shape === "circle") {
+    const { x, y, width, height } = clipBox(clip);
+
+    return `ellipse(${width / 2}px ${height / 2}px at ${x + width / 2}px ${y + height / 2}px)`;
+  }
+
+  return `polygon(${clip.map((p) => `${p.x}px ${p.y}px`).join(",")})`;
 };
 
 const subscribe =
@@ -414,7 +520,7 @@ const viewOf = (cropper: Cropper): View => {
   let stopTransition: (() => void) | null = null;
   let recentreTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
-  let blend: { from: Pose; t: number } | null = null;
+  let blend: Blend | null = null;
   let shown: Pose | null = null;
   let chrome: Chrome = {
     active: false,
@@ -521,12 +627,19 @@ const viewOf = (cropper: Cropper): View => {
     const to = blend && pose(exact, matrix);
 
     if (blend && to) {
-      shown = blendPose(blend.from, to, blend.t);
+      shown = blendPose(blend.from, to, blend.t, blend.lead);
+    }
+
+    const painted = to && shown ? poseMatrix(shown) : matrix;
+
+    if (to && blend?.start) {
+      blend.span = blendSpan(blend.start, spanOf(exact, matrix), blend.t);
     }
 
     return {
+      clip: to && blend?.span ? spanCorners(blend.span, painted) : null,
       layout,
-      matrix: to && shown ? poseMatrix(shown) : matrix,
+      matrix: painted,
       rect: snapBox(to && shown ? shown.rect : exact, layout.dpr),
       scale: placement.scale,
       state,
@@ -600,8 +713,11 @@ const viewOf = (cropper: Cropper): View => {
       : null;
   };
 
-  const animate = (kind: Transition, from: ViewFrame): void => {
+  const animate = (kind: Transition, from: ViewFrame, spin: number): void => {
     const start = (blend && shown) ?? pose(from.rect, from.matrix);
+    const turning = chrome.transition === "rotate";
+    const span = blend?.span ?? null;
+    const lead = blend && shown ? shown.lead : 0;
 
     endTransition();
 
@@ -609,15 +725,36 @@ const viewOf = (cropper: Cropper): View => {
       return;
     }
 
-    blend = { from: start, t: 0 };
-    setChrome({ transition: kind });
+    const next = compute();
+    const to = next && pose(next.rect, next.matrix);
+    const rigid =
+      to !== null &&
+      (kind === "rotate" ||
+        turning ||
+        (kind === "morph" &&
+          Math.abs(shortTurn(start, to)) > Math.PI / 4 + 1e-9));
+
+    blend = {
+      from: start,
+      lead:
+        to && kind === "rotate"
+          ? lead + (spin * (to.mirror < 0 ? -Math.PI : Math.PI)) / 2
+          : 0,
+      span,
+      start: rigid ? (span ?? spanOf(from.rect, from.matrix)) : null,
+      t: 0,
+    };
+
+    const shape: Transition = rigid ? "rotate" : kind;
+
+    setChrome({ transition: shape });
     let elapsed = 0;
     const quick = reduced();
 
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
       const t =
-        quick || kind === "rotate"
+        quick || shape === "rotate"
           ? easeOut(Math.min(elapsed / (quick ? REDUCED_MS : ROTATE_MS), 1))
           : springProgress(
               kind === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA,
@@ -725,7 +862,7 @@ const viewOf = (cropper: Cropper): View => {
 
     if (kind && from) {
       pinned = null;
-      animate(kind, from);
+      animate(kind, from, details.spin);
     }
   });
   const offStart = cropper.on("gesturestart", (reason) => {
@@ -916,6 +1053,7 @@ export type {
   Inset,
   Layout,
   Placement,
+  Quad,
   Transition,
   View,
   ViewFrame,
@@ -923,6 +1061,8 @@ export type {
 };
 export {
   LAYER_BOX,
+  clipBox,
+  clipPath,
   cssMatrix,
   isAffine,
   fitPlacement,

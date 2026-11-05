@@ -5221,7 +5221,7 @@ with \`prefers-reduced-motion: reduce\`, motion that zriz starts on its own gets
 | motion | full | reduced |
 | - | - | - |
 | recentre | spring, about 460 ms | spring, about 250 ms |
-| rotate 90° | about 300 ms | 150 ms |
+| rotate 90°, reset or undo across a turn | about 300 ms | 150 ms |
 | flip | spring, about 420 ms | 150 ms |
 | aspect, reset | spring, about 460 ms | 150 ms |
 
@@ -5720,7 +5720,7 @@ zriz ships them bare, with no paint and no icons. the demo above uses the icons 
 
 while \`Root\` is disabled, a press does nothing, and before the photo loads only \`Reset\` acts. the buttons stay natively enabled and report \`aria-disabled\`, so style them from \`data-disabled\` on \`Root\`, as [root](https://zriz.dev/docs/root.md) shows.
 
-while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.
+while a move runs, \`Root\` carries \`data-transition\`: \`"rotate"\`, \`"flip"\` or \`"morph"\` for \`Reset\`. during \`"rotate"\` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides \`Area\` and its handles. [accessibility](https://zriz.dev/docs/accessibility.md) lists how long each move takes, with and without reduced motion.
 
 ## rotate both ways
 
@@ -8306,7 +8306,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
 | \`data-reduced-motion\` | while short motion is on |
 | \`data-orientation\` | \`"landscape"\` above 1, \`"portrait"\` below 1, \`"square"\` at 1 and while the aspect is \`"free"\` or \`"original"\` |
 | \`data-grid\` | \`"coarse"\`, \`"fine"\` or \`"none"\`, see [crop area](https://zriz.dev/docs/crop-area.md) |
-| \`data-transition\` | \`"rotate"\`, \`"flip"\`, \`"morph"\` or \`"recentre"\` while that transition runs. \`"morph"\` covers reset, an aspect pick, an orientation swap and undo |
+| \`data-transition\` | \`"rotate"\`, \`"flip"\`, \`"morph"\` or \`"recentre"\` while that transition runs. \`"morph"\` covers reset, an aspect pick, an orientation swap and undo. a reset or undo across a quarter turn runs as \`"rotate"\`, which hides \`Area\` and shows only the crop turning with the photo |
 | \`data-shape\` | \`"rect"\` or \`"circle"\` |
 "
 `;

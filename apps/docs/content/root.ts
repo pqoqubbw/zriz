@@ -217,7 +217,7 @@ const ROOT_PAGE = defineDoc({
           },
           {
             name: "data-transition",
-            text: '`"rotate"`, `"flip"`, `"morph"` or `"recentre"` while that transition runs. `"morph"` covers reset, an aspect pick, an orientation swap and undo',
+            text: '`"rotate"`, `"flip"`, `"morph"` or `"recentre"` while that transition runs. `"morph"` covers reset, an aspect pick, an orientation swap and undo. a reset or undo across a quarter turn runs as `"rotate"`, which hides `Area` and shows only the crop turning with the photo',
           },
           { name: "data-shape", text: '`"rect"` or `"circle"`' },
         ])

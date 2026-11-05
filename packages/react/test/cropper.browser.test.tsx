@@ -1192,6 +1192,7 @@ describe("controlled props", () => {
       hidden: reset?.hidden,
       zoom: api.current?.getZoom(),
     }).toStrictEqual({ changes: 0, commits: 0, hidden: true, zoom: 2 });
+
     api.current?.setZoom(5);
     await frames(3);
     expect(reset?.hidden).toBeFalsy();
@@ -1203,6 +1204,7 @@ describe("controlled props", () => {
 
   it("disabling after a reset leaves the first aspect alone", async () => {
     const api = createRef<CropperApi>();
+
     type HostProps = { aspect: number; disabled: boolean };
     const Host = ({ aspect, disabled }: HostProps) => (
       <Cropper.Root
