@@ -40,7 +40,7 @@ const CROP_AREA_PAGE = defineDoc({
     section(
       "know when the grid shows",
       p(
-        "the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while you drag the dial:"
+        "the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while the dial moves:"
       ),
       table({
         columns: [
@@ -52,9 +52,12 @@ const CROP_AREA_PAGE = defineDoc({
             "move the crop",
             "the thirds grid fades in. a drag, pinch, twist, wheel, handle, `Zoom` or a `useZoom` slider counts",
           ],
-          ["drag the dial", "the fine grid fades in"],
           [
-            "press a key on `Area`, `Dial` or `Zoom`",
+            "drag the dial or press a key on it",
+            "the fine grid fades in once the angle moves. a press that stays still shows none",
+          ],
+          [
+            "press a key on `Area` or `Zoom`",
             "no new grid. a grid that already shows stays",
           ],
           [

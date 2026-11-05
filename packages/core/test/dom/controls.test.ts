@@ -9,6 +9,7 @@ import {
   zoomProgress,
 } from "../../src/dom/controls";
 import { dialHandlers, dialState, tickData } from "../../src/dom/dial";
+import { viewOf } from "../../src/dom/view";
 import { fakeClock } from "../fake-clock";
 
 type KeyInit = {
@@ -82,6 +83,92 @@ const press = (
   handlers.onKeyDown(key(init));
   handlers.onKeyUp(key(init));
 };
+
+const gridRig = () => {
+  const { cropper, time } = setup();
+  const view = viewOf(cropper);
+
+  view.setLayout({
+    dpr: 1,
+    height: 300,
+    inset: { bottom: 0, left: 0, right: 0, top: 0 },
+    width: 400,
+  });
+
+  return { cropper, time, view };
+};
+
+describe("the fine grid", () => {
+  beforeEach(() => {
+    vi.stubGlobal("document", new EventTarget());
+    vi.stubGlobal("addEventListener", vi.fn<() => void>());
+    vi.stubGlobal("removeEventListener", vi.fn<() => void>());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("stays off on a press that does not move", () => {
+    const { cropper, time, view } = gridRig();
+    const handlers = dialHandlers(cropper, {}, () => track);
+
+    handlers.onPointerDown(pointer(100, 0));
+    time.frames(70);
+    expect(view.chrome().grid).toBe("none");
+    expect(view.chrome().active).toBeTruthy();
+    handlers.onPointerUp(pointer(100, 1200));
+  });
+
+  it("appears on the first movement past the slop", () => {
+    const { cropper, time, view } = gridRig();
+    const handlers = dialHandlers(cropper, {}, () => track);
+
+    handlers.onPointerDown(pointer(100, 0));
+    handlers.onPointerMove(pointer(105, 8));
+    time.frame();
+    expect(view.chrome().grid).toBe("none");
+    handlers.onPointerMove(pointer(130, 16));
+    time.frame();
+    expect(view.chrome().grid).toBe("fine");
+    handlers.onPointerUp(pointer(130, 1000));
+    time.frames(2);
+    expect(view.chrome().grid).toBe("none");
+  });
+
+  it("does not come back after the release of a drag", () => {
+    const { cropper, time, view } = gridRig();
+    const handlers = dialHandlers(cropper, {}, () => track);
+
+    handlers.onPointerDown(pointer(100, 0));
+    handlers.onPointerMove(pointer(130, 16));
+    handlers.onPointerUp(pointer(130, 1000));
+    time.frames(2);
+    expect(view.chrome().grid).toBe("none");
+  });
+
+  it("appears for a dial key and goes with its release", () => {
+    const { cropper, time, view } = gridRig();
+    const keys = dialHandlers(cropper, {}, () => track);
+
+    keys.onKeyDown(key({ key: "ArrowRight" }));
+    expect(view.chrome().grid).toBe("fine");
+    keys.onKeyUp(key({ key: "ArrowRight" }));
+    time.frames(2);
+    expect(view.chrome().grid).toBe("none");
+  });
+
+  it("stays off for an area key", () => {
+    const { cropper, time, view } = gridRig();
+    const keys = areaKeyHandlers(cropper);
+
+    cropper.setRotation(5, { emit: false });
+    keys.onKeyDown(key({ key: "0" }));
+    time.frames(2);
+    expect(view.chrome().grid).toBe("none");
+    keys.onKeyUp(key({ key: "0" }));
+  });
+});
 
 describe("area keys", () => {
   it("resizes by 1% with alt: right and down grow, left and up shrink", () => {

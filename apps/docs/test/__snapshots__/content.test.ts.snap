@@ -5934,13 +5934,13 @@ each handle's hit box is 44 px square, centred on the crop's edge. set \`--zriz-
 
 ## know when the grid shows
 
-the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while you drag the dial:
+the grid hides at rest. it shows thirds (3 × 3) while you move the crop and a fine grid (9 × 9) while the dial moves:
 
 | when | what shows |
 | - | - |
 | move the crop | the thirds grid fades in. a drag, pinch, twist, wheel, handle, \`Zoom\` or a \`useZoom\` slider counts |
-| drag the dial | the fine grid fades in |
-| press a key on \`Area\`, \`Dial\` or \`Zoom\` | no new grid. a grid that already shows stays |
+| drag the dial or press a key on it | the fine grid fades in once the angle moves. a press that stays still shows none |
+| press a key on \`Area\` or \`Zoom\` | no new grid. a grid that already shows stays |
 | stop moving the crop | it stays for a short hold, then fades out, see [accessibility](https://zriz.dev/docs/accessibility.md) |
 | let go of the dial | the fine grid fades out at once, or when a flick's glide stops |
 

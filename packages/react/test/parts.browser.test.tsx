@@ -216,8 +216,17 @@ describe("buttons and state attributes", () => {
     expect(grid.children).toHaveLength(4);
     api().begin("dial");
     await frames();
-    expect(read()).toStrictEqual({ coarse: 0, grid: "fine", lines: 16 });
-    expect(on(grid, "data-visible")).toBeTruthy();
+    expect(read()).toStrictEqual({ coarse: 4, grid: "none", lines: 4 });
+    api().setRotation(2, { reason: "dial" });
+    await frames();
+
+    expect({ ...read(), visible: on(grid, "data-visible") }).toStrictEqual({
+      coarse: 0,
+      grid: "fine",
+      lines: 16,
+      visible: true,
+    });
+
     api().end();
     await frames();
     expect(read()).toStrictEqual({ coarse: 0, grid: "none", lines: 16 });

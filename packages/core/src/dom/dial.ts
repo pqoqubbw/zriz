@@ -18,7 +18,7 @@ import {
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
-import { isHtml, snap, visualScale } from "./view";
+import { isHtml, showFineGrid, snap, visualScale } from "./view";
 
 type DialOptions = {
   gain?: number | undefined;
@@ -331,6 +331,8 @@ const dialHandlers = (
           event,
           reason: "keyboard",
         });
+
+        showFineGrid(cropper);
       };
     },
     owner,

@@ -76,6 +76,7 @@ type View = {
   reducedMotion: () => boolean;
   local: (event: { clientX: number; clientY: number }) => Point;
   claim: (event: Event) => void;
+  showFineGrid: () => void;
   setLayout: (layout: Layout | null, surface?: HTMLElement) => void;
   hold: () => Placement | null;
   release: () => void;
@@ -501,6 +502,10 @@ const stateAttributes = (
   };
 };
 
+const showFineGrid = (cropper: Cropper): void => {
+  views.get(cropper)?.showFineGrid();
+};
+
 const viewOf = (cropper: Cropper): View => {
   const existing = views.get(cropper);
 
@@ -855,10 +860,20 @@ const viewOf = (cropper: Cropper): View => {
     }
   };
 
+  const fineGrid = (): void => {
+    if (cropper.getState().interacting !== null) {
+      setChrome({ grid: "fine" });
+    }
+  };
+
   const offFrame = cropper.on("frame", publish);
   const offAccept = cropper.on("accept", (_, details) => {
     const kind = TRANSITION_BY_REASON[details.reason];
     const from = last;
+
+    if (details.reason === "dial") {
+      fineGrid();
+    }
 
     if (kind && from) {
       pinned = null;
@@ -872,7 +887,7 @@ const viewOf = (cropper: Cropper): View => {
     endTransition();
 
     const grids: Partial<Record<string, Grid>> = {
-      dial: "fine",
+      dial: chrome.grid,
       keyboard: chrome.grid,
     };
 
@@ -1035,6 +1050,7 @@ const viewOf = (cropper: Cropper): View => {
       settleZoom(quick);
     },
     settleZoom,
+    showFineGrid: fineGrid,
   };
 
   views.set(cropper, view);
@@ -1070,6 +1086,7 @@ export {
   isHtml,
   localOf,
   orientationOf,
+  showFineGrid,
   snap,
   stateAttributes,
   viewOf,
