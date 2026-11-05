@@ -91,7 +91,7 @@ const ERRORS_PAGE = defineDoc({
           message: "zriz: no cropper",
         },
         {
-          fix: "pass `toSharp` the plan from `getPixelCrop()` or a `commit`, and the size of the same photo, both unchanged. a hand-made plan with a bad `forward`, a side that is not a whole number of at least 1, or a crop outside the photo throws this",
+          fix: "pass `toSharp` the plan from `getPixelCrop()` or a `commit`, and the size of the same photo, both unchanged. when `pixelRect` is `null`, a bad `forward`, a side that is not a whole number of at least 1, or a crop fully outside the photo throws this. a plan with a `pixelRect` gets no check, so recompute the plan on your server as [server crop](server-crop) does",
           message: "zriz: this is not an export plan",
         },
       ])
@@ -108,9 +108,9 @@ const ERRORS_PAGE = defineDoc({
             "zriz: <Cropper.Area> needs aria-label or aria-labelledby. zriz ships no words, so screen readers get nothing otherwise.",
         },
         {
-          fix: "pass a locale tag like `en-US` and options `Intl.NumberFormat` accepts. until then the slider speaks its default text",
+          fix: "pass a locale tag like `en-US` and options `Intl.NumberFormat` accepts. until then a refused locale speaks in the browser's locale and a refused format speaks the default text",
           message:
-            "zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.",
+            "zriz: <Cropper.Dial> ignores a locale or format the browser refuses. A refused locale falls back to the browser's, and a refused format to the default value text.",
         },
         {
           fix: "render one `Viewport` per cropper, and draw a live preview with `useCropperFrame`, see [viewport](viewport)",

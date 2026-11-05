@@ -7017,7 +7017,7 @@ these are plain \`Error\` objects that react shows in its error overlay. the fir
   \`Root\` got \`cropper\` on its first render and none later. keep passing the same cropper, or give \`Root\` a new \`key\` to start a new one
 - \`zriz: this is not an export plan\`
 
-  pass \`toSharp\` the plan from \`getPixelCrop()\` or a \`commit\`, and the size of the same photo, both unchanged. a hand-made plan with a bad \`forward\`, a side that is not a whole number of at least 1, or a crop outside the photo throws this
+  pass \`toSharp\` the plan from \`getPixelCrop()\` or a \`commit\`, and the size of the same photo, both unchanged. when \`pixelRect\` is \`null\`, a bad \`forward\`, a side that is not a whole number of at least 1, or a crop fully outside the photo throws this. a plan with a \`pixelRect\` gets no check, so recompute the plan on your server as [server crop](https://zriz.dev/docs/server-crop.md) does
 
 ## console warnings
 
@@ -7026,9 +7026,9 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` each warn once when nothing name
 - \`zriz: <Cropper.Area> needs aria-label or aria-labelledby. zriz ships no words, so screen readers get nothing otherwise.\`
 
   name the part. [accessibility](https://zriz.dev/docs/accessibility.md) shows how to label each part
-- \`zriz: <Cropper.Dial> ignores a locale or format the browser refuses, and speaks its default value text instead.\`
+- \`zriz: <Cropper.Dial> ignores a locale or format the browser refuses. A refused locale falls back to the browser's, and a refused format to the default value text.\`
 
-  pass a locale tag like \`en-US\` and options \`Intl.NumberFormat\` accepts. until then the slider speaks its default text
+  pass a locale tag like \`en-US\` and options \`Intl.NumberFormat\` accepts. until then a refused locale speaks in the browser's locale and a refused format speaks the default text
 - \`zriz: one <Cropper.Viewport> per cropper. A second one takes over the layout. Draw a live preview with useCropperFrame.\`
 
   render one \`Viewport\` per cropper, and draw a live preview with \`useCropperFrame\`, see [viewport](https://zriz.dev/docs/viewport.md)

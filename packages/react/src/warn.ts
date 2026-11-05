@@ -50,7 +50,7 @@ const warnFormat = (
     warned.add(key);
 
     console.warn(
-      `zriz: <Cropper.${part}> ignores a locale or format the browser refuses, and speaks its default value text instead.`
+      `zriz: <Cropper.${part}> ignores a locale or format the browser refuses. A refused locale falls back to the browser's, and a refused format to the default value text.`
     );
   }
 };
