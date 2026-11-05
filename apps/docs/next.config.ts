@@ -6,6 +6,23 @@ const ACCEPTS_MARKDOWN = [
   { key: "accept", type: "header", value: ".*text/markdown.*" },
 ] as const;
 
+const DEV = process.env.NODE_ENV === "development";
+
+const POLICY = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ""}`,
+  `style-src 'self'${DEV ? " 'unsafe-inline'" : ""}`,
+  "style-src-attr 'unsafe-inline'",
+  "img-src 'self' blob: data:",
+  "worker-src blob:",
+  `connect-src 'self' blob: data:${DEV ? " ws:" : ""}`,
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const config: NextConfig = {
   agentRules: false,
   headers: async () => [
@@ -15,6 +32,7 @@ const config: NextConfig = {
     },
     {
       headers: [
+        { key: "Content-Security-Policy", value: POLICY },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "X-Frame-Options", value: "DENY" },
