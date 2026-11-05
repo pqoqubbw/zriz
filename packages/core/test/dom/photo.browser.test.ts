@@ -943,6 +943,23 @@ describe("photo layer", () => {
     expect([canvas?.width, canvas?.height]).toStrictEqual([0, 0]);
   });
 
+  it("clears the turning clip when the image leaves mid turn", async () => {
+    const { cropper, photo } = await mount(512);
+
+    viewOf(cropper).setOptions({ motion: "always" });
+    await expect.poll(() => viewOf(cropper).frame()).not.toBeNull();
+    await nextFrame();
+    await nextFrame();
+    cropper.rotate90("cw", { reason: "rotate-90" });
+    await nextFrame();
+    await nextFrame();
+    expect(photo.style.clipPath).toContain("polygon(");
+    attachImage(cropper, null);
+    await nextFrame();
+    await nextFrame();
+    expect(photo.style.clipPath).toBe("");
+  });
+
   it("hides the canvas when a photo leaves before its moving image is ready", async () => {
     const { cropper, photo } = await mount(1024);
     const next = await loadImage(await stripes(), { previewEdge: 1024 });

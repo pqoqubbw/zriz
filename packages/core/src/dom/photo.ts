@@ -399,6 +399,8 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
     if (!next) {
       rest.width = 0;
       rest.height = 0;
+      clipped = "";
+      container.style.clipPath = "";
 
       return;
     }
