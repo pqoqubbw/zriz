@@ -23,7 +23,7 @@ const ASPECT_RATIO_PAGE = defineDoc({
         '`value` is width divided by height, so `4 / 5` is 4:5. `"free"` drops the lock and `"original"` uses the photo\'s own ratio. picking an item springs the crop to it, with `data-transition="morph"` on `Root`.'
       ),
       p(
-        "on a round crop every item but `value={1}` is disabled. zriz ships these parts bare. the demo above uses the styles from the zriz site."
+        'on a round crop every item but `value={1}` is disabled. zriz ships these parts bare. the demo above adds `"original"`, turns its labels with the orientation as the ratios further down do, and uses the styles from the zriz site.'
       )
     ),
     section(
