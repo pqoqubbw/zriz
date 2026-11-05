@@ -77,7 +77,7 @@ const DIAL_PAGE = defineDoc({
         { keys: [["0"]], text: "straighten to 0°" },
       ]),
       p(
-        'on a right-to-left page or with `dir="rtl"` on `Root`, left and right swap. up and down stay the same.'
+        'on a right-to-left page or with `dir="rtl"` on `Root`, left and right swap. up and down stay the same. the ticks read the direction when they draw, so after a page flips its `dir` they follow at the next draw. a new `dir` on `Root` redraws them at once.'
       ),
       p("escape during a drag cancels it and puts the angle back.")
     ),
