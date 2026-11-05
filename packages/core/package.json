@@ -71,19 +71,19 @@
       "name": "toSharp",
       "path": "dist/index.js",
       "import": "{ toSharp }",
-      "limit": "723 B"
+      "limit": "730 B"
     },
     {
       "name": "createCropper",
       "path": "dist/index.js",
       "import": "{ createCropper }",
-      "limit": "6904 B"
+      "limit": "6910 B"
     },
     {
       "name": "value",
       "path": "dist/index.js",
       "import": "{ parse, serialize }",
-      "limit": "599 B"
+      "limit": "600 B"
     },
     {
       "name": "motion",
@@ -95,7 +95,7 @@
       "name": "dom (all binders)",
       "path": "dist/dom/index.js",
       "import": "*",
-      "limit": "23472 B",
+      "limit": "23530 B",
       "entry": [
         "index"
       ]
@@ -110,7 +110,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "21061 B",
+      "limit": "21090 B",
       "entry": [
         "index"
       ]
@@ -125,13 +125,13 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "25356 B"
+      "limit": "25390 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "5376 B",
+      "limit": "5380 B",
       "entry": [
         "index"
       ]
@@ -140,7 +140,7 @@
       "name": "exportCrop",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "624 B",
+      "limit": "630 B",
       "entry": [
         "index"
       ]
@@ -149,13 +149,13 @@
       "name": "exportCrop total (with render chunk)",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "3996 B"
+      "limit": "4000 B"
     },
     {
       "name": "loadImage",
       "path": "dist/dom/index.js",
       "import": "{ loadImage }",
-      "limit": "4851 B",
+      "limit": "4860 B",
       "entry": [
         "index"
       ]
@@ -164,13 +164,13 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3675 B"
+      "limit": "3680 B"
     },
     {
       "name": "lazy chunk dom/svg",
       "path": "dist/dom/svg.js",
       "import": "*",
-      "limit": "1352 B"
+      "limit": "1360 B"
     },
     {
       "name": "lazy chunk dom/source",

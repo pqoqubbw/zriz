@@ -5695,7 +5695,7 @@ with \`prefers-reduced-motion: reduce\`, motion that zriz starts on its own gets
 | motion | full | reduced |
 | - | - | - |
 | recentre | spring, about 460 ms | spring, about 250 ms |
-| rotate 90°, reset or undo across a turn | about 300 ms | 150 ms |
+| rotate 90°, reset or undo across a turn | spring, about 390 ms | 150 ms |
 | flip | spring, about 420 ms | 150 ms |
 | aspect, reset | spring, about 460 ms | 150 ms |
 
@@ -6107,16 +6107,16 @@ what each set of imports adds to your bundle, minified and compressed with brotl
 
 | set | imports | brotli |
 | - | - | - |
-| editor | every part from \`@zriz/react/cropper\` | 29.19 kB |
-| avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 22.82 kB |
-| root only | \`Root\` | 15.6 kB |
-| vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 19.07 kB |
-| server | \`toSharp\` from \`@zriz/core\` | 563 B |
-| stylesheet | \`styles.css\`, which is optional | 857 B |
+| editor | every part from \`@zriz/react/cropper\` | 32.24 kB |
+| avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 25.68 kB |
+| root only | \`Root\` | 18.21 kB |
+| vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 21.09 kB |
+| server | \`toSharp\` from \`@zriz/core\` | 723 B |
+| stylesheet | \`styles.css\`, which is optional | 893 B |
 
 measured with size-limit 14.3 on 5 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the \`production\` export condition, so development warnings do not count.
 
-with gzip, the stylesheet is 978 B.
+with gzip, the stylesheet is 1020 B.
 
 ## loaded later
 
@@ -6124,12 +6124,12 @@ four chunks stay out of the first load and download the first time a photo needs
 
 | chunk | loads when | brotli |
 | - | - | - |
-| render | the first export. it starts downloading once the first photo attaches | 2.28 kB |
+| render | the first export. it starts downloading once the first photo attaches | 2.30 kB |
 | sharpen | the sharper redraw at rest and on deep zoom. it starts downloading after the first paint | 546 B |
-| svg | the photo is an svg | 869 B |
+| svg | the photo is an svg | 891 B |
 | source | you pass an \`img\`, \`video\`, \`canvas\` or \`OffscreenCanvas\` to \`loadImage\`. \`Root\` never loads it | 557 B |
 
-with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 27.07 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.50 kB.
+with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.97 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.67 kB.
 
 ## dependencies
 
@@ -6868,7 +6868,7 @@ these keys work while \`Dial\` has focus:
 | \`home\` or \`end\` | go to the lowest or the highest angle, −45° or 45° at most |
 | \`0\` | straighten to 0° |
 
-on a right-to-left page or with \`dir="rtl"\` on \`Root\`, left and right swap. up and down stay the same.
+on a right-to-left page or with \`dir="rtl"\` on \`Root\`, left and right swap. up and down stay the same. the ticks read the direction when they draw, so after a page flips its \`dir\` they follow at the next draw. a new \`dir\` on \`Root\` redraws them at once.
 
 escape during a drag cancels it and puts the angle back.
 
@@ -9004,6 +9004,8 @@ zriz has no image decoder of its own. in the browser the decoding is done by the
 
 on your server, sharp is your decoder and you own its patches. use 0.35.5 or newer, which bundles libvips 8.18.7. versions before 0.35.0 are open to GHSA-f88m-g3jw-g9cj. run \`npm audit\` in ci, and turn off the decoders you don't need with \`sharp.block()\`, as the route does. don't point sharp at a libvips from your system, because that one brings its own loaders and its own patch level.
 
+the [server crop](https://zriz.dev/docs/server-crop.md) route answers 413 for a photo over 120 megapixels. \`MAX_PIXELS\` is the one constant to raise. a photo at that limit peaked at about 2 gb in our test, so raise it only with memory to match.
+
 zriz reads the pixel count before it decodes and refuses a file over \`maxPixels\`. lower it if your page only needs small photos, as in [loading images](https://zriz.dev/docs/loading-images.md). it sets no limit on bytes, so check \`file.size\` before you pass a file.
 
 ## svg
@@ -9301,7 +9303,7 @@ sharp.unblock({
 });
 \`\`\`
 
-a small png can ask for a huge image, and the bytes on the wire say nothing about the memory it takes. a photo at \`MAX_PIXELS\` peaked at about 2 gb in our test, for a 460 kb upload at a 45° tilt, so give the server that much per running crop. raise \`MAX_PIXELS\` only with memory to match. 120 million covers a 108 megapixel phone photo, and a 200 megapixel one gets 413. \`MAX_RUNNING\` counts one process, so add a rate limit per user on top.
+a small png can ask for a huge image, and the bytes on the wire say nothing about the memory it takes. a photo at \`MAX_PIXELS\` peaked at about 2 gb in our test, for a 460 kb upload at a 45° tilt, so give the server that much per running crop. \`MAX_PIXELS\` is the one constant to raise, and only with memory to match. 120 million covers a 108 megapixel phone photo, and a 200 megapixel one gets 413. \`MAX_RUNNING\` counts one process, so add a rate limit per user on top.
 
 \`sharp.block()\` turns off every decoder but jpeg, png, webp and avif for the whole process, because the route never needs svg, tiff, gif or the others. move it if another route in the same process does.
 
@@ -10088,7 +10090,7 @@ export const Editor = ({ src }: { src: string }) => {
 };
 \`\`\`
 
-\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and commits, so \`onValueCommit\` runs. \`onValueChange\` runs only when zriz applied something other than what you passed: a rotation of 60 reports 45. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. mirror from \`onValueChange\`, not \`onValueCommit\`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to \`maxZoom\`. a prop applied as the photo arrives is silent.
+\`rotation\`, \`zoom\` and \`aspect\` each control one part of the crop. a new prop moves the crop and commits, so \`onValueCommit\` runs with the whole new value. \`onValueChange\` stays quiet when each controlled prop lands as passed, even when the crop size moves with it, as it does for a new \`aspect\`. it runs when zriz applied something else: a rotation of 60 reports 45. to mirror the whole value, write it from both callbacks. a value zriz reported comes back as an answer and does not move the crop, for 2 s after the last report, so a slow store cannot rewind it. if no other answer follows and the crop has not moved since, that value applies when the 2 s end. a preset equal to a recent report lands late this way, and a value never reported lands at once. mirror \`rotation\`, \`zoom\` or \`aspect\` from \`onValueChange\`, not \`onValueCommit\`: a store slower than 2 s that mirrors commits still flips the crop. zoom runs from 1 up to \`maxZoom\`. a prop applied as the photo arrives is silent.
 
 \`value\` sets the whole object without calling either callback. each new object moves the crop, unless zriz reported that same object in the last 2 s, so keep it stable or update it from \`onValueChange\`. \`Reset\` still goes to \`defaultValue\`, not to the last \`value\`.
 
