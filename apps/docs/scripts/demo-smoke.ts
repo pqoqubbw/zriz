@@ -12,7 +12,13 @@ import type { Slug } from "../lib/nav.ts";
 
 type Width = { height: number; mobile: boolean; name: string; width: number };
 
-type Sizes = { css: number; html: number; initial: number; lazy: number };
+type Sizes = {
+  css: number;
+  frame: number;
+  html: number;
+  initial: number;
+  lazy: number;
+};
 
 type Visit = Sizes & {
   cls: number;
@@ -107,8 +113,8 @@ const visit = async (
   const page = await context.newPage();
   const messages: string[] = [];
   const pending: Promise<void>[] = [];
-  const sizes: Sizes = { css: 0, html: 0, initial: 0, lazy: 0 };
-  const scripts = new Map<string, Response>();
+  const sizes: Sizes = { css: 0, frame: 0, html: 0, initial: 0, lazy: 0 };
+  const assets = new Map<string, Response>();
   let html = "";
   let photoBytes = 0;
   let photoRequests = 0;
@@ -127,6 +133,10 @@ const visit = async (
   });
 
   page.on("response", (response) => {
+    if (response.url().startsWith("blob:")) {
+      return;
+    }
+
     const type = response.request().resourceType();
     const { pathname } = new URL(response.url());
 
@@ -147,10 +157,10 @@ const visit = async (
         if (type === "script") {
           const text = await response.text().catch(() => "");
 
-          scripts.set(pathname, response);
+          assets.set(pathname, response);
           zriz ||= text.includes(ZRIZ_MARK);
         } else if (type === "stylesheet") {
-          sizes.css += await gzipOf(response);
+          assets.set(pathname, response);
         } else if (type === "document") {
           html = await response.text().catch(() => "");
           sizes.html += await gzipOf(response);
@@ -203,15 +213,30 @@ const visit = async (
   await Promise.all(pending);
 
   const counted = await Promise.all(
-    [...scripts].map(async ([pathname, script]) => ({
-      bytes: await gzipOf(script),
+    [...assets].map(async ([pathname, asset]) => ({
+      bytes: await gzipOf(asset),
       initial: html.includes(pathname),
+      style: asset.request().resourceType() === "stylesheet",
     }))
   );
 
-  for (const script of counted) {
-    sizes[script.initial ? "initial" : "lazy"] += script.bytes;
+  for (const asset of counted) {
+    if (asset.style && asset.initial) {
+      sizes.css += asset.bytes;
+    } else {
+      sizes[asset.initial ? "initial" : "lazy"] += asset.bytes;
+    }
   }
+
+  const frame = await page.evaluate(
+    (source) =>
+      new DOMParser()
+        .parseFromString(source, "text/html")
+        .querySelector("[data-demo]")?.outerHTML ?? "",
+    html
+  );
+
+  sizes.frame = frame === "" ? 0 : gzipSync(frame).length;
 
   const found = await page.evaluate((): unknown =>
     Reflect.get(globalThis, "__smoke")
@@ -269,8 +294,12 @@ const judgeWeight = (current: Visit, before: Visit | undefined): string[] => {
     return [];
   }
 
-  const failures =
-    current.lazy > BUDGET.lazy ? [`lazy js ${current.lazy} B`] : [];
+  const failures = [
+    ...(current.lazy > BUDGET.lazy ? [`lazy ${current.lazy} B`] : []),
+    ...(current.frame > BUDGET.demoHtml
+      ? [`frame html ${current.frame} B`]
+      : []),
+  ];
 
   if (!before) {
     return failures;
@@ -278,7 +307,6 @@ const judgeWeight = (current: Visit, before: Visit | undefined): string[] => {
 
   const growth: [string, number, number][] = [
     ["js", current.initial - before.initial, BUDGET.demoInitial],
-    ["html", current.html - before.html, BUDGET.demoHtml],
     ["css", current.css - before.css, BUDGET.css],
   ];
 
@@ -313,6 +341,7 @@ const line = (row: Row, before: Visit | undefined): string =>
     delta(row.visit.initial, before?.initial),
     kb(row.visit.lazy),
     delta(row.visit.html, before?.html),
+    row.visit.demo ? kb(row.visit.frame) : "",
     delta(row.visit.css, before?.css),
     row.visit.photoRequests > 0
       ? `${row.visit.photoRequests}x ${kb(row.visit.photoBytes)}`
@@ -323,7 +352,7 @@ const line = (row: Row, before: Visit | undefined): string =>
   ].join(" | ");
 
 const HEAD =
-  "page | width | status | demo | js kB gzip | lazy kB | html kB | css kB | photo | ready ms | cls | result";
+  "page | width | status | demo | js kB gzip | lazy js+css kB | page html kB | frame html kB | css kB | photo | ready ms | cls | result";
 
 const run = async (
   browser: Browser,
