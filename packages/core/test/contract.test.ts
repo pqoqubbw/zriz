@@ -1224,6 +1224,26 @@ describe("Area zoom and reset keys", () => {
 });
 
 describe("the public entries", () => {
+  it("keeps helpers with no outside caller out of the dom entry", async () => {
+    const dom = await import("../src/dom");
+
+    for (const name of [
+      "DIAL_STEP",
+      "cropShapeOf",
+      "defaultPreviewEdge",
+      "maskClip",
+      "maskGradient",
+      "onImage",
+      "outputLimit",
+      "snap",
+      "svgSize",
+      "zoomAt",
+      "zoomProgress",
+    ]) {
+      expect(dom).not.toHaveProperty(name);
+    }
+  });
+
   it("gives a clock only request and cancel", () => {
     expectTypeOf<keyof Clock>().toEqualTypeOf<"cancel" | "request">();
 

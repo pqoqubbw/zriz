@@ -38,8 +38,8 @@ const load = async (supports?: Supports) => {
   }
 
   const { createCropper } = await import("../../src");
-  const { bindMask, maskClip, maskGradient, viewOf } =
-    await import("../../src/dom");
+  const { bindMask, viewOf } = await import("../../src/dom");
+  const { maskClip, maskGradient } = await import("../../src/dom/parts");
   const cropper = createCropper({
     defaultValue: { aspect: 1 },
     image: { height: 300, width: 400 },

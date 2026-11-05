@@ -1,6 +1,5 @@
 import "../../core/src/styles.css";
 import type { Cropper as CropperApi } from "@zriz/core";
-import { maskGradient } from "@zriz/core/dom";
 import { createRef } from "react";
 import { hydrateRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -9,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
 import { commands, server } from "vitest/browser";
 
+import { maskGradient } from "../../core/src/dom/parts";
 import * as Cropper from "../src/cropper";
 
 const frames = async (n = 2): Promise<void> => {

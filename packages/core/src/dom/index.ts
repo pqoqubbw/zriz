@@ -1,7 +1,7 @@
 export { ZrizError } from "./error";
 export type { ZrizErrorCode } from "./error";
 export { exportCrop, exportImage } from "./export";
-export { defaultPreviewEdge, loadImage, outputLimit } from "./image";
+export { loadImage } from "./image";
 export type {
   ExportOptions,
   ExportResult,
@@ -9,22 +9,19 @@ export type {
   LoadOptions,
   LoadedImage,
 } from "./image";
-export { attachImage, discardImage, imageOf, onImage } from "./image-store";
-export { sniff, svgSize } from "./svg-size";
+export { attachImage, discardImage, imageOf } from "./image-store";
+export { sniff } from "./svg-size";
 export { bindPhoto } from "./photo";
-export { cropShapeOf, setCropShape } from "./shape";
+export { setCropShape } from "./shape";
 export {
   areaKeyHandlers,
   bindZoomThumb,
   zoomAria,
-  zoomAt,
   zoomHandlers,
-  zoomProgress,
 } from "./controls";
 export type { ZoomHandlers, ZoomOptions } from "./controls";
 export type { KeyHandlers } from "./slider";
 export {
-  DIAL_STEP,
   DIAL_TICKS,
   bindDial,
   bindDialTicks,
@@ -42,8 +39,6 @@ export {
   bindMask,
   bindState,
   handleHandlers,
-  maskClip,
-  maskGradient,
 } from "./parts";
 export type {
   AreaOptions,
@@ -56,7 +51,6 @@ export {
   fitPlacement,
   imageMatrix,
   orientationOf,
-  snap,
   stateAttributes,
   viewOf,
 } from "./view";

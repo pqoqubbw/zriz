@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { sniff, svgSize } from "../../src/dom";
+import { sniff } from "../../src/dom";
+import { svgSize } from "../../src/dom/svg-size";
 
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 

@@ -11,7 +11,6 @@ import {
   bindPhoto,
   bindState,
   bindViewport,
-  cropShapeOf,
   dialHandlers,
   dialState,
   exportImage,
@@ -23,6 +22,7 @@ import {
   zoomHandlers,
 } from "../../src/dom";
 import { bindPointers } from "../../src/dom/input";
+import { cropShapeOf } from "../../src/dom/shape";
 import { fakeClock } from "../fake-clock";
 
 const frames = async (n = 2): Promise<void> => {
