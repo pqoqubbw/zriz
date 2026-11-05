@@ -69,11 +69,12 @@ describe("accessibility", () => {
     await screen.rerender(
       <Cropper.Root image={{ height: 300, width: 400 }}>
         <Cropper.Viewport style={{ height: 300, width: 400 }}>
-          <Cropper.Area aria-label="Crop" role="group" />
+          <Cropper.Area aria-label="Crop" role="toolbar" />
         </Cropper.Viewport>
       </Cropper.Root>
     );
-    expect(area?.getAttribute("role")).toBe("group");
+
+    expect(area?.getAttribute("role")).toBe("toolbar");
   });
 
   it("has no axe violations", async () => {
@@ -1128,65 +1129,64 @@ describe("an aria-disabled from the caller", () => {
   });
 });
 
+type TextSlidersProps = {
+  api: React.Ref<CropperApi>;
+  text: string | undefined;
+};
+
+const TextSliders = ({ api, text }: TextSlidersProps) => (
+  <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+    <Cropper.Viewport style={{ height: 300, width: 400 }} />
+    <Cropper.Dial
+      aria-label="Straighten"
+      aria-valuetext={text}
+      format={{ maximumFractionDigits: 0 }}
+      style={{ height: 40, width: 361 }}
+    />
+    <Cropper.Zoom
+      aria-label="Zoom"
+      aria-valuetext={text}
+      format={{ maximumFractionDigits: 0 }}
+      style={{ height: 20, width: 200 }}
+    />
+  </Cropper.Root>
+);
+
+const spokenTexts = (container: Element): (string | null)[] =>
+  [...container.querySelectorAll('[role="slider"]')].map((slider) =>
+    slider.getAttribute("aria-valuetext")
+  );
+
 describe("an aria-valuetext from the caller", () => {
   afterEach(async () => {
     await cleanup();
   });
 
-  const Sliders = ({
-    api,
-    text,
-  }: {
-    api: React.Ref<CropperApi>;
-    text: string | undefined;
-  }) => (
-    <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
-      <Cropper.Viewport style={{ height: 300, width: 400 }} />
-      <Cropper.Dial
-        aria-label="Straighten"
-        aria-valuetext={text}
-        format={{ maximumFractionDigits: 0 }}
-        style={{ height: 40, width: 361 }}
-      />
-      <Cropper.Zoom
-        aria-label="Zoom"
-        aria-valuetext={text}
-        format={{ maximumFractionDigits: 0 }}
-        style={{ height: 20, width: 200 }}
-      />
-    </Cropper.Root>
-  );
-
-  const spoken = (container: Element): (string | null)[] =>
-    [...container.querySelectorAll('[role="slider"]')].map((slider) =>
-      slider.getAttribute("aria-valuetext")
-    );
-
   it("wins over format, through moves and changes of its own", async () => {
     const api = createRef<CropperApi>();
-    const screen = await render(<Sliders api={api} text="tilted" />);
+    const screen = await render(<TextSliders api={api} text="tilted" />);
 
     await frames(2);
-    expect(spoken(screen.container)).toStrictEqual(["tilted", "tilted"]);
+    expect(spokenTexts(screen.container)).toStrictEqual(["tilted", "tilted"]);
 
     api.current?.setRotation(7);
     api.current?.setZoom(2);
     await frames(3);
-    expect(spoken(screen.container)).toStrictEqual(["tilted", "tilted"]);
+    expect(spokenTexts(screen.container)).toStrictEqual(["tilted", "tilted"]);
 
-    await screen.rerender(<Sliders api={api} text="steep" />);
+    await screen.rerender(<TextSliders api={api} text="steep" />);
     await frames(2);
-    expect(spoken(screen.container)).toStrictEqual(["steep", "steep"]);
+    expect(spokenTexts(screen.container)).toStrictEqual(["steep", "steep"]);
   });
 
   it("hands back to format when it goes away", async () => {
     const api = createRef<CropperApi>();
-    const screen = await render(<Sliders api={api} text="tilted" />);
+    const screen = await render(<TextSliders api={api} text="tilted" />);
 
     await frames(2);
-    await screen.rerender(<Sliders api={api} text={undefined} />);
+    await screen.rerender(<TextSliders api={api} text={undefined} />);
     await frames(2);
-    const [dial, zoom] = spoken(screen.container);
+    const [dial, zoom] = spokenTexts(screen.container);
 
     expect(dial).toMatch(/\d/u);
     expect(zoom).toMatch(/\d/u);

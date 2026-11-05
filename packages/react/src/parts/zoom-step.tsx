@@ -32,8 +32,8 @@ const ZoomStep: Part<ZoomStepProps, HTMLButtonElement> = forwardRef<
     {
       "aria-disabled": useAriaDisabled(),
       "data-zriz-item": "zoom-step",
-      style: PRESS,
       onClick,
+      style: PRESS,
       type: "button",
     },
     props,

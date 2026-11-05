@@ -579,8 +579,8 @@ describe.each(["root", "page"] as const)("rtl from the %s", (from) => {
   });
 
   const image = { height: 300, width: 400 };
-  const mountRtl = (api: React.Ref<CropperApi>) =>
-    render(
+  const mountRtl = async (api: React.Ref<CropperApi>) =>
+    await render(
       from === "root" ? (
         <Editor api={api} rootProps={{ dir: "rtl", image }} />
       ) : (
@@ -682,6 +682,7 @@ describe("the page's direction", () => {
         <Editor api={api} rootProps={{ image }} />
       </div>
     );
+
     const root = q('[data-zriz-item="root"]');
 
     expect(root.hasAttribute("dir")).toBeFalsy();
@@ -718,6 +719,7 @@ describe("the page's direction", () => {
         <Editor api={api} rootProps={{ dir: "ltr", image }} />
       </div>
     );
+
     await frames(3);
     q("#dial").focus();
     await userEvent.keyboard("{ArrowRight}");
@@ -733,9 +735,11 @@ describe("the page's direction", () => {
         </Cropper.Root>
       </div>
     );
+
     const value = q('[data-zriz-item="dial-value"]');
 
     await expect.poll(() => value.textContent).toBe("-5");
+
     const place = (index: number): number => {
       const range = document.createRange();
       const text = value.firstChild;

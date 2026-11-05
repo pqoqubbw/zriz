@@ -305,7 +305,7 @@ const zoomAria = (
       1,
       top,
       Math.round(Math.min(zoom, top) * 100) / 100,
-      !options.ownText && formatter.format(zoom),
+      options.ownText !== true && formatter.format(zoom),
     ];
   });
 };

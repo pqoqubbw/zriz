@@ -29,8 +29,8 @@ const Rotate: Part<RotateProps, HTMLButtonElement> = forwardRef<
     {
       "aria-disabled": useAriaDisabled(),
       "data-zriz-item": "rotate",
-      style: PRESS,
       onClick,
+      style: PRESS,
       type: "button",
     },
     props,

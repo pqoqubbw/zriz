@@ -80,6 +80,15 @@ const GESTURES: [ChangeReason, string][] = [
   ["zoom-control", "data-zooming"],
 ];
 
+const selectable = (element: Element): string => {
+  const style = getComputedStyle(element);
+
+  return (
+    style.getPropertyValue("user-select") ||
+    style.getPropertyValue("-webkit-user-select")
+  );
+};
+
 describe("a second viewport", () => {
   afterEach(async () => {
     await cleanup();
@@ -121,12 +130,6 @@ describe("presses on touch", () => {
     await cleanup();
   });
 
-  const selectable = (element: Element): string => {
-    const style = getComputedStyle(element);
-
-    return style.userSelect || style.webkitUserSelect;
-  };
-
   it("stops double-tap zoom and text selection on every button part", async () => {
     await mount(
       <>
@@ -138,6 +141,7 @@ describe("presses on touch", () => {
         <Cropper.Orientation>Swap</Cropper.Orientation>
       </>
     );
+
     const buttons = [...document.querySelectorAll("button")];
 
     expect(buttons).toHaveLength(6);

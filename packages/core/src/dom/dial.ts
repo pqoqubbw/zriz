@@ -460,7 +460,10 @@ const dialHandlers = (
       const way = sign(event);
 
       for (const sample of samples.length > 0 ? samples : [event]) {
-        tracker.push(sample.timeStamp, ((sample.clientX - startX) * way) / scale);
+        tracker.push(
+          sample.timeStamp,
+          ((sample.clientX - startX) * way) / scale
+        );
       }
 
       show(
@@ -509,7 +512,7 @@ const dialAria = (
       -limit,
       limit,
       now,
-      !options.ownText && formatter.format(now && rotation),
+      options.ownText !== true && formatter.format(now && rotation),
     ];
   });
 };

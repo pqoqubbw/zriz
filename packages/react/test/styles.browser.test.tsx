@@ -1,5 +1,4 @@
 import "../../core/src/styles.css";
-import stylesheet from "../../core/src/styles.css?raw";
 import type { Cropper as CropperApi } from "@zriz/core";
 import { createRef } from "react";
 import { hydrateRoot } from "react-dom/client";
@@ -11,6 +10,8 @@ import { commands, server, userEvent } from "vitest/browser";
 
 import { maskGradient } from "../../core/src/dom/parts";
 import * as Cropper from "../src/cropper";
+
+import stylesheet from "../../core/src/styles.css?raw";
 
 const frames = async (n = 2): Promise<void> => {
   for (let i = 0; i < n; i += 1) {
@@ -61,6 +62,9 @@ const pick = (selector: string): HTMLElement => {
 
   return element;
 };
+
+const background = (selector: string, pseudo?: string): string =>
+  getComputedStyle(pick(selector), pseudo).backgroundColor;
 
 describe("default styles", () => {
   afterEach(async () => {
@@ -139,9 +143,11 @@ describe("default styles", () => {
       );
 
       await frames(2);
+
       expect(
         background('[data-zriz-item="dial-ticks"] > :not([data-major])')
       ).toBe(tick);
+
       await screen.unmount();
     }
 
@@ -389,6 +395,30 @@ describe("a turn of the whole crop", () => {
   });
 });
 
+const running = (selector: string): string[] =>
+  pick(selector)
+    .getAnimations()
+    .map((animation) =>
+      animation instanceof CSSTransition ? animation.transitionProperty : ""
+    );
+
+const Moving = ({ api }: EditorProps) => (
+  <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
+    <Cropper.Viewport
+      style={{ height: 300, padding: 20, position: "relative", width: 400 }}
+    >
+      <Cropper.Mask />
+      <Cropper.Area aria-label="Crop" />
+    </Cropper.Viewport>
+    <Cropper.Dial aria-label="Straighten" style={{ height: 40, width: 361 }}>
+      <Cropper.DialTicks />
+    </Cropper.Dial>
+    <Cropper.Zoom aria-label="Zoom" style={{ height: 20, width: 200 }}>
+      <Cropper.ZoomThumb />
+    </Cropper.Zoom>
+  </Cropper.Root>
+);
+
 describe("a page-wide transition", () => {
   const rule = document.createElement("style");
 
@@ -398,30 +428,6 @@ describe("a page-wide transition", () => {
     rule.remove();
     await cleanup();
   });
-
-  const running = (selector: string): string[] =>
-    pick(selector)
-      .getAnimations()
-      .map((animation) =>
-        animation instanceof CSSTransition ? animation.transitionProperty : ""
-      );
-
-  const Moving = ({ api }: EditorProps) => (
-    <Cropper.Root actionsRef={api} image={{ height: 300, width: 400 }}>
-      <Cropper.Viewport
-        style={{ height: 300, padding: 20, position: "relative", width: 400 }}
-      >
-        <Cropper.Mask />
-        <Cropper.Area aria-label="Crop" />
-      </Cropper.Viewport>
-      <Cropper.Dial aria-label="Straighten" style={{ height: 40, width: 361 }}>
-        <Cropper.DialTicks />
-      </Cropper.Dial>
-      <Cropper.Zoom aria-label="Zoom" style={{ height: 20, width: 200 }}>
-        <Cropper.ZoomThumb />
-      </Cropper.Zoom>
-    </Cropper.Root>
-  );
 
   it("leaves every per-frame write on the crop, the ruler and the thumb instant", async () => {
     document.head.append(rule);
@@ -448,8 +454,9 @@ describe("a page-wide transition", () => {
     expect(running('[data-zriz-item="dial-ticks"]')).toStrictEqual([]);
     expect(running('[data-zriz-item="zoom-thumb"]')).toStrictEqual([]);
     expect(running('[data-zriz-item="mask"]')).not.toContain("clip-path");
+
     expect(area.getBoundingClientRect().width).toBeCloseTo(
-      Number.parseFloat(area.style.width),
+      Number(area.style.width.replace("px", "")),
       1
     );
   });
@@ -460,9 +467,11 @@ describe("a page-wide transition", () => {
     await render(<Moving api={api} />);
     await frames(2);
     api.current?.begin("pan");
+
     await expect
       .poll(() => running('[data-zriz-item="mask"]'))
       .toContain("opacity");
+
     api.current?.end();
   });
 
@@ -479,6 +488,7 @@ describe("a page-wide transition", () => {
     await expect
       .poll(() => pick('[data-zriz-item="root"]').dataset.transition)
       .toBe("rotate");
+
     expect(getComputedStyle(area).opacity).toBe("0");
     expect(area.getAnimations()).toStrictEqual([]);
   });
@@ -558,21 +568,21 @@ describe("layer order on the page", () => {
   });
 });
 
+const ring = () => {
+  const area = pick('[data-zriz-item="area"]');
+  const own = getComputedStyle(area);
+  const line = getComputedStyle(area, "::after");
+
+  return {
+    inner: [line.outlineStyle, line.outlineWidth, line.top, line.left],
+    outer: [own.outlineStyle, own.outlineWidth, own.outlineOffset],
+  };
+};
+
 describe("the focus ring on the crop", () => {
   afterEach(async () => {
     await cleanup();
   });
-
-  const ring = () => {
-    const area = pick('[data-zriz-item="area"]');
-    const own = getComputedStyle(area);
-    const line = getComputedStyle(area, "::after");
-
-    return {
-      inner: [line.outlineStyle, line.outlineWidth, line.top, line.left],
-      outer: [own.outlineStyle, own.outlineWidth, own.outlineOffset],
-    };
-  };
 
   const flush = (
     <Cropper.Root image={{ height: 300, width: 400 }}>
@@ -588,6 +598,7 @@ describe("the focus ring on the crop", () => {
     await render(flush);
     await frames(2);
     await userEvent.tab();
+
     await expect
       .poll(() => pick('[data-zriz-item="area"]').matches(":focus-visible"))
       .toBeTruthy();
@@ -708,9 +719,6 @@ const system = (name: string): string => {
   return colour;
 };
 
-const background = (selector: string, pseudo?: string): string =>
-  getComputedStyle(pick(selector), pseudo).backgroundColor;
-
 const placeRotated = async (): Promise<void> => {
   const api = createRef<CropperApi>();
 
@@ -785,6 +793,7 @@ describe.runIf(server.browser !== "webkit")("forced colours", () => {
       expect(scrim.match(/\d+/gu)?.slice(0, 3)).toStrictEqual(
         canvas.match(/\d+/gu)?.slice(0, 3)
       );
+
       await screen.unmount();
     }
   });
