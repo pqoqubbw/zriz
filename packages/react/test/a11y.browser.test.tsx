@@ -334,6 +334,63 @@ const Items = () => {
   );
 };
 
+describe("an Area with no photo", () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  it("leaves the tab order until a photo is placed", async () => {
+    const api = createRef<CropperApi>();
+    const screen = await render(
+      <Cropper.Root actionsRef={api}>
+        <button id="before" type="button">
+          before
+        </button>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" />
+        </Cropper.Viewport>
+        <Cropper.Dial
+          aria-label="Straighten"
+          style={{ height: 40, width: 361 }}
+        />
+      </Cropper.Root>
+    );
+    const area = screen.container.querySelector<HTMLElement>(
+      '[data-zriz-item="area"]'
+    );
+    const dial = screen.container.querySelector('[data-zriz-item="dial"]');
+    const before = screen.container.querySelector<HTMLElement>("#before");
+
+    before?.focus();
+    await userEvent.tab();
+    expect(document.activeElement).toBe(dial);
+
+    api.current?.setImage({ height: 300, width: 400 });
+    await expect.poll(() => area?.tabIndex).toBe(0);
+    before?.focus();
+    await userEvent.tab();
+    expect(document.activeElement).toBe(area);
+
+    api.current?.setImage(null);
+    await expect.poll(() => area?.tabIndex).toBe(-1);
+  });
+
+  it("keeps a tabIndex of the caller", async () => {
+    const screen = await render(
+      <Cropper.Root>
+        <Cropper.Viewport style={{ height: 300, width: 400 }}>
+          <Cropper.Area aria-label="Crop" tabIndex={0} />
+        </Cropper.Viewport>
+      </Cropper.Root>
+    );
+
+    expect(
+      screen.container.querySelector<HTMLElement>('[data-zriz-item="area"]')
+        ?.tabIndex
+    ).toBe(0);
+  });
+});
+
 describe("part states", () => {
   afterEach(async () => {
     await cleanup();

@@ -31,6 +31,7 @@ const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const { shape, instructions } = useContext(RootContext);
   const interacting = useCropperState((s) => s.interacting !== null);
+  const ready = useCropperState((s) => s.ready);
   const keys = useMemo(() => areaKeyHandlers(cropper), [cropper]);
 
   useRelease(keys);
@@ -58,7 +59,7 @@ const Area: Part<AreaProps, HTMLDivElement> = forwardRef<
       ...nativeProps(keys),
       role: "group",
       style: shape === "circle" ? ROUND : SQUARE,
-      tabIndex: 0,
+      tabIndex: ready ? 0 : -1,
     },
     props,
     useMergedRef(own, ref),
