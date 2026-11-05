@@ -53,7 +53,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           ["svg", "the photo is an svg", "891 B"],
           [
             "source",
-            "you pass an `img`, `video`, `canvas` or `OffscreenCanvas` to `loadImage`. `Root` never loads it",
+            "you pass an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` to `loadImage`, or your `decode` option runs after the browser fails to decode. `Root` never loads it",
             "557 B",
           ],
         ],

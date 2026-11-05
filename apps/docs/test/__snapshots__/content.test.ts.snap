@@ -5578,13 +5578,13 @@ in development, \`Area\`, \`Dial\` and \`Zoom\` warn once each in the console wh
 
 | part | what a screen reader gets |
 | - | - |
-| \`Area\` | one tab stop with \`role="application"\` once a photo is placed, described by \`Instructions\`. the role passes the arrow keys through a screen reader's browse mode. pass your own \`role\` to change it |
+| \`Area\` | always \`role="application"\`, and one tab stop once a photo is placed, described by \`Instructions\`. the role passes the arrow keys through a screen reader's browse mode. pass your own \`role\` to change it |
 | \`Dial\` | a slider that reads "4 degrees" in your \`locale\`. \`format\` changes the wording |
 | \`Zoom\` | a slider that reads "150%" in your \`locale\`. \`format\` changes the wording |
 | \`AspectGroup\` | a \`radiogroup\` with one tab stop. each \`AspectItem\` is a radio. outside a group, an item is a button with \`aria-pressed\` |
 | \`Rotate, Orientation, ZoomStep\` | buttons. name a \`ZoomStep\` with \`aria-label\`. \`Orientation\` is disabled for a free, original or square crop |
 | \`Flip\` | a toggle button. \`aria-pressed\` follows \`mirrored\` |
-| \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the next control in \`Root\` when there is no \`Area\` or it cannot take focus |
+| \`Reset\` | a button that is \`hidden\` while nothing has changed. if it has focus when it hides, focus moves to \`Area\`, or to the first control in \`Root\` that can take focus when there is no \`Area\` or it cannot take focus |
 | \`every control above\` | \`aria-disabled\` while \`Root\` is disabled. a press does nothing, and the control stays in the tab order |
 | \`Image\` | an image named by its \`alt\`. without \`alt\`, nothing |
 | \`Handle, Grid, Mask, DialTicks, DialValue, ZoomThumb\` | hidden |
@@ -5603,7 +5603,7 @@ render one \`Instructions\` and one \`Announcer\` per \`Root\`, outside any tool
 
 ## announce changes
 
-a moving crop has no text, so a screen reader stays silent without \`Announcer\`. after each commit it calls \`announce\` and speaks what it returns, or nothing for \`null\`. this one speaks the position and width after each keyboard change. dial keys commit as \`keyboard\` too, so it also speaks after an arrow press on the dial, on top of the dial's own value:
+a moving crop has no text, so a screen reader stays silent without \`Announcer\`. after each commit it calls \`announce\` and speaks what it returns, or nothing for \`null\`. this one speaks the position and width after each keyboard change. dial and zoom keys commit as \`keyboard\` too, so it also speaks after an arrow press on either slider, on top of the slider's own value:
 
 \`\`\`tsx
 <Cropper.Announcer
@@ -5697,7 +5697,7 @@ with \`prefers-reduced-motion: reduce\`, motion that zriz starts on its own gets
 | recentre | spring, about 460 ms | spring, about 250 ms |
 | rotate 90°, reset or undo across a turn | spring, about 390 ms | 150 ms |
 | flip | spring, about 420 ms | 150 ms |
-| aspect, reset | spring, about 460 ms | 150 ms |
+| aspect, orientation, reset or undo | spring, about 460 ms | 150 ms |
 
 \`motion="reduce"\` on \`Root\` forces the short motion, and \`motion="always"\` keeps the full one. \`Root\` shows \`data-reduced-motion\` while it is on.
 
@@ -6128,7 +6128,7 @@ four chunks stay out of the first load and download the first time a photo needs
 | render | the first export. it starts downloading once the first photo attaches | 2.30 kB |
 | sharpen | the sharper redraw at rest and on deep zoom. it starts downloading after the first paint | 546 B |
 | svg | the photo is an svg | 891 B |
-| source | you pass an \`img\`, \`video\`, \`canvas\` or \`OffscreenCanvas\` to \`loadImage\`. \`Root\` never loads it | 557 B |
+| source | you pass an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` to \`loadImage\`, or your \`decode\` option runs after the browser fails to decode. \`Root\` never loads it | 557 B |
 
 with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.96 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.67 kB.
 
@@ -9761,7 +9761,7 @@ import "@zriz/react/styles.css";
 | - | - |
 | \`Viewport\` | \`overflow: clip\` and a grab cursor |
 | \`Mask\` | the scrim colour. it fades to 60% during a gesture |
-| \`Area\` | a 1 px outline inside the crop, and a two-tone ring on keyboard focus |
+| \`Area\` | a 1 px outline inside the crop, a two-tone ring on keyboard focus, and \`opacity: 0\` on it and its handles while \`Root\` has \`data-transition="rotate"\` |
 | \`Handle\` | a corner mark of two short lines or an edge bar, and a resize cursor. corners hide with \`shape="circle"\` |
 | \`Grid\` | white lines that fade in during a gesture |
 | \`Dial\` | 40 px height, sideways clip, a grab cursor, centre line, tick colours, the zero dot |
@@ -10365,6 +10365,10 @@ cleanups.push(
 
 on a right-to-left page, the arrows and the drag swap. pass \`{ dir: "rtl" }\` or \`{ dir: "ltr" }\` as the third argument of \`bindDial\` to set it yourself.
 
+the same argument takes \`locale\` and \`format\` for the spoken angle, and \`ownText: true\` to keep an \`aria-valuetext\` of yours, which \`bindDial\` overwrites otherwise. it also takes \`gain\`, the pixels of drag per degree, 4 by default, \`slop\`, the pixels a drag travels before the dial moves, 10 by default, and \`tau\`, how long a flick glides in ms, 95 by default.
+
+\`bindDialTicks(cropper, strip, count)\` makes 41 ticks by default, and uses the children when the strip already has some.
+
 ## add a zoom slider
 
 zoom has no single binder. give the element \`role="slider"\`, \`tabindex="0"\`, an \`aria-label\`, a size, \`position: relative\`, \`touch-action: none\` and \`user-select: none\`, and draw the thumb yourself. the stylesheet paints nothing on zoom. forced colours mode drops the colour on the thumb, so the \`<style>\` paints it in \`CanvasText\`:
@@ -10436,7 +10440,7 @@ cleanups.push(
 );
 \`\`\`
 
-\`zoomAria\` keeps the slider's values current, and \`bindZoomThumb\` moves the thumb from 0% at 1× to 100% at the largest zoom.
+\`zoomAria\` keeps the slider's values current, and \`bindZoomThumb\` moves the thumb from 0% at 1× to 100% at the largest zoom. to end the track early, pass the same \`max\` to all three: \`zoomHandlers(cropper, { max, dir })\`, \`zoomAria(cropper, zoom, { max, locale, format, ownText })\` and \`bindZoomThumb(cropper, thumb, { max })\`. without \`ownText: true\`, \`zoomAria\` overwrites your \`aria-valuetext\`.
 
 ## read the crop
 
@@ -10450,14 +10454,15 @@ cropper.on("commit", (value, details) => {
 });
 \`\`\`
 
-to turn the crop into a file, pass the cropper to \`exportCrop\` as in [exporting](https://zriz.dev/docs/exporting.md). a photo nobody touches sends no \`commit\`, see [events](https://zriz.dev/docs/events.md).
+to turn the crop into a file, pass the cropper to \`exportCrop\` as in [exporting](https://zriz.dev/docs/exporting.md). the first photo sends no \`commit\` until someone touches it, and a later photo sends one only when it has to refit the crop, see [events](https://zriz.dev/docs/events.md).
 
 ## connect the rest
 
 | part | how to wire it |
 | - | - |
 | dial value | \`bindDialValue(cropper, element, format)\` writes the angle as text. without \`format\`, it writes whole degrees |
-| grid | no binder. \`bindState\` writes \`data-grid\` on the root as \`"none"\`, \`"coarse"\` or \`"fine"\`. draw the lines in css |
+| grid | no binder. \`bindState\` writes \`data-grid\` on the root as \`"none"\`, \`"coarse"\` or \`"fine"\`. draw the lines in css. the stylesheet keeps \`data-zriz-item="grid"\` at opacity 0 without \`data-visible\`, and no binder sets it, so set \`opacity\` from \`[data-grid]\` on the root or leave that attribute off the element |
+| state attributes | \`bindState\` writes every attribute [root](https://zriz.dev/docs/root.md) lists on your element, except \`data-shape\`. set that one in your markup. \`data-interacting\` on the area and \`data-active\` on a handle come only from the react parts |
 | buttons | no binder. call \`rotate90()\`, \`flip()\`, \`reset()\` or \`setAspect(1)\` on the cropper from a click |
 | your own img | \`bindImage(cropper, element)\` sizes and moves an element of yours with the photo. you set its \`src\` |
 | round crop | pass \`"circle"\` as the third argument of \`bindMask\` and \`{ shape: "circle" }\` as the third argument of \`bindArea\`. set \`aspect: 1\` in \`defaultValue\`. the stylesheet hides the corner handles when the area has \`data-shape="circle"\`, which \`bindArea\` leaves to your markup |

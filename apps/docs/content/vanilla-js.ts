@@ -53,6 +53,12 @@ const VANILLA_JS_PAGE = defineDoc({
       code("vanilla-js/dial.ts"),
       p(
         'on a right-to-left page, the arrows and the drag swap. pass `{ dir: "rtl" }` or `{ dir: "ltr" }` as the third argument of `bindDial` to set it yourself.'
+      ),
+      p(
+        "the same argument takes `locale` and `format` for the spoken angle, and `ownText: true` to keep an `aria-valuetext` of yours, which `bindDial` overwrites otherwise. it also takes `gain`, the pixels of drag per degree, 4 by default, `slop`, the pixels a drag travels before the dial moves, 10 by default, and `tau`, how long a flick glides in ms, 95 by default."
+      ),
+      p(
+        "`bindDialTicks(cropper, strip, count)` makes 41 ticks by default, and uses the children when the strip already has some."
       )
     ),
     section(
@@ -64,7 +70,7 @@ const VANILLA_JS_PAGE = defineDoc({
       p("then hand its events to `zoomHandlers`:"),
       code("vanilla-js/zoom.ts"),
       p(
-        "`zoomAria` keeps the slider's values current, and `bindZoomThumb` moves the thumb from 0% at 1× to 100% at the largest zoom."
+        "`zoomAria` keeps the slider's values current, and `bindZoomThumb` moves the thumb from 0% at 1× to 100% at the largest zoom. to end the track early, pass the same `max` to all three: `zoomHandlers(cropper, { max, dir })`, `zoomAria(cropper, zoom, { max, locale, format, ownText })` and `bindZoomThumb(cropper, thumb, { max })`. without `ownText: true`, `zoomAria` overwrites your `aria-valuetext`."
       )
     ),
     section(
@@ -74,7 +80,7 @@ const VANILLA_JS_PAGE = defineDoc({
       ),
       code("vanilla-js/read.ts"),
       p(
-        "to turn the crop into a file, pass the cropper to `exportCrop` as in [exporting](exporting). a photo nobody touches sends no `commit`, see [events](events)."
+        "to turn the crop into a file, pass the cropper to `exportCrop` as in [exporting](exporting). the first photo sends no `commit` until someone touches it, and a later photo sends one only when it has to refit the crop, see [events](events)."
       )
     ),
     section(
@@ -88,7 +94,11 @@ const VANILLA_JS_PAGE = defineDoc({
           ],
           [
             "grid",
-            'no binder. `bindState` writes `data-grid` on the root as `"none"`, `"coarse"` or `"fine"`. draw the lines in css',
+            'no binder. `bindState` writes `data-grid` on the root as `"none"`, `"coarse"` or `"fine"`. draw the lines in css. the stylesheet keeps `data-zriz-item="grid"` at opacity 0 without `data-visible`, and no binder sets it, so set `opacity` from `[data-grid]` on the root or leave that attribute off the element',
+          ],
+          [
+            "state attributes",
+            "`bindState` writes every attribute [root](root) lists on your element, except `data-shape`. set that one in your markup. `data-interacting` on the area and `data-active` on a handle come only from the react parts",
           ],
           [
             "buttons",

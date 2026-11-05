@@ -29,7 +29,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
         rows: [
           [
             "Area",
-            'one tab stop with `role="application"` once a photo is placed, described by `Instructions`. the role passes the arrow keys through a screen reader\'s browse mode. pass your own `role` to change it',
+            'always `role="application"`, and one tab stop once a photo is placed, described by `Instructions`. the role passes the arrow keys through a screen reader\'s browse mode. pass your own `role` to change it',
           ],
           [
             "Dial",
@@ -50,7 +50,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
           ["Flip", "a toggle button. `aria-pressed` follows `mirrored`"],
           [
             "Reset",
-            "a button that is `hidden` while nothing has changed. if it has focus when it hides, focus moves to `Area`, or to the next control in `Root` when there is no `Area` or it cannot take focus",
+            "a button that is `hidden` while nothing has changed. if it has focus when it hides, focus moves to `Area`, or to the first control in `Root` that can take focus when there is no `Area` or it cannot take focus",
           ],
           [
             "every control above",
@@ -74,7 +74,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
     section(
       "announce changes",
       p(
-        "a moving crop has no text, so a screen reader stays silent without `Announcer`. after each commit it calls `announce` and speaks what it returns, or nothing for `null`. this one speaks the position and width after each keyboard change. dial keys commit as `keyboard` too, so it also speaks after an arrow press on the dial, on top of the dial's own value:"
+        "a moving crop has no text, so a screen reader stays silent without `Announcer`. after each commit it calls `announce` and speaks what it returns, or nothing for `null`. this one speaks the position and width after each keyboard change. dial and zoom keys commit as `keyboard` too, so it also speaks after an arrow press on either slider, on top of the slider's own value:"
       ),
       code("accessibility/announcer.jsx.tsx"),
       p(
@@ -122,7 +122,11 @@ const ACCESSIBILITY_PAGE = defineDoc({
             "150 ms",
           ],
           ["flip", "spring, about 420 ms", "150 ms"],
-          ["aspect, reset", "spring, about 460 ms", "150 ms"],
+          [
+            "aspect, orientation, reset or undo",
+            "spring, about 460 ms",
+            "150 ms",
+          ],
         ],
       }),
       p(

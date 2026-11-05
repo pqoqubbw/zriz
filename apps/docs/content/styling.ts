@@ -26,7 +26,7 @@ const STYLING_PAGE = defineDoc({
           ["Mask", "the scrim colour. it fades to 60% during a gesture"],
           [
             "Area",
-            "a 1 px outline inside the crop, and a two-tone ring on keyboard focus",
+            'a 1 px outline inside the crop, a two-tone ring on keyboard focus, and `opacity: 0` on it and its handles while `Root` has `data-transition="rotate"`',
           ],
           [
             "Handle",
