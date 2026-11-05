@@ -446,7 +446,7 @@ const viewportController = (
 
     cropper.setCropState(next, {
       event,
-      keep: turn === 0 ? "size" : "centre",
+      keep: turn === 0 ? "size" : "center",
       reason: cropper.getState().interacting ?? "pinch",
     });
 

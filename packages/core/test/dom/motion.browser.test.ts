@@ -221,13 +221,13 @@ describe("view motion", () => {
     }
   });
 
-  it("waits as long as recentreDelay asks", async () => {
+  it("waits as long as recenterDelay asks", async () => {
     const fixture = mount();
 
     await frames();
     const view = viewOf(fixture.cropper);
 
-    view.setOptions({ recentreDelay: 1060 });
+    view.setOptions({ recenterDelay: 1060 });
     const rest = await shrinkAndWatch(fixture);
 
     await centred(fixture);

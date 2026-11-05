@@ -2676,7 +2676,7 @@ describe("minSize on a free crop", () => {
     expect(pixels(cropper)).toStrictEqual({ height: 500, width: 1000 });
   });
 
-  it.each(["size", "centre"] as const)(
+  it.each(["size", "center"] as const)(
     "keeps a long crop's shape when a pinch holding %s stops at the minimum",
     (keep) => {
       const { cropper } = setup(square(300));

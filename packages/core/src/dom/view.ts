@@ -52,7 +52,7 @@ type ViewFrame = {
   layout: Layout;
 };
 
-type Transition = "recentre" | "rotate" | "flip" | "morph";
+type Transition = "recenter" | "rotate" | "flip" | "morph";
 
 type Grid = "none" | "coarse" | "fine";
 
@@ -65,7 +65,7 @@ type Chrome = {
 
 type ViewOptions = {
   motion?: "auto" | "always" | "reduce" | undefined;
-  recentreDelay?: number | undefined;
+  recenterDelay?: number | undefined;
 };
 
 type View = {
@@ -134,7 +134,7 @@ const OVERSCROLL_ZETA = 1.4;
 const TEMPO = 1.35;
 const ZOOM_OMEGA = 17.3 * TEMPO;
 const RECENTRE_OMEGA = 16.1 * TEMPO;
-const RECENTRE_DELAY_MS = 500;
+const RECENTER_DELAY_MS = 500;
 const CHROME_HOLD_MS = 1380;
 const ROTATE_MS = 410 / TEMPO;
 const FLIP_OMEGA = 17.6 * TEMPO;
@@ -523,7 +523,7 @@ const viewOf = (cropper: Cropper): View => {
   let stopShift: (() => void) | null = null;
   let stopZoom: (() => void) | null = null;
   let stopTransition: (() => void) | null = null;
-  let recentreTimer: ReturnType<typeof setTimeout> | null = null;
+  let recenterTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
   let blend: Blend | null = null;
   let shown: Pose | null = null;
@@ -593,9 +593,9 @@ const viewOf = (cropper: Cropper): View => {
       last = null;
       endTransition();
 
-      if (recentreTimer !== null) {
-        clearTimeout(recentreTimer);
-        recentreTimer = null;
+      if (recenterTimer !== null) {
+        clearTimeout(recenterTimer);
+        recenterTimer = null;
       }
     }
 
@@ -678,8 +678,8 @@ const viewOf = (cropper: Cropper): View => {
     return false;
   };
 
-  const recentre = (): void => {
-    recentreTimer = null;
+  const recenter = (): void => {
+    recenterTimer = null;
     const from = pinned;
 
     if (!from) {
@@ -689,7 +689,7 @@ const viewOf = (cropper: Cropper): View => {
     const omega = reduced() ? REDUCED_OMEGA : RECENTRE_OMEGA;
     let elapsed = 0;
 
-    setChrome({ transition: "recentre" });
+    setChrome({ transition: "recenter" });
 
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
@@ -708,13 +708,13 @@ const viewOf = (cropper: Cropper): View => {
     }, false);
   };
 
-  const scheduleRecentre = (): void => {
-    if (recentreTimer !== null) {
-      clearTimeout(recentreTimer);
+  const scheduleRecenter = (): void => {
+    if (recenterTimer !== null) {
+      clearTimeout(recenterTimer);
     }
 
-    recentreTimer = pinned
-      ? setTimeout(recentre, options.recentreDelay ?? RECENTRE_DELAY_MS)
+    recenterTimer = pinned
+      ? setTimeout(recenter, options.recenterDelay ?? RECENTER_DELAY_MS)
       : null;
   };
 
@@ -849,9 +849,9 @@ const viewOf = (cropper: Cropper): View => {
   };
 
   const clearTimers = (): void => {
-    if (recentreTimer !== null) {
-      clearTimeout(recentreTimer);
-      recentreTimer = null;
+    if (recenterTimer !== null) {
+      clearTimeout(recenterTimer);
+      recenterTimer = null;
     }
 
     if (chromeTimer !== null) {
@@ -921,7 +921,7 @@ const viewOf = (cropper: Cropper): View => {
       setChrome({ active: false, grid: "none" });
     }, CHROME_HOLD_MS);
 
-    scheduleRecentre();
+    scheduleRecenter();
   });
 
   const view: View = {

@@ -99,7 +99,7 @@ const areaKeyHandlers = (cropper: Cropper): KeyHandlers =>
 
         cropper.setCropState(
           { ...state, crop: next },
-          { ...action, keep: "centre" }
+          { ...action, keep: "center" }
         );
       };
     }

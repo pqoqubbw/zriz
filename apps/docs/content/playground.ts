@@ -24,7 +24,7 @@ const PLAYGROUND_PAGE = defineDoc({
         choice("motion", ["auto", "always", "reduce"], "reduce"),
         choice("dir", ["ltr", "rtl"], "ltr"),
         range("maxZoom", [1, 8, 15, 1], "×"),
-        range("recentreDelay", [0, 500, 2000, 50], " ms"),
+        range("recenterDelay", [0, 500, 2000, 50], " ms"),
         toggle("disabled", false)
       ),
       caption("Viewport"),

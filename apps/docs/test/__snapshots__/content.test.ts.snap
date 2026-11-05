@@ -2349,7 +2349,7 @@ export const Editor = ({ src }: { src: string }) => {
       };
       cropper.setCropState(
         { ...state, crop },
-        { keep: "centre", reason: "keyboard" }
+        { keep: "center", reason: "keyboard" }
       );
     }
   };
@@ -2401,7 +2401,7 @@ export const Editor = ({ src }: { src: string }) => {
       <span class=p>};</span>
       cropper<span class=p>.</span><span class=t>setCropState</span><span class=p>(</span>
         <span class=p>{ ...</span>state<span class=p>,</span> crop <span class=p>},</span>
-        <span class=p>{</span> keep<span class=p>: </span><span class=s>"centre"</span><span class=p>,</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>}</span>
+        <span class=p>{</span> keep<span class=p>: </span><span class=s>"center"</span><span class=p>,</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>}</span>
       <span class=p>);</span>
     <span class=p>}</span>
   <span class=p>};</span>
@@ -5332,7 +5332,7 @@ export const Editor = ({ src }: { src: string }) => {
       };
       cropper.setCropState(
         { ...state, crop },
-        { keep: "centre", reason: "keyboard" }
+        { keep: "center", reason: "keyboard" }
       );
     }
   };
@@ -6276,7 +6276,7 @@ a write changes \`getValue()\` at once. \`change\` and \`commit\` fire on the ne
   locks the crop to an aspect
 - \`setCropState\` \`(state, options?) => void\`
 
-  sets the crop in image pixels. \`keep: "centre"\` holds the centre. the default, \`keep: "size"\`, holds the size
+  sets the crop in image pixels. \`keep: "center"\` holds the centre. the default, \`keep: "size"\`, holds the size
 - \`rotate90\` \`(direction?, options?) => void\`
 
   turns counter-clockwise by default, or clockwise with \`"cw"\`. a numeric aspect turns with it, so 4:3 becomes 3:4
@@ -7647,7 +7647,7 @@ when \`Root\` gets \`cropper\`, it ignores its own \`defaultValue\`, \`image\`, 
 
 \`Root\` keeps its photo while \`<Activity>\` hides it. react runs no cleanup when it removes a tree that is hidden, so \`Root\` cannot free the photo then. to remove a hidden \`Root\`, make the cropper with \`useCropper\` above it and call \`attachImage(cropper, null)\` yourself.
 
-pass one cropper to one \`Root\`. \`shape\`, \`motion\` and \`recentreDelay\` belong to the cropper, so a second \`Root\` overwrites them, even with its defaults. keep \`Instructions\` in the \`Root\` that holds \`Area\`. your own parts and hooks can reach the cropper through \`CropperContext\` or the \`cropper\` argument.
+pass one cropper to one \`Root\`. \`shape\`, \`motion\` and \`recenterDelay\` belong to the cropper, so a second \`Root\` overwrites them, even with its defaults. keep \`Instructions\` in the \`Root\` that holds \`Area\`. your own parts and hooks can reach the cropper through \`CropperContext\` or the \`cropper\` argument.
 
 ### \`useCropperState\`
 
@@ -8076,7 +8076,7 @@ the demo runs on the page at https\\://zriz.dev/docs/playground.
 - \`motion\`: \`auto\`, \`always\`, \`reduce\`
 - \`dir\`: \`ltr\`, \`rtl\`
 - \`maxZoom\`: from 1× to 15×
-- \`recentreDelay\`: from 0 ms to 2000 ms
+- \`recenterDelay\`: from 0 ms to 2000 ms
 - \`disabled\`: on or off
 
 ### \`Viewport\`
@@ -8436,7 +8436,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
 - \`motion\` \`"auto" | "always" | "reduce"\` = \`"auto"\`
 
   follows the system motion setting, or forces full or short motion
-- \`recentreDelay\` \`number\` = \`500\`
+- \`recenterDelay\` \`number\` = \`500\`
 
   milliseconds after a gesture before the crop recentres
 - \`dir\` \`"ltr" | "rtl"\` = \`"ltr"\`
@@ -8465,7 +8465,7 @@ renders a \`<div>\`. every other part goes inside it. every part also takes \`cl
 | \`data-reduced-motion\` | while short motion is on |
 | \`data-orientation\` | \`"landscape"\` above 1, \`"portrait"\` below 1, \`"square"\` at 1 and while the aspect is \`"free"\` or \`"original"\` |
 | \`data-grid\` | \`"coarse"\`, \`"fine"\` or \`"none"\`, see [crop area](https://zriz.dev/docs/crop-area.md) |
-| \`data-transition\` | \`"rotate"\`, \`"flip"\`, \`"morph"\` or \`"recentre"\` while that transition runs. \`"morph"\` covers reset, an aspect pick, an orientation swap and undo. a reset or undo across a quarter turn runs as \`"rotate"\`, which hides \`Area\` and shows only the crop turning with the photo |
+| \`data-transition\` | \`"rotate"\`, \`"flip"\`, \`"morph"\` or \`"recenter"\` while that transition runs. \`"morph"\` covers reset, an aspect pick, an orientation swap and undo. a reset or undo across a quarter turn runs as \`"rotate"\`, which hides \`Area\` and shows only the crop turning with the photo |
 | \`data-shape\` | \`"rect"\` or \`"circle"\` |
 "
 `;
@@ -9761,7 +9761,7 @@ to turn the crop into a file, pass the cropper to \`exportCrop\` as in [exportin
 | your own img | \`bindImage(cropper, element)\` sizes and moves an element of yours with the photo. you set its \`src\` |
 | round crop | pass \`"circle"\` as the third argument of \`bindMask\` and \`{ shape: "circle" }\` as the third argument of \`bindArea\`. set \`aspect: 1\` in \`defaultValue\`. the stylesheet hides the corner handles when the area has \`data-shape="circle"\`, which \`bindArea\` leaves to your markup |
 | wheel and twist | pass \`{ wheel: "zoom", rotateGesture: false }\` as the third argument of \`bindViewport\`. \`wheel\` also takes \`"pan"\` and \`"none"\` |
-| motion | call \`viewOf(cropper).setOptions({ motion: "reduce", recentreDelay: 800 })\`. \`motion\` also takes \`"auto"\` and \`"always"\`. each call replaces both options |
+| motion | call \`viewOf(cropper).setOptions({ motion: "reduce", recenterDelay: 800 })\`. \`motion\` also takes \`"auto"\` and \`"always"\`. each call replaces both options |
 | live variables | pass \`{ liveVariables: true }\` as the third argument of \`bindArea\`, see [crop area](https://zriz.dev/docs/crop-area.md) |
 | announcements | no binder. on \`commit\`, write your own text into an element with \`role="status"\`, and point the area's \`aria-describedby\` at your instructions |
 

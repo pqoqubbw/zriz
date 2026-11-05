@@ -1368,7 +1368,7 @@ describe("escape on a handle drag", () => {
 
     vi.advanceTimersByTime(5000);
     time.frames(60);
-    expect(seen).not.toContain("recentre");
+    expect(seen).not.toContain("recenter");
   });
 });
 
@@ -1389,7 +1389,7 @@ describe("a recentre that loses its view", () => {
     letGo();
     vi.advanceTimersByTime(500);
     time.frames(2);
-    expect(view.chrome().transition).toBe("recentre");
+    expect(view.chrome().transition).toBe("recenter");
 
     if (how === "hide") {
       view.setLayout(null);
@@ -1550,7 +1550,7 @@ describe("view under perspective", () => {
     time.frames(2);
     vi.advanceTimersByTime(500);
     time.frames(3);
-    expect(view.chrome().transition).toBe("recentre");
+    expect(view.chrome().transition).toBe("recenter");
     cropper.rotate90("cw");
     time.frame();
     const fit = view.frame()?.rect;

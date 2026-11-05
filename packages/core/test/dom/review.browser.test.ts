@@ -955,7 +955,7 @@ describe("writes during a held gesture", () => {
   it("a handle tap that moved nothing runs no recentre", async () => {
     const r = rig();
 
-    viewOf(r.cropper).setOptions({ recentreDelay: 0 });
+    viewOf(r.cropper).setOptions({ recenterDelay: 0 });
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointerup", 10);
 
@@ -1077,12 +1077,12 @@ describe("writes during a held gesture", () => {
     const r = rig();
     const view = viewOf(r.cropper);
 
-    view.setOptions({ recentreDelay: 0 });
+    view.setOptions({ recenterDelay: 0 });
     fire(r.handle, "pointerdown", 10);
     fire(r.handle, "pointermove", -120, -80);
     fire(r.handle, "pointerup", -120, -80);
     r.time.frames(2);
-    await expect.poll(() => view.chrome().transition).toBe("recentre");
+    await expect.poll(() => view.chrome().transition).toBe("recenter");
     r.time.frames(2);
     r.cropper.setImage({ height: 3000, width: 1000 });
     r.time.frames(2);

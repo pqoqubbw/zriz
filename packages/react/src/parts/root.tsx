@@ -56,7 +56,7 @@ type RootProps = UseCropperOptions &
     /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
     motion?: "auto" | "always" | "reduce" | undefined;
     /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
-    recentreDelay?: number | undefined;
+    recenterDelay?: number | undefined;
     /** Reading direction for keys and sliders. @default "ltr" */
     dir?: "ltr" | "rtl" | undefined;
     /** Locale for value text. */
@@ -145,7 +145,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
     svg,
     shape = "rect",
     motion = "auto",
-    recentreDelay,
+    recenterDelay,
     dir = "ltr",
     locale,
     actionsRef,
@@ -187,8 +187,8 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   }, [cropper, shape]);
 
   useIsomorphicLayoutEffect(() => {
-    view.setOptions({ motion, recentreDelay });
-  }, [view, motion, recentreDelay]);
+    view.setOptions({ motion, recenterDelay });
+  }, [view, motion, recenterDelay]);
 
   const reducedMotion = useSyncExternalStore(
     view.onChrome,

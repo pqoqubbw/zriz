@@ -26,7 +26,7 @@ export const Editor = ({ src }: { src: string }) => {
       };
       cropper.setCropState(
         { ...state, crop },
-        { keep: "centre", reason: "keyboard" }
+        { keep: "center", reason: "keyboard" }
       );
     }
   };

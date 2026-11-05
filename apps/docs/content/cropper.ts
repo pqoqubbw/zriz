@@ -158,7 +158,7 @@ const CROPPER_PAGE = defineDoc({
           },
           {
             name: "setCropState",
-            text: 'sets the crop in image pixels. `keep: "centre"` holds the centre. the default, `keep: "size"`, holds the size',
+            text: 'sets the crop in image pixels. `keep: "center"` holds the centre. the default, `keep: "size"`, holds the size',
             type: "(state, options?) => void",
           },
           {

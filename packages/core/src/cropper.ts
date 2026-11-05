@@ -172,7 +172,7 @@ type Cropper = {
   retarget: (value: Record<string, unknown>) => () => void;
   setCropState: (
     next: CropState,
-    options?: ActionOptions & { keep?: "size" | "centre" | undefined }
+    options?: ActionOptions & { keep?: "size" | "center" | undefined }
   ) => void;
   run: (task: FrameTask, blocking?: boolean) => () => void;
   invalidate: () => void;
@@ -362,7 +362,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
   const limitAngle = (angle: number): number =>
     clean(clamp(angle, rotationLimit()));
 
-  const constrain = (next: CropState, keep: "size" | "centre"): CropState => {
+  const constrain = (next: CropState, keep: "size" | "center"): CropState => {
     const angle = limitAngle(next.angle);
     const shaped = lengthenLens(
       angle === next.angle ? next : setAngle(next, angle)
@@ -405,7 +405,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     height *= grow;
     let fit = base * grow;
 
-    if (keep === "centre" && insidePlanes(planes, shaped.crop, -EPSILON)) {
+    if (keep === "center" && insidePlanes(planes, shaped.crop, -EPSILON)) {
       const over = Math.min(
         minScaleAt(planes, { height, width }, shaped.crop),
         maxZoom * fit,
@@ -526,7 +526,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       return [saved, savedValue];
     }
 
-    const fixed = constrain(saved, "centre");
+    const fixed = constrain(saved, "center");
     const fixedValue = heldValue(fixed, savedValue);
 
     return fixedValue === savedValue
@@ -755,7 +755,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
 
   const commitState = (
     next: CropState,
-    keep: "size" | "centre",
+    keep: "size" | "center",
     action: ActionOptions,
     fallback: ChangeReason,
     aspect: Aspect = value.aspect,
@@ -781,7 +781,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
     );
 
   const placed = (next: CropValue, size: Size): CropState =>
-    constrain(fromValue(next, size), "centre");
+    constrain(fromValue(next, size), "center");
 
   const soundFit = (wanted: CropValue, size: Size): [CropState, CropValue] => {
     const fixed = placed(wanted, size);
@@ -845,7 +845,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
 
     commitState(
       fromValue(next, image),
-      "centre",
+      "center",
       action,
       reason,
       next.aspect,
@@ -1104,7 +1104,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         };
       }
 
-      commitState(next, "centre", action, "aspect", aspect);
+      commitState(next, "center", action, "aspect", aspect);
     },
     setCropState(next, action = {}) {
       if (!state || disabled() || !sameFields(state.image, next.image)) {
@@ -1202,7 +1202,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
       fitReset();
 
       if (state && image) {
-        commitState(state, "centre", { reason: "coverage" }, "coverage");
+        commitState(state, "center", { reason: "coverage" }, "coverage");
       }
 
       invalidate();
@@ -1231,7 +1231,7 @@ const createCropper = (initial: CropperOptions = {}): Cropper => {
         };
       }
 
-      commitState(next, "centre", action, "imperative");
+      commitState(next, "center", action, "imperative");
     },
     setValue(partial, action = {}) {
       if (destroyed) {

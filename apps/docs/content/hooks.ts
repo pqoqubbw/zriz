@@ -45,7 +45,7 @@ const HOOKS_PAGE = defineDoc({
           "`Root` keeps its photo while `<Activity>` hides it. react runs no cleanup when it removes a tree that is hidden, so `Root` cannot free the photo then. to remove a hidden `Root`, make the cropper with `useCropper` above it and call `attachImage(cropper, null)` yourself."
         ),
         p(
-          "pass one cropper to one `Root`. `shape`, `motion` and `recentreDelay` belong to the cropper, so a second `Root` overwrites them, even with its defaults. keep `Instructions` in the `Root` that holds `Area`. your own parts and hooks can reach the cropper through `CropperContext` or the `cropper` argument."
+          "pass one cropper to one `Root`. `shape`, `motion` and `recenterDelay` belong to the cropper, so a second `Root` overwrites them, even with its defaults. keep `Instructions` in the `Root` that holds `Area`. your own parts and hooks can reach the cropper through `CropperContext` or the `cropper` argument."
         )
       ),
       part(

@@ -1001,7 +1001,7 @@ const recentring = () => {
   });
   const view = viewOf(cropper);
 
-  view.setOptions({ recentreDelay: 10 });
+  view.setOptions({ recenterDelay: 10 });
 
   view.setLayout({
     dpr: 1,
@@ -1130,7 +1130,7 @@ describe("setCropState", () => {
   it("holds the centre with keep centre and the size by default", () => {
     const centre = setup().cropper;
 
-    centre.setCropState(tooBig(centre), { keep: "centre" });
+    centre.setCropState(tooBig(centre), { keep: "center" });
     expect(stateOf(centre).crop.x).toBeCloseTo(-800, 6);
     expect(stateOf(centre).crop.width).toBeLessThan(2400);
     const size = setup().cropper;

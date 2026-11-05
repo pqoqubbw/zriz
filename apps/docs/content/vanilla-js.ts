@@ -108,7 +108,7 @@ const VANILLA_JS_PAGE = defineDoc({
           ],
           [
             "motion",
-            'call `viewOf(cropper).setOptions({ motion: "reduce", recentreDelay: 800 })`. `motion` also takes `"auto"` and `"always"`. each call replaces both options',
+            'call `viewOf(cropper).setOptions({ motion: "reduce", recenterDelay: 800 })`. `motion` also takes `"auto"` and `"always"`. each call replaces both options',
           ],
           [
             "live variables",
