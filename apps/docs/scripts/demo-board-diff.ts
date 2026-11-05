@@ -8,34 +8,76 @@ import { chromium } from "playwright";
 import type { Page } from "playwright";
 import sharp from "sharp";
 
+import { DEMO_NAMES, DEMO_SPECS } from "../demos/registry.ts";
+import type { DemoName, ZoneSpec } from "../demos/registry.ts";
+
+type Base = "aspect" | "avatar" | "editor";
+
 type Cell = {
   caption: string;
   degrees: number;
   file: string;
+};
+
+type Width = {
+  cells: Partial<Record<Base, Cell>>;
   name: string;
   viewport: number;
 };
 
-const CELLS: readonly Cell[] = [
+type Job = {
+  base: Base;
+  cell: Cell;
+  demo: DemoName;
+  whole: boolean;
+  width: Width;
+};
+
+const WIDTHS: readonly Width[] = [
   {
-    caption: "landscape 3:2, at rest: every stage is 380 tall",
-    degrees: 0,
-    file: "sec0.html",
-    name: "desktop",
+    cells: {
+      aspect: {
+        caption: "free, also after reset: presets follow the photo",
+        degrees: 0,
+        file: "sec2.html",
+      },
+      avatar: {
+        caption: "at rest: zoom out is off at 1× (the demo derives it)",
+        degrees: 0,
+        file: "sec3.html",
+      },
+      editor: {
+        caption: "landscape 3:2, at rest: every stage is 380 tall",
+        degrees: 0,
+        file: "sec0.html",
+      },
+    },
+    name: "560",
     viewport: 1280,
   },
   {
-    caption: "introduction",
-    degrees: 4,
-    file: "sec5.html",
-    name: "phone",
+    cells: {
+      aspect: { caption: "aspect ratio", degrees: 0, file: "sec5.html" },
+      avatar: { caption: "avatar", degrees: 0, file: "sec5.html" },
+      editor: { caption: "introduction", degrees: 4, file: "sec5.html" },
+    },
+    name: "390",
     viewport: 390,
   },
   {
-    caption: "360 wide phone: introduction",
-    degrees: 4,
-    file: "sec5.html",
-    name: "narrow",
+    cells: {
+      aspect: {
+        caption: "360 wide phone: aspect ratio",
+        degrees: 0,
+        file: "sec5.html",
+      },
+      editor: {
+        caption: "360 wide phone: introduction",
+        degrees: 4,
+        file: "sec5.html",
+      },
+    },
+    name: "360",
     viewport: 360,
   },
 ];
@@ -48,11 +90,16 @@ const BOARD_HIDDEN =
 
 const CHANNEL_LIMIT = 24;
 
+const MAX_KEYS = 40;
+
+const PANEL_PAD = 4;
+
 const SCALE = 2;
 
 const { values } = parseArgs({
   options: {
     board: { type: "string" },
+    demo: { type: "string" },
     out: { default: "demo-board-diff", type: "string" },
     url: { default: "http://localhost:4777", type: "string" },
   },
@@ -60,7 +107,7 @@ const { values } = parseArgs({
 
 if (values.board === undefined) {
   process.stderr.write(
-    "usage: node scripts/demo-board-diff.ts --board <demo-board/out> [--url <docs url>] [--out <folder>]\n"
+    "usage: node scripts/demo-board-diff.ts --board <demo-board/out> [--url <docs url>] [--out <folder>] [--demo <name,name>]\n"
   );
 
   process.exit(1);
@@ -70,7 +117,49 @@ const out = path.resolve(values.out);
 
 mkdirSync(out, { recursive: true });
 
-const MAX_KEYS = 40;
+const baseOf = (zone: ZoneSpec | undefined): Base => {
+  if (zone?.kind === "zoom") {
+    return "avatar";
+  }
+
+  return zone?.kind === "aspect" || zone?.kind === "track"
+    ? "aspect"
+    : "editor";
+};
+
+const matchesBase = (zones: readonly ZoneSpec[], base: Base): boolean => {
+  const [zone, ...rest] = zones;
+
+  if (!zone || rest.length > 0) {
+    return false;
+  }
+
+  if (base === "editor") {
+    return (
+      zone.kind === "dial" &&
+      zone.value &&
+      zone.start === "rotate-left" &&
+      zone.end === "flip-horizontal"
+    );
+  }
+
+  return zone.kind === (base === "aspect" ? "aspect" : "zoom");
+};
+
+const jobsFor = (demo: DemoName): Job[] => {
+  const { zones } = DEMO_SPECS[demo];
+  const base = baseOf(zones[0]);
+  const whole = matchesBase(zones, base);
+
+  return WIDTHS.flatMap((width): Job[] => {
+    const own = width.cells[base];
+    const cell = own ?? width.cells.editor;
+
+    return cell
+      ? [{ base, cell, demo, whole: whole && own !== undefined, width }]
+      : [];
+  });
+};
 
 const press = async (
   page: Page,
@@ -78,7 +167,9 @@ const press = async (
   left: number
 ): Promise<void> => {
   const now = Number(
-    await page.locator('[data-zriz-item="dial"]').getAttribute("aria-valuenow")
+    await page
+      .locator('[data-demo] [data-zriz-item="dial"]')
+      .getAttribute("aria-valuenow")
   );
 
   if (left === 0 || Math.abs(now - degrees) < 0.05) {
@@ -90,7 +181,11 @@ const press = async (
 };
 
 const straighten = async (page: Page, degrees: number): Promise<void> => {
-  const dial = page.locator('[data-zriz-item="dial"]');
+  const dial = page.locator('[data-demo] [data-zriz-item="dial"]');
+
+  if (degrees === 0 || (await dial.count()) === 0) {
+    return;
+  }
 
   await dial.focus();
   await press(page, degrees, MAX_KEYS);
@@ -98,19 +193,34 @@ const straighten = async (page: Page, degrees: number): Promise<void> => {
   await page.waitForTimeout(800);
 };
 
-const shootOurs = async (page: Page, cell: Cell): Promise<Buffer> => {
-  await page.setViewportSize({ height: 900, width: cell.viewport });
+const shootOurs = async (
+  page: Page,
+  job: Job
+): Promise<{ image: Buffer; stage: number }> => {
+  await page.setViewportSize({ height: 900, width: job.width.viewport });
 
-  await page.goto(`${values.url}/docs/introduction`, {
+  await page.goto(`${values.url}/docs/${job.demo}`, {
     waitUntil: "networkidle",
   });
 
+  const demo = page.locator("[data-demo]").first();
+
+  await demo.scrollIntoViewIfNeeded();
   await page.waitForSelector('[data-zriz-item="image"][data-ready]');
-  await straighten(page, cell.degrees);
+  await straighten(page, job.cell.degrees);
   await page.addStyleTag({ content: OURS_HIDDEN });
   await page.mouse.move(0, 0);
 
-  return await page.locator("[data-demo]").first().screenshot();
+  const panel = await demo.boundingBox();
+  const stage = await page
+    .locator('[data-demo] [data-slot="stage"]')
+    .first()
+    .boundingBox();
+
+  return {
+    image: await demo.screenshot(),
+    stage: (stage?.y ?? 0) + (stage?.height ?? 0) - (panel?.y ?? 0) + PANEL_PAD,
+  };
 };
 
 const shootBoard = async (page: Page, cell: Cell): Promise<Buffer> => {
@@ -122,6 +232,20 @@ const shootBoard = async (page: Page, cell: Cell): Promise<Buffer> => {
     .locator(`[layer-name="${cell.caption}"] [layer-name="demo"]`)
     .first()
     .screenshot();
+};
+
+const topOf = async (image: Buffer, height: number): Promise<Buffer> => {
+  const meta = await sharp(image).metadata();
+
+  return await sharp(image)
+    .extract({
+      height: Math.min(Math.round(height), meta.height ?? 0),
+      left: 0,
+      top: 0,
+      width: meta.width ?? 0,
+    })
+    .png()
+    .toBuffer();
 };
 
 const compare = async (
@@ -164,34 +288,51 @@ const compare = async (
   return off / (width * height);
 };
 
-const runCells = async (page: Page, index: number): Promise<void> => {
-  const cell = CELLS[index];
+const runJob = async (page: Page, job: Job): Promise<void> => {
+  const name = `${job.demo}-${job.width.name}`;
+  const ours = await shootOurs(page, job);
+  const board = await shootBoard(page, job.cell);
+  const height = ours.stage * SCALE;
+  const mine = job.whole ? ours.image : await topOf(ours.image, height);
+  const theirs = job.whole ? board : await topOf(board, height);
 
-  if (!cell) {
+  await sharp(mine).toFile(path.join(out, `${name}-ours.png`));
+  await sharp(theirs).toFile(path.join(out, `${name}-board.png`));
+
+  const share = await compare(mine, theirs, name);
+  const scope = job.whole ? "whole demo" : "stage only";
+
+  process.stdout.write(
+    `${name}: ${(share * 100).toFixed(2)}% of pixels differ from "${job.cell.caption}" (${scope})\n`
+  );
+};
+
+const runJobs = async (page: Page, jobs: readonly Job[]): Promise<void> => {
+  const [job, ...rest] = jobs;
+
+  if (!job) {
     return;
   }
 
-  const ours = await shootOurs(page, cell);
-  const board = await shootBoard(page, cell);
-
-  await sharp(ours).toFile(path.join(out, `${cell.name}-ours.png`));
-  await sharp(board).toFile(path.join(out, `${cell.name}-board.png`));
-
-  const share = await compare(ours, board, cell.name);
-
-  process.stdout.write(
-    `${cell.name}: ${(share * 100).toFixed(2)}% of pixels differ\n`
-  );
-
-  await runCells(page, index + 1);
+  await runJob(page, job);
+  await runJobs(page, rest);
 };
+
+const picked = values.demo?.split(",") ?? [];
+
+const JOBS = DEMO_NAMES.filter(
+  (demo) => picked.length === 0 || picked.includes(demo)
+).flatMap(jobsFor);
 
 const browser = await chromium.launch();
 
 try {
-  const page = await browser.newPage({ deviceScaleFactor: SCALE });
+  const page = await browser.newPage({
+    bypassCSP: true,
+    deviceScaleFactor: SCALE,
+  });
 
-  await runCells(page, 0);
+  await runJobs(page, JOBS);
 } finally {
   await browser.close();
 }
