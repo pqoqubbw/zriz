@@ -405,7 +405,20 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+        "Viewport.wheel",
+      ],
+      export: "example",
+      file: "viewport/anatomy.jsx.tsx",
+      inputs: {},
+      kind: "parts",
+    },
     summary:
       "a 3:2 photo, a track that sets the wheel to pan or zoom, and open, reset and download in the corners",
     zones: [

@@ -26,6 +26,9 @@ const VIEWPORT_PAGE = defineDoc({
       ),
       p(
         "zriz makes it `position: relative` when it is static and sets `touch-action: none`, so the page does not scroll under a finger. `Image` clips the photo to the box by itself. the stylesheet also clips the viewport, so a handle at its edge never hangs outside it."
+      ),
+      p(
+        "the track in the demo above sets `wheel` to pan or zoom. the photo pans once you zoom in. the demo uses the styles from the zriz site."
       )
     ),
     section(
