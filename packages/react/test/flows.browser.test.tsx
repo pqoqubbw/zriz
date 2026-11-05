@@ -699,9 +699,11 @@ describe("element sources with real decode", () => {
 
       expect(b ?? 0).toBeGreaterThan(r ?? 0);
       attachImage(cropper, null);
-      expect(image.preview.width).toBe(0);
+      expect(image.preview.width).toBe(source === bitmap ? 320 : 0);
       cropper.destroy();
     }
+
+    bitmap.close();
 
     URL.revokeObjectURL(url);
   });
