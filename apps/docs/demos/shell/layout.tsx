@@ -164,7 +164,7 @@ const Spinner = () => (
 
 const DropVeil = () => (
   <div
-    className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center gap-1.5 rounded-control bg-veil text-control font-medium text-ink"
+    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-control bg-veil text-control font-medium text-ink"
     data-slot="drop"
   >
     <Icon className="size-5 shrink-0" name="open-image" />
