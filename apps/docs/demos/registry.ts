@@ -266,7 +266,22 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
     below: false,
     photo: "landscape",
     shape: "rect",
-    snippet: null,
+    snippet: {
+      differences: [
+        "+Announcer",
+        "+Grid",
+        "+Handle",
+        "+Instructions",
+        "+Reset",
+        "DialValue.format",
+        "Root.onValueChange",
+        "Root.onValueCommit",
+      ],
+      export: "example",
+      file: "playground/root.jsx.tsx",
+      inputs: { photo: "photo" },
+      kind: "fragment",
+    },
     summary:
       "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. the controls under it change its props",
     zones: [EDITOR_ZONE],

@@ -5,6 +5,8 @@ import type { MouseEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { playground } from "@/demos/playground/store";
+import { cn } from "@/lib/cn";
 
 type CopiedStatusProps = {
   copied: boolean;
@@ -14,7 +16,11 @@ type CopyProps = {
   label: string;
 };
 
-const useCopy = () => {
+type CopyActionProps = CopyProps & {
+  read?: () => string | null;
+};
+
+const useCopy = (read?: () => string | null) => {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -30,7 +36,7 @@ const useCopy = () => {
       .closest("[data-copy]")
       ?.querySelector("[data-copy-text]");
 
-    await navigator.clipboard.writeText(source?.textContent ?? "");
+    await navigator.clipboard.writeText(read?.() ?? source?.textContent ?? "");
     setCopied(true);
     clearTimeout(timer.current);
 
@@ -68,15 +74,31 @@ const CopyButton = ({ label }: CopyProps) => {
   );
 };
 
-const CopyAction = ({ label }: CopyProps) => {
-  const { copied, onClick } = useCopy();
+const CopyAction = ({ label, read }: CopyActionProps) => {
+  const { copied, onClick } = useCopy(read);
 
   return (
     <>
-      <Button onClick={onClick}>{label}</Button>
+      <Button onClick={onClick}>
+        <span className="grid">
+          <span className={cn("[grid-area:1/1]", copied && "invisible")}>
+            {label}
+          </span>
+          <span
+            aria-hidden="true"
+            className={cn("[grid-area:1/1]", !copied && "invisible")}
+          >
+            copied
+          </span>
+        </span>
+      </Button>
       <CopiedStatus copied={copied} />
     </>
   );
 };
 
-export { CopyAction, CopyButton };
+const PlaygroundCopy = ({ label }: CopyProps) => (
+  <CopyAction label={label} read={playground.copyText} />
+);
+
+export { CopyAction, CopyButton, PlaygroundCopy };

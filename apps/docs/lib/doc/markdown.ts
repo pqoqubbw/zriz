@@ -131,6 +131,7 @@ const converters: { [K in Kind]: Converter<K> } = {
       ])
     ),
   ],
+  liveCode: (block) => fenceOf({ file: block.file, kind: "code" }),
   log: fenceOf,
   messages: (block) => [
     list(

@@ -4,7 +4,11 @@ import type { ReactNode } from "react";
 
 import { CodeFigure } from "@/components/doc/code-figure";
 import { Controls } from "@/components/doc/controls";
-import { CopyAction, CopyButton } from "@/components/doc/copy-button";
+import {
+  CopyAction,
+  CopyButton,
+  PlaygroundCopy,
+} from "@/components/doc/copy-button";
 import { Demo } from "@/components/doc/demo";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
 import { TableBlock } from "@/components/doc/tables/grid-table";
@@ -13,11 +17,15 @@ import { Text } from "@/components/doc/text";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Panel } from "@/components/ui/panel";
+import { DownloadAction } from "@/demos/playground/download-action";
+import { LiveCode } from "@/demos/playground/live-code";
+import { LiveLog } from "@/demos/playground/live-log";
 import { cn } from "@/lib/cn";
 import type { Anchors } from "@/lib/doc/anchors";
 import { BLOCK_SLOTS, gap } from "@/lib/doc/flow";
 import type { Before, Gap } from "@/lib/doc/flow";
 import type { Block, BlockOf, Kind } from "@/lib/doc/schema";
+import { languageOf } from "@/lib/doc/snippets";
 
 type Context = {
   anchors: Anchors;
@@ -71,11 +79,19 @@ const renderPairs: Renderer<"attrs" | "keys" | "variables"> = (
 const renderers: { [K in Kind]: Renderer<K> } = {
   actions: (block, { className }) => (
     <div className={cn("flex gap-2", className)}>
-      {block.action === "copy-value" ? (
+      {block.bind === "playground" && block.action === "copy-value" ? (
+        <PlaygroundCopy label={block.label} />
+      ) : null}
+      {block.bind === "playground" && block.action === "download" ? (
+        <DownloadAction label={block.label} />
+      ) : null}
+      {block.action === "copy-code" ? <CopyAction label={block.label} /> : null}
+      {block.bind !== "playground" && block.action === "copy-value" ? (
         <CopyAction label={block.label} />
-      ) : (
+      ) : null}
+      {block.bind !== "playground" && block.action === "download" ? (
         <Button disabled>{block.label}</Button>
-      )}
+      ) : null}
     </div>
   ),
   attrs: renderPairs,
@@ -86,7 +102,11 @@ const renderers: { [K in Kind]: Renderer<K> } = {
   ),
   code: renderCode,
   controls: (block, { className }) => (
-    <Controls className={className} controls={block.controls} />
+    <Controls
+      className={className}
+      controls={block.controls}
+      {...(block.bind === undefined ? {} : { bind: block.bind })}
+    />
   ),
   demo: (block, { className }) => (
     <Demo className={className} name={block.name} />
@@ -103,16 +123,45 @@ const renderers: { [K in Kind]: Renderer<K> } = {
     </div>
   ),
   keys: renderPairs,
-  log: (block, { className }) => (
-    <Panel className={cn("font-mono text-code", className)} layout="box">
-      {block.lines.map((line, i) => (
-        <div className="flex gap-4" key={`${i}-${line.event}`}>
-          <span className="w-20 shrink-0 text-faint">{line.time}</span>{" "}
-          <span>{line.event}</span>
-        </div>
-      ))}
+  liveCode: (block, { className }) => (
+    <Panel
+      aria-label={`${languageOf(block.file).fence} code`}
+      as="figure"
+      className={cn(
+        "scrollbar-none overflow-x-auto overscroll-x-contain max-sm:[border-image-outset:0]",
+        className
+      )}
+      tabIndex={0}
+    >
+      <pre className="font-mono text-code text-code-ink">
+        <LiveCode feed={block.feed} />
+      </pre>
     </Panel>
   ),
+  log: (block, { className }) =>
+    block.bind === "playground" ? (
+      <Panel className={cn("font-mono text-code", className)} layout="box">
+        <Panel
+          aria-label="Events, newest first"
+          aria-live="off"
+          className="h-40 scrollbar-none overflow-y-auto overscroll-y-contain rounded-none bg-transparent"
+          radius="demo"
+          role="log"
+          tabIndex={0}
+        >
+          <LiveLog />
+        </Panel>
+      </Panel>
+    ) : (
+      <Panel className={cn("font-mono text-code", className)} layout="box">
+        {block.lines.map((line, i) => (
+          <div className="flex gap-4" key={`${i}-${line.event}`}>
+            <span className="w-20 shrink-0 text-faint">{line.time}</span>{" "}
+            <span>{line.event}</span>
+          </div>
+        ))}
+      </Panel>
+    ),
   messages: (block, { className }) => (
     <MessageList className={className} label={block.label} rows={block.rows} />
   ),

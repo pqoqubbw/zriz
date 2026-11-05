@@ -53,12 +53,20 @@ type Control =
 
 type DemoSpace = 40 | 48 | 56;
 
+type Bind = "playground";
+
+type LiveFeed = "code" | "value";
+
 type BlockMap = {
-  actions: { action: "copy-value" | "download"; label: string };
+  actions: {
+    action: "copy-code" | "copy-value" | "download";
+    bind?: Bind;
+    label: string;
+  };
   attrs: { rows: readonly NamedRow[] };
   caption: { text: string };
   code: { file: string };
-  controls: { controls: readonly Control[] };
+  controls: { bind?: Bind; controls: readonly Control[] };
   demo: { name: DemoName; space?: DemoSpace };
   excerpt: {
     file: string;
@@ -66,7 +74,8 @@ type BlockMap = {
   };
   intro: { blocks: readonly Block[] };
   keys: { rows: readonly KeyRow[] };
-  log: { lines: readonly LogLine[] };
+  liveCode: { feed: LiveFeed; file: string };
+  log: { bind?: Bind; lines: readonly LogLine[] };
   messages: { label: string; rows: readonly MessageRow[] };
   p: { text: string };
   part: { blocks: readonly Block[]; name: string; text: string };
@@ -102,6 +111,7 @@ const TABLE_HEADS = {
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type {
+  Bind,
   Block,
   BlockMap,
   BlockOf,
@@ -112,6 +122,7 @@ export type {
   Doc,
   KeyRow,
   Kind,
+  LiveFeed,
   LogLine,
   MessageRow,
   NamedRow,

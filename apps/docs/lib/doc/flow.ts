@@ -26,6 +26,7 @@ const BLOCK_SLOTS = {
   excerpt: "code",
   intro: "p",
   keys: "table",
+  liveCode: "code",
   log: "code",
   messages: "table",
   p: "p",

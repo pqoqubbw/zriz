@@ -1,12 +1,15 @@
 import type { DemoName } from "@/demos/registry";
 import type {
+  Bind,
   Block,
   BlockMap,
+  BlockOf,
   Column,
   Control,
   DemoSpace,
   Doc,
   KeyRow,
+  LiveFeed,
   LogLine,
   MessageRow,
   NamedRow,
@@ -69,7 +72,7 @@ const messages = (label: string, rows: readonly MessageRow[]): Block => ({
   rows,
 });
 
-const controls = (...items: Control[]): Block => ({
+const controls = (...items: Control[]): BlockOf<"controls"> => ({
   controls: items,
   kind: "controls",
 });
@@ -92,7 +95,7 @@ const range = (
   unit: string
 ): Control => ({ max, min, name, step, type: "range", unit, value });
 
-const log = (lines: readonly LogLine[]): Block => ({
+const log = (lines: readonly LogLine[]): BlockOf<"log"> => ({
   kind: "log",
   lines,
 });
@@ -100,7 +103,18 @@ const log = (lines: readonly LogLine[]): Block => ({
 const actions = (
   label: string,
   action: BlockMap["actions"]["action"]
-): Block => ({ action, kind: "actions", label });
+): BlockOf<"actions"> => ({ action, kind: "actions", label });
+
+const bind = (
+  to: Bind,
+  block: BlockOf<"actions" | "controls" | "log">
+): Block => ({ ...block, bind: to });
+
+const liveCode = (file: string, feed: LiveFeed): Block => ({
+  feed,
+  file,
+  kind: "liveCode",
+});
 
 const part = (name: string, text: string, ...blocks: Block[]): Block => ({
   blocks,
@@ -129,6 +143,7 @@ const intro = (...blocks: Block[]): Block => ({
 export {
   actions,
   attrs,
+  bind,
   caption,
   choice,
   code,
@@ -139,6 +154,7 @@ export {
   excerpt,
   intro,
   keys,
+  liveCode,
   log,
   messages,
   p,
