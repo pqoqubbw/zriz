@@ -11,6 +11,7 @@ import {
   pressLost,
   presses,
   targetOf,
+  watchEscape,
   watchLoss,
   windowOf,
 } from "./input";
@@ -256,15 +257,28 @@ const dialHandlers = (
     }
   };
 
-  const finish = (event: Event | undefined, velocity: number): void => {
+  const letGo = (): void => {
     pointer = null;
     releaseCursor?.();
     releaseCursor = null;
     unwatch?.();
     unwatch = null;
+    engaged = false;
+  };
+
+  const onEscape = (event: KeyboardEvent): void => {
+    letGo();
+    dial.stopSettle?.();
+    dial.stopSettle = null;
+    dial.set(0, false);
+    cropper.rebase(owner);
+    cropper.cancel(event, owner);
+  };
+
+  const finish = (event: Event | undefined, velocity: number): void => {
     const was = engaged;
 
-    engaged = false;
+    letGo();
 
     if (was && event && velocity !== 0 && dial.overshoot() === 0) {
       dial.set(0, false);
@@ -362,7 +376,13 @@ const dialHandlers = (
 
       scale = target ? visualScale(target).x : 1;
       width = Math.max((target?.getBoundingClientRect().width ?? 0) / scale, 1);
-      unwatch = watchLoss(cropper, lost, (id) => id === pointer, target);
+      const offLoss = watchLoss(cropper, lost, (id) => id === pointer, target);
+      const offEscape = watchEscape(target, onEscape);
+
+      unwatch = () => {
+        offLoss();
+        offEscape();
+      };
 
       if (event.pointerType !== "touch" && target) {
         capture(target, event.pointerId);

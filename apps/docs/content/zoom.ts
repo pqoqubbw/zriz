@@ -79,7 +79,8 @@ const ZOOM_PAGE = defineDoc({
       ]),
       p(
         "each step multiplies the zoom by the same amount, about 1.14× on a 15× track."
-      )
+      ),
+      p("escape during a drag cancels it and puts the zoom back.")
     ),
     section(
       "api",

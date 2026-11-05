@@ -75,7 +75,8 @@ const DIAL_PAGE = defineDoc({
       ]),
       p(
         'with `dir="rtl"` on `Root`, left and right swap. up and down stay the same.'
-      )
+      ),
+      p("escape during a drag cancels it and puts the angle back.")
     ),
     section(
       "api",

@@ -3024,26 +3024,29 @@ describe("the aspect it already has", () => {
   it.each([
     ["a ratio", 1],
     ["the photo's own", "original"],
-  ] as const)("setting %s again keeps the zoom and sends no commit", (_, aspect) => {
-    const time = fakeClock();
-    const commit = vi.fn<CropperEvents["commit"]>();
-    const cropper = createCropper({
-      clock: time.clock,
-      defaultValue: { aspect },
-      image: PHOTO,
-      onValueCommit: commit,
-    });
+  ] as const)(
+    "setting %s again keeps the zoom and sends no commit",
+    (_, aspect) => {
+      const time = fakeClock();
+      const commit = vi.fn<CropperEvents["commit"]>();
+      const cropper = createCropper({
+        clock: time.clock,
+        defaultValue: { aspect },
+        image: PHOTO,
+        onValueCommit: commit,
+      });
 
-    cropper.setZoom(3);
-    time.frames(2);
-    commit.mockClear();
-    const before = cropper.getValue();
+      cropper.setZoom(3);
+      time.frames(2);
+      commit.mockClear();
+      const before = cropper.getValue();
 
-    cropper.setAspect(aspect);
-    time.frames(2);
-    expect(cropper.getValue()).toBe(before);
-    expect(commit).not.toHaveBeenCalled();
-  });
+      cropper.setAspect(aspect);
+      time.frames(2);
+      expect(cropper.getValue()).toBe(before);
+      expect(commit).not.toHaveBeenCalled();
+    }
+  );
 
   it("a new aspect still fits the crop and commits once", () => {
     const time = fakeClock();

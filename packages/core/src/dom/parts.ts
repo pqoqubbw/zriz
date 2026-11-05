@@ -20,8 +20,8 @@ import {
   presses,
   stopAtZoomCeiling,
   targetOf,
+  watchEscape,
   watchLoss,
-  windowOf,
 } from "./input";
 import type { PointerHandlers } from "./input";
 import { cropShapeOf, setCropShape } from "./shape";
@@ -445,12 +445,6 @@ const handleHandlers = (
   };
 
   const onEscape = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape" || !drag) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
     drop();
     cropper.rebase(owner);
     cropper.cancel(event, owner);
@@ -525,14 +519,12 @@ const handleHandlers = (
       }
 
       const target = targetOf(event, element);
-      const win = windowOf(target);
-
-      win.addEventListener("keydown", onEscape, true);
+      const offEscape = watchEscape(target, onEscape);
       const offLoss = watchLoss(cropper, lost, (id) => id === drag?.id, target);
 
       unwatch = () => {
         offLoss();
-        win.removeEventListener("keydown", onEscape, true);
+        offEscape();
       };
 
       if (target) {

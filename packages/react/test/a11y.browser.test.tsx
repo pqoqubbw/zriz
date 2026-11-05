@@ -209,9 +209,11 @@ describe("accessibility", () => {
     api.current?.setZoom(3);
     await frames(3);
     commit.mockClear();
+
     screen.container
       .querySelector<HTMLButtonElement>('[aria-checked="true"]')
       ?.focus();
+
     await userEvent.keyboard("{ArrowRight}");
     await frames(3);
     expect(api.current?.getZoom()).toBeCloseTo(3, 6);

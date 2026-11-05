@@ -5149,7 +5149,7 @@ a moving crop has no text, so a screen reader stays silent without \`Announcer\`
 
 every control works without a mouse. the keys live with each part: [crop area](https://zriz.dev/docs/crop-area.md), [dial](https://zriz.dev/docs/dial.md), [zoom](https://zriz.dev/docs/zoom.md) and [aspect ratio](https://zriz.dev/docs/aspect-ratio.md). buttons take enter and space like any button.
 
-escape also cancels a photo drag or a handle drag.
+escape also cancels a drag on the photo, a handle, \`Dial\` or \`Zoom\`, and the dialog around it stays open. a second escape reaches the dialog.
 
 a key pressed in a focusable child of \`Area\`, \`Dial\` or \`Zoom\` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on \`Area\`, which resizes the crop.
 
@@ -6388,6 +6388,8 @@ these keys work while \`Dial\` has focus:
 | \`0\` | straighten to 0° |
 
 with \`dir="rtl"\` on \`Root\`, left and right swap. up and down stay the same.
+
+escape during a drag cancels it and puts the angle back.
 
 ## api
 
@@ -9839,6 +9841,8 @@ these keys work while \`Zoom\` has focus:
 | \`home\` or \`end\` | go to 1× or to \`max\` |
 
 each step multiplies the zoom by the same amount, about 1.14× on a 15× track.
+
+escape during a drag cancels it and puts the zoom back.
 
 ## api
 

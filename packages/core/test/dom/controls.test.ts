@@ -238,7 +238,12 @@ describe("dial bounce", () => {
     const { cropper, time } = setup();
     const handlers = dialHandlers(cropper, {}, () => track);
     const box = cast(
-      { ...track, getBoundingClientRect: () => ({ left: 0, width: 361 }) },
+      {
+        getBoundingClientRect: () => ({ left: 0, width: 361 }),
+        getClientRects: () => [{}],
+        ownerDocument: {},
+        setPointerCapture: () => {},
+      },
       isElement
     );
     const zoom = zoomHandlers(cropper, {}, () => box);
@@ -279,10 +284,18 @@ describe("dial bounce", () => {
     const { x } = cropper.getValue().center;
     const prevent = vi.fn<() => void>();
 
-    keys.onKeyDown({
-      ...key({ key: "ArrowRight" }),
-      preventDefault: prevent,
-    });
+    keys.onKeyDown(
+      cast(
+        {
+          altKey: false,
+          key: "ArrowRight",
+          preventDefault: prevent,
+          shiftKey: false,
+        },
+        isKey
+      )
+    );
+
     expect(prevent).toHaveBeenCalledOnce();
     expect(cropper.getState().interacting).toBe("keyboard");
     expect(cropper.getValue().center.x).not.toBe(x);

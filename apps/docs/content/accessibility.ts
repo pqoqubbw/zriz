@@ -86,7 +86,9 @@ const ACCESSIBILITY_PAGE = defineDoc({
       p(
         "every control works without a mouse. the keys live with each part: [crop area](crop-area), [dial](dial), [zoom](zoom) and [aspect ratio](aspect-ratio). buttons take enter and space like any button."
       ),
-      p("escape also cancels a photo drag or a handle drag."),
+      p(
+        "escape also cancels a drag on the photo, a handle, `Dial` or `Zoom`, and the dialog around it stays open. a second escape reaches the dialog."
+      ),
       p(
         "a key pressed in a focusable child of `Area`, `Dial` or `Zoom` stays with that child, and ctrl, cmd and alt shortcuts stay with the browser. the one exception is alt + arrows on `Area`, which resizes the crop."
       ),

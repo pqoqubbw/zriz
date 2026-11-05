@@ -941,6 +941,112 @@ describe("dial gesture edges", () => {
   });
 });
 
+const escape = (): { heard: number; prevented: boolean } => {
+  const event = new KeyboardEvent("keydown", {
+    bubbles: true,
+    cancelable: true,
+    key: "Escape",
+  });
+  let heard = 0;
+
+  const listen = (): void => {
+    heard += 1;
+  };
+
+  document.addEventListener("keydown", listen);
+  document.body.dispatchEvent(event);
+  document.removeEventListener("keydown", listen);
+
+  return { heard, prevented: event.defaultPrevented };
+};
+
+describe("escape during a drag", () => {
+  afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+  });
+
+  it("cancels a dial drag and stays out of a dialog, a second escape passes", () => {
+    const f = rig();
+    const handlers = dialHandlers(f.cropper, {}, () => f.dial);
+    const before = f.cropper.getValue();
+
+    handlers.onPointerDown(stamped("pointerdown", 100, 0));
+    handlers.onPointerMove(stamped("pointermove", 180, 16));
+    expect(f.cropper.getValue().rotation).not.toBe(0);
+    expect(escape()).toStrictEqual({ heard: 0, prevented: true });
+    handlers.onPointerMove(stamped("pointermove", 200, 32));
+
+    expect({
+      dragging: dialState(f.cropper).dragging(),
+      interacting: f.cropper.getState().interacting,
+      value: f.cropper.getValue(),
+    }).toStrictEqual({ dragging: false, interacting: null, value: before });
+
+    expect(escape()).toStrictEqual({ heard: 1, prevented: false });
+    f.time.frames(3);
+    expect(f.commits).toStrictEqual([]);
+  });
+
+  it("drops the stretch past the limit with the drag", () => {
+    const f = rig();
+    const handlers = dialHandlers(f.cropper, {}, () => f.dial);
+
+    handlers.onPointerDown(stamped("pointerdown", 100, 0));
+    handlers.onPointerMove(stamped("pointermove", 700, 16));
+    expect(dialState(f.cropper).overshoot()).not.toBe(0);
+    escape();
+    expect(dialState(f.cropper).overshoot()).toBe(0);
+  });
+
+  it("leaves escape to the page when the dial only glides", () => {
+    const f = rig();
+    const handlers = dialHandlers(f.cropper, {}, () => f.dial);
+
+    handlers.onPointerDown(stamped("pointerdown", 100, 0));
+
+    for (let i = 1; i <= 5; i += 1) {
+      handlers.onPointerMove(stamped("pointermove", 100 + i * 15, i * 16));
+    }
+
+    handlers.onPointerUp(stamped("pointerup", 175, 80));
+    f.time.frames(2);
+    expect(escape()).toStrictEqual({ heard: 1, prevented: false });
+    f.time.frames(60);
+  });
+
+  it("cancels a zoom drag and a second escape passes", () => {
+    const f = rig();
+    const track = document.createElement("div");
+
+    track.style.cssText = "width:400px;height:20px;";
+    document.body.append(track);
+
+    cleanups.push(() => {
+      track.remove();
+    });
+
+    const handlers = zoomHandlers(f.cropper, {}, () => track);
+    const box = track.getBoundingClientRect();
+
+    handlers.onPointerDown(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        buttons: 1,
+        clientX: box.x + 300,
+        pointerId: 2,
+      })
+    );
+
+    expect(f.cropper.getZoom()).toBeGreaterThan(1);
+    expect(escape()).toStrictEqual({ heard: 0, prevented: true });
+    expect(f.cropper.getZoom()).toBeCloseTo(1, 9);
+    expect(f.cropper.getState().interacting).toBeNull();
+    expect(escape()).toStrictEqual({ heard: 1, prevented: false });
+  });
+});
+
 describe("zoom and area keys", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {

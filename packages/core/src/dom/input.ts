@@ -191,6 +191,27 @@ const watchLoss = (
   };
 };
 
+const watchEscape = (
+  element: Element | null,
+  cancel: (event: KeyboardEvent) => void
+): (() => void) => {
+  const win = windowOf(element);
+
+  const onKey = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      cancel(event);
+    }
+  };
+
+  win.addEventListener("keydown", onKey, true);
+
+  return () => {
+    win.removeEventListener("keydown", onKey, true);
+  };
+};
+
 const bindPointers = (
   element: HTMLElement,
   handlers: PointerHandlers
@@ -228,6 +249,7 @@ export {
   presses,
   stopAtZoomCeiling,
   targetOf,
+  watchEscape,
   watchLoss,
   windowOf,
 };

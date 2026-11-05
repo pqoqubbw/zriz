@@ -1023,38 +1023,50 @@ describe("dom binders", () => {
   });
 });
 
+const stamped = (type: string, x: number, timeStamp: number): PointerEvent => {
+  const event = new PointerEvent(type, {
+    button: 0,
+    buttons: 1,
+    clientX: x,
+    pointerId: 9,
+  });
+
+  Object.defineProperty(event, "timeStamp", { value: timeStamp });
+
+  return event;
+};
+
+const flick = (fixture: Fixture, time: FakeClock): void => {
+  const handlers = dialHandlers(fixture.cropper, {}, () => fixture.viewport);
+
+  handlers.onPointerDown(stamped("pointerdown", 100, 0));
+
+  for (let i = 1; i <= 8; i += 1) {
+    handlers.onPointerMove(stamped("pointermove", 100 + i * 15, i * 8));
+  }
+
+  handlers.onPointerUp(stamped("pointerup", 220, 66));
+  time.frames(3);
+  expect(fixture.cropper.getState().interacting).toBe("dial");
+};
+
+const panning = async (): Promise<Fixture> => {
+  const fixture = mount();
+
+  fixture.cropper.setZoom(2, { emit: false });
+  await frames();
+  pointer(fixture, "pointerdown", 1, 200, 150);
+  pointer(fixture, "pointermove", 1, 210, 150);
+
+  return fixture;
+};
+
 describe("inputs that give way", () => {
   afterEach(() => {
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
   });
-
-  const flick = (fixture: Fixture, time: FakeClock): void => {
-    const handlers = dialHandlers(fixture.cropper, {}, () => fixture.viewport);
-    const at = (type: string, x: number, timeStamp: number): PointerEvent => {
-      const event = new PointerEvent(type, {
-        button: 0,
-        buttons: 1,
-        clientX: x,
-        pointerId: 9,
-      });
-
-      Object.defineProperty(event, "timeStamp", { value: timeStamp });
-
-      return event;
-    };
-
-    handlers.onPointerDown(at("pointerdown", 100, 0));
-
-    for (let i = 1; i <= 8; i += 1) {
-      handlers.onPointerMove(at("pointermove", 100 + i * 15, i * 8));
-    }
-
-    handlers.onPointerUp(at("pointerup", 220, 66));
-    time.frames(3);
-    expect(fixture.cropper.getState().interacting).toBe("dial");
-  };
 
   it("a photo press during a dial glide stops the glide and drags", () => {
     const time = fakeClock();
@@ -1090,12 +1102,14 @@ describe("inputs that give way", () => {
         bubbles: true,
         button: 0,
         buttons: 1,
-        clientX: box?.x,
-        clientY: box?.y,
+        clientX: box?.x ?? 0,
+        clientY: box?.y ?? 0,
         pointerId: 3,
       })
     );
+
     expect(fixture.cropper.getState().interacting).toBe("resize");
+
     handle?.dispatchEvent(
       new PointerEvent("pointerup", { bubbles: true, pointerId: 3 })
     );
@@ -1110,6 +1124,7 @@ describe("inputs that give way", () => {
       await frames();
       expect(wheel(fixture, { deltaY: 40 })).toBeFalsy();
       expect(fixture.cropper.getState().interacting).toBe("wheel");
+
       pressers[part]?.(
         fixture.cropper,
         fixture.viewport
@@ -1122,6 +1137,7 @@ describe("inputs that give way", () => {
           pointerId: 4,
         })
       );
+
       expect(fixture.cropper.getState().interacting).not.toBe("wheel");
       await wait(200);
       expect(fixture.cropper.getState().interacting).not.toBeNull();
@@ -1137,17 +1153,6 @@ describe("a button pressed during a drag", () => {
     }
   });
 
-  const panning = async (): Promise<Fixture> => {
-    const fixture = mount();
-
-    fixture.cropper.setZoom(2, { emit: false });
-    await frames();
-    pointer(fixture, "pointerdown", 1, 200, 150);
-    pointer(fixture, "pointermove", 1, 210, 150);
-
-    return fixture;
-  };
-
   it("flip during a pan sticks on the next move and in the commit", async () => {
     const fixture = await panning();
     const commits: boolean[] = [];
@@ -1155,6 +1160,7 @@ describe("a button pressed during a drag", () => {
     fixture.cropper.on("commit", (value) => {
       commits.push(value.mirrored);
     });
+
     fixture.cropper.flip("x", { reason: "flip" });
     pointer(fixture, "pointermove", 1, 220, 150);
     expect(fixture.cropper.getValue().mirrored).toBeTruthy();
@@ -1209,6 +1215,7 @@ describe("a button pressed during a drag", () => {
     await frames();
     const handle = fixture.area.querySelector<HTMLElement>("[data-handle]");
     const box = handle?.getBoundingClientRect();
+
     const send = (type: string, dx: number): void => {
       handle?.dispatchEvent(
         new PointerEvent(type, {
@@ -1229,9 +1236,11 @@ describe("a button pressed during a drag", () => {
 
     send("pointermove", -31);
     expect(fixture.cropper.getValue().mirrored).toBeTruthy();
-    expect(Math.abs(fixture.cropper.getValue().size.width - width)).toBeLessThan(
-      0.01
-    );
+
+    expect(
+      Math.abs(fixture.cropper.getValue().size.width - width)
+    ).toBeLessThan(0.01);
+
     send("pointerup", -31);
   });
 });

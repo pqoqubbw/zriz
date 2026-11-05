@@ -259,15 +259,22 @@ describe("gesture and commit edges", () => {
     const glide = vi.fn<() => boolean>(() => true);
 
     cropper.run(glide);
+
     cropper.coast(owner, () => {
       cropper.end(undefined, owner);
     });
 
     expect(cropper.begin("pan", undefined, other)).toBeTruthy();
-    expect(cropper.getState().interacting).toBe("pan");
-    expect(commit).toHaveBeenCalledOnce();
-    expect(commit.mock.calls[0]?.[1].reason).toBe("dial");
-    expect(cropper.getValue().rotation).toBe(5);
+
+    expect(
+      commit.mock.calls.map(([, details]) => details.reason)
+    ).toStrictEqual(["dial"]);
+
+    expect({
+      interacting: cropper.getState().interacting,
+      rotation: cropper.getValue().rotation,
+    }).toStrictEqual({ interacting: "pan", rotation: 5 });
+
     time.frames(3);
     expect(glide).not.toHaveBeenCalled();
     cropper.end(undefined, other);

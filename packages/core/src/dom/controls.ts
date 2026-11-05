@@ -11,6 +11,7 @@ import {
   presses,
   stopAtZoomCeiling,
   targetOf,
+  watchEscape,
   watchLoss,
 } from "./input";
 import type { PointerHandlers } from "./input";
@@ -171,15 +172,25 @@ const zoomHandlers = (
     });
   };
 
+  const letGo = (): void => {
+    pointer = null;
+    unwatch?.();
+    unwatch = null;
+    releaseCursor?.();
+    releaseCursor = null;
+  };
+
   const lost = (event?: Event): void => {
     if (pointer !== null) {
-      pointer = null;
-      unwatch?.();
-      unwatch = null;
-      releaseCursor?.();
-      releaseCursor = null;
+      letGo();
       cropper.end(event, owner);
     }
+  };
+
+  const onEscape = (event: KeyboardEvent): void => {
+    letGo();
+    cropper.rebase(owner);
+    cropper.cancel(event, owner);
   };
 
   const finish = (event: PointerEvent): void => {
@@ -238,7 +249,13 @@ const zoomHandlers = (
       pointer = event.pointerId;
       const own = targetOf(event, element);
 
-      unwatch = watchLoss(cropper, lost, (id) => id === pointer, own);
+      const offLoss = watchLoss(cropper, lost, (id) => id === pointer, own);
+      const offEscape = watchEscape(own, onEscape);
+
+      unwatch = () => {
+        offLoss();
+        offEscape();
+      };
 
       if (own) {
         capture(own, event.pointerId);
