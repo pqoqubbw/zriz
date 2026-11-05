@@ -133,7 +133,7 @@ const Result = ({ sent }: ResultProps) => {
       <dd>
         <Panel
           aria-label="Sharp steps"
-          className="scrollbar-none overflow-x-auto overscroll-x-contain rounded-none bg-transparent"
+          className="-mx-4 scrollbar-none overflow-x-auto overscroll-x-contain rounded-none bg-transparent px-4"
           radius="demo"
           tabIndex={0}
         >
