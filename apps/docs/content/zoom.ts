@@ -77,7 +77,10 @@ const ZOOM_PAGE = defineDoc({
           text: "move 1/20 of the track. up zooms in",
         },
         { keys: [["shift", "arrow keys"]], text: "move half the track" },
-        { keys: [["page up"], ["page down"]], text: "move half the track" },
+        {
+          keys: [["page up"], ["page down"]],
+          text: "the same as shift and an arrow key",
+        },
         { keys: [["home"], ["end"]], text: "go to 1× or to `max`" },
       ]),
       p(
