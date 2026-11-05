@@ -21,7 +21,7 @@ const BUTTONS_PAGE = defineDoc({
       ),
       code("buttons/anatomy.jsx.tsx"),
       p(
-        "zriz ships them bare, with no paint and no icons. the demo above uses the icons and styles from the zriz site."
+        "zriz ships them bare, with no paint and no icons. the demo above adds a right turn and a vertical flip, and uses the icons and styles from the zriz site."
       )
     ),
     section(
