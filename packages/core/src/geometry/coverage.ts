@@ -1,70 +1,8 @@
-import { positiveZero, sinCosDegrees } from "./angle";
-import { applyMatrix2, rotationMatrix } from "./matrix";
+import { positiveZero } from "./angle";
 import { planeSupport } from "./planes";
 import type { HalfPlane, Point, Size } from "./types";
 
 type Row = readonly [number, number, number];
-
-const absSinCos = (degrees: number): { sin: number; cos: number } => {
-  const { sin, cos } = sinCosDegrees(degrees);
-
-  return { cos: Math.abs(cos), sin: Math.abs(sin) };
-};
-
-const panBox = (
-  image: Size,
-  angle: number,
-  width: number,
-  height: number
-): Point => {
-  const { sin, cos } = absSinCos(angle);
-
-  return {
-    x: (image.width - (width * cos + height * sin)) / 2,
-    y: (image.height - (width * sin + height * cos)) / 2,
-  };
-};
-
-const clamp = (value: number, limit: number): number =>
-  Math.min(Math.max(value, -Math.max(limit, 0)), Math.max(limit, 0));
-
-const clampPan = (
-  image: Size,
-  angle: number,
-  width: number,
-  height: number,
-  centre: Point
-): Point => {
-  const box = panBox(image, angle, width, height);
-  const straightened = applyMatrix2(rotationMatrix(-angle), centre);
-  const clamped = {
-    x: clamp(straightened.x, box.x),
-    y: clamp(straightened.y, box.y),
-  };
-
-  if (clamped.x === straightened.x && clamped.y === straightened.y) {
-    return centre;
-  }
-
-  return applyMatrix2(rotationMatrix(angle), clamped);
-};
-
-const coverScaleAt = (
-  image: Size,
-  view: Size,
-  angle: number,
-  centre: Point
-): number => {
-  const { sin, cos } = absSinCos(angle);
-  const straightened = applyMatrix2(rotationMatrix(-angle), centre);
-
-  return Math.max(
-    (view.width * cos + view.height * sin) /
-      (image.width - 2 * Math.abs(straightened.x)),
-    (view.width * sin + view.height * cos) /
-      (image.height - 2 * Math.abs(straightened.y))
-  );
-};
 
 const minScaleAt = (
   planes: readonly HalfPlane[],
@@ -197,27 +135,4 @@ const largestFit = (
   return { center: best.center, scale: 1 / best.t };
 };
 
-const largestCropAt = (
-  image: Size,
-  angle: number,
-  aspect: number,
-  centre: Point
-): Size => {
-  const { sin, cos } = absSinCos(angle);
-  const straightened = applyMatrix2(rotationMatrix(-angle), centre);
-  const height = Math.min(
-    (image.width - 2 * Math.abs(straightened.x)) / (aspect * cos + sin),
-    (image.height - 2 * Math.abs(straightened.y)) / (aspect * sin + cos)
-  );
-
-  return { height, width: aspect * height };
-};
-
-export {
-  clampPan,
-  coverScaleAt,
-  largestCropAt,
-  largestFit,
-  minScaleAt,
-  panBox,
-};
+export { largestFit, minScaleAt };

@@ -9,27 +9,7 @@ import {
   transposeMatrix2,
 } from "./matrix";
 import { isFlatPerspective, perspectiveHomography } from "./perspective";
-import type { CropState, Matrix2, Point, QuarterTurns, Size } from "./types";
-
-type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-
-const QUARTER_TURN_VALUES: ReadonlySet<unknown> = new Set([0, 1, 2, 3]);
-
-const EXIF_ORIENTATIONS: Readonly<
-  Record<
-    ExifOrientation,
-    { readonly turns: QuarterTurns; readonly flip: boolean }
-  >
-> = {
-  1: { flip: false, turns: 0 },
-  2: { flip: true, turns: 0 },
-  3: { flip: false, turns: 2 },
-  4: { flip: true, turns: 2 },
-  5: { flip: true, turns: 3 },
-  6: { flip: false, turns: 1 },
-  7: { flip: true, turns: 1 },
-  8: { flip: false, turns: 3 },
-};
+import type { CropState, Matrix2, Point, Size } from "./types";
 
 const linearTransform = (
   state: Pick<CropState, "turns" | "flip" | "angle">
@@ -134,37 +114,12 @@ const setAngle = (state: CropState, angle: number): CropState => {
   };
 };
 
-const serialiseState = (state: CropState): string => JSON.stringify(state);
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const isCropState = (value: unknown): value is CropState =>
-  isRecord(value) &&
-  isRecord(value.image) &&
-  isRecord(value.crop) &&
-  isRecord(value.perspective) &&
-  typeof value.angle === "number" &&
-  typeof value.flip === "boolean" &&
-  QUARTER_TURN_VALUES.has(value.turns) &&
-  (value.aspect === null || typeof value.aspect === "number");
-
-const deserialiseState = (json: string): CropState | null => {
-  const value: unknown = JSON.parse(json);
-
-  return isCropState(value) ? value : null;
-};
-
-export type { ExifOrientation };
 export {
-  deserialiseState,
-  EXIF_ORIENTATIONS as exifOrientations,
   linearTransform,
   mirrorX,
   mirrorY,
   rotateLeft,
   rotateRight,
-  serialiseState,
   setAngle,
   sourceToWorking,
   turnedSize,

@@ -1,11 +1,5 @@
 import { positive } from "../value";
-import { sinCosDegrees } from "./angle";
-import {
-  IDENTITY_MATRIX3,
-  applyMatrix2,
-  invertAffine,
-  multiplyMatrix3,
-} from "./matrix";
+import { applyMatrix2, invertAffine } from "./matrix";
 import { isFlatPerspective, perspectiveHomography } from "./perspective";
 import { cropCorners } from "./planes";
 import { linearTransform, sourceToWorking, workingToSource } from "./state";
@@ -15,7 +9,6 @@ import type {
   CropState,
   Matrix3,
   PixelRect,
-  Size,
 } from "./types";
 
 type ExportPlan = {
@@ -31,41 +24,6 @@ type ExportPlan = {
 const quantise = (value: number): number => Math.round(value * 1024) / 1024;
 
 const snapEdge = (value: number): number => Math.floor(quantise(value) + 0.5);
-
-const sourceToOutputMatrix = (
-  state: CropState,
-  plan: { width: number; height: number; scale: number; crop: Crop }
-): Matrix3 => {
-  const linear = linearTransform(state);
-  const k = plan.scale;
-  const output: Matrix3 = [
-    k * linear[0],
-    k * linear[1],
-    -k * plan.crop.x + plan.width / 2,
-    k * linear[2],
-    k * linear[3],
-    -k * plan.crop.y + plan.height / 2,
-    0,
-    0,
-    1,
-  ];
-  const homography = isFlatPerspective(state.perspective)
-    ? IDENTITY_MATRIX3
-    : perspectiveHomography(state.perspective);
-  const centre: Matrix3 = [
-    1,
-    0,
-    -state.image.width / 2,
-    0,
-    1,
-    -state.image.height / 2,
-    0,
-    0,
-    1,
-  ];
-
-  return multiplyMatrix3(output, multiplyMatrix3(homography, centre));
-};
 
 const snappedCrop = (
   state: CropState
@@ -170,14 +128,5 @@ const exportPlan = (state: CropState, requestedScale = 1): ExportPlan => {
   };
 };
 
-const rotatedBox = (image: Size, degrees: number): Size => {
-  const { sin, cos } = sinCosDegrees(degrees);
-
-  return {
-    height: image.width * Math.abs(sin) + image.height * Math.abs(cos),
-    width: image.width * Math.abs(cos) + image.height * Math.abs(sin),
-  };
-};
-
 export type { ExportPlan };
-export { exportPlan, quantise, rotatedBox, snapEdge, sourceToOutputMatrix };
+export { exportPlan, quantise, snapEdge };

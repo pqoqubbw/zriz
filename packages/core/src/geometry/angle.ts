@@ -40,14 +40,6 @@ const sinCosDegrees = (degrees: number): { sin: number; cos: number } => {
   return rotateByQuarters(Math.sin(radians), Math.cos(radians), turns);
 };
 
-const splitAngle = (
-  degrees: number
-): { turns: QuarterTurns; angle: number } => {
-  const turns = Math.round(degrees / 90);
-
-  return { angle: degrees - 90 * turns, turns: toQuarterTurns(turns) };
-};
-
 const positiveZero = (value: number): number => value + 0;
 
-export { positiveZero, sinCosDegrees, splitAngle, toQuarterTurns };
+export { positiveZero, sinCosDegrees, toQuarterTurns };

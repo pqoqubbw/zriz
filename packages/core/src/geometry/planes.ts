@@ -1,7 +1,7 @@
 import { clamp } from "../value";
 import { sinCosDegrees } from "./angle";
 import { isFlatPerspective } from "./perspective";
-import { sourceToWorking, turnedSize, workingToSource } from "./state";
+import { sourceToWorking, turnedSize } from "./state";
 import type { Crop, CropState, HalfPlane, Point } from "./types";
 
 const imageQuad = (state: CropState): Point[] => {
@@ -154,28 +154,11 @@ const cropCorners = (crop: Crop): Point[] => [
   { x: crop.x - crop.width / 2, y: crop.y + crop.height / 2 },
 ];
 
-const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
-  const turned = turnedSize(state.image, state.turns);
-  const tolerance = epsilon * Math.max(turned.width, turned.height);
-
-  return cropCorners(state.crop).every((corner) => {
-    const source = workingToSource(state, corner);
-
-    return (
-      source.x >= -tolerance &&
-      source.y >= -tolerance &&
-      source.x <= state.image.width + tolerance &&
-      source.y <= state.image.height + tolerance
-    );
-  });
-};
-
 export {
   cropCorners,
   imagePlanes,
   imageQuad,
   insidePlanes,
-  isCropCovered,
   panPlanes,
   planeSupport,
   polygonPlanes,

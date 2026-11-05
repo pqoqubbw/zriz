@@ -6,7 +6,7 @@ The pages in `apps/docs/content` are the spec for public behaviour and API. If t
 
 ## Layout
 
-- `packages/core`: `@zriz/core`, framework-agnostic TypeScript with zero dependencies. The root entry and `@zriz/core/geometry` hold the maths, the store, the springs and the value format, and their tests run in node. `@zriz/core/dom` holds one binder per part, image loading and export. Never import React here, never add `"use client"`.
+- `packages/core`: `@zriz/core`, framework-agnostic TypeScript with zero dependencies. The root entry holds the maths, the store, the springs and the value format, and their tests run in node. `@zriz/core/dom` holds one binder per part, image loading and export. Never import React here, never add `"use client"`.
 - `packages/react`: `@zriz/react`, unstyled React parts in the style of Base UI. Apps import parts only as `import * as Cropper from "@zriz/react/cropper"`. The root entry exports hooks, helpers and types, never parts. Every file that uses hooks or browser APIs starts with `"use client"`.
 - `apps/docs`: the Next.js site for zriz.dev. Each page is typed data in `content/<slug>.ts`, built from the blocks in `lib/doc/define.ts`. One renderer turns it into HTML (`components/doc/blocks.tsx`) and one into markdown for agents (`lib/doc/markdown.ts`); a new block kind fails to compile until both handle it. Code shown on a page lives in `snippets/<slug>/` as real, type-checked files, and excerpts are cut from them by anchor lines. Nav order and titles are in `lib/nav.ts`. Demos are grey placeholders for now.
 - `test/react18`: React 18.3 and `@types/react` 18, for the second test run and a consumer type check.

@@ -14,7 +14,6 @@ import {
   dragHandle,
   imagePlanes,
   insidePlanes,
-  largestCropAt,
   straightenLimit,
   turnedSize,
 } from "../../src/geometry";
@@ -28,6 +27,7 @@ import type {
 } from "../../src/geometry";
 import * as planesModule from "../../src/geometry/planes";
 import { stateArb } from "./arbitraries";
+import { largestCropAt } from "./oracles";
 
 vi.mock(import("../../src/geometry/planes"), { spy: true });
 

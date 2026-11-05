@@ -13,19 +13,17 @@ import { describe, expect, it } from "vitest";
 
 import { createCropper } from "../../src";
 import {
-  applyAffine,
   applyHomography,
   applyMatrix2,
-  exifOrientations,
   exportPlan,
   invertMatrix3,
   orientationMatrix,
   snapEdge,
-  sourceToOutputMatrix,
 } from "../../src/geometry";
 import type { CropState, ExportPlan, PixelRect } from "../../src/geometry";
 import { toSharp } from "../../src/to-sharp";
 import { stateArb } from "./arbitraries";
+import { applyAffine, exifOrientations, sourceToOutputMatrix } from "./oracles";
 import { runSharp } from "./run-sharp";
 
 const isPlan = (value: object): value is ExportPlan => "forward" in value;

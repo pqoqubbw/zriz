@@ -1,8 +1,6 @@
 import { sinCosDegrees, toQuarterTurns } from "./angle";
 import type { AffineMatrix, Matrix2, Matrix3, Point } from "./types";
 
-const IDENTITY_MATRIX3: Readonly<Matrix3> = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-
 const rotationMatrix = (degrees: number): Matrix2 => {
   const { sin, cos } = sinCosDegrees(degrees);
 
@@ -87,14 +85,7 @@ const invertAffine = (a: AffineMatrix): AffineMatrix => {
   return [i00, i10, i01, i11, -(i00 * tx + i01 * ty), -(i10 * tx + i11 * ty)];
 };
 
-const applyAffine = (a: AffineMatrix, point: Point): Point => ({
-  x: a[0] * point.x + a[2] * point.y + a[4],
-  y: a[1] * point.x + a[3] * point.y + a[5],
-});
-
 export {
-  IDENTITY_MATRIX3,
-  applyAffine,
   applyHomography,
   applyMatrix2,
   invertAffine,

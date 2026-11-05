@@ -9,8 +9,8 @@ import { exportImage } from "../../src/dom/export";
 import type { ExportResult, LoadedImage } from "../../src/dom/image";
 import { renderKernel } from "../../src/dom/render-kernel";
 import { via } from "../../src/dom/worker";
-import { sourceToOutputMatrix } from "../../src/geometry/export-plan";
 import { fakeClock } from "../fake-clock";
+import { sourceToOutputMatrix } from "../geometry/oracles";
 import { deferred } from "./deferred";
 
 vi.mock(import("../../src/dom/worker"), { spy: true });

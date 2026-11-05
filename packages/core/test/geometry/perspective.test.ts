@@ -14,8 +14,6 @@ import {
   imagePlanes,
   imageQuad,
   insidePlanes,
-  isCropCovered,
-  isPerspectiveValid,
   largestFit,
   minScaleAt,
   perspectiveHomography,
@@ -24,6 +22,7 @@ import {
 } from "../../src/geometry";
 import type { CropState, Point } from "../../src/geometry";
 import { stateArb } from "./arbitraries";
+import { isCropCovered, isPerspectiveValid } from "./oracles";
 
 const num = (min: number, max: number) => double({ max, min, noNaN: true });
 const perspectiveArb = record({

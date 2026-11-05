@@ -8,14 +8,9 @@ import {
 } from "fast-check";
 import type { Arbitrary } from "fast-check";
 
-import {
-  applyMatrix2,
-  largestCropAt,
-  panBox,
-  rotationMatrix,
-  turnedSize,
-} from "../../src/geometry";
+import { applyMatrix2, rotationMatrix, turnedSize } from "../../src/geometry";
 import type { CropState, QuarterTurns, Size } from "../../src/geometry";
+import { largestCropAt, panBox } from "./oracles";
 
 const sizeArb: Arbitrary<Size> = record({
   height: integer({ max: 8000, min: 1 }),

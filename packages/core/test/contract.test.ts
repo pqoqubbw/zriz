@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
@@ -18,11 +20,11 @@ import {
   exportPlan,
   imagePlanes,
   invertMatrix3,
-  isCropCovered,
   sourceToWorking,
   workingToSource,
 } from "../src/geometry";
 import { fakeClock } from "./fake-clock";
+import { isCropCovered } from "./geometry/oracles";
 
 const PHOTO = { height: 3000, width: 4000 };
 
@@ -1224,6 +1226,34 @@ describe("Area zoom and reset keys", () => {
 });
 
 describe("the public entries", () => {
+  it("publishes no geometry entry and keeps only what the cropper calls", () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf-8")
+    );
+
+    expect(manifest).not.toHaveProperty(["exports", "./geometry"]);
+
+    for (const name of [
+      "anchoredZoom",
+      "applyAffine",
+      "clampPan",
+      "coverScaleAt",
+      "deserialiseState",
+      "exifOrientations",
+      "isCropCovered",
+      "isPerspectiveValid",
+      "largestCropAt",
+      "panBox",
+      "recentrePlan",
+      "rotatedBox",
+      "serialiseState",
+      "sourceToOutputMatrix",
+      "splitAngle",
+    ]) {
+      expect(geometry).not.toHaveProperty(name);
+    }
+  });
+
   it("keeps helpers with no outside caller out of the dom entry", async () => {
     const dom = await import("../src/dom");
 

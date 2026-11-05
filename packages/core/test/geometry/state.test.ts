@@ -4,8 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   applyMatrix2,
   cropCorners,
-  deserialiseState,
-  exifOrientations,
   linearTransform,
   mirrorX,
   mirrorY,
@@ -15,15 +13,14 @@ import {
   rotateLeft,
   rotateRight,
   rotationMatrix,
-  serialiseState,
   setAngle,
   sinCosDegrees,
   sourceToWorking,
-  splitAngle,
   workingToSource,
 } from "../../src/geometry";
 import type { CropState, Matrix2, Point } from "../../src/geometry";
 import { stateArb } from "./arbitraries";
+import { exifOrientations, splitAngle } from "./oracles";
 
 const unitInterval = double({ max: 1, min: 0, noNaN: true });
 
@@ -67,16 +64,6 @@ describe("state", () => {
         const p = { x: i % (s.image.width + 1), y: j % (s.image.height + 1) };
 
         expect(workingToSource(s, sourceToWorking(s, p))).toStrictEqual(p);
-      })
-    );
-  });
-
-  it("round-trips through JSON bit exact", () => {
-    assert(
-      property(stateArb, (s) => {
-        expect(deserialiseState(serialiseState(s))).toStrictEqual(
-          structuredClone(s)
-        );
       })
     );
   });

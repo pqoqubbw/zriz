@@ -33,8 +33,8 @@ import type {
   CropperOptions,
 } from "../src";
 import type { QuarterTurns } from "../src/geometry";
-import { isCropCovered, isPerspectiveValid } from "../src/geometry";
 import { fakeClock } from "./fake-clock";
+import { isCropCovered, isPerspectiveValid } from "./geometry/oracles";
 
 const PHOTO = { height: 3000, width: 4000 };
 

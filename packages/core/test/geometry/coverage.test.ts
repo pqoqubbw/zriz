@@ -12,17 +12,12 @@ import { describe, expect, it } from "vitest";
 import { coverScale } from "../../src/coverage";
 import {
   applyMatrix2,
-  clampPan,
-  coverScaleAt,
   cropCorners,
   imagePlanes,
   insidePlanes,
-  isCropCovered,
-  largestCropAt,
   isFlatPerspective,
   largestFit,
   minScaleAt,
-  panBox,
   panPlanes,
   projectOntoPlanes,
   rotationMatrix,
@@ -30,6 +25,13 @@ import {
 } from "../../src/geometry";
 import type { CropState, Point } from "../../src/geometry";
 import { angleArb, sizeArb, stateArb } from "./arbitraries";
+import {
+  clampPan,
+  coverScaleAt,
+  isCropCovered,
+  largestCropAt,
+  panBox,
+} from "./oracles";
 
 const unit = double({ max: 1, min: -1, noNaN: true });
 const wide = double({ max: 2, min: -2, noNaN: true });
