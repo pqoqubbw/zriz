@@ -68,7 +68,10 @@ const INTRODUCTION_PAGE = defineDoc({
         "each part renders one outer element, which takes your props, `className` and ref. `Image`, `Mask` and `Area` go inside `Viewport`. the dial, zoom and buttons can sit anywhere inside `Root`, so your layout decides where they go:"
       ),
       code("introduction/parts.jsx.tsx"),
-      p("`onValueCommit` hands you the crop each time a change ends.")
+      p("`onValueCommit` hands you the crop each time a change ends."),
+      p(
+        "the demo above runs this code. it adds handles, a grid, rotate, flip and reset, shows the angle to one decimal and uses the styles from the zriz site."
+      )
     ),
   ],
   lede: "zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.",

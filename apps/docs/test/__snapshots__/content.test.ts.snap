@@ -8255,6 +8255,8 @@ each part renders one outer element, which takes your props, \`className\` and r
 \`\`\`
 
 \`onValueCommit\` hands you the crop each time a change ends.
+
+the demo above runs this code. it adds handles, a grid, rotate, flip and reset, shows the angle to one decimal and uses the styles from the zriz site.
 "
 `;
 
