@@ -94,7 +94,7 @@ const DIAL_PAGE = defineDoc({
           },
           {
             name: "format",
-            text: 'how screen readers hear the angle, merged over the default `"5 degrees"`',
+            text: 'how screen readers hear the angle, merged over the default `"5 degrees"`. an `aria-valuetext` of yours wins over it',
             type: "Intl.NumberFormatOptions",
           },
         ]),

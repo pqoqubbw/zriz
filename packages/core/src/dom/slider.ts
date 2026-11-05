@@ -152,13 +152,13 @@ const sliderAria = (
   cropper: Cropper,
   element: HTMLElement,
   reason: ChangeReason,
-  read: () => readonly [number, number, number, string]
+  read: () => readonly [number, number, number, string | false]
 ): (() => void) => {
   const shown: unknown[] = [];
 
   const aria = (): void => {
     for (const [index, next] of read().entries()) {
-      if (shown[index] !== next) {
+      if (next !== false && shown[index] !== next) {
         shown[index] = next;
         element.setAttribute(`aria-value${VALUES[index]}`, String(next));
       }

@@ -100,7 +100,7 @@ const ZOOM_PAGE = defineDoc({
           },
           {
             name: "format",
-            text: 'how screen readers hear the zoom. by default 2 reads as `"200%"`',
+            text: 'how screen readers hear the zoom. by default 2 reads as `"200%"`. an `aria-valuetext` of yours wins over it',
             type: "Intl.NumberFormatOptions",
           },
         ]),

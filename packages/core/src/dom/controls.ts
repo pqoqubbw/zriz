@@ -25,6 +25,7 @@ type ZoomHandlers = KeyHandlers & PointerHandlers;
 type ZoomOptions = {
   max?: number | undefined;
   dir?: "ltr" | "rtl" | undefined;
+  ownText?: boolean | undefined;
   locale?: string | undefined;
   format?: Intl.NumberFormatOptions | undefined;
 };
@@ -304,7 +305,7 @@ const zoomAria = (
       1,
       top,
       Math.round(Math.min(zoom, top) * 100) / 100,
-      formatter.format(zoom),
+      !options.ownText && formatter.format(zoom),
     ];
   });
 };

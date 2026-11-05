@@ -6561,7 +6561,7 @@ renders a \`<div role="slider">\` anywhere inside \`Root\`. every part also take
   names the slider for screen readers. development builds warn without it
 - \`format\` \`Intl.NumberFormatOptions\`
 
-  how screen readers hear the angle, merged over the default \`"5 degrees"\`
+  how screen readers hear the angle, merged over the default \`"5 degrees"\`. an \`aria-valuetext\` of yours wins over it
 
 | attribute | when |
 | - | - |
@@ -10126,7 +10126,7 @@ renders a \`<div role="slider">\` anywhere inside \`Root\`. every part also take
   the zoom at the end of the track. defaults to \`maxZoom\` on \`Root\`
 - \`format\` \`Intl.NumberFormatOptions\`
 
-  how screen readers hear the zoom. by default 2 reads as \`"200%"\`
+  how screen readers hear the zoom. by default 2 reads as \`"200%"\`. an \`aria-valuetext\` of yours wins over it
 
 | attribute | when |
 | - | - |

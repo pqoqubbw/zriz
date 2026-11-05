@@ -26,6 +26,7 @@ type DialOptions = {
   slop?: number | undefined;
   tau?: number | undefined;
   dir?: "ltr" | "rtl" | undefined;
+  ownText?: boolean | undefined;
   locale?: string | undefined;
   format?: Intl.NumberFormatOptions | undefined;
 };
@@ -504,7 +505,12 @@ const dialAria = (
 
     element.toggleAttribute("data-snapped", rotation === 0);
 
-    return [-limit, limit, now, formatter.format(now && rotation)];
+    return [
+      -limit,
+      limit,
+      now,
+      !options.ownText && formatter.format(now && rotation),
+    ];
   });
 };
 

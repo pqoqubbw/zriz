@@ -26,7 +26,7 @@ type ZoomState = {
 type ZoomProps = PartProps<"div", ZoomState> & {
   /** Highest zoom the slider reaches. @default maxZoom on Root */
   max?: number | undefined;
-  /** Formatting of the spoken value. @default percent */
+  /** Formatting of the spoken value. aria-valuetext wins over it. @default percent */
   format?: Intl.NumberFormatOptions | undefined;
 };
 
@@ -58,6 +58,7 @@ const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
   const disabled = useAriaDisabled();
   const [first] = useState(() => firstZoom(cropper, max));
   const spoken = useSameJson(format);
+  const ownText = props["aria-valuetext"] !== undefined;
   const own = useCallback(
     (node: HTMLDivElement) => {
       keep(node);
@@ -65,14 +66,19 @@ const Zoom: Part<ZoomProps, HTMLDivElement> = forwardRef<
 
       warnUnlabelled("Zoom", node);
       warnFormat("Zoom", locale, spoken);
-      const off = zoomAria(cropper, node, { format: spoken, locale, max });
+      const off = zoomAria(cropper, node, {
+        format: spoken,
+        locale,
+        max,
+        ownText,
+      });
 
       return () => {
         clear();
         off();
       };
     },
-    [box, cropper, spoken, locale, max]
+    [box, cropper, spoken, locale, max, ownText]
   );
 
   return usePart(

@@ -31,7 +31,7 @@ type DialState = {
 };
 
 type DialProps = PartProps<"div", DialState> & {
-  /** Formatting of the spoken value. @default degrees, long unit */
+  /** Formatting of the spoken value. aria-valuetext wins over it. @default degrees, long unit */
   format?: Intl.NumberFormatOptions | undefined;
 };
 
@@ -72,6 +72,7 @@ const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
   const disabled = useAriaDisabled();
   const [first] = useState(() => firstCommitted(cropper).rotation);
   const spoken = useSameJson(format);
+  const ownText = props["aria-valuetext"] !== undefined;
   const own = useCallback(
     (node: HTMLDivElement) => {
       keep(node);
@@ -79,14 +80,14 @@ const Dial: Part<DialProps, HTMLDivElement> = forwardRef<
 
       warnUnlabelled("Dial", node);
       warnFormat("Dial", locale, spoken);
-      const off = dialAria(cropper, node, { format: spoken, locale });
+      const off = dialAria(cropper, node, { format: spoken, locale, ownText });
 
       return () => {
         clear();
         off();
       };
     },
-    [box, cropper, spoken, locale]
+    [box, cropper, spoken, locale, ownText]
   );
 
   return usePart(
