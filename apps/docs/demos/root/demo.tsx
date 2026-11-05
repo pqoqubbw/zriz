@@ -1,5 +1,7 @@
-import { Frame } from "@/demos/shell/frame";
+"use client";
 
-const RootDemo = () => <Frame name="root" />;
+import { DemoShell } from "@/demos/shell/demo-shell";
+
+const RootDemo = () => <DemoShell lock name="root" />;
 
 export default RootDemo;

@@ -26,7 +26,10 @@ const ROOT_PAGE = defineDoc({
       ),
       code("root/disabled.jsx.tsx"),
       p("grey out the buttons while it is set:"),
-      code("root/disabled.css")
+      code("root/disabled.css"),
+      p(
+        "the demo above sets `disabled` while its download runs. it adds handles, a grid and the styles from the zriz site."
+      )
     ),
     section(
       "dim the controls during a gesture",
