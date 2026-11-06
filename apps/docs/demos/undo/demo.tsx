@@ -85,12 +85,12 @@ const UndoDemo = () => {
       })}
     >
       <DialZone
-        end={
+        end={<UndoButton history={history} onStep={step} />}
+        start={
           <Cropper.Rotate aria-label="Rotate left" className={ghostVariants()}>
             <Icon className="size-5" name="rotate-left" />
           </Cropper.Rotate>
         }
-        start={<UndoButton history={history} onStep={step} />}
       />
     </DemoShell>
   );

@@ -76,15 +76,15 @@ const StaticDial = ({ zone }: StaticDialProps) => {
   return (
     <Zone kind={zone.value ? "dial" : "strip"}>
       <ZoneRow dial>
-        {zone.start ? (
-          <StaticGhost disabled={zone.start === "undo"} icon={zone.start} />
-        ) : null}
+        {zone.start ? <StaticGhost icon={zone.start} /> : null}
         {zone.value ? (
           <Scale value={<Value unit="°">0.0</Value>}>{ruler}</Scale>
         ) : (
           ruler
         )}
-        {zone.end ? <StaticGhost icon={zone.end} /> : null}
+        {zone.end ? (
+          <StaticGhost disabled={zone.end === "undo"} icon={zone.end} />
+        ) : null}
       </ZoneRow>
     </Zone>
   );

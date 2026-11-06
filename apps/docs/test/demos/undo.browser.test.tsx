@@ -86,14 +86,14 @@ describe("undo demo", () => {
     expect(layoutOf()).toStrictEqual(frame);
   });
 
-  it("starts off, with undo on the left and rotate on the right", async () => {
+  it("starts off, with rotate on the left and undo after the dial", async () => {
     await mountDemo("undo");
     await ready();
 
     const row = [...panel().querySelectorAll('[data-slot="zone-row"] > *')];
 
-    expect(row.at(0)).toBe(undo());
-    expect(row.at(-1)).toBe(button("Rotate left"));
+    expect(row.at(0)).toBe(button("Rotate left"));
+    expect(row.at(-1)).toBe(undo());
     expect(off()).toBe("true");
     expect(hits(undo())).toBeTruthy();
     await expect(violations()).resolves.toStrictEqual([]);

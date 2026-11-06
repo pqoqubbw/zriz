@@ -470,8 +470,8 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "component",
     },
     summary:
-      "a 3:2 photo, the straighten dial with undo and rotate, and open, reset and download in the corners",
-    zones: [{ end: "rotate-left", kind: "dial", start: "undo", value: true }],
+      "a 3:2 photo, the straighten dial with rotate and undo, and open, reset and download in the corners",
+    zones: [{ end: "undo", kind: "dial", start: "rotate-left", value: true }],
   },
   viewport: {
     action: DOWNLOAD,
