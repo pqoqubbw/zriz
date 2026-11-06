@@ -48,7 +48,7 @@ All of check, type, test, lint:package and size must pass before a commit. CI ru
 - No code comments, TSDoc included. The one exception: a single short line on public props of React parts. API tables are hand-written in `apps/docs/content/<slug>.ts`, so change them there too. Never restate what the code or the name already says.
 - Per-frame values never go through React state. Use refs, CSS variables and subscriptions.
 - Every rule in the stylesheet sits in `:where()` inside `@layer components.zriz`, so any user class wins.
-- Icons in the docs are hand-drawn SVG in `apps/docs/components/ui/icon.tsx`. Don't add an icon library.
+- Icons in the docs are hand-drawn SVG in `apps/docs/components/ui/icon.tsx`, and the demo icons in `apps/docs/demos/shell/icon.tsx`, so pages without a demo don't ship them. Don't add an icon library.
 - Docs copy in `apps/docs/content` is lowercase, like the pages already there.
 - Prose in docs, commit messages and PR text is plain, short English. No em dashes, no arrows, no "·" separators.
 - Commit subjects match `git log`: one short lowercase line, with an area prefix such as `docs:` when it helps.

@@ -8,12 +8,12 @@ import * as Cropper from "@zriz/react/cropper";
 import { Fragment, useContext, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 
-import { Icon } from "@/components/ui/icon";
 import { Panel } from "@/components/ui/panel";
 import { useDemoDim } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 import type { DemoRun } from "@/demos/shell/use-download";
 import { MAX_ZOOM, MIN_SIZE } from "@/snippets/server-crop/crop-limits";
 

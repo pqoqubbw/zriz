@@ -1,8 +1,8 @@
 import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
 
-import { Icon } from "@/components/ui/icon";
-import type { IconName } from "@/components/ui/icon";
+import { Icon } from "@/demos/shell/icon";
+import type { IconName } from "@/demos/shell/icon";
 
 type ChipContentProps = VariantProps<typeof chipLabelVariants> & {
   icon: IconName;

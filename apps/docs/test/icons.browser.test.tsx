@@ -1,8 +1,12 @@
+import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { ICON_NAMES, Icon } from "../components/ui/icon";
-import type { IconName } from "../components/ui/icon";
+import {
+  ICON_NAMES as DEMO_ICON_NAMES,
+  Icon as DemoIcon,
+} from "../demos/shell/icon";
 
 type InkBox = {
   bottom: number;
@@ -17,12 +21,30 @@ const MAX_OFFSET = 0.2;
 const STEP = 1 / SCALE;
 const EDGE = 2 - 1.25 / 2;
 
-const svgOf = (name: IconName): SVGSVGElement => {
+const NAMES = [
+  ...ICON_NAMES.map((name) => ({ demo: false, name })),
+  ...DEMO_ICON_NAMES.map((name) => ({ demo: true, name })),
+].map(({ demo, name }) => [demo ? `demo ${name}` : name, demo, name] as const);
+
+const elementOf = (demo: boolean, name: string): ReactElement => {
+  const own = DEMO_ICON_NAMES.find((each) => each === name);
+  const site = ICON_NAMES.find((each) => each === name);
+
+  if (demo && own) {
+    return <DemoIcon color="#000" height={SIZE} name={own} width={SIZE} />;
+  }
+
+  if (!demo && site) {
+    return <Icon color="#000" height={SIZE} name={site} width={SIZE} />;
+  }
+
+  throw new Error(`no icon named ${name}`);
+};
+
+const svgOf = (demo: boolean, name: string): SVGSVGElement => {
   const host = document.createElement("div");
 
-  host.innerHTML = renderToStaticMarkup(
-    <Icon color="#000" height={SIZE} name={name} width={SIZE} />
-  );
+  host.innerHTML = renderToStaticMarkup(elementOf(demo, name));
 
   const svg = host.querySelector("svg");
 
@@ -78,8 +100,8 @@ const inkBoxOf = async (svg: SVGSVGElement): Promise<InkBox> => {
 };
 
 describe("icons", () => {
-  it.each(ICON_NAMES)("draws %s on the 20 px grid", (name) => {
-    const svg = svgOf(name);
+  it.each(NAMES)("draws %s on the 20 px grid", (_, demo, name) => {
+    const svg = svgOf(demo, name);
 
     expect({
       linecap: svg.getAttribute("stroke-linecap"),
@@ -98,8 +120,8 @@ describe("icons", () => {
     });
   });
 
-  it.each(ICON_NAMES)("centres the ink of %s in its box", async (name) => {
-    const box = await inkBoxOf(svgOf(name));
+  it.each(NAMES)("centres the ink of %s in its box", async (_, demo, name) => {
+    const box = await inkBoxOf(svgOf(demo, name));
 
     expect(
       Math.min(box.left, box.top, 20 - box.right, 20 - box.bottom)

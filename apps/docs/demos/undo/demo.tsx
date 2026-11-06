@@ -5,12 +5,12 @@ import { CropperContext } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { useContext, useState } from "react";
 
-import { Icon } from "@/components/ui/icon";
 import { useDemoPhoto } from "@/demos/shell/context";
 import type { DemoPhoto } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 
 type History = {
   photo: string;

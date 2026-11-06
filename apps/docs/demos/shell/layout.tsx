@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
-import { Icon } from "@/components/ui/icon";
+import { Icon } from "@/demos/shell/icon";
 import { cn } from "@/lib/cn";
 
 type StageProps = ComponentProps<"div">;

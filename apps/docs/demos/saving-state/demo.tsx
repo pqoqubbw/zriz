@@ -4,12 +4,12 @@ import { parse, serialize } from "@zriz/core";
 import type { CommitDetails, CropValue } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 
-import { Icon } from "@/components/ui/icon";
 import type { DemoPhoto } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import type { PhotoProps } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 
 const PREFIX = "zriz-docs:saving-state:";
 

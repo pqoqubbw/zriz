@@ -1,4 +1,4 @@
-import type { IconName } from "@/components/ui/icon";
+import type { IconName } from "@/demos/shell/icon";
 import type { DemoPhotoName } from "@/lib/demo-photos";
 
 const DEMO_NAMES = [

@@ -1,5 +1,3 @@
-import { Icon } from "@/components/ui/icon";
-import type { IconName } from "@/components/ui/icon";
 import { DEMO_SPECS } from "@/demos/registry";
 import type {
   DemoName,
@@ -10,6 +8,8 @@ import type {
 } from "@/demos/registry";
 import { ChipContent, chipVariants } from "@/demos/shell/chip";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
+import type { IconName } from "@/demos/shell/icon";
 import {
   Corner,
   Ruler,

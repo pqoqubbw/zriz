@@ -2,10 +2,10 @@
 
 import * as Cropper from "@zriz/react/cropper";
 
-import { Icon } from "@/components/ui/icon";
 import { useDemoDim } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 import { Zone, ZoneRow } from "@/demos/shell/layout";
 
 const ButtonsRow = () => {

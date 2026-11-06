@@ -5,9 +5,9 @@ import type { Cropper as CropperApi } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { useContext, useRef, useSyncExternalStore } from "react";
 
-import { Icon } from "@/components/ui/icon";
 import { useDemoDim } from "@/demos/shell/context";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 import { Ruler, Scale, Value, Zone, ZoneRow } from "@/demos/shell/layout";
 
 const STEP = 1.25;

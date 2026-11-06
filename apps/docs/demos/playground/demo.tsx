@@ -5,7 +5,6 @@ import { CropperContext, useCropperState } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { useContext, useEffect } from "react";
 
-import { Icon } from "@/components/ui/icon";
 import {
   jsonText,
   rootChanges,
@@ -16,6 +15,7 @@ import { usePlayground } from "@/demos/playground/use-playground";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
+import { Icon } from "@/demos/shell/icon";
 import { exportRun } from "@/demos/shell/use-download";
 
 const PNG: ExportOptions = { type: "image/png" };
