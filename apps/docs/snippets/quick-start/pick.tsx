@@ -6,6 +6,7 @@ import { useState } from "react";
 
 export const PhotoCropper = () => {
   const [photo, setPhoto] = useState<File | null>(null);
+
   return (
     <>
       <input

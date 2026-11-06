@@ -5,6 +5,7 @@ import { useState } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const [rotation, setRotation] = useState(0);
+
   return (
     <Cropper.Root
       src={src}

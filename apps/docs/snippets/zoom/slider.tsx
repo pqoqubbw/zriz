@@ -4,6 +4,7 @@ import { useZoom } from "@zriz/react";
 
 export const ZoomSlider = () => {
   const zoom = useZoom();
+
   return (
     <input
       type="range"

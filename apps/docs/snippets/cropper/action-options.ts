@@ -6,4 +6,5 @@ const cropper = createCropper({
     console.log(value.rotation, details.reason);
   },
 });
+
 cropper.setRotation(5, { reason: "history" });

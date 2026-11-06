@@ -9,6 +9,7 @@ const clock: Clock = {
   request: (step) => {
     id += 1;
     queue.set(id, step);
+
     return id;
   },
   cancel: (handle) => {
@@ -19,6 +20,7 @@ const clock: Clock = {
 const advance = (ms: number) => {
   now += ms;
   const steps = [...queue.values()];
+
   queue.clear();
   for (const step of steps) step(now);
 };

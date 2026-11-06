@@ -22,12 +22,15 @@ export const Heic = ({ onSave }: Props) => {
         accept="image/*,.heic"
         onChange={(event) => {
           const file = event.target.files?.[0];
+
           if (!file || !cropper.current) return;
           last.current?.abort();
           const controller = new AbortController();
+
           last.current = controller;
           setReady(false);
           setFailed(false);
+
           open(cropper.current, file, controller.signal).then(
             () => setReady(true),
             () => {

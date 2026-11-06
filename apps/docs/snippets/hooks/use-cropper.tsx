@@ -7,7 +7,9 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper({ maxZoom: 8 });
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   return (
     <>
       <button onClick={() => cropper.reset()}>reset</button>

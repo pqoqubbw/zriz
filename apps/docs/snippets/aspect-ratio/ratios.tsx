@@ -12,6 +12,7 @@ const RATIOS = [
 export const Ratios = () => {
   const aspect = useCropperState((s) => s.aspect);
   const wide = typeof aspect === "number" && aspect > 1;
+
   return (
     <Cropper.AspectGroup aria-label="Aspect ratio">
       <Cropper.AspectItem value="free">free</Cropper.AspectItem>

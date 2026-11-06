@@ -4,6 +4,8 @@ import next from "ultracite/oxlint/next";
 import react from "ultracite/oxlint/react";
 import vitest from "ultracite/oxlint/vitest";
 
+import { PADDING } from "./apps/docs/lint/padding.mjs";
+
 export default defineConfig({
   env: core.env ?? {},
   extends: [core, react, vitest],
@@ -15,23 +17,7 @@ export default defineConfig({
       files: ["apps/docs/**", "packages/*/src/**", "packages/*/test/**"],
       jsPlugins: ["@stylistic/eslint-plugin", "./apps/docs/lint/style.mjs"],
       rules: {
-        "@stylistic/padding-line-between-statements": [
-          "error",
-          { blankLine: "always", next: "return", prev: "*" },
-          { blankLine: "always", next: "*", prev: ["const", "let"] },
-          { blankLine: "any", next: ["const", "let"], prev: ["const", "let"] },
-          {
-            blankLine: "always",
-            next: "*",
-            prev: ["block-like", "multiline-expression"],
-          },
-          {
-            blankLine: "always",
-            next: ["block-like", "multiline-expression"],
-            prev: "*",
-          },
-          { blankLine: "always", next: "*", prev: "directive" },
-        ],
+        "@stylistic/padding-line-between-statements": PADDING,
         "docs/constant-case": "error",
         "docs/export-list": "error",
         "docs/no-class-variable": "error",

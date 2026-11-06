@@ -7,29 +7,36 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",
     });
   };
+
   const move = (x: number, y: number) => {
     cropper.panBy(x, y, { reason: "keyboard" });
   };
+
   const resize = (by: number) => {
     const state = cropper.getCropState();
+
     if (state) {
       const crop = {
         ...state.crop,
         height: state.crop.height * by,
         width: state.crop.width * by,
       };
+
       cropper.setCropState(
         { ...state, crop },
         { keep: "center", reason: "keyboard" }
       );
     }
   };
+
   return (
     <>
       <Cropper.Root cropper={cropper} src={src}>

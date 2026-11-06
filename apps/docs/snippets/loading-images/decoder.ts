@@ -6,6 +6,7 @@ const convert = async (blob: Blob) => {
     method: "POST",
     body: blob,
   });
+
   return await createImageBitmap(await response.blob());
 };
 
@@ -19,5 +20,6 @@ export const open = async (
     decode: convert,
     signal,
   });
+
   attachImage(cropper, image);
 };

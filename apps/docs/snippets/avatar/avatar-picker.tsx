@@ -27,13 +27,16 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
         signal: controller.signal,
       });
+
       setSaveFailed(false);
       onSave(blob);
     } catch {

@@ -20,6 +20,7 @@ export const CropUpload = () => {
   const last = useRef<AbortController | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (result) URL.revokeObjectURL(result);
@@ -29,29 +30,36 @@ export const CropUpload = () => {
 
   const upload = async () => {
     const value = actions.current?.getValue();
+
     if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
+
     last.current = controller;
     setError(null);
     setResult(null);
     const form = new FormData();
+
     form.append("file", file);
     form.append("value", serialize(value));
+
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
         body: form,
         signal,
       });
+
       if (response.ok) {
         const blob = await response.blob();
+
         if (!signal.aborted) {
           setResult(URL.createObjectURL(blob));
         }
       } else {
         const message = await response.text();
+
         if (!signal.aborted) setError(message);
       }
     } catch {

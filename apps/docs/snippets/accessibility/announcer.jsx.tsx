@@ -7,6 +7,7 @@ export const example = (
       const x = Math.round(center.x * 100);
       const y = Math.round(center.y * 100);
       const width = Math.round(size.width * 100);
+
       return `Crop at ${x}%, ${y}%, ${width}% wide`;
     }}
   />

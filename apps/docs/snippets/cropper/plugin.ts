@@ -12,4 +12,5 @@ const logger: CropperPlugin = {
 };
 
 const cropper = createCropper({ plugins: [logger] });
+
 cropper.destroy();

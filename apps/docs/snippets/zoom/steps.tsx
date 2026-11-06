@@ -5,6 +5,7 @@ import * as Cropper from "@zriz/react/cropper";
 
 export const ZoomSteps = () => {
   const zoom = useZoom();
+
   return (
     <>
       <Cropper.ZoomStep

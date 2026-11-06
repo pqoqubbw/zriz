@@ -18,6 +18,7 @@ const Editor = ({ src }: { src: string }) => {
 
   const remember = (_: CropValue, details: CommitDetails) => {
     if (skipped.has(details.reason)) return;
+
     setHistory((stack) =>
       [...stack, details.previous].slice(-50)
     );
@@ -25,9 +26,11 @@ const Editor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
+
     if (!previous || actions.current?.getState().interacting) {
       return;
     }
+
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };

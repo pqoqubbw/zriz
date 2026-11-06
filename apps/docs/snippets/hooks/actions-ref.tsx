@@ -6,9 +6,11 @@ import { useRef } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useRef<CropperApi>(null);
+
   const save = () => {
     console.log(cropper.current?.getPixelCrop());
   };
+
   return (
     <>
       <Cropper.Root src={src} actionsRef={cropper}>

@@ -111,6 +111,7 @@ import { useState } from "react";
 
 export const PhotoCropper = () => {
   const [photo, setPhoto] = useState<File | null>(null);
+
   return (
     <>
       <input
@@ -152,6 +153,7 @@ export const PhotoCropper = () => {
 
 <span class=k>export const </span><span class=t>PhotoCropper </span><span class=p>= () =&gt; {</span>
   <span class=k>const </span><span class=p>[</span>photo<span class=p>,</span> setPhoto<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>File <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>input</span>
@@ -560,6 +562,7 @@ import * as Cropper from "@zriz/react/cropper";
 
 export const ZoomSteps = () => {
   const zoom = useZoom();
+
   return (
     <>
       <Cropper.ZoomStep
@@ -586,6 +589,7 @@ export const ZoomSteps = () => {
 
 <span class=k>export const </span><span class=t>ZoomSteps </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> zoom <span class=p>= </span><span class=t>useZoom</span><span class=p>();</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.ZoomStep</span>
@@ -625,6 +629,7 @@ import { useZoom } from "@zriz/react";
 
 export const ZoomSlider = () => {
   const zoom = useZoom();
+
   return (
     <input
       type="range"
@@ -648,6 +653,7 @@ export const ZoomSlider = () => {
 
 <span class=k>export const </span><span class=t>ZoomSlider </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> zoom <span class=p>= </span><span class=t>useZoom</span><span class=p>();</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;</span><span class=t>input</span>
       <span class=a>type</span><span class=p>="</span><span class=s>range</span><span class=p>"</span>
@@ -767,6 +773,7 @@ const RATIOS = [
 export const Ratios = () => {
   const aspect = useCropperState((s) => s.aspect);
   const wide = typeof aspect === "number" && aspect > 1;
+
   return (
     <Cropper.AspectGroup aria-label="Aspect ratio">
       <Cropper.AspectItem value="free">free</Cropper.AspectItem>
@@ -796,6 +803,7 @@ export const Ratios = () => {
 <span class=k>export const </span><span class=t>Ratios </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> aspect <span class=p>= </span><span class=t>useCropperState</span><span class=p>((</span>s<span class=p>) =&gt;</span> s<span class=p>.</span>aspect<span class=p>);</span>
   <span class=k>const</span> wide <span class=p>= </span><span class=k>typeof</span> aspect <span class=p>=== </span><span class=s>"number" </span><span class=p>&amp;&amp;</span> aspect <span class=p>&gt; </span><span class=n>1</span><span class=p>;</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;</span><span class=t>Cropper.AspectGroup </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Aspect ratio</span><span class=p>"&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.AspectItem </span><span class=a>value</span><span class=p>="</span><span class=s>free</span><span class=p>"&gt;</span>free<span class=p>&lt;/</span><span class=t>Cropper.AspectItem</span><span class=p>&gt;</span>
@@ -930,6 +938,7 @@ const value: CropValue = {
 const cropper = createCropper({
   image: { width: 4032, height: 3024 },
 });
+
 cropper.setValue({ rotation: 90 });
 cropper.getValue().rotation; // 45",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
@@ -937,6 +946,7 @@ cropper.getValue().rotation; // 45",
 <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
   image<span class=p>: {</span> width<span class=p>: </span><span class=n>4032</span><span class=p>,</span> height<span class=p>: </span><span class=n>3024 </span><span class=p>},</span>
 <span class=p>});</span>
+
 cropper<span class=p>.</span><span class=t>setValue</span><span class=p>({</span> rotation<span class=p>: </span><span class=n>90 </span><span class=p>});</span>
 cropper<span class=p>.</span><span class=t>getValue</span><span class=p>().</span>rotation<span class=p>; </span><span class=c>// 45</span>",
   ],
@@ -950,6 +960,7 @@ import { useState } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const [rotation, setRotation] = useState(0);
+
   return (
     <Cropper.Root
       src={src}
@@ -977,6 +988,7 @@ export const Editor = ({ src }: { src: string }) => {
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const </span><span class=p>[</span>rotation<span class=p>,</span> setRotation<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>0</span><span class=p>);</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;</span><span class=t>Cropper.Root</span>
       <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
@@ -1081,6 +1093,7 @@ const cropper = createCropper();
 const off = cropper.on("settle", () => {
   console.log("the crop is still");
 });
+
 off();",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 
@@ -1088,6 +1101,7 @@ off();",
 <span class=k>const</span> off <span class=p>=</span> cropper<span class=p>.</span><span class=t>on</span><span class=p>(</span><span class=s>"settle"</span><span class=p>, () =&gt; {</span>
   console<span class=p>.</span><span class=t>log</span><span class=p>(</span><span class=s>"the crop is still"</span><span class=p>);</span>
 <span class=p>});</span>
+
 <span class=t>off</span><span class=p>();</span>",
   ],
   [
@@ -1099,6 +1113,7 @@ import { useCropperState } from "@zriz/react";
 
 export const Status = () => {
   const pristine = useCropperState((s) => s.pristine);
+
   return <span>{pristine ? "original" : "edited"}</span>;
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
@@ -1107,6 +1122,7 @@ export const Status = () => {
 
 <span class=k>export const </span><span class=t>Status </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> pristine <span class=p>= </span><span class=t>useCropperState</span><span class=p>((</span>s<span class=p>) =&gt;</span> s<span class=p>.</span>pristine<span class=p>);</span>
+
   <span class=k>return </span><span class=p>&lt;</span><span class=t>span</span><span class=p>&gt;{</span>pristine <span class=p>? </span><span class=s>"original" </span><span class=p>: </span><span class=s>"edited"</span><span class=p>}&lt;/</span><span class=t>span</span><span class=p>&gt;;</span>
 <span class=p>};</span>",
   ],
@@ -1121,9 +1137,11 @@ import { useRef } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useRef<CropperApi>(null);
+
   const save = () => {
     console.log(cropper.current?.getPixelCrop());
   };
+
   return (
     <>
       <Cropper.Root src={src} actionsRef={cropper}>
@@ -1145,9 +1163,11 @@ export const Editor = ({ src }: { src: string }) => {
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>CropperApi<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>const </span><span class=t>save </span><span class=p>= () =&gt; {</span>
     console<span class=p>.</span><span class=t>log</span><span class=p>(</span>cropper<span class=p>.</span>current<span class=p>?.</span><span class=t>getPixelCrop</span><span class=p>());</span>
   <span class=p>};</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>src</span><span class=p>={</span>src<span class=p>} </span><span class=a>actionsRef</span><span class=p>={</span>cropper<span class=p>}&gt;</span>
@@ -1174,7 +1194,9 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper({ maxZoom: 8 });
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   return (
     <>
       <button onClick={() => cropper.reset()}>reset</button>
@@ -1197,7 +1219,9 @@ export const Editor = ({ src }: { src: string }) => {
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>useCropper</span><span class=p>({</span> maxZoom<span class=p>: </span><span class=n>8 </span><span class=p>});</span>
+
   <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt; </span><span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>null</span><span class=p>), [</span>cropper<span class=p>]);</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt;</span> cropper<span class=p>.</span><span class=t>reset</span><span class=p>()}&gt;</span>reset<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
@@ -1221,6 +1245,7 @@ import { useCropperValue } from "@zriz/react";
 
 export const Angle = () => {
   const value = useCropperValue();
+
   return <p>{value.rotation.toFixed(1)}°</p>;
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
@@ -1229,6 +1254,7 @@ export const Angle = () => {
 
 <span class=k>export const </span><span class=t>Angle </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> value <span class=p>= </span><span class=t>useCropperValue</span><span class=p>();</span>
+
   <span class=k>return </span><span class=p>&lt;</span><span class=t>p</span><span class=p>&gt;{</span>value<span class=p>.</span>rotation<span class=p>.</span><span class=t>toFixed</span><span class=p>(</span><span class=n>1</span><span class=p>)}</span>°<span class=p>&lt;/</span><span class=t>p</span><span class=p>&gt;;</span>
 <span class=p>};</span>",
   ],
@@ -1242,10 +1268,13 @@ import { useRef } from "react";
 
 export const LiveAngle = () => {
   const label = useRef<HTMLOutputElement>(null);
+
   useCropperFrame(({ value }) => {
     const angle = value.rotation.toFixed(1);
+
     if (label.current) label.current.textContent = \`\${angle}°\`;
   });
+
   return <output ref={label} />;
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
@@ -1255,10 +1284,13 @@ export const LiveAngle = () => {
 
 <span class=k>export const </span><span class=t>LiveAngle </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> label <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>HTMLOutputElement<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
+
   <span class=t>useCropperFrame</span><span class=p>(({</span> value <span class=p>}) =&gt; {</span>
     <span class=k>const</span> angle <span class=p>=</span> value<span class=p>.</span>rotation<span class=p>.</span><span class=t>toFixed</span><span class=p>(</span><span class=n>1</span><span class=p>);</span>
+
     <span class=k>if </span><span class=p>(</span>label<span class=p>.</span>current<span class=p>)</span> label<span class=p>.</span>current<span class=p>.</span>textContent <span class=p>= </span><span class=s>\`</span><span class=p>\${</span>angle<span class=p>}</span><span class=s>°\`</span><span class=p>;</span>
   <span class=p>});</span>
+
   <span class=k>return </span><span class=p>&lt;</span><span class=t>output </span><span class=a>ref</span><span class=p>={</span>label<span class=p>} /&gt;;</span>
 <span class=p>};</span>",
   ],
@@ -1275,6 +1307,7 @@ export const Scale = () => {
     crop: { width: 4032, height: 3024 },
     rotation: 5,
   });
+
   return <p>{scale.toFixed(4)}</p>;
 };",
     "<span class=s>"use client"</span><span class=p>;</span>
@@ -1287,6 +1320,7 @@ export const Scale = () => {
     crop<span class=p>: {</span> width<span class=p>: </span><span class=n>4032</span><span class=p>,</span> height<span class=p>: </span><span class=n>3024 </span><span class=p>},</span>
     rotation<span class=p>: </span><span class=n>5</span><span class=p>,</span>
   <span class=p>});</span>
+
   <span class=k>return </span><span class=p>&lt;</span><span class=t>p</span><span class=p>&gt;{</span>scale<span class=p>.</span><span class=t>toFixed</span><span class=p>(</span><span class=n>4</span><span class=p>)}&lt;/</span><span class=t>p</span><span class=p>&gt;;</span>
 <span class=p>};</span>",
   ],
@@ -1298,17 +1332,18 @@ export const Scale = () => {
 import { useCropperState, useRender } from "@zriz/react";
 import type { ClassName, RenderProp } from "@zriz/react";
 
-interface EditedState {
+type EditedState = {
   pristine: boolean;
-}
+};
 
-interface EditedProps {
+type EditedProps = {
   render?: RenderProp<EditedState>;
   className?: ClassName<EditedState>;
-}
+};
 
 export const Edited = ({ render, className }: EditedProps) => {
   const pristine = useCropperState((s) => s.pristine);
+
   return useRender({
     tag: "span",
     state: { pristine },
@@ -1322,17 +1357,18 @@ export const Edited = ({ render, className }: EditedProps) => {
 <span class=k>import </span><span class=p>{</span> useCropperState<span class=p>,</span> useRender <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> ClassName<span class=p>,</span> RenderProp <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/react"</span><span class=p>;</span>
 
-<span class=k>interface</span> EditedState <span class=p>{</span>
+<span class=k>type</span> EditedState <span class=p>= {</span>
   pristine<span class=p>:</span> boolean<span class=p>;</span>
-<span class=p>}</span>
+<span class=p>};</span>
 
-<span class=k>interface</span> EditedProps <span class=p>{</span>
+<span class=k>type</span> EditedProps <span class=p>= {</span>
   render<span class=p>?:</span> RenderProp<span class=p>&lt;</span>EditedState<span class=p>&gt;;</span>
   className<span class=p>?:</span> ClassName<span class=p>&lt;</span>EditedState<span class=p>&gt;;</span>
-<span class=p>}</span>
+<span class=p>};</span>
 
 <span class=k>export const </span><span class=t>Edited </span><span class=p>= ({</span> render<span class=p>,</span> className <span class=p>}:</span> EditedProps<span class=p>) =&gt; {</span>
   <span class=k>const</span> pristine <span class=p>= </span><span class=t>useCropperState</span><span class=p>((</span>s<span class=p>) =&gt;</span> s<span class=p>.</span>pristine<span class=p>);</span>
+
   <span class=k>return </span><span class=t>useRender</span><span class=p>({</span>
     tag<span class=p>: </span><span class=s>"span"</span><span class=p>,</span>
     state<span class=p>: {</span> pristine <span class=p>},</span>
@@ -1350,12 +1386,14 @@ export const Edited = ({ render, className }: EditedProps) => {
 const cropper = createCropper({
   image: { width: 4032, height: 3024 },
 });
+
 cropper.setRotation(7);",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 
 <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span>
   image<span class=p>: {</span> width<span class=p>: </span><span class=n>4032</span><span class=p>,</span> height<span class=p>: </span><span class=n>3024 </span><span class=p>},</span>
 <span class=p>});</span>
+
 cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span><span class=n>7</span><span class=p>);</span>",
   ],
   [
@@ -1369,6 +1407,7 @@ const cropper = createCropper({
     console.log(value.rotation, details.reason);
   },
 });
+
 cropper.setRotation(5, { reason: "history" });",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 
@@ -1378,6 +1417,7 @@ cropper.setRotation(5, { reason: "history" });",
     console<span class=p>.</span><span class=t>log</span><span class=p>(</span>value<span class=p>.</span>rotation<span class=p>,</span> details<span class=p>.</span>reason<span class=p>);</span>
   <span class=p>},</span>
 <span class=p>});</span>
+
 cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span><span class=n>5</span><span class=p>, {</span> reason<span class=p>: </span><span class=s>"history" </span><span class=p>});</span>",
   ],
   [
@@ -1394,12 +1434,15 @@ export const bind = (input: HTMLInputElement) => {
   input.addEventListener("pointerdown", (event) => {
     cropper.begin("dial", event, owner);
   });
+
   input.addEventListener("input", () => {
     cropper.setRotation(input.valueAsNumber);
   });
+
   const end = (event: PointerEvent) => {
     cropper.end(event, owner);
   };
+
   input.addEventListener("pointerup", end);
   input.addEventListener("pointercancel", end);
 };",
@@ -1414,12 +1457,15 @@ export const bind = (input: HTMLInputElement) => {
   input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"pointerdown"</span><span class=p>, (</span>event<span class=p>) =&gt; {</span>
     cropper<span class=p>.</span><span class=t>begin</span><span class=p>(</span><span class=s>"dial"</span><span class=p>,</span> event<span class=p>,</span> owner<span class=p>);</span>
   <span class=p>});</span>
+
   input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"input"</span><span class=p>, () =&gt; {</span>
     cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span>input<span class=p>.</span>valueAsNumber<span class=p>);</span>
   <span class=p>});</span>
+
   <span class=k>const </span><span class=t>end </span><span class=p>= (</span>event<span class=p>:</span> PointerEvent<span class=p>) =&gt; {</span>
     cropper<span class=p>.</span><span class=t>end</span><span class=p>(</span>event<span class=p>,</span> owner<span class=p>);</span>
   <span class=p>};</span>
+
   input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"pointerup"</span><span class=p>,</span> end<span class=p>);</span>
   input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"pointercancel"</span><span class=p>,</span> end<span class=p>);</span>
 <span class=p>};</span>",
@@ -1438,6 +1484,7 @@ const clock: Clock = {
   request: (step) => {
     id += 1;
     queue.set(id, step);
+
     return id;
   },
   cancel: (handle) => {
@@ -1448,6 +1495,7 @@ const clock: Clock = {
 const advance = (ms: number) => {
   now += ms;
   const steps = [...queue.values()];
+
   queue.clear();
   for (const step of steps) step(now);
 };
@@ -1473,6 +1521,7 @@ console.log(commits);",
   request<span class=p>: (</span>step<span class=p>) =&gt; {</span>
     id <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
     queue<span class=p>.</span><span class=t>set</span><span class=p>(</span>id<span class=p>,</span> step<span class=p>);</span>
+
     <span class=k>return</span> id<span class=p>;</span>
   <span class=p>},</span>
   cancel<span class=p>: (</span>handle<span class=p>) =&gt; {</span>
@@ -1483,6 +1532,7 @@ console.log(commits);",
 <span class=k>const </span><span class=t>advance </span><span class=p>= (</span>ms<span class=p>:</span> number<span class=p>) =&gt; {</span>
   now <span class=p>+=</span> ms<span class=p>;</span>
   <span class=k>const</span> steps <span class=p>= [...</span>queue<span class=p>.</span><span class=t>values</span><span class=p>()];</span>
+
   queue<span class=p>.</span><span class=t>clear</span><span class=p>();</span>
   <span class=k>for </span><span class=p>(</span><span class=k>const</span> step <span class=k>of</span> steps<span class=p>) </span><span class=t>step</span><span class=p>(</span>now<span class=p>);</span>
 <span class=p>};</span>
@@ -1515,6 +1565,7 @@ const logger: CropperPlugin = {
 };
 
 const cropper = createCropper({ plugins: [logger] });
+
 cropper.destroy();",
     "<span class=k>import </span><span class=p>{</span> createCropper <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
 <span class=k>import type </span><span class=p>{</span> CropperPlugin <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core"</span><span class=p>;</span>
@@ -1530,6 +1581,7 @@ cropper.destroy();",
 <span class=p>};</span>
 
 <span class=k>const</span> cropper <span class=p>= </span><span class=t>createCropper</span><span class=p>({</span> plugins<span class=p>: [</span>logger<span class=p>] });</span>
+
 cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span>",
   ],
   [
@@ -1585,6 +1637,7 @@ const convert = async (blob: Blob) => {
     method: "POST",
     body: blob,
   });
+
   return await createImageBitmap(await response.blob());
 };
 
@@ -1598,6 +1651,7 @@ export const open = async (
     decode: convert,
     signal,
   });
+
   attachImage(cropper, image);
 };",
     "<span class=k>import </span><span class=p>{</span> attachImage<span class=p>,</span> loadImage <span class=p>} </span><span class=k>from </span><span class=s>"@zriz/core/dom"</span><span class=p>;</span>
@@ -1608,6 +1662,7 @@ export const open = async (
     method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
     body<span class=p>:</span> blob<span class=p>,</span>
   <span class=p>});</span>
+
   <span class=k>return await </span><span class=t>createImageBitmap</span><span class=p>(</span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>());</span>
 <span class=p>};</span>
 
@@ -1621,6 +1676,7 @@ export const open = async (
     decode<span class=p>:</span> convert<span class=p>,</span>
     signal<span class=p>,</span>
   <span class=p>});</span>
+
   <span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>,</span> image<span class=p>);</span>
 <span class=p>};</span>",
   ],
@@ -1651,12 +1707,15 @@ export const Heic = ({ onSave }: Props) => {
         accept="image/*,.heic"
         onChange={(event) => {
           const file = event.target.files?.[0];
+
           if (!file || !cropper.current) return;
           last.current?.abort();
           const controller = new AbortController();
+
           last.current = controller;
           setReady(false);
           setFailed(false);
+
           open(cropper.current, file, controller.signal).then(
             () => setReady(true),
             () => {
@@ -1711,12 +1770,15 @@ export const Heic = ({ onSave }: Props) => {
         <span class=a>accept</span><span class=p>="</span><span class=s>image/*,.heic</span><span class=p>"</span>
         <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
           <span class=k>const</span> file <span class=p>=</span> event<span class=p>.</span>target<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>];</span>
+
           <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>cropper<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
           last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
           <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
           last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
           <span class=t>setReady</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
           <span class=t>setFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
           <span class=t>open</span><span class=p>(</span>cropper<span class=p>.</span>current<span class=p>,</span> file<span class=p>,</span> controller<span class=p>.</span>signal<span class=p>).</span><span class=t>then</span><span class=p>(</span>
             <span class=p>() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>),</span>
             <span class=p>() =&gt; {</span>
@@ -1965,6 +2027,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
   const save = async () => {
     if (!cropper.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     const result = await exportCrop(cropper.current, {
@@ -1973,15 +2036,19 @@ export const SaveCrop = ({ file }: { file: File }) => {
       signal: controller.signal,
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) console.error(error);
+
       return null;
     });
+
     running.current = null;
     setSaving(false);
     if (!result) return;
     const { blob, type } = result;
     const link = document.createElement("a");
+
     link.href = URL.createObjectURL(blob);
     const extension = type === "image/webp" ? "webp" : "png";
+
     link.download = \`crop.\${extension}\`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
@@ -2029,6 +2096,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
     <span class=k>if </span><span class=p>(!</span>cropper<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
     running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
     <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
     <span class=k>const</span> result <span class=p>= </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>cropper<span class=p>.</span>current<span class=p>, {</span>
@@ -2037,15 +2105,19 @@ export const SaveCrop = ({ file }: { file: File }) => {
       signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
     <span class=p>}).</span><span class=t>catch</span><span class=p>((</span>error<span class=p>:</span> unknown<span class=p>) =&gt; {</span>
       <span class=k>if </span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>)</span> console<span class=p>.</span><span class=t>error</span><span class=p>(</span>error<span class=p>);</span>
+
       <span class=k>return null</span><span class=p>;</span>
     <span class=p>});</span>
+
     running<span class=p>.</span>current <span class=p>= </span><span class=k>null</span><span class=p>;</span>
     <span class=t>setSaving</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=k>if </span><span class=p>(!</span>result<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=k>const </span><span class=p>{</span> blob<span class=p>,</span> type <span class=p>} =</span> result<span class=p>;</span>
     <span class=k>const</span> link <span class=p>=</span> document<span class=p>.</span><span class=t>createElement</span><span class=p>(</span><span class=s>"a"</span><span class=p>);</span>
+
     link<span class=p>.</span>href <span class=p>=</span> URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>);</span>
     <span class=k>const</span> extension <span class=p>=</span> type <span class=p>=== </span><span class=s>"image/webp" </span><span class=p>? </span><span class=s>"webp" </span><span class=p>: </span><span class=s>"png"</span><span class=p>;</span>
+
     link<span class=p>.</span>download <span class=p>= </span><span class=s>\`crop.</span><span class=p>\${</span>extension<span class=p>}</span><span class=s>\`</span><span class=p>;</span>
     link<span class=p>.</span><span class=t>click</span><span class=p>();</span>
     <span class=t>setTimeout</span><span class=p>(() =&gt;</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>link<span class=p>.</span>href<span class=p>), </span><span class=n>1000</span><span class=p>);</span>
@@ -2092,6 +2164,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -2103,12 +2176,15 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     if (!cropper.current) return;
     last.current?.abort();
     const controller = new AbortController();
+
     last.current = controller;
+
     try {
       const { blob } = await exportCrop(cropper.current, {
         maxSize: { width: 256, height: 256 },
         signal: controller.signal,
       });
+
       if (!controller.signal.aborted) {
         setPreview(URL.createObjectURL(blob));
       }
@@ -2148,6 +2224,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
   <span class=k>const </span><span class=p>[</span>preview<span class=p>,</span> setPreview<span class=p>] = </span><span class=t>useState</span><span class=p>&lt;</span>string <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
 
   <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
+
   <span class=t>useEffect</span><span class=p>(</span>
     <span class=p>() =&gt; () =&gt; {</span>
       <span class=k>if </span><span class=p>(</span>preview<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>preview<span class=p>);</span>
@@ -2159,12 +2236,15 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     <span class=k>if </span><span class=p>(!</span>cropper<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
     last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
+
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>cropper<span class=p>.</span>current<span class=p>, {</span>
         maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>256</span><span class=p>,</span> height<span class=p>: </span><span class=n>256 </span><span class=p>},</span>
         signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
       <span class=p>});</span>
+
       <span class=k>if </span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
         <span class=t>setPreview</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>));</span>
       <span class=p>}</span>
@@ -2233,6 +2313,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     const x = Math.round(center.x * 100);
     const y = Math.round(center.y * 100);
     const width = Math.round(size.width * 100);
+
     return \`Crop at \${x}%, \${y}%, \${width}% wide\`;
   }}
 />",
@@ -2242,6 +2323,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     <span class=k>const</span> x <span class=p>=</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>center<span class=p>.</span>x <span class=p>* </span><span class=n>100</span><span class=p>);</span>
     <span class=k>const</span> y <span class=p>=</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>center<span class=p>.</span>y <span class=p>* </span><span class=n>100</span><span class=p>);</span>
     <span class=k>const</span> width <span class=p>=</span> Math<span class=p>.</span><span class=t>round</span><span class=p>(</span>size<span class=p>.</span>width <span class=p>* </span><span class=n>100</span><span class=p>);</span>
+
     <span class=k>return </span><span class=s>\`Crop at </span><span class=p>\${</span>x<span class=p>}</span><span class=s>%, </span><span class=p>\${</span>y<span class=p>}</span><span class=s>%, </span><span class=p>\${</span>width<span class=p>}</span><span class=s>% wide\`</span><span class=p>;</span>
   <span class=p>}}</span>
 <span class=p>/&gt;</span>",
@@ -2258,29 +2340,36 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",
     });
   };
+
   const move = (x: number, y: number) => {
     cropper.panBy(x, y, { reason: "keyboard" });
   };
+
   const resize = (by: number) => {
     const state = cropper.getCropState();
+
     if (state) {
       const crop = {
         ...state.crop,
         height: state.crop.height * by,
         width: state.crop.width * by,
       };
+
       cropper.setCropState(
         { ...state, crop },
         { keep: "center", reason: "keyboard" }
       );
     }
   };
+
   return (
     <>
       <Cropper.Root cropper={cropper} src={src}>
@@ -2310,29 +2399,36 @@ export const Editor = ({ src }: { src: string }) => {
 
 <span class=k>export const </span><span class=t>Editor </span><span class=p>= ({</span> src <span class=p>}: {</span> src<span class=p>:</span> string <span class=p>}) =&gt; {</span>
   <span class=k>const</span> cropper <span class=p>= </span><span class=t>useCropper</span><span class=p>();</span>
+
   <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt; </span><span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>null</span><span class=p>), [</span>cropper<span class=p>]);</span>
+
   <span class=k>const </span><span class=t>turn </span><span class=p>= (</span>by<span class=p>:</span> number<span class=p>) =&gt; {</span>
     cropper<span class=p>.</span><span class=t>setRotation</span><span class=p>(</span>cropper<span class=p>.</span><span class=t>getValue</span><span class=p>().</span>rotation <span class=p>+</span> by<span class=p>, {</span>
       reason<span class=p>: </span><span class=s>"keyboard"</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>};</span>
+
   <span class=k>const </span><span class=t>move </span><span class=p>= (</span>x<span class=p>:</span> number<span class=p>,</span> y<span class=p>:</span> number<span class=p>) =&gt; {</span>
     cropper<span class=p>.</span><span class=t>panBy</span><span class=p>(</span>x<span class=p>,</span> y<span class=p>, {</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>});</span>
   <span class=p>};</span>
+
   <span class=k>const </span><span class=t>resize </span><span class=p>= (</span>by<span class=p>:</span> number<span class=p>) =&gt; {</span>
     <span class=k>const</span> state <span class=p>=</span> cropper<span class=p>.</span><span class=t>getCropState</span><span class=p>();</span>
+
     <span class=k>if </span><span class=p>(</span>state<span class=p>) {</span>
       <span class=k>const</span> crop <span class=p>= {</span>
         <span class=p>...</span>state<span class=p>.</span>crop<span class=p>,</span>
         height<span class=p>:</span> state<span class=p>.</span>crop<span class=p>.</span>height <span class=p>*</span> by<span class=p>,</span>
         width<span class=p>:</span> state<span class=p>.</span>crop<span class=p>.</span>width <span class=p>*</span> by<span class=p>,</span>
       <span class=p>};</span>
+
       cropper<span class=p>.</span><span class=t>setCropState</span><span class=p>(</span>
         <span class=p>{ ...</span>state<span class=p>,</span> crop <span class=p>},</span>
         <span class=p>{</span> keep<span class=p>: </span><span class=s>"center"</span><span class=p>,</span> reason<span class=p>: </span><span class=s>"keyboard" </span><span class=p>}</span>
       <span class=p>);</span>
     <span class=p>}</span>
   <span class=p>};</span>
+
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>cropper</span><span class=p>={</span>cropper<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>}&gt;</span>
@@ -2507,8 +2603,10 @@ const corners = [
   "bottom-left",
   "bottom-right",
 ] as const;
+
 for (const corner of corners) {
   const handle = document.createElement("div");
+
   handle.dataset.zrizItem = "handle";
   handle.setAttribute("aria-hidden", "true");
   byId("area").append(handle);
@@ -2520,12 +2618,15 @@ let last: AbortController | undefined;
 
 const onFile = async () => {
   const file = input.files?.[0];
+
   if (!file) return;
   last?.abort();
   const controller = new AbortController();
   const { signal } = controller;
+
   last = controller;
   byId("status").textContent = "";
+
   try {
     attachImage(cropper, await loadImage(file, { signal }));
   } catch {
@@ -2535,6 +2636,7 @@ const onFile = async () => {
 };
 
 input.addEventListener("change", onFile);
+
 cleanups.push(() => {
   last?.abort();
   input.removeEventListener("change", onFile);
@@ -2573,8 +2675,10 @@ cleanups.push(() => {
   <span class=s>"bottom-left"</span><span class=p>,</span>
   <span class=s>"bottom-right"</span><span class=p>,</span>
 <span class=p>] </span><span class=k>as const</span><span class=p>;</span>
+
 <span class=k>for </span><span class=p>(</span><span class=k>const</span> corner <span class=k>of</span> corners<span class=p>) {</span>
   <span class=k>const</span> handle <span class=p>=</span> document<span class=p>.</span><span class=t>createElement</span><span class=p>(</span><span class=s>"div"</span><span class=p>);</span>
+
   handle<span class=p>.</span>dataset<span class=p>.</span>zrizItem <span class=p>= </span><span class=s>"handle"</span><span class=p>;</span>
   handle<span class=p>.</span><span class=t>setAttribute</span><span class=p>(</span><span class=s>"aria-hidden"</span><span class=p>, </span><span class=s>"true"</span><span class=p>);</span>
   <span class=t>byId</span><span class=p>(</span><span class=s>"area"</span><span class=p>).</span><span class=t>append</span><span class=p>(</span>handle<span class=p>);</span>
@@ -2586,12 +2690,15 @@ cleanups.push(() => {
 
 <span class=k>const </span><span class=t>onFile </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>const</span> file <span class=p>=</span> input<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>];</span>
+
   <span class=k>if </span><span class=p>(!</span>file<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
   <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
   <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+
   last <span class=p>=</span> controller<span class=p>;</span>
   <span class=t>byId</span><span class=p>(</span><span class=s>"status"</span><span class=p>).</span>textContent <span class=p>= </span><span class=s>""</span><span class=p>;</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=t>attachImage</span><span class=p>(</span>cropper<span class=p>, </span><span class=k>await </span><span class=t>loadImage</span><span class=p>(</span>file<span class=p>, {</span> signal <span class=p>}));</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
@@ -2601,6 +2708,7 @@ cleanups.push(() => {
 <span class=p>};</span>
 
 input<span class=p>.</span><span class=t>addEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
+
 cleanups<span class=p>.</span><span class=t>push</span><span class=p>(() =&gt; {</span>
   last<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
   input<span class=p>.</span><span class=t>removeEventListener</span><span class=p>(</span><span class=s>"change"</span><span class=p>,</span> onFile<span class=p>);</span>
@@ -2960,13 +3068,16 @@ useEffect(() => () => running.current?.abort(), [picks]);
 const save = async () => {
   if (!actions.current || running.current) return;
   const controller = new AbortController();
+
   running.current = controller;
   setSaving(true);
+
   try {
     const { blob } = await exportCrop(actions.current, {
       maxSize: { width: 512, height: 512 },
       signal: controller.signal,
     });
+
     setSaveFailed(false);
     onSave(blob);
   } catch {
@@ -2996,13 +3107,16 @@ const save = async () => {
 <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
   running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
   <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
       maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>},</span>
       signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
     <span class=p>});</span>
+
     <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
     <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
@@ -3056,13 +3170,16 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
         signal: controller.signal,
       });
+
       setSaveFailed(false);
       onSave(blob);
     } catch {
@@ -3149,13 +3266,16 @@ export const AvatarPicker = ({ onSave }: Props) => {
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
     <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
     running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
     <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
+
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
         maxSize<span class=p>: {</span> width<span class=p>: </span><span class=n>512</span><span class=p>,</span> height<span class=p>: </span><span class=n>512 </span><span class=p>},</span>
         signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
       <span class=p>});</span>
+
       <span class=t>setSaveFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
       <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
@@ -3479,6 +3599,7 @@ const [ready, setReady] = useState(false);
 const [failed, setFailed] = useState(false);
 const [exportFailed, setExportFailed] = useState(false);
 const [shown, setShown] = useState(src);
+
 if (shown !== src) {
   setShown(src);
   setReady(false);
@@ -3491,13 +3612,16 @@ useEffect(() => () => running.current?.abort(), [src]);
 const save = async () => {
   if (!actions.current || running.current) return;
   const controller = new AbortController();
+
   running.current = controller;
   setSaving(true);
   setExportFailed(false);
+
   try {
     const { blob } = await exportCrop(actions.current, {
       signal: controller.signal,
     });
+
     onSave(blob);
   } catch {
     setExportFailed(!controller.signal.aborted);
@@ -3537,6 +3661,7 @@ const save = async () => {
 <span class=k>const </span><span class=p>[</span>failed<span class=p>,</span> setFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=k>const </span><span class=p>[</span>exportFailed<span class=p>,</span> setExportFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
 <span class=k>const </span><span class=p>[</span>shown<span class=p>,</span> setShown<span class=p>] = </span><span class=t>useState</span><span class=p>(</span>src<span class=p>);</span>
+
 <span class=k>if </span><span class=p>(</span>shown <span class=p>!==</span> src<span class=p>) {</span>
   <span class=t>setShown</span><span class=p>(</span>src<span class=p>);</span>
   <span class=t>setReady</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
@@ -3549,13 +3674,16 @@ const save = async () => {
 <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
   running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
   <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
   <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
       signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
     <span class=p>});</span>
+
     <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
     <span class=t>setExportFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
@@ -3669,6 +3797,7 @@ export const Editor = ({ src, onSave }: Props) => {
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
   const [shown, setShown] = useState(src);
+
   if (shown !== src) {
     setShown(src);
     setReady(false);
@@ -3681,13 +3810,16 @@ export const Editor = ({ src, onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     setExportFailed(false);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         signal: controller.signal,
       });
+
       onSave(blob);
     } catch {
       setExportFailed(!controller.signal.aborted);
@@ -3845,6 +3977,7 @@ export const Editor = ({ src, onSave }: Props) => {
   <span class=k>const </span><span class=p>[</span>failed<span class=p>,</span> setFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>exportFailed<span class=p>,</span> setExportFailed<span class=p>] = </span><span class=t>useState</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
   <span class=k>const </span><span class=p>[</span>shown<span class=p>,</span> setShown<span class=p>] = </span><span class=t>useState</span><span class=p>(</span>src<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>shown <span class=p>!==</span> src<span class=p>) {</span>
     <span class=t>setShown</span><span class=p>(</span>src<span class=p>);</span>
     <span class=t>setReady</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
@@ -3857,13 +3990,16 @@ export const Editor = ({ src, onSave }: Props) => {
   <span class=k>const </span><span class=t>save </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
     <span class=k>if </span><span class=p>(!</span>actions<span class=p>.</span>current <span class=p>||</span> running<span class=p>.</span>current<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
+
     running<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
     <span class=t>setSaving</span><span class=p>(</span><span class=n>true</span><span class=p>);</span>
     <span class=t>setExportFailed</span><span class=p>(</span><span class=n>false</span><span class=p>);</span>
+
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>actions<span class=p>.</span>current<span class=p>, {</span>
         signal<span class=p>:</span> controller<span class=p>.</span>signal<span class=p>,</span>
       <span class=p>});</span>
+
       <span class=t>onSave</span><span class=p>(</span>blob<span class=p>);</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
       <span class=t>setExportFailed</span><span class=p>(!</span>controller<span class=p>.</span>signal<span class=p>.</span>aborted<span class=p>);</span>
@@ -3961,6 +4097,7 @@ const [picks, setPicks] = useState(0);
 const last = useRef<AbortController | null>(null);
 
 useEffect(() => () => last.current?.abort(), []);
+
 useEffect(
   () => () => {
     if (result) URL.revokeObjectURL(result);
@@ -3970,29 +4107,36 @@ useEffect(
 
 const upload = async () => {
   const value = actions.current?.getValue();
+
   if (!file || !value) return;
   last.current?.abort();
   const controller = new AbortController();
   const { signal } = controller;
+
   last.current = controller;
   setError(null);
   setResult(null);
   const form = new FormData();
+
   form.append("file", file);
   form.append("value", serialize(value));
+
   try {
     const response = await fetch("/api/crop", {
       method: "POST",
       body: form,
       signal,
     });
+
     if (response.ok) {
       const blob = await response.blob();
+
       if (!signal.aborted) {
         setResult(URL.createObjectURL(blob));
       }
     } else {
       const message = await response.text();
+
       if (!signal.aborted) setError(message);
     }
   } catch {
@@ -4040,6 +4184,7 @@ const upload = async () => {
 <span class=k>const</span> last <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
 
 <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
+
 <span class=t>useEffect</span><span class=p>(</span>
   <span class=p>() =&gt; () =&gt; {</span>
     <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
@@ -4049,29 +4194,36 @@ const upload = async () => {
 
 <span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
   <span class=k>const</span> value <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getValue</span><span class=p>();</span>
+
   <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>value<span class=p>) </span><span class=k>return</span><span class=p>;</span>
   last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
   <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
   <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+
   last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
   <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
   <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
   <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
+
   form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
   form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"value"</span><span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
       method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
       body<span class=p>:</span> form<span class=p>,</span>
       signal<span class=p>,</span>
     <span class=p>});</span>
+
     <span class=k>if </span><span class=p>(</span>response<span class=p>.</span>ok<span class=p>) {</span>
       <span class=k>const</span> blob <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>();</span>
+
       <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
         <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>));</span>
       <span class=p>}</span>
     <span class=p>} </span><span class=k>else </span><span class=p>{</span>
       <span class=k>const</span> message <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>();</span>
+
       <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) </span><span class=t>setError</span><span class=p>(</span>message<span class=p>);</span>
     <span class=p>}</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
@@ -4129,6 +4281,7 @@ const raw = (pipeline: Sharp) =>
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
+
   if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(
     sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
@@ -4138,11 +4291,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom: MAX_ZOOM,
     minSize: MIN_SIZE,
   });
+
   cropper.setValue(saved);
   const plan = cropper.getPixelCrop();
+
   if (!plan || plan.homography)
     throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
+
   if (steps.kind === "extract") {
     const turned = await raw(
       open(upright)
@@ -4150,11 +4306,13 @@ const cut = async (input: Buffer, value: string) => {
         .flop(steps.flop)
         .rotate(steps.rotate)
     );
+
     return open(turned).resize({
       ...steps.resize,
       fit: "fill",
     });
   }
+
   const [[a, b], [c, d]] = steps.affine;
   const padded = await raw(
     open(upright).extract(steps.source).extend(steps.extend)
@@ -4162,6 +4320,7 @@ const cut = async (input: Buffer, value: string) => {
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
+
   return open(turned).extract(steps.extract);
 };",
     "<span class=k>type</span> Raw <span class=p>= {</span> data<span class=p>:</span> Buffer<span class=p>;</span> info<span class=p>:</span> OutputInfo <span class=p>};</span>
@@ -4178,6 +4337,7 @@ const cut = async (input: Buffer, value: string) => {
 
 <span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
   <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
   <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>:</span> MAX_PIXELS <span class=p>}).</span><span class=t>rotate</span><span class=p>()</span>
@@ -4187,11 +4347,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
     minSize<span class=p>:</span> MIN_SIZE<span class=p>,</span>
   <span class=p>});</span>
+
   cropper<span class=p>.</span><span class=t>setValue</span><span class=p>(</span>saved<span class=p>);</span>
   <span class=k>const</span> plan <span class=p>=</span> cropper<span class=p>.</span><span class=t>getPixelCrop</span><span class=p>();</span>
+
   <span class=k>if </span><span class=p>(!</span>plan <span class=p>||</span> plan<span class=p>.</span>homography<span class=p>)</span>
     <span class=k>throw new </span><span class=t>RangeError</span><span class=p>(</span><span class=s>"no flat plan"</span><span class=p>);</span>
   <span class=k>const</span> steps <span class=p>= </span><span class=t>toSharp</span><span class=p>(</span>plan<span class=p>,</span> upright<span class=p>.</span>info<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>steps<span class=p>.</span>kind <span class=p>=== </span><span class=s>"extract"</span><span class=p>) {</span>
     <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
       <span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
@@ -4199,11 +4362,13 @@ const cut = async (input: Buffer, value: string) => {
         <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
         <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>)</span>
     <span class=p>);</span>
+
     <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>resize</span><span class=p>({</span>
       <span class=p>...</span>steps<span class=p>.</span>resize<span class=p>,</span>
       fit<span class=p>: </span><span class=s>"fill"</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
+
   <span class=k>const </span><span class=p>[[</span>a<span class=p>,</span> b<span class=p>], [</span>c<span class=p>,</span> d<span class=p>]] =</span> steps<span class=p>.</span>affine<span class=p>;</span>
   <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>source<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>)</span>
@@ -4211,6 +4376,7 @@ const cut = async (input: Buffer, value: string) => {
   <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>padded<span class=p>).</span><span class=t>affine</span><span class=p>([</span>a<span class=p>,</span> b<span class=p>,</span> c<span class=p>,</span> d<span class=p>],</span> steps<span class=p>.</span>options<span class=p>)</span>
   <span class=p>);</span>
+
   <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>);</span>
 <span class=p>};</span>",
   ],
@@ -4228,6 +4394,7 @@ const HEADERS = {
 };
 
 sharp.block({ operation: ["VipsForeignLoad"] });
+
 sharp.unblock({
   operation: [
     "VipsForeignLoadJpegBuffer",
@@ -4247,6 +4414,7 @@ sharp.unblock({
 <span class=p>};</span>
 
 sharp<span class=p>.</span><span class=t>block</span><span class=p>({</span> operation<span class=p>: [</span><span class=s>"VipsForeignLoad"</span><span class=p>] });</span>
+
 sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   operation<span class=p>: [</span>
     <span class=s>"VipsForeignLoadJpegBuffer"</span><span class=p>,</span>
@@ -4275,14 +4443,17 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   })
     .formData()
     .catch(() => null);
+
   return { form, over: seen > MAX_BODY };
 };
 
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
+
   if (over) return refuse("this upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
+
   if (
     !(file instanceof File) ||
     file.size === 0 ||
@@ -4290,26 +4461,33 @@ const answer = async (request: Request) => {
   ) {
     return refuse("send a file and a crop value.", 400);
   }
+
   if (value.length > MAX_VALUE) {
     return refuse("this crop does not fit this photo.", 422);
   }
+
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
+
   if (!meta) return refuse("sharp cannot open this file.", 400);
+
   if (meta.format === "heif" && meta.compression !== "av1") {
     return refuse("send a jpeg, png, webp or avif.", 415);
   }
+
   if (meta.width * meta.height > MAX_PIXELS) {
     return refuse("this photo has too many pixels.", 413);
   }
+
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
     return refuse(
       "save this webp without an orientation tag.",
       422
     );
   }
+
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
@@ -4317,6 +4495,7 @@ const answer = async (request: Request) => {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
+
     return new Response(new Uint8Array(jpeg), {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
@@ -4340,14 +4519,17 @@ const answer = async (request: Request) => {
   <span class=p>})</span>
     <span class=p>.</span><span class=t>formData</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>return </span><span class=p>{</span> form<span class=p>,</span> over<span class=p>:</span> seen <span class=p>&gt;</span> MAX_BODY <span class=p>};</span>
 <span class=p>};</span>
 
 <span class=k>const </span><span class=t>answer </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
   <span class=k>const </span><span class=p>{</span> form<span class=p>,</span> over <span class=p>} = </span><span class=k>await </span><span class=t>readForm</span><span class=p>(</span>request<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>over<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=k>const</span> file <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
   <span class=k>const</span> value <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>
     <span class=p>!(</span>file <span class=k>instanceof</span> File<span class=p>) ||</span>
     file<span class=p>.</span>size <span class=p>=== </span><span class=n>0 </span><span class=p>||</span>
@@ -4355,26 +4537,33 @@ const answer = async (request: Request) => {
   <span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>value<span class=p>.</span>length <span class=p>&gt;</span> MAX_VALUE<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>const</span> input <span class=p>=</span> Buffer<span class=p>.</span><span class=t>from</span><span class=p>(</span><span class=k>await</span> file<span class=p>.</span><span class=t>arrayBuffer</span><span class=p>());</span>
   <span class=k>const</span> meta <span class=p>= </span><span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>)</span>
     <span class=p>.</span><span class=t>metadata</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(!</span>meta<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"heif" </span><span class=p>&amp;&amp;</span> meta<span class=p>.</span>compression <span class=p>!== </span><span class=s>"av1"</span><span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a jpeg, png, webp or avif."</span><span class=p>, </span><span class=n>415</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>width <span class=p>*</span> meta<span class=p>.</span>height <span class=p>&gt;</span> MAX_PIXELS<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this photo has too many pixels."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span>
       <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
       <span class=n>422</span>
     <span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
@@ -4382,6 +4571,7 @@ const answer = async (request: Request) => {
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
       <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>
+
     <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=k>new </span><span class=t>Uint8Array</span><span class=p>(</span>jpeg<span class=p>), {</span>
       headers<span class=p>: { ...</span>HEADERS<span class=p>, </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
@@ -4397,14 +4587,19 @@ const answer = async (request: Request) => {
   if (!(await canCrop(request))) {
     return refuse("sign in to crop a photo.", 401);
   }
+
   const length = Number(request.headers.get("content-length"));
+
   if (!(length > 0) || length > MAX_BODY) {
     return refuse("this upload is too large.", 413);
   }
+
   if (running >= MAX_RUNNING) {
     return refuse("the server is busy. try again.", 503);
   }
+
   running += 1;
+
   try {
     return await answer(request);
   } finally {
@@ -4415,14 +4610,19 @@ const answer = async (request: Request) => {
   <span class=k>if </span><span class=p>(!(</span><span class=k>await </span><span class=t>canCrop</span><span class=p>(</span>request<span class=p>))) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sign in to crop a photo."</span><span class=p>, </span><span class=n>401</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+
   <span class=k>if </span><span class=p>(!(</span>length <span class=p>&gt; </span><span class=n>0</span><span class=p>) ||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>running <span class=p>&gt;=</span> MAX_RUNNING<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"the server is busy. try again."</span><span class=p>, </span><span class=n>503</span><span class=p>);</span>
   <span class=p>}</span>
+
   running <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>return await </span><span class=t>answer</span><span class=p>(</span>request<span class=p>);</span>
   <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
@@ -4469,6 +4669,7 @@ export const CropUpload = () => {
   const last = useRef<AbortController | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (result) URL.revokeObjectURL(result);
@@ -4478,29 +4679,36 @@ export const CropUpload = () => {
 
   const upload = async () => {
     const value = actions.current?.getValue();
+
     if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
+
     last.current = controller;
     setError(null);
     setResult(null);
     const form = new FormData();
+
     form.append("file", file);
     form.append("value", serialize(value));
+
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
         body: form,
         signal,
       });
+
       if (response.ok) {
         const blob = await response.blob();
+
         if (!signal.aborted) {
           setResult(URL.createObjectURL(blob));
         }
       } else {
         const message = await response.text();
+
         if (!signal.aborted) setError(message);
       }
     } catch {
@@ -4581,6 +4789,7 @@ export const CropUpload = () => {
   <span class=k>const</span> last <span class=p>= </span><span class=t>useRef</span><span class=p>&lt;</span>AbortController <span class=p>|</span> null<span class=p>&gt;(</span><span class=k>null</span><span class=p>);</span>
 
   <span class=t>useEffect</span><span class=p>(() =&gt; () =&gt;</span> last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>(), []);</span>
+
   <span class=t>useEffect</span><span class=p>(</span>
     <span class=p>() =&gt; () =&gt; {</span>
       <span class=k>if </span><span class=p>(</span>result<span class=p>)</span> URL<span class=p>.</span><span class=t>revokeObjectURL</span><span class=p>(</span>result<span class=p>);</span>
@@ -4590,29 +4799,36 @@ export const CropUpload = () => {
 
   <span class=k>const </span><span class=t>upload </span><span class=p>= </span><span class=k>async </span><span class=p>() =&gt; {</span>
     <span class=k>const</span> value <span class=p>=</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getValue</span><span class=p>();</span>
+
     <span class=k>if </span><span class=p>(!</span>file <span class=p>|| !</span>value<span class=p>) </span><span class=k>return</span><span class=p>;</span>
     last<span class=p>.</span>current<span class=p>?.</span><span class=t>abort</span><span class=p>();</span>
     <span class=k>const</span> controller <span class=p>= </span><span class=k>new </span><span class=t>AbortController</span><span class=p>();</span>
     <span class=k>const </span><span class=p>{</span> signal <span class=p>} =</span> controller<span class=p>;</span>
+
     last<span class=p>.</span>current <span class=p>=</span> controller<span class=p>;</span>
     <span class=t>setError</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
     <span class=t>setResult</span><span class=p>(</span><span class=k>null</span><span class=p>);</span>
     <span class=k>const</span> form <span class=p>= </span><span class=k>new </span><span class=t>FormData</span><span class=p>();</span>
+
     form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"file"</span><span class=p>,</span> file<span class=p>);</span>
     form<span class=p>.</span><span class=t>append</span><span class=p>(</span><span class=s>"value"</span><span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
+
     <span class=k>try </span><span class=p>{</span>
       <span class=k>const</span> response <span class=p>= </span><span class=k>await </span><span class=t>fetch</span><span class=p>(</span><span class=s>"/api/crop"</span><span class=p>, {</span>
         method<span class=p>: </span><span class=s>"POST"</span><span class=p>,</span>
         body<span class=p>:</span> form<span class=p>,</span>
         signal<span class=p>,</span>
       <span class=p>});</span>
+
       <span class=k>if </span><span class=p>(</span>response<span class=p>.</span>ok<span class=p>) {</span>
         <span class=k>const</span> blob <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>blob</span><span class=p>();</span>
+
         <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) {</span>
           <span class=t>setResult</span><span class=p>(</span>URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>));</span>
         <span class=p>}</span>
       <span class=p>} </span><span class=k>else </span><span class=p>{</span>
         <span class=k>const</span> message <span class=p>= </span><span class=k>await</span> response<span class=p>.</span><span class=t>text</span><span class=p>();</span>
+
         <span class=k>if </span><span class=p>(!</span>signal<span class=p>.</span>aborted<span class=p>) </span><span class=t>setError</span><span class=p>(</span>message<span class=p>);</span>
       <span class=p>}</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>{</span>
@@ -4692,6 +4908,7 @@ const HEADERS = {
 };
 
 sharp.block({ operation: ["VipsForeignLoad"] });
+
 sharp.unblock({
   operation: [
     "VipsForeignLoadJpegBuffer",
@@ -4720,6 +4937,7 @@ const raw = (pipeline: Sharp) =>
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
+
   if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(
     sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
@@ -4729,11 +4947,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom: MAX_ZOOM,
     minSize: MIN_SIZE,
   });
+
   cropper.setValue(saved);
   const plan = cropper.getPixelCrop();
+
   if (!plan || plan.homography)
     throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
+
   if (steps.kind === "extract") {
     const turned = await raw(
       open(upright)
@@ -4741,11 +4962,13 @@ const cut = async (input: Buffer, value: string) => {
         .flop(steps.flop)
         .rotate(steps.rotate)
     );
+
     return open(turned).resize({
       ...steps.resize,
       fit: "fill",
     });
   }
+
   const [[a, b], [c, d]] = steps.affine;
   const padded = await raw(
     open(upright).extract(steps.source).extend(steps.extend)
@@ -4753,6 +4976,7 @@ const cut = async (input: Buffer, value: string) => {
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
+
   return open(turned).extract(steps.extract);
 };
 
@@ -4772,14 +4996,17 @@ const readForm = async (request: Request) => {
   })
     .formData()
     .catch(() => null);
+
   return { form, over: seen > MAX_BODY };
 };
 
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
+
   if (over) return refuse("this upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
+
   if (
     !(file instanceof File) ||
     file.size === 0 ||
@@ -4787,26 +5014,33 @@ const answer = async (request: Request) => {
   ) {
     return refuse("send a file and a crop value.", 400);
   }
+
   if (value.length > MAX_VALUE) {
     return refuse("this crop does not fit this photo.", 422);
   }
+
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
+
   if (!meta) return refuse("sharp cannot open this file.", 400);
+
   if (meta.format === "heif" && meta.compression !== "av1") {
     return refuse("send a jpeg, png, webp or avif.", 415);
   }
+
   if (meta.width * meta.height > MAX_PIXELS) {
     return refuse("this photo has too many pixels.", 413);
   }
+
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
     return refuse(
       "save this webp without an orientation tag.",
       422
     );
   }
+
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
@@ -4814,6 +5048,7 @@ const answer = async (request: Request) => {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
+
     return new Response(new Uint8Array(jpeg), {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
@@ -4826,14 +5061,19 @@ export const POST = async (request: Request) => {
   if (!(await canCrop(request))) {
     return refuse("sign in to crop a photo.", 401);
   }
+
   const length = Number(request.headers.get("content-length"));
+
   if (!(length > 0) || length > MAX_BODY) {
     return refuse("this upload is too large.", 413);
   }
+
   if (running >= MAX_RUNNING) {
     return refuse("the server is busy. try again.", 503);
   }
+
   running += 1;
+
   try {
     return await answer(request);
   } finally {
@@ -4857,6 +5097,7 @@ export const POST = async (request: Request) => {
 <span class=p>};</span>
 
 sharp<span class=p>.</span><span class=t>block</span><span class=p>({</span> operation<span class=p>: [</span><span class=s>"VipsForeignLoad"</span><span class=p>] });</span>
+
 sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   operation<span class=p>: [</span>
     <span class=s>"VipsForeignLoadJpegBuffer"</span><span class=p>,</span>
@@ -4885,6 +5126,7 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
 
 <span class=k>const </span><span class=t>cut </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>input<span class=p>:</span> Buffer<span class=p>,</span> value<span class=p>:</span> string<span class=p>) =&gt; {</span>
   <span class=k>const</span> saved <span class=p>= </span><span class=t>parse</span><span class=p>(</span>value<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(!</span>saved<span class=p>) </span><span class=k>throw new </span><span class=t>TypeError</span><span class=p>(</span><span class=s>"not a crop value"</span><span class=p>);</span>
   <span class=k>const</span> upright <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>sharp</span><span class=p>(</span>input<span class=p>, {</span> limitInputPixels<span class=p>:</span> MAX_PIXELS <span class=p>}).</span><span class=t>rotate</span><span class=p>()</span>
@@ -4894,11 +5136,14 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
     maxZoom<span class=p>:</span> MAX_ZOOM<span class=p>,</span>
     minSize<span class=p>:</span> MIN_SIZE<span class=p>,</span>
   <span class=p>});</span>
+
   cropper<span class=p>.</span><span class=t>setValue</span><span class=p>(</span>saved<span class=p>);</span>
   <span class=k>const</span> plan <span class=p>=</span> cropper<span class=p>.</span><span class=t>getPixelCrop</span><span class=p>();</span>
+
   <span class=k>if </span><span class=p>(!</span>plan <span class=p>||</span> plan<span class=p>.</span>homography<span class=p>)</span>
     <span class=k>throw new </span><span class=t>RangeError</span><span class=p>(</span><span class=s>"no flat plan"</span><span class=p>);</span>
   <span class=k>const</span> steps <span class=p>= </span><span class=t>toSharp</span><span class=p>(</span>plan<span class=p>,</span> upright<span class=p>.</span>info<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>steps<span class=p>.</span>kind <span class=p>=== </span><span class=s>"extract"</span><span class=p>) {</span>
     <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
       <span class=t>open</span><span class=p>(</span>upright<span class=p>)</span>
@@ -4906,11 +5151,13 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
         <span class=p>.</span><span class=t>flop</span><span class=p>(</span>steps<span class=p>.</span>flop<span class=p>)</span>
         <span class=p>.</span><span class=t>rotate</span><span class=p>(</span>steps<span class=p>.</span>rotate<span class=p>)</span>
     <span class=p>);</span>
+
     <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>resize</span><span class=p>({</span>
       <span class=p>...</span>steps<span class=p>.</span>resize<span class=p>,</span>
       fit<span class=p>: </span><span class=s>"fill"</span><span class=p>,</span>
     <span class=p>});</span>
   <span class=p>}</span>
+
   <span class=k>const </span><span class=p>[[</span>a<span class=p>,</span> b<span class=p>], [</span>c<span class=p>,</span> d<span class=p>]] =</span> steps<span class=p>.</span>affine<span class=p>;</span>
   <span class=k>const</span> padded <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>upright<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>source<span class=p>).</span><span class=t>extend</span><span class=p>(</span>steps<span class=p>.</span>extend<span class=p>)</span>
@@ -4918,6 +5165,7 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   <span class=k>const</span> turned <span class=p>= </span><span class=k>await </span><span class=t>raw</span><span class=p>(</span>
     <span class=t>open</span><span class=p>(</span>padded<span class=p>).</span><span class=t>affine</span><span class=p>([</span>a<span class=p>,</span> b<span class=p>,</span> c<span class=p>,</span> d<span class=p>],</span> steps<span class=p>.</span>options<span class=p>)</span>
   <span class=p>);</span>
+
   <span class=k>return </span><span class=t>open</span><span class=p>(</span>turned<span class=p>).</span><span class=t>extract</span><span class=p>(</span>steps<span class=p>.</span>extract<span class=p>);</span>
 <span class=p>};</span>
 
@@ -4937,14 +5185,17 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   <span class=p>})</span>
     <span class=p>.</span><span class=t>formData</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>return </span><span class=p>{</span> form<span class=p>,</span> over<span class=p>:</span> seen <span class=p>&gt;</span> MAX_BODY <span class=p>};</span>
 <span class=p>};</span>
 
 <span class=k>const </span><span class=t>answer </span><span class=p>= </span><span class=k>async </span><span class=p>(</span>request<span class=p>:</span> Request<span class=p>) =&gt; {</span>
   <span class=k>const </span><span class=p>{</span> form<span class=p>,</span> over <span class=p>} = </span><span class=k>await </span><span class=t>readForm</span><span class=p>(</span>request<span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>over<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=k>const</span> file <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"file"</span><span class=p>);</span>
   <span class=k>const</span> value <span class=p>=</span> form<span class=p>?.</span><span class=t>get</span><span class=p>(</span><span class=s>"value"</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>
     <span class=p>!(</span>file <span class=k>instanceof</span> File<span class=p>) ||</span>
     file<span class=p>.</span>size <span class=p>=== </span><span class=n>0 </span><span class=p>||</span>
@@ -4952,26 +5203,33 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   <span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a file and a crop value."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>value<span class=p>.</span>length <span class=p>&gt;</span> MAX_VALUE<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this crop does not fit this photo."</span><span class=p>, </span><span class=n>422</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>const</span> input <span class=p>=</span> Buffer<span class=p>.</span><span class=t>from</span><span class=p>(</span><span class=k>await</span> file<span class=p>.</span><span class=t>arrayBuffer</span><span class=p>());</span>
   <span class=k>const</span> meta <span class=p>= </span><span class=k>await </span><span class=t>sharp</span><span class=p>(</span>input<span class=p>)</span>
     <span class=p>.</span><span class=t>metadata</span><span class=p>()</span>
     <span class=p>.</span><span class=t>catch</span><span class=p>(() =&gt; </span><span class=k>null</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(!</span>meta<span class=p>) </span><span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sharp cannot open this file."</span><span class=p>, </span><span class=n>400</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"heif" </span><span class=p>&amp;&amp;</span> meta<span class=p>.</span>compression <span class=p>!== </span><span class=s>"av1"</span><span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"send a jpeg, png, webp or avif."</span><span class=p>, </span><span class=n>415</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>width <span class=p>*</span> meta<span class=p>.</span>height <span class=p>&gt;</span> MAX_PIXELS<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this photo has too many pixels."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>meta<span class=p>.</span>format <span class=p>=== </span><span class=s>"webp" </span><span class=p>&amp;&amp; (</span>meta<span class=p>.</span>orientation <span class=p>?? </span><span class=n>1</span><span class=p>) &gt; </span><span class=n>1</span><span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span>
       <span class=s>"save this webp without an orientation tag."</span><span class=p>,</span>
       <span class=n>422</span>
     <span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const</span> crop <span class=p>= </span><span class=k>await </span><span class=t>cut</span><span class=p>(</span>input<span class=p>,</span> value<span class=p>);</span>
     <span class=k>const</span> jpeg <span class=p>= </span><span class=k>await</span> crop
@@ -4979,6 +5237,7 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
       <span class=p>.</span><span class=t>flatten</span><span class=p>({</span> background<span class=p>: </span><span class=s>"#ffffff" </span><span class=p>})</span>
       <span class=p>.</span><span class=t>jpeg</span><span class=p>({</span> quality<span class=p>: </span><span class=n>92 </span><span class=p>})</span>
       <span class=p>.</span><span class=t>toBuffer</span><span class=p>();</span>
+
     <span class=k>return new </span><span class=t>Response</span><span class=p>(</span><span class=k>new </span><span class=t>Uint8Array</span><span class=p>(</span>jpeg<span class=p>), {</span>
       headers<span class=p>: { ...</span>HEADERS<span class=p>, </span><span class=s>"</span>content-type<span class=s>"</span><span class=p>: </span><span class=s>"image/jpeg" </span><span class=p>},</span>
     <span class=p>});</span>
@@ -4991,14 +5250,19 @@ sharp<span class=p>.</span><span class=t>unblock</span><span class=p>({</span>
   <span class=k>if </span><span class=p>(!(</span><span class=k>await </span><span class=t>canCrop</span><span class=p>(</span>request<span class=p>))) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"sign in to crop a photo."</span><span class=p>, </span><span class=n>401</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>const</span> length <span class=p>= </span><span class=t>Number</span><span class=p>(</span>request<span class=p>.</span>headers<span class=p>.</span><span class=t>get</span><span class=p>(</span><span class=s>"content-length"</span><span class=p>));</span>
+
   <span class=k>if </span><span class=p>(!(</span>length <span class=p>&gt; </span><span class=n>0</span><span class=p>) ||</span> length <span class=p>&gt;</span> MAX_BODY<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"this upload is too large."</span><span class=p>, </span><span class=n>413</span><span class=p>);</span>
   <span class=p>}</span>
+
   <span class=k>if </span><span class=p>(</span>running <span class=p>&gt;=</span> MAX_RUNNING<span class=p>) {</span>
     <span class=k>return </span><span class=t>refuse</span><span class=p>(</span><span class=s>"the server is busy. try again."</span><span class=p>, </span><span class=n>503</span><span class=p>);</span>
   <span class=p>}</span>
+
   running <span class=p>+= </span><span class=n>1</span><span class=p>;</span>
+
   <span class=k>try </span><span class=p>{</span>
     <span class=k>return await </span><span class=t>answer</span><span class=p>(</span>request<span class=p>);</span>
   <span class=p>} </span><span class=k>finally </span><span class=p>{</span>
@@ -5052,6 +5316,7 @@ if (saved?.id !== id) return null;",
   defaultValue={saved.value ?? undefined}
   onValueCommit={(value, details) => {
     if (details.reason === "coverage") return;
+
     try {
       localStorage.setItem(key, serialize(value));
     } catch (error) {
@@ -5070,6 +5335,7 @@ if (saved?.id !== id) return null;",
   <span class=a>defaultValue</span><span class=p>={</span>saved<span class=p>.</span>value <span class=p>?? </span><span class=k>undefined</span><span class=p>}</span>
   <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>,</span> details<span class=p>) =&gt; {</span>
     <span class=k>if </span><span class=p>(</span>details<span class=p>.</span>reason <span class=p>=== </span><span class=s>"coverage"</span><span class=p>) </span><span class=k>return</span><span class=p>;</span>
+
     <span class=k>try </span><span class=p>{</span>
       localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
     <span class=p>} </span><span class=k>catch </span><span class=p>(</span>error<span class=p>) {</span>
@@ -5122,6 +5388,7 @@ export const SavedCrop = ({ id, src }: Props) => {
       defaultValue={saved.value ?? undefined}
       onValueCommit={(value, details) => {
         if (details.reason === "coverage") return;
+
         try {
           localStorage.setItem(key, serialize(value));
         } catch (error) {
@@ -5172,6 +5439,7 @@ export const SavedCrop = ({ id, src }: Props) => {
       <span class=a>defaultValue</span><span class=p>={</span>saved<span class=p>.</span>value <span class=p>?? </span><span class=k>undefined</span><span class=p>}</span>
       <span class=a>onValueCommit</span><span class=p>={(</span>value<span class=p>,</span> details<span class=p>) =&gt; {</span>
         <span class=k>if </span><span class=p>(</span>details<span class=p>.</span>reason <span class=p>=== </span><span class=s>"coverage"</span><span class=p>) </span><span class=k>return</span><span class=p>;</span>
+
         <span class=k>try </span><span class=p>{</span>
           localStorage<span class=p>.</span><span class=t>setItem</span><span class=p>(</span>key<span class=p>, </span><span class=t>serialize</span><span class=p>(</span>value<span class=p>));</span>
         <span class=p>} </span><span class=k>catch </span><span class=p>(</span>error<span class=p>) {</span>
@@ -5197,6 +5465,7 @@ const [history, setHistory] = useState<CropValue[]>([]);
 
 const remember = (_: CropValue, details: CommitDetails) => {
   if (skipped.has(details.reason)) return;
+
   setHistory((stack) =>
     [...stack, details.previous].slice(-50)
   );
@@ -5207,6 +5476,7 @@ const remember = (_: CropValue, details: CommitDetails) => {
 
 <span class=k>const </span><span class=t>remember </span><span class=p>= (</span>_<span class=p>:</span> CropValue<span class=p>,</span> details<span class=p>:</span> CommitDetails<span class=p>) =&gt; {</span>
   <span class=k>if </span><span class=p>(</span>skipped<span class=p>.</span><span class=t>has</span><span class=p>(</span>details<span class=p>.</span>reason<span class=p>)) </span><span class=k>return</span><span class=p>;</span>
+
   <span class=t>setHistory</span><span class=p>((</span>stack<span class=p>) =&gt;</span>
     <span class=p>[...</span>stack<span class=p>,</span> details<span class=p>.</span>previous<span class=p>].</span><span class=t>slice</span><span class=p>(-</span><span class=n>50</span><span class=p>)</span>
   <span class=p>);</span>
@@ -5217,9 +5487,11 @@ const remember = (_: CropValue, details: CommitDetails) => {
     "undo/undo-editor.tsx",
     "const undo = () => {
   const previous = history.at(-1);
+
   if (!previous || actions.current?.getState().interacting) {
     return;
   }
+
   setHistory(history.slice(0, -1));
   actions.current?.setValue(previous, { reason: "history" });
 };
@@ -5234,9 +5506,11 @@ const remember = (_: CropValue, details: CommitDetails) => {
 </button>",
     "<span class=k>const </span><span class=t>undo </span><span class=p>= () =&gt; {</span>
   <span class=k>const</span> previous <span class=p>=</span> history<span class=p>.</span><span class=t>at</span><span class=p>(-</span><span class=n>1</span><span class=p>);</span>
+
   <span class=k>if </span><span class=p>(!</span>previous <span class=p>||</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getState</span><span class=p>().</span>interacting<span class=p>) {</span>
     <span class=k>return</span><span class=p>;</span>
   <span class=p>}</span>
+
   <span class=t>setHistory</span><span class=p>(</span>history<span class=p>.</span><span class=t>slice</span><span class=p>(</span><span class=n>0</span><span class=p>, -</span><span class=n>1</span><span class=p>));</span>
   actions<span class=p>.</span>current<span class=p>?.</span><span class=t>setValue</span><span class=p>(</span>previous<span class=p>, {</span> reason<span class=p>: </span><span class=s>"history" </span><span class=p>});</span>
 <span class=p>};</span>
@@ -5305,6 +5579,7 @@ const Editor = ({ src }: { src: string }) => {
 
   const remember = (_: CropValue, details: CommitDetails) => {
     if (skipped.has(details.reason)) return;
+
     setHistory((stack) =>
       [...stack, details.previous].slice(-50)
     );
@@ -5312,9 +5587,11 @@ const Editor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
+
     if (!previous || actions.current?.getState().interacting) {
       return;
     }
+
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };
@@ -5371,6 +5648,7 @@ export const UndoEditor = ({ src }: { src: string }) => (
 
   <span class=k>const </span><span class=t>remember </span><span class=p>= (</span>_<span class=p>:</span> CropValue<span class=p>,</span> details<span class=p>:</span> CommitDetails<span class=p>) =&gt; {</span>
     <span class=k>if </span><span class=p>(</span>skipped<span class=p>.</span><span class=t>has</span><span class=p>(</span>details<span class=p>.</span>reason<span class=p>)) </span><span class=k>return</span><span class=p>;</span>
+
     <span class=t>setHistory</span><span class=p>((</span>stack<span class=p>) =&gt;</span>
       <span class=p>[...</span>stack<span class=p>,</span> details<span class=p>.</span>previous<span class=p>].</span><span class=t>slice</span><span class=p>(-</span><span class=n>50</span><span class=p>)</span>
     <span class=p>);</span>
@@ -5378,9 +5656,11 @@ export const UndoEditor = ({ src }: { src: string }) => (
 
   <span class=k>const </span><span class=t>undo </span><span class=p>= () =&gt; {</span>
     <span class=k>const</span> previous <span class=p>=</span> history<span class=p>.</span><span class=t>at</span><span class=p>(-</span><span class=n>1</span><span class=p>);</span>
+
     <span class=k>if </span><span class=p>(!</span>previous <span class=p>||</span> actions<span class=p>.</span>current<span class=p>?.</span><span class=t>getState</span><span class=p>().</span>interacting<span class=p>) {</span>
       <span class=k>return</span><span class=p>;</span>
     <span class=p>}</span>
+
     <span class=t>setHistory</span><span class=p>(</span>history<span class=p>.</span><span class=t>slice</span><span class=p>(</span><span class=n>0</span><span class=p>, -</span><span class=n>1</span><span class=p>));</span>
     actions<span class=p>.</span>current<span class=p>?.</span><span class=t>setValue</span><span class=p>(</span>previous<span class=p>, {</span> reason<span class=p>: </span><span class=s>"history" </span><span class=p>});</span>
   <span class=p>};</span>
@@ -5444,6 +5724,7 @@ export const save = async (
 ) => {
   try {
     const { blob } = await exportCrop(cropper, { signal });
+
     return blob;
   } catch (error) {
     if (
@@ -5452,6 +5733,7 @@ export const save = async (
     ) {
       return null;
     }
+
     throw error;
   }
 };",
@@ -5464,6 +5746,7 @@ export const save = async (
 <span class=p>) =&gt; {</span>
   <span class=k>try </span><span class=p>{</span>
     <span class=k>const </span><span class=p>{</span> blob <span class=p>} = </span><span class=k>await </span><span class=t>exportCrop</span><span class=p>(</span>cropper<span class=p>, {</span> signal <span class=p>});</span>
+
     <span class=k>return</span> blob<span class=p>;</span>
   <span class=p>} </span><span class=k>catch </span><span class=p>(</span>error<span class=p>) {</span>
     <span class=k>if </span><span class=p>(</span>
@@ -5472,6 +5755,7 @@ export const save = async (
     <span class=p>) {</span>
       <span class=k>return null</span><span class=p>;</span>
     <span class=p>}</span>
+
     <span class=k>throw</span> error<span class=p>;</span>
   <span class=p>}</span>
 <span class=p>};</span>",
@@ -5542,6 +5826,7 @@ A moving crop has no text, so a screen reader stays silent without \`Announcer\`
     const x = Math.round(center.x * 100);
     const y = Math.round(center.y * 100);
     const width = Math.round(size.width * 100);
+
     return \`Crop at \${x}%, \${y}%, \${width}% wide\`;
   }}
 />
@@ -5573,29 +5858,36 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper();
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   const turn = (by: number) => {
     cropper.setRotation(cropper.getValue().rotation + by, {
       reason: "keyboard",
     });
   };
+
   const move = (x: number, y: number) => {
     cropper.panBy(x, y, { reason: "keyboard" });
   };
+
   const resize = (by: number) => {
     const state = cropper.getCropState();
+
     if (state) {
       const crop = {
         ...state.crop,
         height: state.crop.height * by,
         width: state.crop.width * by,
       };
+
       cropper.setCropState(
         { ...state, crop },
         { keep: "center", reason: "keyboard" }
       );
     }
   };
+
   return (
     <>
       <Cropper.Root cropper={cropper} src={src}>
@@ -5747,6 +6039,7 @@ const RATIOS = [
 export const Ratios = () => {
   const aspect = useCropperState((s) => s.aspect);
   const wide = typeof aspect === "number" && aspect > 1;
+
   return (
     <Cropper.AspectGroup aria-label="Aspect ratio">
       <Cropper.AspectItem value="free">free</Cropper.AspectItem>
@@ -5898,13 +6191,16 @@ useEffect(() => () => running.current?.abort(), [picks]);
 const save = async () => {
   if (!actions.current || running.current) return;
   const controller = new AbortController();
+
   running.current = controller;
   setSaving(true);
+
   try {
     const { blob } = await exportCrop(actions.current, {
       maxSize: { width: 512, height: 512 },
       signal: controller.signal,
     });
+
     setSaveFailed(false);
     onSave(blob);
   } catch {
@@ -5961,13 +6257,16 @@ export const AvatarPicker = ({ onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         maxSize: { width: 512, height: 512 },
         signal: controller.signal,
       });
+
       setSaveFailed(false);
       onSave(blob);
     } catch {
@@ -6469,6 +6768,7 @@ import { createCropper } from "@zriz/core";
 const cropper = createCropper({
   image: { width: 4032, height: 3024 },
 });
+
 cropper.setRotation(7);
 \`\`\`
 
@@ -6587,6 +6887,7 @@ const cropper = createCropper({
     console.log(value.rotation, details.reason);
   },
 });
+
 cropper.setRotation(5, { reason: "history" });
 \`\`\`
 
@@ -6616,12 +6917,15 @@ export const bind = (input: HTMLInputElement) => {
   input.addEventListener("pointerdown", (event) => {
     cropper.begin("dial", event, owner);
   });
+
   input.addEventListener("input", () => {
     cropper.setRotation(input.valueAsNumber);
   });
+
   const end = (event: PointerEvent) => {
     cropper.end(event, owner);
   };
+
   input.addEventListener("pointerup", end);
   input.addEventListener("pointercancel", end);
 };
@@ -6665,6 +6969,7 @@ const clock: Clock = {
   request: (step) => {
     id += 1;
     queue.set(id, step);
+
     return id;
   },
   cancel: (handle) => {
@@ -6675,6 +6980,7 @@ const clock: Clock = {
 const advance = (ms: number) => {
   now += ms;
   const steps = [...queue.values()];
+
   queue.clear();
   for (const step of steps) step(now);
 };
@@ -6712,6 +7018,7 @@ const logger: CropperPlugin = {
 };
 
 const cropper = createCropper({ plugins: [logger] });
+
 cropper.destroy();
 \`\`\`
 
@@ -6918,6 +7225,7 @@ export const save = async (
 ) => {
   try {
     const { blob } = await exportCrop(cropper, { signal });
+
     return blob;
   } catch (error) {
     if (
@@ -6926,6 +7234,7 @@ export const save = async (
     ) {
       return null;
     }
+
     throw error;
   }
 };
@@ -7122,6 +7431,7 @@ const cropper = createCropper();
 const off = cropper.on("settle", () => {
   console.log("the crop is still");
 });
+
 off();
 \`\`\`
 
@@ -7178,6 +7488,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
   const save = async () => {
     if (!cropper.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     const result = await exportCrop(cropper.current, {
@@ -7186,15 +7497,19 @@ export const SaveCrop = ({ file }: { file: File }) => {
       signal: controller.signal,
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) console.error(error);
+
       return null;
     });
+
     running.current = null;
     setSaving(false);
     if (!result) return;
     const { blob, type } = result;
     const link = document.createElement("a");
+
     link.href = URL.createObjectURL(blob);
     const extension = type === "image/webp" ? "webp" : "png";
+
     link.download = \`crop.\${extension}\`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
@@ -7293,6 +7608,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -7304,12 +7620,15 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     if (!cropper.current) return;
     last.current?.abort();
     const controller = new AbortController();
+
     last.current = controller;
+
     try {
       const { blob } = await exportCrop(cropper.current, {
         maxSize: { width: 256, height: 256 },
         signal: controller.signal,
       });
+
       if (!controller.signal.aborted) {
         setPreview(URL.createObjectURL(blob));
       }
@@ -7647,6 +7966,7 @@ const [ready, setReady] = useState(false);
 const [failed, setFailed] = useState(false);
 const [exportFailed, setExportFailed] = useState(false);
 const [shown, setShown] = useState(src);
+
 if (shown !== src) {
   setShown(src);
   setReady(false);
@@ -7659,13 +7979,16 @@ useEffect(() => () => running.current?.abort(), [src]);
 const save = async () => {
   if (!actions.current || running.current) return;
   const controller = new AbortController();
+
   running.current = controller;
   setSaving(true);
   setExportFailed(false);
+
   try {
     const { blob } = await exportCrop(actions.current, {
       signal: controller.signal,
     });
+
     onSave(blob);
   } catch {
     setExportFailed(!controller.signal.aborted);
@@ -7782,6 +8105,7 @@ export const Editor = ({ src, onSave }: Props) => {
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
   const [shown, setShown] = useState(src);
+
   if (shown !== src) {
     setShown(src);
     setReady(false);
@@ -7794,13 +8118,16 @@ export const Editor = ({ src, onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     setExportFailed(false);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         signal: controller.signal,
       });
+
       onSave(blob);
     } catch {
       setExportFailed(!controller.signal.aborted);
@@ -7902,6 +8229,7 @@ import { useCropperState } from "@zriz/react";
 
 export const Status = () => {
   const pristine = useCropperState((s) => s.pristine);
+
   return <span>{pristine ? "original" : "edited"}</span>;
 };
 \`\`\`
@@ -7921,9 +8249,11 @@ import { useRef } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useRef<CropperApi>(null);
+
   const save = () => {
     console.log(cropper.current?.getPixelCrop());
   };
+
   return (
     <>
       <Cropper.Root src={src} actionsRef={cropper}>
@@ -7955,7 +8285,9 @@ import { useEffect } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const cropper = useCropper({ maxZoom: 8 });
+
   useEffect(() => () => attachImage(cropper, null), [cropper]);
+
   return (
     <>
       <button onClick={() => cropper.reset()}>reset</button>
@@ -8026,6 +8358,7 @@ import { useCropperValue } from "@zriz/react";
 
 export const Angle = () => {
   const value = useCropperValue();
+
   return <p>{value.rotation.toFixed(1)}°</p>;
 };
 \`\`\`
@@ -8042,10 +8375,13 @@ import { useRef } from "react";
 
 export const LiveAngle = () => {
   const label = useRef<HTMLOutputElement>(null);
+
   useCropperFrame(({ value }) => {
     const angle = value.rotation.toFixed(1);
+
     if (label.current) label.current.textContent = \`\${angle}°\`;
   });
+
   return <output ref={label} />;
 };
 \`\`\`
@@ -8088,6 +8424,7 @@ export const Scale = () => {
     crop: { width: 4032, height: 3024 },
     rotation: 5,
   });
+
   return <p>{scale.toFixed(4)}</p>;
 };
 \`\`\`
@@ -8104,17 +8441,18 @@ A full-frame crop of a 4032 × 3024 photo, straightened 5°, needs 1.1124. The p
 import { useCropperState, useRender } from "@zriz/react";
 import type { ClassName, RenderProp } from "@zriz/react";
 
-interface EditedState {
+type EditedState = {
   pristine: boolean;
-}
+};
 
-interface EditedProps {
+type EditedProps = {
   render?: RenderProp<EditedState>;
   className?: ClassName<EditedState>;
-}
+};
 
 export const Edited = ({ render, className }: EditedProps) => {
   const pristine = useCropperState((s) => s.pristine);
+
   return useRender({
     tag: "span",
     state: { pristine },
@@ -8299,6 +8637,7 @@ const convert = async (blob: Blob) => {
     method: "POST",
     body: blob,
   });
+
   return await createImageBitmap(await response.blob());
 };
 
@@ -8312,6 +8651,7 @@ export const open = async (
     decode: convert,
     signal,
   });
+
   attachImage(cropper, image);
 };
 \`\`\`
@@ -8343,12 +8683,15 @@ export const Heic = ({ onSave }: Props) => {
         accept="image/*,.heic"
         onChange={(event) => {
           const file = event.target.files?.[0];
+
           if (!file || !cropper.current) return;
           last.current?.abort();
           const controller = new AbortController();
+
           last.current = controller;
           setReady(false);
           setFailed(false);
+
           open(cropper.current, file, controller.signal).then(
             () => setReady(true),
             () => {
@@ -8571,6 +8914,7 @@ import { useState } from "react";
 
 export const PhotoCropper = () => {
   const [photo, setPhoto] = useState<File | null>(null);
+
   return (
     <>
       <input
@@ -8859,6 +9203,7 @@ The recipe skips \`coverage\` commits. That is zriz fitting the crop to a new ph
   defaultValue={saved.value ?? undefined}
   onValueCommit={(value, details) => {
     if (details.reason === "coverage") return;
+
     try {
       localStorage.setItem(key, serialize(value));
     } catch (error) {
@@ -8914,6 +9259,7 @@ export const SavedCrop = ({ id, src }: Props) => {
       defaultValue={saved.value ?? undefined}
       onValueCommit={(value, details) => {
         if (details.reason === "coverage") return;
+
         try {
           localStorage.setItem(key, serialize(value));
         } catch (error) {
@@ -9131,6 +9477,7 @@ const [picks, setPicks] = useState(0);
 const last = useRef<AbortController | null>(null);
 
 useEffect(() => () => last.current?.abort(), []);
+
 useEffect(
   () => () => {
     if (result) URL.revokeObjectURL(result);
@@ -9140,29 +9487,36 @@ useEffect(
 
 const upload = async () => {
   const value = actions.current?.getValue();
+
   if (!file || !value) return;
   last.current?.abort();
   const controller = new AbortController();
   const { signal } = controller;
+
   last.current = controller;
   setError(null);
   setResult(null);
   const form = new FormData();
+
   form.append("file", file);
   form.append("value", serialize(value));
+
   try {
     const response = await fetch("/api/crop", {
       method: "POST",
       body: form,
       signal,
     });
+
     if (response.ok) {
       const blob = await response.blob();
+
       if (!signal.aborted) {
         setResult(URL.createObjectURL(blob));
       }
     } else {
       const message = await response.text();
+
       if (!signal.aborted) setError(message);
     }
   } catch {
@@ -9229,6 +9583,7 @@ const raw = (pipeline: Sharp) =>
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
+
   if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(
     sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
@@ -9238,11 +9593,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom: MAX_ZOOM,
     minSize: MIN_SIZE,
   });
+
   cropper.setValue(saved);
   const plan = cropper.getPixelCrop();
+
   if (!plan || plan.homography)
     throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
+
   if (steps.kind === "extract") {
     const turned = await raw(
       open(upright)
@@ -9250,11 +9608,13 @@ const cut = async (input: Buffer, value: string) => {
         .flop(steps.flop)
         .rotate(steps.rotate)
     );
+
     return open(turned).resize({
       ...steps.resize,
       fit: "fill",
     });
   }
+
   const [[a, b], [c, d]] = steps.affine;
   const padded = await raw(
     open(upright).extract(steps.source).extend(steps.extend)
@@ -9262,6 +9622,7 @@ const cut = async (input: Buffer, value: string) => {
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
+
   return open(turned).extract(steps.extract);
 };
 \`\`\`
@@ -9299,6 +9660,7 @@ const HEADERS = {
 };
 
 sharp.block({ operation: ["VipsForeignLoad"] });
+
 sharp.unblock({
   operation: [
     "VipsForeignLoadJpegBuffer",
@@ -9330,14 +9692,17 @@ const readForm = async (request: Request) => {
   })
     .formData()
     .catch(() => null);
+
   return { form, over: seen > MAX_BODY };
 };
 
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
+
   if (over) return refuse("this upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
+
   if (
     !(file instanceof File) ||
     file.size === 0 ||
@@ -9345,26 +9710,33 @@ const answer = async (request: Request) => {
   ) {
     return refuse("send a file and a crop value.", 400);
   }
+
   if (value.length > MAX_VALUE) {
     return refuse("this crop does not fit this photo.", 422);
   }
+
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
+
   if (!meta) return refuse("sharp cannot open this file.", 400);
+
   if (meta.format === "heif" && meta.compression !== "av1") {
     return refuse("send a jpeg, png, webp or avif.", 415);
   }
+
   if (meta.width * meta.height > MAX_PIXELS) {
     return refuse("this photo has too many pixels.", 413);
   }
+
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
     return refuse(
       "save this webp without an orientation tag.",
       422
     );
   }
+
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
@@ -9372,6 +9744,7 @@ const answer = async (request: Request) => {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
+
     return new Response(new Uint8Array(jpeg), {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
@@ -9386,14 +9759,19 @@ export const POST = async (request: Request) => {
   if (!(await canCrop(request))) {
     return refuse("sign in to crop a photo.", 401);
   }
+
   const length = Number(request.headers.get("content-length"));
+
   if (!(length > 0) || length > MAX_BODY) {
     return refuse("this upload is too large.", 413);
   }
+
   if (running >= MAX_RUNNING) {
     return refuse("the server is busy. try again.", 503);
   }
+
   running += 1;
+
   try {
     return await answer(request);
   } finally {
@@ -9444,6 +9822,7 @@ export const CropUpload = () => {
   const last = useRef<AbortController | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (result) URL.revokeObjectURL(result);
@@ -9453,29 +9832,36 @@ export const CropUpload = () => {
 
   const upload = async () => {
     const value = actions.current?.getValue();
+
     if (!file || !value) return;
     last.current?.abort();
     const controller = new AbortController();
     const { signal } = controller;
+
     last.current = controller;
     setError(null);
     setResult(null);
     const form = new FormData();
+
     form.append("file", file);
     form.append("value", serialize(value));
+
     try {
       const response = await fetch("/api/crop", {
         method: "POST",
         body: form,
         signal,
       });
+
       if (response.ok) {
         const blob = await response.blob();
+
         if (!signal.aborted) {
           setResult(URL.createObjectURL(blob));
         }
       } else {
         const message = await response.text();
+
         if (!signal.aborted) setError(message);
       }
     } catch {
@@ -9556,6 +9942,7 @@ const HEADERS = {
 };
 
 sharp.block({ operation: ["VipsForeignLoad"] });
+
 sharp.unblock({
   operation: [
     "VipsForeignLoadJpegBuffer",
@@ -9584,6 +9971,7 @@ const raw = (pipeline: Sharp) =>
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
+
   if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(
     sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
@@ -9593,11 +9981,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom: MAX_ZOOM,
     minSize: MIN_SIZE,
   });
+
   cropper.setValue(saved);
   const plan = cropper.getPixelCrop();
+
   if (!plan || plan.homography)
     throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
+
   if (steps.kind === "extract") {
     const turned = await raw(
       open(upright)
@@ -9605,11 +9996,13 @@ const cut = async (input: Buffer, value: string) => {
         .flop(steps.flop)
         .rotate(steps.rotate)
     );
+
     return open(turned).resize({
       ...steps.resize,
       fit: "fill",
     });
   }
+
   const [[a, b], [c, d]] = steps.affine;
   const padded = await raw(
     open(upright).extract(steps.source).extend(steps.extend)
@@ -9617,6 +10010,7 @@ const cut = async (input: Buffer, value: string) => {
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
+
   return open(turned).extract(steps.extract);
 };
 
@@ -9636,14 +10030,17 @@ const readForm = async (request: Request) => {
   })
     .formData()
     .catch(() => null);
+
   return { form, over: seen > MAX_BODY };
 };
 
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
+
   if (over) return refuse("this upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
+
   if (
     !(file instanceof File) ||
     file.size === 0 ||
@@ -9651,26 +10048,33 @@ const answer = async (request: Request) => {
   ) {
     return refuse("send a file and a crop value.", 400);
   }
+
   if (value.length > MAX_VALUE) {
     return refuse("this crop does not fit this photo.", 422);
   }
+
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
+
   if (!meta) return refuse("sharp cannot open this file.", 400);
+
   if (meta.format === "heif" && meta.compression !== "av1") {
     return refuse("send a jpeg, png, webp or avif.", 415);
   }
+
   if (meta.width * meta.height > MAX_PIXELS) {
     return refuse("this photo has too many pixels.", 413);
   }
+
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
     return refuse(
       "save this webp without an orientation tag.",
       422
     );
   }
+
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
@@ -9678,6 +10082,7 @@ const answer = async (request: Request) => {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
+
     return new Response(new Uint8Array(jpeg), {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
@@ -9690,14 +10095,19 @@ export const POST = async (request: Request) => {
   if (!(await canCrop(request))) {
     return refuse("sign in to crop a photo.", 401);
   }
+
   const length = Number(request.headers.get("content-length"));
+
   if (!(length > 0) || length > MAX_BODY) {
     return refuse("this upload is too large.", 413);
   }
+
   if (running >= MAX_RUNNING) {
     return refuse("the server is busy. try again.", 503);
   }
+
   running += 1;
+
   try {
     return await answer(request);
   } finally {
@@ -9861,6 +10271,7 @@ const [history, setHistory] = useState<CropValue[]>([]);
 
 const remember = (_: CropValue, details: CommitDetails) => {
   if (skipped.has(details.reason)) return;
+
   setHistory((stack) =>
     [...stack, details.previous].slice(-50)
   );
@@ -9876,9 +10287,11 @@ For redo, keep a second stack. \`undo\` pushes \`actions.current.getValue()\` on
 \`\`\`tsx
 const undo = () => {
   const previous = history.at(-1);
+
   if (!previous || actions.current?.getState().interacting) {
     return;
   }
+
   setHistory(history.slice(0, -1));
   actions.current?.setValue(previous, { reason: "history" });
 };
@@ -9942,6 +10355,7 @@ const Editor = ({ src }: { src: string }) => {
 
   const remember = (_: CropValue, details: CommitDetails) => {
     if (skipped.has(details.reason)) return;
+
     setHistory((stack) =>
       [...stack, details.previous].slice(-50)
     );
@@ -9949,9 +10363,11 @@ const Editor = ({ src }: { src: string }) => {
 
   const undo = () => {
     const previous = history.at(-1);
+
     if (!previous || actions.current?.getState().interacting) {
       return;
     }
+
     setHistory(history.slice(0, -1));
     actions.current?.setValue(previous, { reason: "history" });
   };
@@ -10061,6 +10477,7 @@ import { createCropper } from "@zriz/core";
 const cropper = createCropper({
   image: { width: 4032, height: 3024 },
 });
+
 cropper.setValue({ rotation: 90 });
 cropper.getValue().rotation; // 45
 \`\`\`
@@ -10083,6 +10500,7 @@ import { useState } from "react";
 
 export const Editor = ({ src }: { src: string }) => {
   const [rotation, setRotation] = useState(0);
+
   return (
     <Cropper.Root
       src={src}
@@ -10229,8 +10647,10 @@ const corners = [
   "bottom-left",
   "bottom-right",
 ] as const;
+
 for (const corner of corners) {
   const handle = document.createElement("div");
+
   handle.dataset.zrizItem = "handle";
   handle.setAttribute("aria-hidden", "true");
   byId("area").append(handle);
@@ -10242,12 +10662,15 @@ let last: AbortController | undefined;
 
 const onFile = async () => {
   const file = input.files?.[0];
+
   if (!file) return;
   last?.abort();
   const controller = new AbortController();
   const { signal } = controller;
+
   last = controller;
   byId("status").textContent = "";
+
   try {
     attachImage(cropper, await loadImage(file, { signal }));
   } catch {
@@ -10257,6 +10680,7 @@ const onFile = async () => {
 };
 
 input.addEventListener("change", onFile);
+
 cleanups.push(() => {
   last?.abort();
   input.removeEventListener("change", onFile);
@@ -10694,6 +11118,7 @@ import * as Cropper from "@zriz/react/cropper";
 
 export const ZoomSteps = () => {
   const zoom = useZoom();
+
   return (
     <>
       <Cropper.ZoomStep
@@ -10734,6 +11159,7 @@ import { useZoom } from "@zriz/react";
 
 export const ZoomSlider = () => {
   const zoom = useZoom();
+
   return (
     <input
       type="range"

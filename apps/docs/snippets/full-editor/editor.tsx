@@ -76,6 +76,7 @@ export const Editor = ({ src, onSave }: Props) => {
   const [failed, setFailed] = useState(false);
   const [exportFailed, setExportFailed] = useState(false);
   const [shown, setShown] = useState(src);
+
   if (shown !== src) {
     setShown(src);
     setReady(false);
@@ -88,13 +89,16 @@ export const Editor = ({ src, onSave }: Props) => {
   const save = async () => {
     if (!actions.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     setExportFailed(false);
+
     try {
       const { blob } = await exportCrop(actions.current, {
         signal: controller.signal,
       });
+
       onSave(blob);
     } catch {
       setExportFailed(!controller.signal.aborted);

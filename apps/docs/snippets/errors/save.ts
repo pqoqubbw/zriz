@@ -7,6 +7,7 @@ export const save = async (
 ) => {
   try {
     const { blob } = await exportCrop(cropper, { signal });
+
     return blob;
   } catch (error) {
     if (
@@ -15,6 +16,7 @@ export const save = async (
     ) {
       return null;
     }
+
     throw error;
   }
 };

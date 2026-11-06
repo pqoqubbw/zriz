@@ -8,5 +8,6 @@ export const Scale = () => {
     crop: { width: 4032, height: 3024 },
     rotation: 5,
   });
+
   return <p>{scale.toFixed(4)}</p>;
 };

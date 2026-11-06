@@ -16,6 +16,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
   const save = async () => {
     if (!cropper.current || running.current) return;
     const controller = new AbortController();
+
     running.current = controller;
     setSaving(true);
     const result = await exportCrop(cropper.current, {
@@ -24,15 +25,19 @@ export const SaveCrop = ({ file }: { file: File }) => {
       signal: controller.signal,
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) console.error(error);
+
       return null;
     });
+
     running.current = null;
     setSaving(false);
     if (!result) return;
     const { blob, type } = result;
     const link = document.createElement("a");
+
     link.href = URL.createObjectURL(blob);
     const extension = type === "image/webp" ? "webp" : "png";
+
     link.download = `crop.${extension}`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);

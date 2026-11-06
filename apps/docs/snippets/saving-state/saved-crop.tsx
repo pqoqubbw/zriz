@@ -33,6 +33,7 @@ export const SavedCrop = ({ id, src }: Props) => {
       defaultValue={saved.value ?? undefined}
       onValueCommit={(value, details) => {
         if (details.reason === "coverage") return;
+
         try {
           localStorage.setItem(key, serialize(value));
         } catch (error) {

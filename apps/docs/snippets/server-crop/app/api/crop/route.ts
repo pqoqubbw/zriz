@@ -15,6 +15,7 @@ const HEADERS = {
 };
 
 sharp.block({ operation: ["VipsForeignLoad"] });
+
 sharp.unblock({
   operation: [
     "VipsForeignLoadJpegBuffer",
@@ -43,6 +44,7 @@ const raw = (pipeline: Sharp) =>
 
 const cut = async (input: Buffer, value: string) => {
   const saved = parse(value);
+
   if (!saved) throw new TypeError("not a crop value");
   const upright = await raw(
     sharp(input, { limitInputPixels: MAX_PIXELS }).rotate()
@@ -52,11 +54,14 @@ const cut = async (input: Buffer, value: string) => {
     maxZoom: MAX_ZOOM,
     minSize: MIN_SIZE,
   });
+
   cropper.setValue(saved);
   const plan = cropper.getPixelCrop();
+
   if (!plan || plan.homography)
     throw new RangeError("no flat plan");
   const steps = toSharp(plan, upright.info);
+
   if (steps.kind === "extract") {
     const turned = await raw(
       open(upright)
@@ -64,11 +69,13 @@ const cut = async (input: Buffer, value: string) => {
         .flop(steps.flop)
         .rotate(steps.rotate)
     );
+
     return open(turned).resize({
       ...steps.resize,
       fit: "fill",
     });
   }
+
   const [[a, b], [c, d]] = steps.affine;
   const padded = await raw(
     open(upright).extract(steps.source).extend(steps.extend)
@@ -76,6 +83,7 @@ const cut = async (input: Buffer, value: string) => {
   const turned = await raw(
     open(padded).affine([a, b, c, d], steps.options)
   );
+
   return open(turned).extract(steps.extract);
 };
 
@@ -95,14 +103,17 @@ const readForm = async (request: Request) => {
   })
     .formData()
     .catch(() => null);
+
   return { form, over: seen > MAX_BODY };
 };
 
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
+
   if (over) return refuse("this upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
+
   if (
     !(file instanceof File) ||
     file.size === 0 ||
@@ -110,26 +121,33 @@ const answer = async (request: Request) => {
   ) {
     return refuse("send a file and a crop value.", 400);
   }
+
   if (value.length > MAX_VALUE) {
     return refuse("this crop does not fit this photo.", 422);
   }
+
   const input = Buffer.from(await file.arrayBuffer());
   const meta = await sharp(input)
     .metadata()
     .catch(() => null);
+
   if (!meta) return refuse("sharp cannot open this file.", 400);
+
   if (meta.format === "heif" && meta.compression !== "av1") {
     return refuse("send a jpeg, png, webp or avif.", 415);
   }
+
   if (meta.width * meta.height > MAX_PIXELS) {
     return refuse("this photo has too many pixels.", 413);
   }
+
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
     return refuse(
       "save this webp without an orientation tag.",
       422
     );
   }
+
   try {
     const crop = await cut(input, value);
     const jpeg = await crop
@@ -137,6 +155,7 @@ const answer = async (request: Request) => {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92 })
       .toBuffer();
+
     return new Response(new Uint8Array(jpeg), {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
@@ -149,14 +168,19 @@ export const POST = async (request: Request) => {
   if (!(await canCrop(request))) {
     return refuse("sign in to crop a photo.", 401);
   }
+
   const length = Number(request.headers.get("content-length"));
+
   if (!(length > 0) || length > MAX_BODY) {
     return refuse("this upload is too large.", 413);
   }
+
   if (running >= MAX_RUNNING) {
     return refuse("the server is busy. try again.", 503);
   }
+
   running += 1;
+
   try {
     return await answer(request);
   } finally {

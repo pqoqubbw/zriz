@@ -11,6 +11,7 @@ export const CropWithPreview = ({ file }: { file: File }) => {
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => () => last.current?.abort(), []);
+
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -22,12 +23,15 @@ export const CropWithPreview = ({ file }: { file: File }) => {
     if (!cropper.current) return;
     last.current?.abort();
     const controller = new AbortController();
+
     last.current = controller;
+
     try {
       const { blob } = await exportCrop(cropper.current, {
         maxSize: { width: 256, height: 256 },
         signal: controller.signal,
       });
+
       if (!controller.signal.aborted) {
         setPreview(URL.createObjectURL(blob));
       }

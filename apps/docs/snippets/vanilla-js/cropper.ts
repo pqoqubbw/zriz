@@ -32,8 +32,10 @@ const corners = [
   "bottom-left",
   "bottom-right",
 ] as const;
+
 for (const corner of corners) {
   const handle = document.createElement("div");
+
   handle.dataset.zrizItem = "handle";
   handle.setAttribute("aria-hidden", "true");
   byId("area").append(handle);
@@ -45,12 +47,15 @@ let last: AbortController | undefined;
 
 const onFile = async () => {
   const file = input.files?.[0];
+
   if (!file) return;
   last?.abort();
   const controller = new AbortController();
   const { signal } = controller;
+
   last = controller;
   byId("status").textContent = "";
+
   try {
     attachImage(cropper, await loadImage(file, { signal }));
   } catch {
@@ -60,6 +65,7 @@ const onFile = async () => {
 };
 
 input.addEventListener("change", onFile);
+
 cleanups.push(() => {
   last?.abort();
   input.removeEventListener("change", onFile);
