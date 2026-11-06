@@ -61,6 +61,12 @@ const FAQ_PAGE = defineDoc({
           "jsdom has no `ResizeObserver`, so `Viewport`, `Image` and `DialTicks` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use `createCropper` with a manual clock, as [cropper](cropper) shows."
         ),
         code("faq/resize-observer.ts")
+      ),
+      qa(
+        "why do node and jest fail on the stylesheet",
+        p(
+          "node cannot import a `.css` file, and jest cannot either until you map it. point `\\.css$` at an empty module with `moduleNameMapper` in your jest config. vitest and bun load the import as it is, and in an app your bundler handles it."
+        )
       )
     ),
     section(
