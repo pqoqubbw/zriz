@@ -73,6 +73,15 @@ const browser = () => ({
 
 const optimizeDeps = { include: ["react-dom/client", "react-dom/server"] };
 
+const docsDeps = {
+  entries: [
+    "apps/docs/components/**/*.tsx",
+    "apps/docs/demos/**/*.tsx",
+    "apps/docs/test/**/*.browser.test.tsx",
+  ],
+  include: [...optimizeDeps.include, "axe-core", "vitest-browser-react"],
+};
+
 const docs = fileURLToPath(new URL("apps/docs/", import.meta.url));
 
 const coreFile = (file: string): string =>
@@ -110,8 +119,9 @@ export default defineConfig({
         },
       },
       {
+        cacheDir: "node_modules/.vitest-cache/vite",
         css: { postcss: docs },
-        optimizeDeps,
+        optimizeDeps: docsDeps,
         plugins: [react()],
         resolve: {
           alias: [{ find: /^@\//u, replacement: docs }, warn, ...core],
