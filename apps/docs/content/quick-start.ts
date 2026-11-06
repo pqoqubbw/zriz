@@ -35,7 +35,7 @@ const QUICK_START_PAGE = defineDoc({
       ),
       demo("quick-start"),
       p(
-        "the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles."
+        "the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles. like the code, it shows no angle above the dial."
       )
     ),
     section(

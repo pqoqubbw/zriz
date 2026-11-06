@@ -141,7 +141,7 @@ const EXPORTING_PAGE = defineDoc({
           },
           {
             name: "inverse",
-            text: "the map from output pixels back to source pixels. alone it holds only when `homography` is `null`. with perspective, `s = c + H⁻¹(inverse(output) - c)`",
+            text: "the map from output pixels back to source pixels. alone it holds only when `homography` is `null`. with perspective, the source pixel is `s = c + H⁻¹(inverse(output) - c)`, with `c` as above",
             type: "[a, b, c, d, e, f]",
           },
           {
