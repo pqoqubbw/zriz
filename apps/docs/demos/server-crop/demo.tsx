@@ -5,8 +5,7 @@ import type { Cropper as CropperApi, SharpRecipe } from "@zriz/core";
 import { imageOf } from "@zriz/core/dom";
 import { CropperContext } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { Fragment, useContext, useState, useSyncExternalStore } from "react";
-import type { ReactNode } from "react";
+import { useContext, useState, useSyncExternalStore } from "react";
 
 import { Panel } from "@/components/ui/panel";
 import { useDemoDim } from "@/demos/shell/context";
@@ -21,6 +20,12 @@ type Sent = {
   cropper: CropperApi;
   steps: SharpRecipe | null;
   value: string;
+};
+
+type LinesProps = {
+  children: string;
+  label: string;
+  slot: string;
 };
 
 type ResultProps = {
@@ -70,17 +75,18 @@ const pretty = (data: unknown, depth = 0): string => {
   return JSON.stringify(data);
 };
 
-const breakable = (text: string): ReactNode[] =>
-  text.split(",").map((part, index, parts) => (
-    <Fragment key={`${index}-${part}`}>
-      {part}
-      {index < parts.length - 1 ? (
-        <>
-          ,<wbr />
-        </>
-      ) : null}
-    </Fragment>
-  ));
+const Lines = ({ children, label, slot }: LinesProps) => (
+  <Panel
+    aria-label={label}
+    className="-mx-4 scrollbar-none overflow-x-auto overscroll-x-contain rounded-none bg-transparent px-4"
+    radius="demo"
+    tabIndex={0}
+  >
+    <pre className="w-max pe-4" data-slot={slot}>
+      {children}
+    </pre>
+  </Panel>
+);
 
 const planOf = (cropper: CropperApi, value: string): SharpRecipe | null => {
   const image = imageOf(cropper);
@@ -134,27 +140,22 @@ const Result = ({ sent }: ResultProps) => {
 
   return (
     <dl
-      className="mt-2 flex w-full flex-col gap-1 rounded-control bg-page p-4 font-mono text-code text-code-ink inset-shadow-edge data-dim:opacity-40 data-stale:opacity-40"
+      className="mt-2 flex w-full flex-col gap-1 rounded-control p-4 font-mono text-code text-code-ink inset-shadow-edge data-dim:opacity-40 data-stale:opacity-40"
       data-dim={dim ? "" : undefined}
       data-slot="result"
       data-stale={stale ? "" : undefined}
     >
       <dt className="text-faint">serialize(value)</dt>
-      <dd className="wrap-anywhere" data-slot="sent-value">
-        {breakable(sent.value)}
+      <dd>
+        <Lines label="Sent value" slot="sent-value">
+          {sent.value}
+        </Lines>
       </dd>
       <dt className="mt-3 text-faint">toSharp(plan)</dt>
       <dd>
-        <Panel
-          aria-label="Sharp steps"
-          className="-mx-4 scrollbar-none overflow-x-auto overscroll-x-contain rounded-none bg-transparent px-4"
-          radius="demo"
-          tabIndex={0}
-        >
-          <pre className="w-max" data-slot="sent-plan">
-            {sent.steps ? pretty(sent.steps) : NO_PLAN}
-          </pre>
-        </Panel>
+        <Lines label="Sharp steps" slot="sent-plan">
+          {sent.steps ? pretty(sent.steps) : NO_PLAN}
+        </Lines>
       </dd>
     </dl>
   );
