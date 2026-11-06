@@ -13,7 +13,7 @@ type ZoneProps = ComponentProps<"div"> & VariantProps<typeof zoneVariants>;
 type ZoneRowProps = ComponentProps<"div"> &
   VariantProps<typeof zoneRowVariants>;
 
-type ScaleProps = {
+type ScaleProps = VariantProps<typeof scaleVariants> & {
   children: ReactNode;
   value: ReactNode;
 };
@@ -58,7 +58,7 @@ const zoneVariants = cva(
     variants: {
       kind: {
         aspect: "pt-3 pb-2",
-        dial: "pt-3.5 pb-2.25",
+        dial: "pt-3 pb-2.25",
         row: "pt-3 pb-2",
         strip: "pt-3 pb-2.25",
         track: "pt-3 pb-2",
@@ -78,13 +78,18 @@ const zoneRowVariants = cva("flex items-end gap-3", {
   },
 });
 
+const scaleVariants = cva("flex flex-col items-center", {
+  defaultVariants: { kind: "zoom" },
+  variants: { kind: { dial: "gap-2.25", zoom: "gap-1.5" } },
+});
+
 const rulerVariants = cva(
   "relative shrink-0 after:pointer-events-none after:absolute after:-inset-x-1.5 after:rounded-button has-focus-visible:after:inset-shadow-focus",
   {
     defaultVariants: { width: "dial" },
     variants: {
       width: {
-        dial: "h-10 w-90 after:-inset-y-1 @max-demo-wide:w-50 @max-demo-narrow:w-44",
+        dial: "h-10 w-90 after:-top-0.5 after:-bottom-1 @max-demo-wide:w-50 @max-demo-narrow:w-44",
         zoom: "h-8 w-70 after:inset-y-0 @max-demo-wide:w-50 @max-demo-narrow:w-44",
       },
     },
@@ -136,8 +141,8 @@ const ZoneRow = ({ className, dial, ...props }: ZoneRowProps) => (
   />
 );
 
-const Scale = ({ children, value }: ScaleProps) => (
-  <div className="flex flex-col items-center gap-1.5" data-slot="scale">
+const Scale = ({ children, kind, value }: ScaleProps) => (
+  <div className={scaleVariants({ kind })} data-slot="scale">
     {value}
     {children}
   </div>

@@ -78,7 +78,9 @@ const StaticDial = ({ zone }: StaticDialProps) => {
       <ZoneRow dial>
         {zone.start ? <StaticGhost icon={zone.start} /> : null}
         {zone.value ? (
-          <Scale value={<Value unit="°">0.0</Value>}>{ruler}</Scale>
+          <Scale kind="dial" value={<Value unit="°">0.0</Value>}>
+            {ruler}
+          </Scale>
         ) : (
           ruler
         )}

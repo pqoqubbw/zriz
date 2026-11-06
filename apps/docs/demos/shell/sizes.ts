@@ -29,6 +29,7 @@ const DOWNLOAD_WIDTH = 108;
 const ZOOM_WIDTH_MAX = 280;
 const VALUE_HEIGHT = 16;
 const VALUE_GAP = 6;
+const DIAL_VALUE_GAP = 9;
 const RULER_FOCUS_OUTSET = 6;
 const ICON_COLUMNS_BELOW = 400;
 const MIN_HIT = 44;
@@ -38,7 +39,7 @@ const SPINNER_DELAY_MS = 200;
 
 const ZONE_PADDING = {
   aspect: { bottom: 8, top: 12 },
-  dial: { bottom: 9, top: 14 },
+  dial: { bottom: 9, top: 12 },
   row: { bottom: 8, top: 12 },
   strip: { bottom: 9, top: 12 },
   track: { bottom: 8, top: 12 },
@@ -47,7 +48,7 @@ const ZONE_PADDING = {
 
 const zoneHeight = (kind: ZoneKind, value: boolean): number =>
   ZONE_PADDING[kind].top +
-  (value ? VALUE_HEIGHT + VALUE_GAP : 0) +
+  (value ? VALUE_HEIGHT + (kind === "dial" ? DIAL_VALUE_GAP : VALUE_GAP) : 0) +
   (kind === "dial" || kind === "strip" ? DIAL_HEIGHT : CONTROL_HEIGHT) +
   ZONE_PADDING[kind].bottom;
 
@@ -62,6 +63,7 @@ export {
   DEMO_SIZES,
   DIAL_HEIGHT,
   DIAL_TOP,
+  DIAL_VALUE_GAP,
   DOWNLOAD_WIDTH,
   ERROR_MS,
   GHOST_LIFT,

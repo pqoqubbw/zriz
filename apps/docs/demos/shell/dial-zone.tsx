@@ -41,6 +41,7 @@ const DialZone = ({ end, start, value = true }: DialZoneProps) => {
         {start}
         {value ? (
           <Scale
+            kind="dial"
             value={
               <Value unit="°">
                 <Cropper.DialValue format={formatAngle} />
