@@ -36,7 +36,7 @@ const NO_PLAN = "422: this crop does not fit this photo.";
 
 const INDENT = "  ";
 
-const LINE = 64;
+const LINE = 28;
 
 const isFlat = (items: readonly unknown[]): boolean =>
   items.every((each) => typeof each !== "object" || each === null);
@@ -46,8 +46,10 @@ const pretty = (data: unknown, depth = 0): string => {
   const outer = INDENT.repeat(depth);
 
   if (Array.isArray(data)) {
-    if (isFlat(data)) {
-      return `[${data.map((each) => JSON.stringify(each)).join(", ")}]`;
+    const line = `[${data.map((each) => JSON.stringify(each)).join(", ")}]`;
+
+    if (isFlat(data) && line.length <= LINE) {
+      return line;
     }
 
     const rows = data.map((each) => `${inner}${pretty(each, depth + 1)}`);
