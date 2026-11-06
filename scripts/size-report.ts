@@ -78,7 +78,7 @@ const cell = (text: string): string =>
 const bytes = (value: number): string =>
   value < KILO
     ? `${value} B`
-    : `${(value / KILO).toFixed(2).replace(/\.?0+$/u, "")} kB`;
+    : `${(Math.round(value / 10) / 100).toFixed(2).replace(/\.?0+$/u, "")} kB`;
 
 const delta = (base: number, head: number): string => {
   const diff = head - base;
