@@ -32,3 +32,6 @@ trustPolicy: no-downgrade
 engineStrict: true
 
 packageManagerStrictVersion: true
+
+overrides:
+  minimatch@<11.0.1: ^11.0.1
