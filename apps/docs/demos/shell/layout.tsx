@@ -79,13 +79,13 @@ const zoneRowVariants = cva("flex items-end gap-3", {
 });
 
 const rulerVariants = cva(
-  "relative shrink-0 after:pointer-events-none after:absolute after:-inset-x-1.5 after:inset-y-0 after:rounded-button has-focus-visible:after:inset-shadow-focus",
+  "relative shrink-0 after:pointer-events-none after:absolute after:-inset-x-1.5 after:rounded-button has-focus-visible:after:inset-shadow-focus",
   {
     defaultVariants: { width: "dial" },
     variants: {
       width: {
-        dial: "h-10 w-90 @max-demo-wide:w-50 @max-demo-narrow:w-44",
-        zoom: "h-8 w-70 @max-demo-wide:w-50 @max-demo-narrow:w-44",
+        dial: "h-10 w-90 after:-inset-y-1 @max-demo-wide:w-50 @max-demo-narrow:w-44",
+        zoom: "h-8 w-70 after:inset-y-0 @max-demo-wide:w-50 @max-demo-narrow:w-44",
       },
     },
   }
