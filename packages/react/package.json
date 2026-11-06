@@ -21,7 +21,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/*.css"
   ],
   "type": "module",
   "sideEffects": [
@@ -51,7 +52,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown && node ../../scripts/css.ts dist/styles.css",
+    "build": "tsdown && node ../../scripts/css.ts dist/styles.css && node ../../scripts/maps.ts dist",
     "dev": "tsdown --watch",
     "type": "tsc -p tsconfig.json",
     "lint:package": "publint --strict && attw --pack . --profile esm-only --exclude-entrypoints ./styles.css",

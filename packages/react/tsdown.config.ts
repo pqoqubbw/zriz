@@ -18,7 +18,7 @@ const pure = {
 
 export default defineConfig({
   deps: { neverBundle: [/^@zriz\/react\//u] },
-  dts: true,
+  dts: { sourcemap: true },
   entry: ["src/index.ts", "src/cropper.ts", "src/warn.ts", "src/warn-off.ts"],
   format: "esm",
   platform: "neutral",
