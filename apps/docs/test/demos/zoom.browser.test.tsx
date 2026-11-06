@@ -83,7 +83,7 @@ describe("zoom demo", () => {
     button("Zoom in").click();
     await settle();
 
-    expect(shown()).toBe("1.3×");
+    expect(shown()).toBe("1.25×");
     expect(off("Zoom out")).toBeFalsy();
 
     button("Zoom out").click();

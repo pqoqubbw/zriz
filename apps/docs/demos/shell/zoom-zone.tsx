@@ -14,8 +14,11 @@ const STEP = 1.25;
 
 const EDGE = 0.0005;
 
-const formatZoom = (zoom: number): string =>
-  (Math.round(zoom * 10) / 10).toFixed(1);
+const formatZoom = (zoom: number): string => {
+  const text = (Math.round(zoom * 100) / 100).toFixed(2);
+
+  return text.endsWith("0") ? text.slice(0, -1) : text;
+};
 
 const useZoomEdge = (cropper: CropperApi, edge: "max" | "min"): boolean =>
   useSyncExternalStore(
