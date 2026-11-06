@@ -5817,7 +5817,7 @@ exports[`content > writes avatar as markdown 1`] = `
 
 a profile photo picker: the visitor picks a file, moves it under a circle and saves a round png.
 
-the page at https\\://zriz.dev/docs/avatar runs this cropper: a 2:3 photo under a round crop, a zoom slider with zoom out and zoom in, and open, reset and download in the corners.
+the page at https\\://zriz.dev/docs/avatar runs this cropper: a 3:2 photo under a round crop, a zoom slider with zoom out and zoom in, and open, reset and download in the corners.
 
 ## take a file from the visitor
 
@@ -7355,7 +7355,7 @@ to cut on a server, send the crop value from \`getValue()\` and let the server r
   the map from source pixels to output pixels, as \`[a, b, c, d, e, f]\` in canvas \`setTransform()\` order. alone it holds only when \`homography\` is \`null\`. with perspective, \`output = forward(c + H(s - c))\`, with \`c\` the centre of the image in source pixels
 - \`inverse\` \`[a, b, c, d, e, f]\`
 
-  the map from output pixels back to source pixels. alone it holds only when \`homography\` is \`null\`. with perspective, \`s = c + H⁻¹(inverse(output) - c)\`
+  the map from output pixels back to source pixels. alone it holds only when \`homography\` is \`null\`. with perspective, the source pixel is \`s = c + H⁻¹(inverse(output) - c)\`, with \`c\` as above
 - \`homography\` \`number[] | null\`
 
   the 3 by 3 perspective matrix \`H\`, as 9 numbers row by row, or \`null\` with no perspective. divide by the third coordinate after you apply it
@@ -8439,7 +8439,7 @@ the code builds the cropper in the demo, with only the props you changed from th
 </Cropper.Root>
 \`\`\`
 
-the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. it tilts the photo with \`setValue()\` and listens to \`onValueChange\` and \`onValueCommit\` for the value and the events below.
+the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. on a phone its stage is 320 px tall, not the 380 in the code. it tilts the photo with \`setValue()\` and listens to \`onValueChange\` and \`onValueCommit\` for the value and the events below.
 
 ## watch the value
 
@@ -8548,7 +8548,7 @@ export const PhotoCropper = () => {
 
 the page at https\\://zriz.dev/docs/quick-start runs this cropper: a 3:2 photo with four corner handles, the straighten dial, and open, reset and download in the corners.
 
-the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles.
+the demo above runs this component at the zriz site's size, with a public domain photo, open, reset and download buttons and the site's styles. like the code, it shows no angle above the dial.
 
 ## let the user pick a photo
 
@@ -9102,7 +9102,7 @@ use sharp 0.35.5 or newer and keep it updated. it bundles libvips and every imag
 
 ## send the file and the value
 
-the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the \`toSharp\` steps under the dial.
+the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the \`toSharp\` steps under the dial, with numbers rounded to four places.
 
 \`getValue()\` returns the crop value, and \`serialize\` turns it into a small json string. send that, not the export plan, so the server works out which pixels to keep on its own. the upload button waits for \`onLoad\`, because a value means nothing without its photo.
 
@@ -9838,7 +9838,7 @@ exports[`content > writes undo as markdown 1`] = `
 
 an undo button for the crop, built from what each commit hands you.
 
-the page at https\\://zriz.dev/docs/undo runs this cropper: a 3:2 photo, the straighten dial with undo and rotate, and open, reset and download in the corners.
+the page at https\\://zriz.dev/docs/undo runs this cropper: a 3:2 photo, the straighten dial with rotate and undo, and open, reset and download in the corners.
 
 ## remember the crop before each gesture
 
