@@ -9,7 +9,7 @@ type ButtonProps = ComponentProps<"button"> &
   VariantProps<typeof buttonVariants>;
 
 const buttonVariants = cva(
-  "group relative flex shrink-0 items-center justify-center rounded-control enabled:cursor-pointer",
+  "group relative flex shrink-0 items-center justify-center rounded-control",
   {
     defaultVariants: { size: "default", variant: "secondary" },
     variants: {

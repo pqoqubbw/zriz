@@ -26,16 +26,19 @@ type NavListProps = {
   roomy: boolean;
 };
 
-const navGroupTitleVariants = cva("text-caption text-group", {
-  variants: { roomy: { false: "py-0.5", true: "pt-1.5 pb-0.5" } },
-});
+const navGroupTitleVariants = cva(
+  "font-mono text-cell-mono leading-5 text-group",
+  {
+    variants: { roomy: { false: "py-0.5", true: "pt-1.5 pb-0.5" } },
+  }
+);
 
 const navItemVariants = cva(
   "block w-full text-nav transition-weight duration-150 ease-out hover:text-ink motion-reduce:transition-none",
   {
     variants: {
       active: {
-        false: "text-soft",
+        false: "text-muted",
         true: "font-strong tracking-strong text-ink",
       },
       roomy: { false: "py-0.5", true: "py-1.5" },

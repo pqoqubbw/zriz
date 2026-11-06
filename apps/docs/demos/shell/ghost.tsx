@@ -7,7 +7,7 @@ const ghostVariants = cva(
     variants: {
       live: {
         false: "",
-        true: "cursor-pointer before:absolute before:-inset-1.5 not-aria-disabled:not-data-disabled:hover:bg-key focus-visible:inset-shadow-focus focus-visible:corners-none not-aria-disabled:not-data-disabled:active:bg-press aria-disabled:cursor-default data-disabled:cursor-default",
+        true: "before:absolute before:-inset-1.5 not-aria-disabled:not-data-disabled:hover:bg-key focus-visible:inset-shadow-focus focus-visible:corners-none not-aria-disabled:not-data-disabled:active:bg-press aria-disabled:cursor-default data-disabled:cursor-default",
       },
     },
   }

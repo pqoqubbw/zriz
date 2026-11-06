@@ -28,7 +28,7 @@ const PagerLink = ({ label, slug }: PagerLinkProps) => (
     href={pagePath(slug)}
     rel={label === "next" ? "next" : "prev"}
   >
-    <span className="text-small text-faint transition-colors duration-150 ease-out group-hover:text-muted motion-reduce:transition-none">
+    <span className="font-mono text-cell-mono leading-4 text-faint transition-colors duration-150 ease-out group-hover:text-muted motion-reduce:transition-none">
       {label}
     </span>
     <span className="font-medium underline decoration-transparent decoration-1 transition-colors duration-150 ease-out group-hover:decoration-ink motion-reduce:transition-none">

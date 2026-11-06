@@ -51,7 +51,7 @@ const Choice = ({
     <legend className="sr-only">{control.name}</legend>
     {control.options.map((option, i) => (
       <label
-        className="flex h-7 cursor-pointer items-center rounded-item px-2.5 text-control text-faint has-checked:bg-white has-checked:font-medium has-checked:text-ink has-checked:shadow-raised has-focus-visible:corners"
+        className="flex h-7 items-center rounded-item px-2.5 text-control text-faint has-checked:bg-white has-checked:font-medium has-checked:text-ink has-checked:shadow-raised has-focus-visible:corners"
         key={`${i}-${option}`}
       >
         <input
@@ -75,11 +75,11 @@ const Switch = ({
   onChange,
   value,
 }: ControlProps<"switch", boolean>) => (
-  <label className="-m-3.25 flex cursor-pointer p-3.25">
+  <label className="-m-3.25 flex p-3.25">
     <input
       aria-label={control.name}
       checked={value}
-      className="relative m-0 h-4.5 w-7.5 cursor-pointer appearance-none rounded-full bg-off before:absolute before:top-0.5 before:left-0.5 before:size-3.5 before:rounded-full before:bg-white checked:bg-ink checked:before:left-3.5"
+      className="relative m-0 h-4.5 w-7.5 appearance-none rounded-full bg-off before:absolute before:top-0.5 before:left-0.5 before:size-3.5 before:rounded-full before:bg-white checked:bg-ink checked:before:left-3.5"
       onChange={(event) => {
         onChange(event.currentTarget.checked);
       }}
@@ -97,7 +97,7 @@ const Range = ({ control, onChange, value }: ControlProps<"range", number>) => {
       <input
         aria-label={control.name}
         aria-valuetext={`${value}${control.unit}`}
-        className="-my-3.25 h-11 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent sm:w-50 sm:flex-initial thumb:-mt-1.5 thumb:size-3.5 thumb:appearance-none thumb:rounded-full thumb:border-0 thumb:bg-ink track:h-0.5 track:rounded-full"
+        className="-my-3.25 h-11 min-w-0 flex-1 appearance-none bg-transparent sm:w-50 sm:flex-initial thumb:-mt-1.5 thumb:size-3.5 thumb:appearance-none thumb:rounded-full thumb:border-0 thumb:bg-ink track:h-0.5 track:rounded-full"
         max={control.max}
         min={control.min}
         onChange={(event) => {

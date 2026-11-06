@@ -81,7 +81,7 @@ const GridTable = ({
 const ColumnName = ({ text }: ColumnNameProps) => (
   <span
     aria-hidden="true"
-    className="block text-small text-faint sm:hidden"
+    className="mt-1.5 block text-small text-faint sm:hidden"
     data-markdown-ignore=""
   >
     {text}
