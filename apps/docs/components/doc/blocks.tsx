@@ -3,9 +3,10 @@ import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 import { CodeFigure } from "@/components/doc/code-figure";
-import { CopyAction, CopyButton } from "@/components/doc/copy-button";
+import { CopyButton } from "@/components/doc/copy-button";
 import {
   Controls,
+  CopyAction,
   DownloadAction,
   LiveCode,
   LiveLog,

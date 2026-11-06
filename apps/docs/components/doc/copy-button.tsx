@@ -5,7 +5,6 @@ import type { MouseEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { cn } from "@/lib/cn";
 
 type CopiedStatusProps = {
   copied: boolean;
@@ -13,10 +12,6 @@ type CopiedStatusProps = {
 
 type CopyProps = {
   label: string;
-};
-
-type CopyActionProps = CopyProps & {
-  read?: () => string | null;
 };
 
 const useCopy = (read?: () => string | null) => {
@@ -73,29 +68,5 @@ const CopyButton = ({ label }: CopyProps) => {
   );
 };
 
-const CopyAction = ({ label, read }: CopyActionProps) => {
-  const { copied, onClick } = useCopy(read);
-
-  return (
-    <>
-      <Button onClick={onClick}>
-        <span className="grid">
-          <span
-            className={cn("col-start-1 row-start-1", copied && "invisible")}
-          >
-            {label}
-          </span>
-          <span
-            aria-hidden="true"
-            className={cn("col-start-1 row-start-1", !copied && "invisible")}
-          >
-            copied
-          </span>
-        </span>
-      </Button>
-      <CopiedStatus copied={copied} />
-    </>
-  );
-};
-
-export { CopyAction, CopyButton };
+export type { CopiedStatusProps, CopyProps };
+export { CopiedStatus, CopyButton, useCopy };

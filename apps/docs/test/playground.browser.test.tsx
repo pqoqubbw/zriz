@@ -7,7 +7,7 @@ import { commands as browser, page, server, userEvent } from "vitest/browser";
 import "../app/globals.css";
 
 import { Controls } from "../components/doc/controls";
-import { CopyAction } from "../components/doc/copy-button";
+import { CopyAction } from "../components/doc/copy-action";
 import { Demo } from "../components/doc/demo";
 import { PLAYGROUND_PAGE } from "../content/playground";
 import { codeText, jsonText } from "../demos/playground/code";

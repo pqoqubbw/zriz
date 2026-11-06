@@ -8,6 +8,12 @@ const Controls = dynamic(async () => {
   return Loaded;
 });
 
+const CopyAction = dynamic(async () => {
+  const { CopyAction: Loaded } = await import("@/components/doc/copy-action");
+
+  return Loaded;
+});
+
 const DemoMount = dynamic(async () => {
   const { DemoMount: Loaded } = await import("@/components/doc/demo-mount");
 
@@ -42,6 +48,7 @@ const PlaygroundCopy = dynamic(async () => {
 
 export {
   Controls,
+  CopyAction,
   DemoMount,
   DownloadAction,
   LiveCode,

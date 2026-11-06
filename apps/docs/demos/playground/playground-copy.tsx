@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyAction } from "@/components/doc/copy-button";
+import { CopyAction } from "@/components/doc/copy-action";
 import { playground } from "@/demos/playground/store";
 
 type PlaygroundCopyProps = {
