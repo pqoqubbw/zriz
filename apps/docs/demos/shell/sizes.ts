@@ -38,9 +38,9 @@ const SPINNER_DELAY_MS = 200;
 
 const ZONE_PADDING = {
   aspect: { bottom: 8, top: 12 },
-  dial: { bottom: 6, top: 14 },
+  dial: { bottom: 9, top: 14 },
   row: { bottom: 8, top: 12 },
-  strip: { bottom: 8, top: 12 },
+  strip: { bottom: 9, top: 12 },
   track: { bottom: 8, top: 12 },
   zoom: { bottom: 6, top: 14 },
 } as const satisfies Record<ZoneKind, { bottom: number; top: number }>;

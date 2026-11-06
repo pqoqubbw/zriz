@@ -46,7 +46,9 @@ const stageVariants = cva(
   "relative h-95 w-full shrink-0 overflow-clip rounded-control bg-page @max-demo-wide:h-80"
 );
 
-const contentVariants = cva("absolute inset-0 data-loading:opacity-40");
+const contentVariants = cva(
+  "absolute inset-0 data-dropping:invisible data-loading:opacity-40"
+);
 
 const cornerVariants = cva("absolute top-2 z-1 flex gap-1.5", {
   variants: { side: { end: "end-2", start: "start-2" } },
@@ -58,9 +60,9 @@ const zoneVariants = cva(
     variants: {
       kind: {
         aspect: "pt-3 pb-2",
-        dial: "pt-3.5 pb-1.5",
+        dial: "pt-3.5 pb-2.25",
         row: "pt-3 pb-2",
-        strip: "pt-3 pb-2",
+        strip: "pt-3 pb-2.25",
         track: "pt-3 pb-2",
         zoom: "pt-3.5 pb-1.5",
       },
@@ -177,7 +179,7 @@ const Spinner = () => (
 
 const DropVeil = () => (
   <div
-    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-control bg-veil text-control font-medium text-ink"
+    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-control text-control font-medium text-ink"
     data-slot="drop"
   >
     <Icon className="size-5 shrink-0" name="open-image" />

@@ -183,6 +183,7 @@ const DemoShell = ({
             />
           )}
           <StageContent
+            data-dropping={dropping ? "" : undefined}
             data-loading={photo.replacing ? "" : undefined}
             ref={content}
           >

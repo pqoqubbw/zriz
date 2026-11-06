@@ -19,7 +19,9 @@ type StillState = {
 
 const DROPPED = ["data-ready", "id", "tabindex"] as const;
 
-const OVERLAYS = '[data-zriz-item="mask"], [data-zriz-item="area"]';
+const MASK = '[data-zriz-item="mask"]';
+
+const AREA = '[data-zriz-item="area"]';
 
 const stillVariants = cva("pointer-events-none absolute inset-0", {
   defaultVariants: { tone: "dim" },
@@ -51,8 +53,15 @@ const snapshot = (
   }
 
   if (photoOnly) {
-    for (const overlay of copy.querySelectorAll(OVERLAYS)) {
-      overlay.remove();
+    copy.querySelector(AREA)?.remove();
+
+    const mask = copy.querySelector(MASK);
+
+    if (mask instanceof HTMLElement) {
+      delete mask.dataset.interacting;
+      mask.style.removeProperty("clip-path");
+      mask.style.removeProperty("mask-image");
+      mask.style.removeProperty("-webkit-mask-image");
     }
   }
 
