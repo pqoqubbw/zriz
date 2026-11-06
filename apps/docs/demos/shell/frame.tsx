@@ -59,11 +59,10 @@ const StaticGhost = ({ disabled = false, icon }: StaticGhostProps) => (
 );
 
 const StaticDialStrip = () => (
-  <div
-    className="dial-paint relative h-8 w-full overflow-clip"
-    data-slot="dial"
-  >
-    <div data-slot="dial-ticks" />
+  <div className="absolute inset-x-0 top-2.25">
+    <div className="dial-frame" data-slot="dial">
+      <div data-slot="dial-ticks" />
+    </div>
   </div>
 );
 
@@ -75,8 +74,8 @@ const StaticDial = ({ zone }: StaticDialProps) => {
   );
 
   return (
-    <Zone kind={zone.value ? "dial" : "row"}>
-      <ZoneRow>
+    <Zone kind={zone.value ? "dial" : "strip"}>
+      <ZoneRow dial>
         {zone.start ? (
           <StaticGhost disabled={zone.start === "undo"} icon={zone.start} />
         ) : null}

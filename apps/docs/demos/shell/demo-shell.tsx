@@ -11,7 +11,6 @@ import type {
   ViewportProps,
 } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { cva } from "class-variance-authority";
 import { useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 
@@ -70,10 +69,6 @@ type DemoShellProps = Omit<
   /** Props for the viewport, such as wheel. */
   viewport?: Pick<ViewportProps, "rotateGesture" | "wheel">;
 };
-
-const coverVariants = cva("", {
-  variants: { dropping: { false: "", true: "opacity-0" } },
-});
 
 const HANDLES: readonly HandlePosition[] = [
   "top-left",
@@ -174,15 +169,12 @@ const DemoShell = ({
               className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
             >
               <Cropper.Image />
-              <Cropper.Mask className={coverVariants({ dropping })} />
+              <Cropper.Mask />
               <Cropper.Area
                 aria-label="Crop area"
-                className={coverVariants({
-                  className: "focus-visible:corners-none",
-                  dropping,
-                })}
+                className="focus-visible:corners-none"
               >
-                {grid ? <Cropper.Grid className="grid-hold" /> : null}
+                {grid ? <Cropper.Grid /> : null}
                 {handles.map((position) => (
                   <Cropper.Handle key={position} position={position} />
                 ))}

@@ -352,64 +352,32 @@
   border-image-source: none;
 }
 
-@utility dial-paint {
-  & [data-zriz-item="dial-ticks"] > *,
-  & [data-slot="dial-ticks"] > * {
-    top: 12px;
-    height: 8px;
-  }
-
-  & [data-zriz-item="dial-ticks"] > [data-major],
-  & [data-slot="dial-ticks"] > [data-major] {
-    top: 9px;
-    height: 14px;
-  }
-
-  & [data-zero]::before {
-    top: -5px;
-    left: -1.5px;
-    width: 4px;
-    height: 4px;
-  }
-
-  &[data-dragging] [data-zero]::before {
-    content: "";
-    position: absolute;
-    border-radius: 50%;
-    background: var(--zriz-line, #000000);
-  }
+@utility dial-frame {
+  position: relative;
+  height: 40px;
+  overflow-x: clip;
 
   &::after {
-    top: 9px;
-    width: 2px;
-    height: 18px;
-    border-radius: 1px;
-  }
-
-  &[data-slot="dial"]::after {
     content: "";
     position: absolute;
+    top: 0;
     left: 50%;
+    width: 1px;
+    height: 27px;
     translate: -50% 0;
     background: #000000;
   }
 
-  & [data-slot="dial-ticks"] {
+  & > * {
     position: absolute;
-    inset-block: 0;
+    top: 0;
     left: 50%;
     width: 361px;
+    height: 10px;
     translate: -50% 0;
     background-image:
       repeating-linear-gradient(to right, #000000 0 1px, transparent 1px 90px),
       repeating-linear-gradient(to right, #949494 0 1px, transparent 1px 9px);
-    background-position:
-      0 9px,
-      0 12px;
-    background-size:
-      100% 14px,
-      100% 8px;
-    background-repeat: no-repeat;
     mask-image: linear-gradient(
       to right,
       rgb(0 0 0 / 0.25) 0 4px,
@@ -419,16 +387,6 @@
       rgb(0 0 0 / 0.75) calc(100% - 22px) calc(100% - 13px),
       rgb(0 0 0 / 0.5) calc(100% - 13px) calc(100% - 4px),
       rgb(0 0 0 / 0.25) calc(100% - 4px)
-    );
-  }
-
-  @container (width < 34.5rem) {
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000000 24px,
-      #000000 calc(100% - 24px),
-      transparent
     );
   }
 }
@@ -448,11 +406,5 @@
     height: 6px;
     border-radius: 1px;
     background-color: var(--color-ink);
-  }
-}
-
-@utility grid-hold {
-  [data-zriz-item="root"]:has([data-zriz-item="dial"][data-dragging]) & {
-    opacity: 1;
   }
 }

@@ -3,13 +3,15 @@ import type { VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
 import { Icon } from "@/demos/shell/icon";
-import { cn } from "@/lib/cn";
 
 type StageProps = ComponentProps<"div">;
 
 type CornerProps = ComponentProps<"div"> & VariantProps<typeof cornerVariants>;
 
 type ZoneProps = ComponentProps<"div"> & VariantProps<typeof zoneVariants>;
+
+type ZoneRowProps = ComponentProps<"div"> &
+  VariantProps<typeof zoneRowVariants>;
 
 type ScaleProps = {
   children: ReactNode;
@@ -58,6 +60,7 @@ const zoneVariants = cva(
         aspect: "pt-3 pb-2",
         dial: "pt-3.5 pb-1.5",
         row: "pt-3 pb-2",
+        strip: "pt-3 pb-2",
         track: "pt-3 pb-2",
         zoom: "pt-3.5 pb-1.5",
       },
@@ -65,14 +68,24 @@ const zoneVariants = cva(
   }
 );
 
+const zoneRowVariants = cva("flex items-end gap-3", {
+  defaultVariants: { dial: false },
+  variants: {
+    dial: {
+      false: "",
+      true: "*:not-data-[slot=ruler]:not-data-[slot=scale]:mb-2.5",
+    },
+  },
+});
+
 const rulerVariants = cva(
-  "relative h-8 shrink-0 after:pointer-events-none after:absolute after:-inset-x-1.5 after:inset-y-0 after:rounded-button has-focus-visible:after:inset-shadow-focus",
+  "relative shrink-0 after:pointer-events-none after:absolute after:-inset-x-1.5 after:inset-y-0 after:rounded-button has-focus-visible:after:inset-shadow-focus",
   {
     defaultVariants: { width: "dial" },
     variants: {
       width: {
-        dial: "w-90 @max-demo-wide:w-50 @max-demo-narrow:w-44",
-        zoom: "w-70 @max-demo-wide:w-50 @max-demo-narrow:w-44",
+        dial: "h-10 w-90 @max-demo-wide:w-50 @max-demo-narrow:w-44",
+        zoom: "h-8 w-70 @max-demo-wide:w-50 @max-demo-narrow:w-44",
       },
     },
   }
@@ -115,9 +128,9 @@ const Zone = ({ className, kind, ...props }: ZoneProps) => (
   />
 );
 
-const ZoneRow = ({ className, ...props }: StageProps) => (
+const ZoneRow = ({ className, dial, ...props }: ZoneRowProps) => (
   <div
-    className={cn("flex items-end gap-3", className)}
+    className={zoneRowVariants({ className, dial })}
     data-slot="zone-row"
     {...props}
   />

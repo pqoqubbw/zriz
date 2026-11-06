@@ -4,7 +4,9 @@ import {
   CHIP_OFFSET,
   CONTROL_HEIGHT,
   DEMO_SIZES,
+  DIAL_HEIGHT,
   DOWNLOAD_WIDTH,
+  GHOST_LIFT,
   ICON_COLUMNS_BELOW,
   PANEL_PADDING,
   SAFE_BOTTOM,
@@ -62,7 +64,7 @@ const panelHeight = (width: DemoWidth, zones: readonly ZoneSpec[]): number =>
     (sum, zone) =>
       sum +
       zoneHeight(
-        zone.kind,
+        zone.kind === "dial" && !zone.value ? "strip" : zone.kind,
         zone.kind === "zoom" || (zone.kind === "dial" && zone.value)
       ),
     0
@@ -86,8 +88,9 @@ const editorBoard = (width: DemoWidth): Board => {
   };
   const row = CONTROL_HEIGHT * 2 + 12 * 2 + size.dial;
   const rowLeft = (size.column - row) / 2;
-  const controlTop =
-    zoneTop + zone.height - ZONE_PADDING.dial.bottom - CONTROL_HEIGHT;
+  const rulerTop =
+    zoneTop + zone.height - ZONE_PADDING.dial.bottom - DIAL_HEIGHT;
+  const controlTop = rulerTop + DIAL_HEIGHT - GHOST_LIFT - CONTROL_HEIGHT;
   const iconOnly = stageWidth < ICON_COLUMNS_BELOW;
   const downloadWidth = iconOnly ? CONTROL_HEIGHT : DOWNLOAD_WIDTH;
   const safe = {
@@ -107,10 +110,10 @@ const editorBoard = (width: DemoWidth): Board => {
         y: controlTop,
       },
       ruler: {
-        height: CONTROL_HEIGHT,
+        height: DIAL_HEIGHT,
         width: size.dial,
         x: rowLeft + CONTROL_HEIGHT + 12,
-        y: controlTop,
+        y: rulerTop,
       },
       start: {
         height: CONTROL_HEIGHT,
@@ -122,7 +125,7 @@ const editorBoard = (width: DemoWidth): Board => {
         height: VALUE_HEIGHT,
         width: Number.NaN,
         x: Number.NaN,
-        y: controlTop - VALUE_GAP - VALUE_HEIGHT,
+        y: rulerTop - VALUE_GAP - VALUE_HEIGHT,
       },
       zone,
     },
