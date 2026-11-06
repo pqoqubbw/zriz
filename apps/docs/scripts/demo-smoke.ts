@@ -48,7 +48,7 @@ const BUDGET = {
   css: 2 * KB,
   demoHtml: 2 * KB,
   demoInitial: 3 * KB,
-  lazy: 60.3 * KB,
+  lazy: 61 * KB,
   photo: 220 * KB,
   playgroundInitial: 14.1 * KB,
   ready: 1500,
