@@ -27,6 +27,7 @@ import {
   StageEdge,
 } from "@/demos/shell/layout";
 import { photoUrl } from "@/demos/shell/photo";
+import { Still, useStill } from "@/demos/shell/still";
 import { exportRun, useDownload } from "@/demos/shell/use-download";
 import type { DemoRun } from "@/demos/shell/use-download";
 import { usePhoto } from "@/demos/shell/use-photo";
@@ -124,7 +125,12 @@ const DemoShell = ({
   const spec = DEMO_SPECS[name];
   const actions = useRef<CropperApi>(null);
   const download = useDownload(actions, onAction ?? exportRun(exportOptions));
-  const photo = usePhoto(photoUrl(spec.photo), download.abort);
+  const content = useRef<HTMLDivElement>(null);
+  const still = useStill(photoProps !== undefined, content);
+  const photo = usePhoto(photoUrl(spec.photo), () => {
+    download.abort();
+    still.keep();
+  });
   const { dropping, pick, src } = photo;
   const locked = lock && download.busy;
   const busy = photo.loading || dropping;
@@ -143,18 +149,31 @@ const DemoShell = ({
         {...(lock ? { disabled: locked } : null)}
         actionsRef={actions}
         className={cn("flex w-full flex-col items-center", className)}
-        onError={photo.handleError}
+        onError={(error) => {
+          still.clear();
+          photo.handleError(error);
+        }}
         onLoad={() => {
           if (!photoProps && photo.replacing) {
             actions.current?.reset({ emit: false });
           }
 
+          still.clear();
           photo.handleLoad();
         }}
         shape={shape ?? spec.shape}
         src={photo.src}
       >
-        <Stage {...photo.drop}>
+        <Stage
+          {...photo.drop}
+          onDragEnter={(event) => {
+            if (!photo.dropping) {
+              still.keepPhoto();
+            }
+
+            photo.drop.onDragEnter(event);
+          }}
+        >
           {photo.dropping ? null : (
             <FileChips
               action={spec.action}
@@ -163,7 +182,10 @@ const DemoShell = ({
               photo={photo}
             />
           )}
-          <StageContent data-loading={photo.loading ? "" : undefined}>
+          <StageContent
+            data-loading={photo.loading ? "" : undefined}
+            ref={content}
+          >
             <Cropper.Viewport
               {...viewport}
               className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
@@ -181,7 +203,9 @@ const DemoShell = ({
               </Cropper.Area>
             </Cropper.Viewport>
           </StageContent>
+          <Still node={photo.loading ? still.node : null} />
           {photo.loading ? <Spinner /> : null}
+          {photo.dropping ? <Still node={still.cover} tone="cover" /> : null}
           {photo.dropping ? <DropVeil /> : null}
           <StageEdge />
         </Stage>
