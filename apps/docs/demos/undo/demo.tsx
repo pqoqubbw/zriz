@@ -5,7 +5,7 @@ import { CropperContext } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { useContext, useState } from "react";
 
-import { useDemoPhoto } from "@/demos/shell/context";
+import { useDemoDim, useDemoPhoto } from "@/demos/shell/context";
 import type { DemoPhoto } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
@@ -29,12 +29,13 @@ const LIMIT = 50;
 const UndoButton = ({ history, onStep }: UndoButtonProps) => {
   const cropper = useContext(CropperContext);
   const photo = useDemoPhoto();
+  const dim = useDemoDim();
   const stack = history.photo === photo.key ? history.stack : [];
   const previous = stack.at(-1);
 
   return (
     <button
-      aria-disabled={stack.length === 0}
+      aria-disabled={stack.length === 0 && !dim}
       aria-label="Undo"
       className={ghostVariants()}
       onClick={() => {
