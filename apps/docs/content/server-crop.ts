@@ -28,7 +28,7 @@ const SERVER_CROP_PAGE = defineDoc({
     section(
       "send the file and the value",
       p(
-        "the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the `toSharp` steps under the dial."
+        "the demo above uploads nothing. its send button works out the plan in the browser, the way the route does, and shows the value and the `toSharp` steps under the dial, with numbers rounded to four places."
       ),
       p(
         "`getValue()` returns the crop value, and `serialize` turns it into a small json string. send that, not the export plan, so the server works out which pixels to keep on its own. the upload button waits for `onLoad`, because a value means nothing without its photo."

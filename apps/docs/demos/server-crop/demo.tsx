@@ -36,17 +36,26 @@ const NO_PLAN = "422: this crop does not fit this photo.";
 
 const INDENT = "  ";
 
-const LINE = 28;
+const LINE = 40;
+
+const PLACES = 4;
 
 const isFlat = (items: readonly unknown[]): boolean =>
   items.every((each) => typeof each !== "object" || each === null);
+
+const shown = (data: unknown): string =>
+  JSON.stringify(
+    typeof data === "number" && !Number.isInteger(data)
+      ? Number(data.toFixed(PLACES))
+      : data
+  );
 
 const pretty = (data: unknown, depth = 0): string => {
   const inner = INDENT.repeat(depth + 1);
   const outer = INDENT.repeat(depth);
 
   if (Array.isArray(data)) {
-    const line = `[${data.map((each) => JSON.stringify(each)).join(", ")}]`;
+    const line = `[${data.map((each) => shown(each)).join(", ")}]`;
 
     if (isFlat(data) && line.length <= LINE) {
       return line;
@@ -60,7 +69,7 @@ const pretty = (data: unknown, depth = 0): string => {
   if (typeof data === "object" && data !== null) {
     const entries: [string, unknown][] = Object.entries(data);
     const line = `{ ${entries
-      .map(([key, each]) => `"${key}": ${JSON.stringify(each)}`)
+      .map(([key, each]) => `"${key}": ${shown(each)}`)
       .join(", ")} }`;
 
     if (isFlat(entries.map(([, each]) => each)) && line.length <= LINE) {
@@ -74,7 +83,7 @@ const pretty = (data: unknown, depth = 0): string => {
     return `{\n${rows.join(",\n")}\n${outer}}`;
   }
 
-  return JSON.stringify(data);
+  return shown(data);
 };
 
 const Lines = ({ children, label, slot }: LinesProps) => (
@@ -142,16 +151,14 @@ const Result = ({ sent }: ResultProps) => {
 
   return (
     <dl
-      className="mt-2 flex w-full flex-col gap-1 rounded-control p-4 font-mono text-code text-code-ink inset-shadow-edge data-dim:opacity-40 data-stale:opacity-40"
+      className="mt-3 flex w-full flex-col gap-1 rounded-control p-4 font-mono text-code text-code-ink inset-shadow-edge data-dim:opacity-40 data-stale:opacity-40"
       data-dim={dim ? "" : undefined}
       data-slot="result"
       data-stale={stale ? "" : undefined}
     >
       <dt className="text-faint">serialize(value)</dt>
-      <dd>
-        <Lines label="Sent value" slot="sent-value">
-          {sent.value}
-        </Lines>
+      <dd className="wrap-anywhere whitespace-pre-wrap" data-slot="sent-value">
+        {sent.value}
       </dd>
       <dt className="mt-3 text-faint">toSharp(plan)</dt>
       <dd>
