@@ -6790,6 +6790,8 @@ the photo zooms in as the angle grows. one gesture back to 0° restores the zoom
 </Cropper.Dial>
 \`\`\`
 
+the demo above is 360 px wide, as on the zriz site, so its outermost ticks fall on the edges.
+
 ## add a degree sign
 
 \`format\` on \`DialValue\` gets the angle in degrees and returns the text to show:
