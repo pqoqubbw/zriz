@@ -5,7 +5,8 @@ import type { Cropper as CropperApi, SharpRecipe } from "@zriz/core";
 import { imageOf } from "@zriz/core/dom";
 import { CropperContext } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
-import { useContext, useState, useSyncExternalStore } from "react";
+import { Fragment, useContext, useState, useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 
 import { Panel } from "@/components/ui/panel";
 import { useDemoDim } from "@/demos/shell/context";
@@ -86,6 +87,18 @@ const pretty = (data: unknown, depth = 0): string => {
   return shown(data);
 };
 
+const breakable = (text: string): ReactNode[] =>
+  text.split(",").map((part, index, parts) => (
+    <Fragment key={`${index}-${part}`}>
+      {part}
+      {index < parts.length - 1 ? (
+        <>
+          ,<wbr />
+        </>
+      ) : null}
+    </Fragment>
+  ));
+
 const Lines = ({ children, label, slot }: LinesProps) => (
   <Panel
     aria-label={label}
@@ -157,9 +170,7 @@ const Result = ({ sent }: ResultProps) => {
       data-stale={stale ? "" : undefined}
     >
       <dt className="text-faint">serialize(value)</dt>
-      <dd className="wrap-anywhere whitespace-pre-wrap" data-slot="sent-value">
-        {sent.value}
-      </dd>
+      <dd data-slot="sent-value">{breakable(sent.value)}</dd>
       <dt className="mt-3 text-faint">toSharp(plan)</dt>
       <dd>
         <Lines label="Sharp steps" slot="sent-plan">
