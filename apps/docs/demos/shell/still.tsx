@@ -9,30 +9,45 @@ type StillProps = VariantProps<typeof stillVariants> & {
   node: HTMLElement | null;
 };
 
+type StillKeep = "mask" | "photo" | "whole";
+
 type StillState = {
   clear: () => void;
   cover: HTMLElement | null;
   keep: () => void;
   keepPhoto: () => void;
   node: HTMLElement | null;
+  veil: HTMLElement | null;
 };
 
 const DROPPED = ["data-ready", "id", "tabindex"] as const;
+
+const IMAGE = '[data-zriz-item="image"]';
 
 const MASK = '[data-zriz-item="mask"]';
 
 const AREA = '[data-zriz-item="area"]';
 
 const stillVariants = cva("pointer-events-none absolute inset-0", {
-  defaultVariants: { tone: "dim" },
-  variants: { tone: { cover: "bg-page", dim: "opacity-40" } },
+  defaultVariants: { tone: "copy" },
+  variants: {
+    tone: { copy: "", cover: "bg-page", veil: "bg-page opacity-60" },
+  },
 });
 
-const snapshot = (
-  from: HTMLElement,
-  photoOnly: boolean
-): HTMLElement | null => {
-  if (!from.querySelector('[data-zriz-item="image"][data-ready]')) {
+const fill = (copy: HTMLElement): void => {
+  const mask = copy.querySelector(MASK);
+
+  if (mask instanceof HTMLElement) {
+    delete mask.dataset.interacting;
+    mask.style.removeProperty("clip-path");
+    mask.style.removeProperty("mask-image");
+    mask.style.removeProperty("-webkit-mask-image");
+  }
+};
+
+const snapshot = (from: HTMLElement, keep: StillKeep): HTMLElement | null => {
+  if (!from.querySelector(`${IMAGE}[data-ready]`)) {
     return null;
   }
 
@@ -52,17 +67,13 @@ const snapshot = (
     canvas.getContext("2d")?.drawImage(source, 0, 0);
   }
 
-  if (photoOnly) {
+  if (keep !== "whole") {
     copy.querySelector(AREA)?.remove();
+    fill(copy);
+  }
 
-    const mask = copy.querySelector(MASK);
-
-    if (mask instanceof HTMLElement) {
-      delete mask.dataset.interacting;
-      mask.style.removeProperty("clip-path");
-      mask.style.removeProperty("mask-image");
-      mask.style.removeProperty("-webkit-mask-image");
-    }
+  if (keep === "mask") {
+    copy.querySelector(IMAGE)?.remove();
   }
 
   for (const element of [copy, ...copy.querySelectorAll("*")]) {
@@ -79,25 +90,29 @@ const useStill = (
   content: RefObject<HTMLDivElement | null>
 ): StillState => {
   const [node, setNode] = useState<HTMLElement | null>(null);
+  const [veil, setVeil] = useState<HTMLElement | null>(null);
   const [cover, setCover] = useState<HTMLElement | null>(null);
 
   return {
     clear: () => {
       setNode(null);
+      setVeil(null);
     },
     cover,
     keep: () => {
-      if (enabled && content.current) {
-        setNode(snapshot(content.current, false));
-      }
+      const from = content.current;
+
+      setVeil(from && snapshot(from, "mask"));
+      setNode(enabled && from ? snapshot(from, "whole") : null);
     },
     keepPhoto: () => {
       setCover(
-        (content.current && snapshot(content.current, true)) ??
+        (content.current && snapshot(content.current, "photo")) ??
           document.createElement("div")
       );
     },
     node,
+    veil,
   };
 };
 

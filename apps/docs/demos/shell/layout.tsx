@@ -46,9 +46,7 @@ const stageVariants = cva(
   "relative h-95 w-full shrink-0 overflow-clip rounded-control bg-page @max-demo-wide:h-80"
 );
 
-const contentVariants = cva(
-  "absolute inset-0 data-dropping:invisible data-loading:opacity-40"
-);
+const contentVariants = cva("absolute inset-0 data-dropping:invisible");
 
 const cornerVariants = cva("absolute top-2 z-1 flex gap-1.5", {
   variants: { side: { end: "end-2", start: "start-2" } },

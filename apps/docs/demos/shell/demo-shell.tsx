@@ -182,11 +182,7 @@ const DemoShell = ({
               photo={photo}
             />
           )}
-          <StageContent
-            data-dropping={dropping ? "" : undefined}
-            data-loading={photo.replacing ? "" : undefined}
-            ref={content}
-          >
+          <StageContent data-dropping={dropping ? "" : undefined} ref={content}>
             <Cropper.Viewport
               {...viewport}
               className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
@@ -205,6 +201,7 @@ const DemoShell = ({
             </Cropper.Viewport>
           </StageContent>
           <Still node={photo.loading ? still.node : null} />
+          <Still node={photo.replacing ? still.veil : null} tone="veil" />
           {photo.loading ? <Spinner /> : null}
           {photo.dropping ? <Still node={still.cover} tone="cover" /> : null}
           {photo.dropping ? <DropVeil /> : null}
