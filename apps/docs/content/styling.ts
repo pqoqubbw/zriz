@@ -11,28 +11,28 @@ import {
 const STYLING_PAGE = defineDoc({
   blocks: [
     section(
-      "add the stylesheet",
+      "Add the stylesheet",
       p(
-        "import the stylesheet once. [bundle size](bundle-size) lists its weight:"
+        "Import the stylesheet once. [Bundle size](bundle-size) lists its weight:"
       ),
       code("styling/import.ts"),
       table({
         columns: [
-          column("part", "mono"),
-          column("what the stylesheet sets", "prose"),
+          column("Part", "mono"),
+          column("What the stylesheet sets", "prose"),
         ],
         rows: [
           ["Viewport", "`overflow: clip` and a grab cursor"],
-          ["Mask", "the scrim colour. it fades to 60% during a gesture"],
+          ["Mask", "The scrim colour. It fades to 60% during a gesture"],
           [
             "Area",
-            'a 1 px outline inside the crop, a two-tone ring on keyboard focus, and `opacity: 0` on it and its handles while `Root` has `data-transition="rotate"`',
+            'A 1 px outline inside the crop, a two-tone ring on keyboard focus, and `opacity: 0` on it and its handles while `Root` has `data-transition="rotate"`',
           ],
           [
             "Handle",
-            'a corner mark of two short lines or an edge bar, and a resize cursor. corners hide with `shape="circle"`',
+            'A corner mark of two short lines or an edge bar, and a resize cursor. Corners hide with `shape="circle"`',
           ],
-          ["Grid", "white lines that fade in during a gesture"],
+          ["Grid", "White lines that fade in during a gesture"],
           [
             "Dial",
             "40 px height, sideways clip, a grab cursor, centre line, tick colours, the zero dot",
@@ -40,104 +40,104 @@ const STYLING_PAGE = defineDoc({
         ],
       }),
       p(
-        "it paints nothing on `Zoom`, the buttons or the aspect items. the demos on this site style those themselves. [viewport](viewport) shows how to size the box."
+        "It paints nothing on `Zoom`, the buttons or the aspect items. The demos on this site style those themselves. [Viewport](viewport) shows how to size the box."
       ),
       p(
-        "every rule sits in `:where()` inside `@layer components.zriz`. a class with no layer wins in any import order, and so does a class in your `components` or `utilities` layer, tailwind included. a class in any other layer wins only when that layer is declared after the stylesheet. `@zriz/core/styles.css` is the same file for [vanilla js](vanilla-js)."
+        "Every rule sits in `:where()` inside `@layer components.zriz`. A class with no layer wins in any import order, and so does a class in your `components` or `utilities` layer, Tailwind included. A class in any other layer wins only when that layer is declared after the stylesheet. `@zriz/core/styles.css` is the same file for [vanilla JS](vanilla-js)."
       ),
       p(
-        "a page-wide `transition` cannot make the crop trail your finger. zriz sets `transition-property` inline to `none` on `Area`, `DialTicks` and `ZoomThumb`, and to `opacity` on `Mask`, so the mask keeps its fade. a transition of your own on those parts needs `!important`."
+        "A page-wide `transition` cannot make the crop trail your finger. zriz sets `transition-property` inline to `none` on `Area`, `DialTicks` and `ZoomThumb`, and to `opacity` on `Mask`, so the mask keeps its fade. A transition of your own on those parts needs `!important`."
       ),
       p(
-        "the first line of the file names `properties`, `theme`, `base`, `components` and `utilities`, so a stylesheet loaded first sets the order of those layers on your page. to keep your own order, and to let every layer of yours win, import it into a layer of its own:"
+        "The first line of the file names `properties`, `theme`, `base`, `components` and `utilities`, so a stylesheet loaded first sets the order of those layers on your page. To keep your own order, and to let every layer of yours win, import it into a layer of its own:"
       ),
       code("styling/layer.css")
     ),
     section(
-      "style a part by its state",
+      "Style a part by its state",
       p(
         "`className` takes a string, or a function that gets the part's state:"
       ),
       code("styling/classname.jsx.tsx"),
       p(
-        "return `undefined` from the function for no class. to swap the element itself, see [composition](composition)."
+        "Return `undefined` from the function for no class. To swap the element itself, see [composition](composition)."
       )
     ),
     section(
-      "style with data attributes",
+      "Style with data attributes",
       p(
-        "every part's outer element carries `data-zriz-item` with its part name in kebab case, such as `aspect-item` or `dial-ticks`. the ticks and grid lines inside carry none, so select them through their part, as [dial](dial) shows. `Root` also marks the gesture in progress with `data-rotating`, `data-panning`, `data-pinching`, `data-resizing` or `data-zooming`. this rule hides the handles from a press on the dial until the pointer lets go, and while the dial glides:"
+        "Every part's outer element carries `data-zriz-item` with its part name in kebab case, such as `aspect-item` or `dial-ticks`. The ticks and grid lines inside carry none, so select them through their part, as [dial](dial) shows. `Root` also marks the gesture in progress with `data-rotating`, `data-panning`, `data-pinching`, `data-resizing` or `data-zooming`. This rule hides the handles from a press on the dial until the pointer lets go, and while the dial glides:"
       ),
       code("styling/attributes.css"),
-      p("each component page lists the attributes that part sets.")
+      p("Each component page lists the attributes that part sets.")
     ),
     section(
-      "change the colours",
+      "Change the colours",
       p(
-        "set the colour variables on `Root`, on one part or on any ancestor. this one makes the scrim white in light mode and darker in dark mode, and the accent blue:"
+        "Set the colour variables on `Root`, on one part or on any ancestor. This one makes the scrim white in light mode and darker in dark mode, and the accent blue:"
       ),
       code("styling/variables.css"),
       table({
         columns: [
-          column("variable", "mono", { width: 136 }),
-          column("light, dark", "prose", { width: 184 }),
-          column("what it sets", "prose"),
+          column("Variable", "mono", { width: 136 }),
+          column("Light, dark", "prose", { width: 184 }),
+          column("What it sets", "prose"),
         ],
         rows: [
           [
             "--zriz-scrim",
             "`#f7f7f7eb`, `#000000c7`",
-            "the mask outside the crop",
+            "The mask outside the crop",
           ],
           [
             "--zriz-line",
             "`#000`, `#fff`",
-            "outline, handle marks, dial centre line, major ticks, zero dot",
+            "Outline, handle marks, dial centre line, major ticks, zero dot",
           ],
-          ["--zriz-grid", "`#fff9` in both", "grid lines"],
-          ["--zriz-tick", "`#949494`, `#666`", "minor ticks on the dial"],
+          ["--zriz-grid", "`#fff9` in both", "Grid lines"],
+          ["--zriz-tick", "`#949494`, `#666`", "Minor ticks on the dial"],
           [
             "--zriz-accent",
             "`#fdca00` in both",
-            "dial centre line while you drag the dial",
+            "Dial centre line while you drag the dial",
           ],
         ],
       }),
       p(
-        "write a value with `light-dark()` to keep both schemes, or a single colour to use it in both."
+        "Write a value with `light-dark()` to keep both schemes, or a single colour to use it in both."
       ),
       demo("styling"),
       p(
-        "the demo above switches between the stylesheet's colours and two light looks of its own. each look sets all five variables on `Root`. drag the dial to see the accent."
+        "The demo above switches between the stylesheet's colours and two light looks of its own. Each look sets all five variables on `Root`. Drag the dial to see the accent."
       )
     ),
     section(
-      "follow dark mode",
+      "Follow dark mode",
       p(
-        "the parts follow the page's `color-scheme`. the light values above apply in light mode and the dark values in dark mode."
+        "The parts follow the page's `color-scheme`. The light values above apply in light mode and the dark values in dark mode."
       ),
-      p("with this rule on the page, the parts follow the system setting:"),
+      p("With this rule on the page, the parts follow the system setting:"),
       code("styling/scheme.css"),
       p(
-        'to pin one part, put `data-theme="dark"` or the class `dark` on the part itself. it wins over a themed wrapper. `light` works on the part itself, but its children stay dark inside a dark wrapper:'
+        'To pin one part, put `data-theme="dark"` or the class `dark` on the part itself. It wins over a themed wrapper. `light` works on the part itself, but its children stay dark inside a dark wrapper:'
       ),
       code("styling/pin.jsx.tsx"),
       p(
-        "in forced colours mode, the marks the stylesheet paints switch to `CanvasText`, and the dial's centre line to `Highlight` during a drag. the browser turns the scrim into a veil of `Canvas`, so a dark `--zriz-scrim` shows in the palette's own colour. the other `--zriz-*` variables keep your values, on `Root` or on one part, so css of your own that reads one needs a `forced-colors` rule with a system colour."
+        "In forced colours mode, the marks the stylesheet paints switch to `CanvasText`, and the dial's centre line to `Highlight` during a drag. The browser turns the scrim into a veil of `Canvas`, so a dark `--zriz-scrim` shows in the palette's own colour. The other `--zriz-*` variables keep your values, on `Root` or on one part, so CSS of your own that reads one needs a `forced-colors` rule with a system colour."
       )
     ),
     section(
-      "style with tailwind",
+      "Style with Tailwind",
       p(
-        "without the stylesheet, utilities paint everything, the viewport's clip included. tailwind's `data-*` variants read the state attributes:"
+        "Without the stylesheet, utilities paint everything, the viewport's clip included. Tailwind's `data-*` variants read the state attributes:"
       ),
       code("styling/tailwind.jsx.tsx"),
       p(
-        "the mask turns 60% black, and the crop gets a white ring that thickens during a gesture. forced colours mode removes the ring, because it is a box shadow, so `forced-colors:border` draws the frame there."
+        "The mask turns 60% black, and the crop gets a white ring that thickens during a gesture. Forced colours mode removes the ring, because it is a box shadow, so `forced-colors:border` draws the frame there."
       )
     ),
   ],
-  lede: "the parts carry no colour. paint them with the optional stylesheet, your own css or tailwind.",
+  lede: "The parts carry no colour. Paint them with the optional stylesheet, your own CSS or Tailwind.",
 });
 
 export { STYLING_PAGE };

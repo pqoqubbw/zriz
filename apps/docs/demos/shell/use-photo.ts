@@ -35,16 +35,16 @@ type Photo = {
   src: Blob | string;
 };
 
-const NOT_AN_IMAGE = "not an image";
+const NOT_AN_IMAGE = "Not an image";
 
-const UNREADABLE = "can’t read this file";
+const UNREADABLE = "Can’t read this file";
 
 const ERROR_TEXT: Partial<Record<ZrizError["code"], string>> = {
   blank: UNREADABLE,
-  "cross-origin": "can’t open this link",
+  "cross-origin": "Can’t open this link",
   decode: UNREADABLE,
-  timeout: "can’t open this link",
-  "too-large": "too large",
+  timeout: "Can’t open this link",
+  "too-large": "Too large",
   "unsupported-format": NOT_AN_IMAGE,
 };
 

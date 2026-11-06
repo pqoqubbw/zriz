@@ -195,11 +195,11 @@ describe("introduction demo", () => {
     const blob = await response.blob();
 
     expect(blob.type).toBe("image/jpeg");
-    await expect.poll(() => says("saved")).toBeTruthy();
+    await expect.poll(() => says("Saved")).toBeTruthy();
     await expect(violations()).resolves.toStrictEqual([]);
 
     vi.advanceTimersByTime(2000);
-    await expect.poll(() => says("saved")).toBeFalsy();
+    await expect.poll(() => says("Saved")).toBeFalsy();
   });
 
   it("names a file that is not an image for 4 s and still opens", async () => {
@@ -207,16 +207,16 @@ describe("introduction demo", () => {
     await ready();
     vi.useFakeTimers(FAKE_TIMERS);
     pick(new File(["plain text"], "notes.txt", { type: "text/plain" }));
-    await expect.poll(() => says("not an image")).toBeTruthy();
+    await expect.poll(() => says("Not an image")).toBeTruthy();
 
-    expect(getComputedStyle(button("not an image. Open a photo")).color).toBe(
+    expect(getComputedStyle(button("Not an image. Open a photo")).color).toBe(
       "rgb(180, 35, 24)"
     );
 
     await expect(violations()).resolves.toStrictEqual([]);
 
     vi.advanceTimersByTime(4000);
-    await expect.poll(() => says("not an image")).toBeFalsy();
+    await expect.poll(() => says("Not an image")).toBeFalsy();
     vi.useRealTimers();
     pick(await fixtureFile("portrait"));
     await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
@@ -227,7 +227,7 @@ describe("introduction demo", () => {
     await ready();
     pick(new File(["not really a png"], "broken.png", { type: "image/png" }));
 
-    await expect.poll(() => says("can’t read this file")).toBeTruthy();
+    await expect.poll(() => says("Can’t read this file")).toBeTruthy();
   });
 
   it("opens a dropped photo", async () => {
@@ -238,12 +238,12 @@ describe("introduction demo", () => {
 
     transfer.items.add(await fixtureFile("square"));
     drop("dragenter", transfer);
-    await expect.poll(() => says("drop to open")).toBeTruthy();
+    await expect.poll(() => says("Drop to open")).toBeTruthy();
 
     expect(document.querySelector('[aria-label="Open a photo"]')).toBeNull();
 
     drop("drop", transfer);
-    await expect.poll(() => says("drop to open")).toBeFalsy();
+    await expect.poll(() => says("Drop to open")).toBeFalsy();
     await expect.poll(ratio, { timeout: 15_000 }).toBeCloseTo(1, 1);
   });
 

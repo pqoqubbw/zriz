@@ -3,107 +3,107 @@ import { code, defineDoc, p, qa, section } from "@/lib/doc/define";
 const FAQ_PAGE = defineDoc({
   blocks: [
     section(
-      "setup",
+      "Setup",
       qa(
-        "what does zriz need",
+        "What does zriz need",
         p(
-          "react 18.2 or newer, 19 included, from one build. both packages ship types, and `@types/react` 18.2.6 or newer is an optional peer. [quick start](quick-start) has the install."
+          "React 18.2 or newer, 19 included, from one build. Both packages ship types, and `@types/react` 18.2.6 or newer is an optional peer. [Quick start](quick-start) has the install."
         )
       ),
       qa(
-        "which browsers does it run in",
+        "Which browsers does it run in",
         p(
-          "chrome, edge and firefox in their latest two versions, safari and ios safari 18 and newer, and chrome and samsung internet on android. a two-finger trackpad twist rotates only in safari. on a trackpad in other browsers, rotate with the dial and the keys. two fingers on a touch screen rotate in every browser."
+          "Chrome, Edge and Firefox in their latest two versions, Safari and iOS Safari 18 and newer, and Chrome and Samsung Internet on Android. A two-finger trackpad twist rotates only in Safari. On a trackpad in other browsers, rotate with the dial and the keys. Two fingers on a touch screen rotate in every browser."
         )
       ),
       qa(
-        "does it work without a bundler",
+        "Does it work without a bundler",
         p(
-          "yes, with an import map. map `react`, `react/jsx-runtime`, `@zriz/react`, `@zriz/react/cropper`, `@zriz/core` and `@zriz/core/dom`. the parts also import `@zriz/react/warn`, so point that at `@zriz/react/dist/warn-off.js`."
+          "Yes, with an import map. Map `react`, `react/jsx-runtime`, `@zriz/react`, `@zriz/react/cropper`, `@zriz/core` and `@zriz/core/dom`. The parts also import `@zriz/react/warn`, so point that at `@zriz/react/dist/warn-off.js`."
         ),
         p(
-          "to keep the warnings during development, point it at `dist/warn.js` and run `window.process = { env: {} }` before the modules load. without a `process` global, `dist/warn.js` stays silent too."
+          "To keep the warnings during development, point it at `dist/warn.js` and run `window.process = { env: {} }` before the modules load. Without a `process` global, `dist/warn.js` stays silent too."
         )
       ),
       qa(
-        "does it work with the next.js app router",
+        "Does it work with the Next.js app router",
         p(
-          "yes. every part is a client component, so a server component can render them. callbacks such as `onValueCommit` are functions, so put them in a client file of your own."
+          "Yes. Every part is a client component, so a server component can render them. Callbacks such as `onValueCommit` are functions, so put them in a client file of your own."
         )
       ),
       qa(
-        "does it render on the server",
+        "Does it render on the server",
         p(
-          "yes. the server renders the parts with no photo, and the photo loads in the browser after hydration."
+          "Yes. The server renders the parts with no photo, and the photo loads in the browser after hydration."
         )
       ),
       qa(
-        "does it work with vue or svelte",
+        "Does it work with Vue or Svelte",
         p(
-          "there are no vue or svelte parts. `@zriz/core/dom` binds a cropper to plain elements, so any framework can drive it. [vanilla js](vanilla-js) shows the setup."
+          "There are no Vue or Svelte parts. `@zriz/core/dom` binds a cropper to plain elements, so any framework can drive it. [Vanilla JS](vanilla-js) shows the setup."
         )
       ),
       qa(
-        "can i use my own button component",
+        "Can I use my own button component",
         p(
-          "yes. pass it to `render` on any part, and zriz merges its props and ref into yours. [composition](composition) has the code."
+          "Yes. Pass it to `render` on any part, and zriz merges its props and ref into yours. [Composition](composition) has the code."
         )
       ),
       qa(
-        "why is my viewport empty",
+        "Why is my viewport empty",
         p(
-          "`Viewport` has no height of its own, so it starts at zero height. give it a height, as in [viewport](viewport)."
+          "`Viewport` has no height of its own, so it starts at zero height. Give it a height, as in [viewport](viewport)."
         )
       ),
       qa(
-        "can i test it with jsdom",
+        "Can I test it with jsdom",
         p(
-          "jsdom has no `ResizeObserver`, so `Viewport`, `Image` and `DialTicks` throw when they mount. stub it in your test setup. to test crop logic with no dom at all, use `createCropper` with a manual clock, as [cropper](cropper) shows."
+          "jsdom has no `ResizeObserver`, so `Viewport`, `Image` and `DialTicks` throw when they mount. Stub it in your test setup. To test crop logic with no DOM at all, use `createCropper` with a manual clock, as [cropper](cropper) shows."
         ),
         code("faq/resize-observer.ts")
       ),
       qa(
-        "why do node and jest fail on the stylesheet",
+        "Why do Node and Jest fail on the stylesheet",
         p(
-          "node cannot import a `.css` file, and jest cannot either until you map it. point `\\.css$` at an empty module with `moduleNameMapper` in your jest config. vitest and bun load the import as it is, and in an app your bundler handles it."
+          "Node cannot import a `.css` file, and Jest cannot either until you map it. Point `\\.css$` at an empty module with `moduleNameMapper` in your Jest config. Vitest and Bun load the import as it is, and in an app your bundler handles it."
         )
       )
     ),
     section(
-      "photos and export",
+      "Photos and export",
       qa(
-        "can it open heic photos from an iphone",
+        "Can it open HEIC photos from an iPhone",
         p(
-          "safari decodes heic, so iphone photos open there. in other browsers the load fails with `unsupported-format`. to open them everywhere, call `loadImage` yourself with a heic decoder as `decode`, as [loading images](loading-images) shows."
+          "Safari decodes HEIC, so iPhone photos open there. In other browsers the load fails with `unsupported-format`. To open them everywhere, call `loadImage` yourself with a HEIC decoder as `decode`, as [loading images](loading-images) shows."
         )
       ),
       qa(
-        "how do i get the cropped file",
+        "How do I get the cropped file",
         p(
-          "call `exportCrop` from `@zriz/core/dom` with the cropper from `actionsRef`. it resolves with an object that holds the file in `blob`, next to its `width` and `height`. [exporting](exporting) has the code."
+          "Call `exportCrop` from `@zriz/core/dom` with the cropper from `actionsRef`. It resolves with an object that holds the file in `blob`, next to its `width` and `height`. [Exporting](exporting) has the code."
         )
       ),
       qa(
-        "can i put it in a dialog or a drawer",
+        "Can I put it in a dialog or a drawer",
         p(
-          "yes. a native `<dialog>` does not lock the page, so a wheel at the pan limit or over the dial scrolls what is behind it. `html:has(dialog[open]) { overflow: hidden; }` holds the page. keep `Announcer` inside the dialog, see [accessibility](accessibility)."
+          "Yes. A native `<dialog>` does not lock the page, so a wheel at the pan limit or over the dial scrolls what is behind it. `html:has(dialog[open]) { overflow: hidden; }` holds the page. Keep `Announcer` inside the dialog, see [accessibility](accessibility)."
         ),
         p(
-          "radix `forceMount` with css hiding keeps `aria-hidden` on your app and the scroll lock while closed, so mount the dialog only when it is open. base ui `keepMounted` leaves the page clean."
+          "Radix `forceMount` with CSS hiding keeps `aria-hidden` on your app and the scroll lock while closed, so mount the dialog only when it is open. Base UI `keepMounted` leaves the page clean."
         ),
         p(
-          "vaul starts with focus on the page, and the first presses of tab land behind the drawer. pass `autoFocus` to `Drawer.Root`. [viewport](viewport) and [root](root) have the layout and swipe notes."
+          "Vaul starts with focus on the page, and the first presses of tab land behind the drawer. Pass `autoFocus` to `Drawer.Root`. [Viewport](viewport) and [root](root) have the layout and swipe notes."
         )
       ),
       qa(
-        "can i crop on the server",
+        "Can I crop on the server",
         p(
-          "yes. send the original file and the value from `getValue()`, recompute the plan on the server, then turn that plan into sharp calls with `toSharp`. [server crop](server-crop) has the route."
+          "Yes. Send the original file and the value from `getValue()`, recompute the plan on the server, then turn that plan into sharp calls with `toSharp`. [Server crop](server-crop) has the route."
         )
       )
     ),
   ],
-  lede: "short answers, each with a link to the page that covers it in full.",
+  lede: "Short answers, each with a link to the page that covers it in full.",
 });
 
 export { FAQ_PAGE };

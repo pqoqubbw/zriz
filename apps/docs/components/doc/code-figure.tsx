@@ -11,7 +11,7 @@ type CodeFigureProps = {
 
 const CodeFigure = async ({ block, className }: CodeFigureProps) => (
   <Panel
-    aria-label={`${languageOf(block.file).fence} code`}
+    aria-label={`${languageOf(block.file).fence.toUpperCase()} code`}
     as="figure"
     className={cn(
       "scrollbar-none overflow-x-auto overscroll-x-contain max-sm:[border-image-outset:0]",

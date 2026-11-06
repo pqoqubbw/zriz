@@ -40,7 +40,7 @@ const OpenChip = ({ photo }: OpenChipProps) => {
       >
         <ChipContent
           icon={failed ? "warning" : "open-image"}
-          label={photo.error ?? "open"}
+          label={photo.error ?? "Open"}
         />
       </button>
       <input
@@ -94,7 +94,7 @@ const FileChips = ({ action, dim, download, photo }: FileChipsProps) => (
         className={chipVariants({ size: "collapse" })}
         data-dim={dim ? "" : undefined}
       >
-        <ChipContent collapse icon="reset" label="reset" />
+        <ChipContent collapse icon="reset" label="Reset" />
       </Cropper.Reset>
       <ActionChip
         action={action}

@@ -23,14 +23,14 @@ const indexMarkdown = (): string =>
     heading(1, [text("zriz")]),
     blockquote([
       prose(
-        `${SITE_DESCRIPTION} it ships as \`@zriz/react\` and \`@zriz/core\`. every page below is markdown, and any page url plus \`.md\` returns the same.`
+        `${SITE_DESCRIPTION} It ships as \`@zriz/react\` and \`@zriz/core\`. Every page below is Markdown, and any page URL plus \`.md\` returns the same.`
       ),
       prose(
-        `a skill for coding agents is at \`${SITE_ORIGIN}/skill.md\`, and an mcp server with the tools \`search_docs\` and \`get_page\` answers at \`${SITE_ORIGIN}/mcp\`.`
+        `A skill for coding agents is at \`${SITE_ORIGIN}/skill.md\`, and an MCP server with the tools \`search_docs\` and \`get_page\` answers at \`${SITE_ORIGIN}/mcp\`.`
       ),
     ]),
     ...NAV_GROUPS.flatMap((group) => [
-      heading(2, [text(group.title === "" ? "start" : group.title)]),
+      heading(2, [text(group.title === "" ? "Start" : group.title)]),
       list(
         group.items.map(({ slug, title }) =>
           item([
@@ -43,8 +43,8 @@ const indexMarkdown = (): string =>
         )
       ),
     ]),
-    heading(2, [text("everything")]),
-    list([item([paragraph([link(LLMS_FULL_URL, "all pages in one file")])])]),
+    heading(2, [text("Everything")]),
+    list([item([paragraph([link(LLMS_FULL_URL, "All pages in one file")])])]),
   ]);
 
 const fullMarkdown = (): string =>

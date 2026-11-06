@@ -89,7 +89,7 @@ const NavList = ({ roomy }: NavListProps) => {
   return (
     <div className={cn("flex flex-col", roomy ? "gap-5" : "gap-7")} ref={list}>
       {NAV_GROUPS.map((group) => {
-        const id = `nav-${roomy ? "menu" : "side"}-${group.title || "start"}`;
+        const id = `nav-${roomy ? "menu" : "side"}-${group.title.toLowerCase() || "start"}`;
 
         return (
           <div className={cn(!roomy && "-my-0.5")} key={id}>

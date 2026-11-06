@@ -15,214 +15,214 @@ const CROP_AREA_PAGE = defineDoc({
   blocks: [
     demo("crop-area"),
     section(
-      "anatomy",
+      "Anatomy",
       p("`Area` goes in `Viewport`. `Grid` and the handles go inside it:"),
       code("crop-area/anatomy.jsx.tsx"),
       p(
-        'leave out the handles you do not need. with `shape="circle"`, the stylesheet hides the four corner handles.'
+        'Leave out the handles you do not need. With `shape="circle"`, the stylesheet hides the four corner handles.'
       ),
       p(
-        "`Area` points `aria-describedby` at the `Instructions` part. render it with your own help text. without it, the reference points at nothing and screen readers skip it. [accessibility](accessibility) covers it and `Announcer`."
+        "`Area` points `aria-describedby` at the `Instructions` part. Render it with your own help text. Without it, the reference points at nothing and screen readers skip it. [Accessibility](accessibility) covers it and `Announcer`."
       ),
-      p("the demo above uses the styles from the zriz site.")
+      p("The demo above uses the styles from the zriz site.")
     ),
     section(
-      "recolour the focus ring",
+      "Recolour the focus ring",
       p(
-        "the stylesheet draws a two-tone ring inside `Area` on keyboard focus, so a crop flush with the viewport keeps it. without the stylesheet, the browser draws its default ring. to recolour it:"
+        "The stylesheet draws a two-tone ring inside `Area` on keyboard focus, so a crop flush with the viewport keeps it. Without the stylesheet, the browser draws its default ring. To recolour it:"
       ),
       code("crop-area/focus.css")
     ),
     section(
-      "make the handles easier to grab",
+      "Make the handles easier to grab",
       p(
-        "each handle's hit box is 44 px square, centred on the crop's edge. set `--zriz-handle-size` on `Area` to change all eight. give the viewport padding of at least half that size, or the clip cuts the box, see [viewport](viewport):"
+        "Each handle's hit box is 44 px square, centred on the crop's edge. Set `--zriz-handle-size` on `Area` to change all eight. Give the viewport padding of at least half that size, or the clip cuts the box, see [viewport](viewport):"
       ),
       code("crop-area/handles.css")
     ),
     section(
-      "know when the grid shows",
+      "Know when the grid shows",
       p(
-        "the grid hides at rest. it shows thirds (3 × 3) from the moment you press or move the crop, and a fine grid (9 × 9) while the dial moves:"
+        "The grid hides at rest. It shows thirds (3 × 3) from the moment you press or move the crop, and a fine grid (9 × 9) while the dial moves:"
       ),
       table({
         columns: [
-          column("when", "prose", { width: 200 }),
-          column("what shows", "prose"),
+          column("When", "prose", { width: 200 }),
+          column("What shows", "prose"),
         ],
         rows: [
           [
-            "press or move the crop",
-            "the thirds grid fades in, even if a press never moves. a drag, pinch, twist, wheel, handle, `Zoom` or a `useZoom` slider counts",
+            "Press or move the crop",
+            "The thirds grid fades in, even if a press never moves. A drag, pinch, twist, wheel, handle, `Zoom` or a `useZoom` slider counts",
           ],
           [
-            "drag the dial or press a key on it",
-            "the fine grid fades in once the angle moves. a press that stays still shows none",
+            "Drag the dial or press a key on it",
+            "The fine grid fades in once the angle moves. A press that stays still shows none",
           ],
           [
-            "press a key on `Area` or `Zoom`",
-            "no new grid. a grid that already shows stays",
+            "Press a key on `Area` or `Zoom`",
+            "No new grid. A grid that already shows stays",
           ],
           [
-            "let go or stop moving the crop",
-            "it stays for a short hold, then fades out, see [accessibility](accessibility)",
+            "Let go or stop moving the crop",
+            "It stays for a short hold, then fades out, see [accessibility](accessibility)",
           ],
           [
-            "let go of the dial",
-            "the fine grid fades out at once, or when a flick's glide stops",
+            "Let go of the dial",
+            "The fine grid fades out at once, or when a flick's glide stops",
           ],
         ],
       })
     ),
     section(
-      "make the straighten grid fainter",
+      "Make the straighten grid fainter",
       p(
-        "lines of the fine grid carry no `data-coarse`. a fading grid keeps its lines, so this rule holds until the grid is gone:"
+        "Lines of the fine grid carry no `data-coarse`. A fading grid keeps its lines, so this rule holds until the grid is gone:"
       ),
       code("crop-area/fine.css")
     ),
     section(
-      "keyboard",
-      p("these keys work while `Area` has focus, never on the window:"),
+      "Keyboard",
+      p("These keys work while `Area` has focus, never on the window:"),
       keys([
-        { keys: [["arrow keys"]], text: "move the crop by 1% of its size" },
-        { keys: [["shift", "arrow keys"]], text: "move it by 10%" },
+        { keys: [["arrow keys"]], text: "Move the crop by 1% of its size" },
+        { keys: [["shift", "arrow keys"]], text: "Move it by 10%" },
         {
           keys: [["alt", "arrow keys"]],
-          text: "resize the crop by 1%, or 10% with shift. right and down grow it, left and up shrink it. a locked aspect keeps its ratio. a free crop changes that side only, and stops at the photo edge, `minSize`, `maxZoom` or 88 px on screen. the centre stays put",
+          text: "Resize the crop by 1%, or 10% with Shift. Right and down grow it, left and up shrink it. A locked aspect keeps its ratio. A free crop changes that side only, and stops at the photo edge, `minSize`, `maxZoom` or 88 px on screen. The centre stays put",
         },
-        { keys: [["+"], ["="]], text: "zoom in 1.1×" },
-        { keys: [["-"], ["_"]], text: "zoom out 1.1×" },
+        { keys: [["+"], ["="]], text: "Zoom in 1.1×" },
+        { keys: [["-"], ["_"]], text: "Zoom out 1.1×" },
         {
           keys: [["0"]],
-          text: "jump back to where `Reset` goes, with no spring",
+          text: "Jump back to where `Reset` goes, with no spring",
         },
       ]),
-      p("escape during a handle drag cancels it and puts the crop back.")
+      p("Escape during a handle drag cancels it and puts the crop back.")
     ),
     section(
-      "api",
+      "API",
       part(
         "Area",
-        'renders a `<div role="application">` inside `Viewport`, with `tabIndex={0}` once a photo is placed and `tabIndex={-1}` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ shape, interacting }`.',
+        'Renders a `<div role="application">` inside `Viewport`, with `tabIndex={0}` once a photo is placed and `tabIndex={-1}` until then, so tab skips an empty crop. zriz writes its position and size inline on every frame. Every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ shape, interacting }`.',
         props([
           {
             name: "aria-label",
-            text: 'names the crop for screen readers, such as `"Crop area"`. development builds warn without it',
+            text: 'Names the crop for screen readers, such as `"Crop area"`. Development builds warn without it',
             type: "string",
           },
           {
             default: "false",
             name: "liveVariables",
-            text: "writes the variables below on `Area` every frame",
+            text: "Writes the variables below on `Area` every frame",
             type: "boolean",
           },
         ]),
         table({
           columns: [
-            column("attribute", "mono", { width: 200 }),
-            column("when", "prose"),
+            column("Attribute", "mono", { width: 200 }),
+            column("When", "prose"),
           ],
           rows: [
             ["data-shape", '`"rect"` or `"circle"`, from `Root`'],
-            ["data-visible", "while a photo is placed"],
+            ["data-visible", "While a photo is placed"],
             [
               "data-interacting",
-              "during a gesture, and while a zriz key is held down",
+              "During a gesture, and while a zriz key is held down",
             ],
           ],
         }),
         table({
           columns: [
-            column("variable", "mono", { width: 200 }),
-            column("what it sets", "prose"),
+            column("Variable", "mono", { width: 200 }),
+            column("What it sets", "prose"),
           ],
           rows: [
             [
               "--zriz-line",
-              "paints the frame and the handle marks. [styling](styling) lists its light and dark values",
+              "Paints the frame and the handle marks. [Styling](styling) lists its light and dark values",
             ],
             [
               "--zriz-rotation",
-              "with `liveVariables`, the straighten angle in degrees, like −4.5",
+              "With `liveVariables`, the straighten angle in degrees, like −4.5",
             ],
             [
               "--zriz-rotation-progress",
-              "with `liveVariables`, the angle over its limit, from −1 to 1",
+              "With `liveVariables`, the angle over its limit, from −1 to 1",
             ],
-            ["--zriz-zoom", "with `liveVariables`, the zoom, 1 to `maxZoom`"],
+            ["--zriz-zoom", "With `liveVariables`, the zoom, 1 to `maxZoom`"],
             [
               "--zriz-zoom-progress",
-              "with `liveVariables`, the zoom on a log scale, 0 to 1",
+              "With `liveVariables`, the zoom on a log scale, 0 to 1",
             ],
             [
               "--zriz-overscroll",
-              "with `liveVariables`, how far in px a drag pulls the photo past an edge. 0 at rest",
+              "With `liveVariables`, how far in px a drag pulls the photo past an edge. 0 at rest",
             ],
           ],
         })
       ),
       part(
         "Handle",
-        "renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. a drag stops at the photo edge, the viewport's padding and `maxZoom`. each side also stops at 88 px on screen or `minSize`, whichever is larger. a side already smaller stays put and can only grow. the stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
+        "Renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. A drag stops at the photo edge, the viewport's padding and `maxZoom`. Each side also stops at 88 px on screen or `minSize`, whichever is larger. A side already smaller stays put and can only grow. The stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
         props([
           {
             name: "position",
             required: true,
-            text: 'the corner or edge it drags: `"top-left"`, `"top"`, `"top-right"`, `"right"`, `"bottom-right"`, `"bottom"`, `"bottom-left"`, `"left"`',
+            text: 'The corner or edge it drags: `"top-left"`, `"top"`, `"top-right"`, `"right"`, `"bottom-right"`, `"bottom"`, `"bottom-left"`, `"left"`',
             type: 'HandleProps["position"]',
           },
         ]),
         table({
           columns: [
-            column("attribute", "mono", { width: 200 }),
-            column("when", "prose"),
+            column("Attribute", "mono", { width: 200 }),
+            column("When", "prose"),
           ],
           rows: [
-            ["data-edge", "always, set to its position"],
+            ["data-edge", "Always, set to its position"],
             [
               "data-active",
-              "from a press on this handle until the pointer lets go, even if it never moves",
+              "From a press on this handle until the pointer lets go, even if it never moves",
             ],
           ],
         }),
         table({
           columns: [
-            column("variable", "mono", { width: 200 }),
-            column("what it sets", "prose"),
+            column("Variable", "mono", { width: 200 }),
+            column("What it sets", "prose"),
           ],
           rows: [
             [
               "--zriz-handle-size",
-              "the hit box, 44 px square unless you set it",
+              "The hit box, 44 px square unless you set it",
             ],
           ],
         })
       ),
       part(
         "Grid",
-        "renders an `aria-hidden` `<div>` of `<span>` lines inside `Area`. it has no props of its own. the stylesheet gives each line 1 px. without it, set `min-width` and `min-height` yourself. `className` and `render` get `{ grid }`.",
+        "Renders an `aria-hidden` `<div>` of `<span>` lines inside `Area`. It has no props of its own. The stylesheet gives each line 1 px. Without it, set `min-width` and `min-height` yourself. `className` and `render` get `{ grid }`.",
         table({
           columns: [
-            column("attribute", "mono", { width: 200 }),
-            column("when", "prose"),
+            column("Attribute", "mono", { width: 200 }),
+            column("When", "prose"),
           ],
           rows: [
             ["data-grid", '`"coarse"` for thirds, `"fine"` or `"none"`'],
-            ["data-visible", "while a grid shows"],
+            ["data-visible", "While a grid shows"],
             ["data-axis", '`"x"` on vertical lines, `"y"` on horizontal ones'],
-            ["data-coarse", "on each line of the thirds grid"],
+            ["data-coarse", "On each line of the thirds grid"],
           ],
         }),
         table({
           columns: [
-            column("variable", "mono", { width: 200 }),
-            column("what it sets", "prose"),
+            column("Variable", "mono", { width: 200 }),
+            column("What it sets", "prose"),
           ],
           rows: [
             [
               "--zriz-grid",
-              "paints the grid lines. [styling](styling) lists its default",
+              "Paints the grid lines. [Styling](styling) lists its default",
             ],
           ],
         })

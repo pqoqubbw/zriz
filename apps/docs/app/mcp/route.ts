@@ -65,7 +65,7 @@ const search = (query: string): string => {
     .slice(0, 8);
 
   if (hits.length === 0) {
-    return "no page matches. call get_page with introduction to start.";
+    return "No page matches. Call get_page with introduction to start.";
   }
 
   return hits
@@ -87,8 +87,8 @@ const serverOf = (): McpServer => {
     "search_docs",
     {
       description:
-        "find zriz docs pages for a question. returns page slugs, titles and summaries.",
-      inputSchema: { query: z.string().describe("words to look for") },
+        "Find zriz docs pages for a question. Returns page slugs, titles and summaries.",
+      inputSchema: { query: z.string().describe("Words to look for") },
     },
     ({ query }) => ({ content: [{ text: search(query), type: "text" }] })
   );
@@ -97,8 +97,8 @@ const serverOf = (): McpServer => {
     "get_page",
     {
       description:
-        "read one zriz docs page as markdown, by slug, such as quick-start or dial.",
-      inputSchema: { slug: z.string().describe("the page slug or its url") },
+        "Read one zriz docs page as Markdown, by slug, such as quick-start or dial.",
+      inputSchema: { slug: z.string().describe("The page slug or its URL") },
     },
     ({ slug }) => {
       const wanted = slugOf(slug);
@@ -107,7 +107,7 @@ const serverOf = (): McpServer => {
         return {
           content: [
             {
-              text: `no page ${slug}. pages: ${PAGE_ORDER.join(", ")}`,
+              text: `No page ${slug}. Pages: ${PAGE_ORDER.join(", ")}`,
               type: "text",
             },
           ],

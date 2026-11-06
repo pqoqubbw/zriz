@@ -40,7 +40,7 @@ const DEMO_PHOTO_QUALITY = 80;
 
 const DEMO_PHOTOS = {
   landscape: {
-    alt: "the sun low over lake superior, its light on the water and a wave on the sand",
+    alt: "The sun low over Lake Superior, its light on the water and a wave on the sand",
     bytes: 212_194,
     height: 1600,
     name: "landscape",
@@ -63,7 +63,7 @@ const DEMO_PHOTOS = {
     width: 2400,
   },
   portrait: {
-    alt: "a tall pine above lake superior, with the grand sable dunes along the far shore under clouds",
+    alt: "A tall pine above Lake Superior, with the Grand Sable Dunes along the far shore under clouds",
     bytes: 133_784,
     height: 2400,
     name: "portrait",

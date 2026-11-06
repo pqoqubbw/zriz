@@ -99,7 +99,7 @@ describe("viewport demo", () => {
     await mountDemo("viewport");
     await ready();
 
-    expect(checked()).toStrictEqual(["pan"]);
+    expect(checked()).toStrictEqual(["Pan"]);
     await expect(violations()).resolves.toStrictEqual([]);
 
     await scroll(0, -40);
@@ -113,15 +113,15 @@ describe("viewport demo", () => {
 
     const before = photo().width;
 
-    radio("zoom").click();
-    await expect.poll(checked).toStrictEqual(["zoom"]);
+    radio("Zoom").click();
+    await expect.poll(checked).toStrictEqual(["Zoom"]);
     await scroll(0, -40);
 
     expect(photo().width).toBeGreaterThan(before);
     expect(changed()).toBeTruthy();
 
-    radio("pan").click();
-    await expect.poll(checked).toStrictEqual(["pan"]);
+    radio("Pan").click();
+    await expect.poll(checked).toStrictEqual(["Pan"]);
 
     const zoomed = photo();
 
@@ -134,14 +134,14 @@ describe("viewport demo", () => {
   it("moves the pick with the arrow keys", async () => {
     await mountDemo("viewport");
     await ready();
-    radio("pan").focus();
+    radio("Pan").focus();
     await userEvent.keyboard("{ArrowRight}");
-    await expect.poll(checked).toStrictEqual(["zoom"]);
+    await expect.poll(checked).toStrictEqual(["Zoom"]);
 
-    expect(document.activeElement).toBe(radio("zoom"));
+    expect(document.activeElement).toBe(radio("Zoom"));
 
     await userEvent.keyboard("{ArrowLeft}");
-    await expect.poll(checked).toStrictEqual(["pan"]);
+    await expect.poll(checked).toStrictEqual(["Pan"]);
     await expect(violations()).resolves.toStrictEqual([]);
   });
 
@@ -161,7 +161,7 @@ describe("viewport demo", () => {
     await mountDemo("viewport");
     await ready();
 
-    expect(hits(choice("zoom"), ["top", "bottom"])).toBeTruthy();
+    expect(hits(choice("Zoom"), ["top", "bottom"])).toBeTruthy();
   });
 });
 

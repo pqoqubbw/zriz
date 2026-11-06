@@ -5,8 +5,8 @@ import { pagePath } from "@/lib/nav";
 
 const NotFound = () => (
   <main className="mx-auto page-column pt-18">
-    <PageHeader title="not found">
-      this page does not exist. start from the{" "}
+    <PageHeader title="Not found">
+      This page does not exist. Start from the{" "}
       <Link className="link" href={pagePath("introduction")}>
         introduction
       </Link>

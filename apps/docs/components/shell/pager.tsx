@@ -29,7 +29,7 @@ const PagerLink = ({ label, slug }: PagerLinkProps) => (
     rel={label === "next" ? "next" : "prev"}
   >
     <span className="font-mono text-cell-mono leading-4 text-faint transition-colors duration-150 ease-out group-hover:text-muted motion-reduce:transition-none">
-      {label}
+      {label === "next" ? "Next" : "Previous"}
     </span>
     <span className="font-medium underline decoration-transparent decoration-1 transition-colors duration-150 ease-out group-hover:decoration-ink motion-reduce:transition-none">
       {titleOf(slug)}
@@ -43,7 +43,7 @@ const Pager = ({ slug }: PagerProps) => {
   const next = PAGE_ORDER[at + 1];
 
   return (
-    <nav aria-label="pages" className="grid grid-cols-2 gap-4 pt-4">
+    <nav aria-label="Pages" className="grid grid-cols-2 gap-4 pt-4">
       {previous !== undefined && <PagerLink label="previous" slug={previous} />}
       {next !== undefined && <PagerLink label="next" slug={next} />}
     </nav>

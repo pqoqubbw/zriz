@@ -99,12 +99,12 @@ Add the entry at the top of `RELEASES` in `apps/docs/content/releases.ts`. That 
 {
   bump: "minor",
   date: "<date -u +%F>",
-  notes: ["one lowercase sentence per change, ending in a full stop."],
+  notes: ["One sentence per change in sentence case, ending in a full stop."],
   version: "<version>",
 },
 ```
 
-Write notes for someone upgrading. One sentence, what changed and what to do. Name the export or prop. Plain words, lowercase, no em dashes, no arrows, no "·".
+Write notes for someone upgrading. One sentence, what changed and what to do. Name the export or prop. Plain words in sentence case with zriz kept lowercase, no em dashes, no arrows, no "·".
 
 For a breaking change, show the old and new call in the note.
 

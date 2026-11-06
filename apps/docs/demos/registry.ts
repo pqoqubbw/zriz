@@ -77,12 +77,12 @@ type DemoSpec = {
 };
 
 const DOWNLOAD: DemoAction = {
-  done: "saved",
+  done: "Saved",
   icon: "download",
-  label: "download",
+  label: "Download",
 };
 
-const SEND: DemoAction = { done: "sent", icon: "upload", label: "send" };
+const SEND: DemoAction = { done: "Sent", icon: "upload", label: "Send" };
 
 const EDITOR_ZONE: DialZoneSpec = {
   end: "flip-horizontal",
@@ -97,6 +97,15 @@ const ASPECT_ZONE: TrackZoneSpec = {
   kind: "aspect",
   selected: "free",
 };
+
+const TRACK_LABELS: Readonly<Record<string, string>> = {
+  jpeg: "JPEG",
+  png: "PNG",
+  webp: "WebP",
+};
+
+const trackLabel = (item: string): string =>
+  TRACK_LABELS[item] ?? `${item.charAt(0).toUpperCase()}${item.slice(1)}`;
 
 const DEMO_SPECS: Record<DemoName, DemoSpec> = {
   "aspect-ratio": {
@@ -258,7 +267,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "component",
     },
     summary:
-      "a 3:2 photo, a track of jpeg, png and webp, and open, reset and download in the corners",
+      "a 3:2 photo, a track of JPEG, PNG and WebP, and open, reset and download in the corners",
     zones: [
       {
         end: null,
@@ -338,7 +347,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "fragment",
     },
     summary:
-      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. the controls under it change its props",
+      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. The controls under it change its props",
     zones: [EDITOR_ZONE],
   },
   "quick-start": {
@@ -376,7 +385,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "fragment",
     },
     summary:
-      "a 3:2 photo on a bare cropper, and open, reset and download in the corners. download locks the cropper while it saves",
+      "a 3:2 photo on a bare cropper, and open, reset and download in the corners. Download locks the cropper while it saves",
     zones: [],
   },
   "saving-state": {
@@ -403,7 +412,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "component",
     },
     summary:
-      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. the crop is kept in local storage",
+      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and download in the corners. The crop is kept in local storage",
     zones: [EDITOR_ZONE],
   },
   "server-crop": {
@@ -428,7 +437,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "component",
     },
     summary:
-      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and send in the corners. send shows the value and the sharp plan",
+      "a 3:2 photo, the straighten dial with rotate and flip, and open, reset and send in the corners. Send shows the value and the sharp plan",
     zones: [EDITOR_ZONE],
   },
   styling: {
@@ -541,4 +550,4 @@ export type {
   ZoneSpec,
   ZoomZoneSpec,
 };
-export { DEMO_NAMES, DEMO_SPECS };
+export { DEMO_NAMES, DEMO_SPECS, trackLabel };

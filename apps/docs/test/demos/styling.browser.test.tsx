@@ -101,7 +101,7 @@ describe("styling demo", () => {
     await expect(violations()).resolves.toStrictEqual([]);
   });
 
-  it.each(["ink", "soft"])("sets all five variables for %s", async (look) => {
+  it.each(["Ink", "Soft"])("sets all five variables for %s", async (look) => {
     await mountDemo("styling");
     await ready();
     radio(look).click();
@@ -120,7 +120,7 @@ describe("styling demo", () => {
 
     const seen: number[] = [];
 
-    for (const look of ["default", "ink", "soft"]) {
+    for (const look of ["Default", "Ink", "Soft"]) {
       radio(look).click();
 
       await expect
@@ -136,13 +136,13 @@ describe("styling demo", () => {
   it("paints the crop outline with the picked look", async () => {
     await mountDemo("styling");
     await ready();
-    radio("ink").click();
+    radio("Ink").click();
     await expect.poll(outline).toBe("rgb(30, 58, 138)");
 
-    radio("ink").focus();
+    radio("Ink").focus();
     await userEvent.keyboard("{ArrowRight}");
     await expect.poll(outline).toBe("rgb(87, 83, 78)");
-    expect(hits(choice("soft"), ["top", "bottom"])).toBeTruthy();
+    expect(hits(choice("Soft"), ["top", "bottom"])).toBeTruthy();
   });
 });
 

@@ -186,7 +186,7 @@ const DropVeil = () => (
     data-slot="drop"
   >
     <Icon className="size-5 shrink-0" name="open-image" />
-    drop to open
+    Drop to open
   </div>
 );
 

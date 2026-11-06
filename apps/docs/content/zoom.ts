@@ -14,135 +14,135 @@ const ZOOM_PAGE = defineDoc({
   blocks: [
     demo("zoom"),
     section(
-      "anatomy",
-      p("put `ZoomThumb` inside `Zoom`. the steps go anywhere inside `Root`:"),
+      "Anatomy",
+      p("Put `ZoomThumb` inside `Zoom`. The steps go anywhere inside `Root`:"),
       code("zoom/anatomy.jsx.tsx"),
       p(
-        "zriz paints nothing here and gives these parts no size. give `Zoom` a width and a height, then style the track and the thumb. a press on the track jumps the zoom to that point. [full editor](full-editor) paints a track and a thumb you can copy."
+        "zriz paints nothing here and gives these parts no size. Give `Zoom` a width and a height, then style the track and the thumb. A press on the track jumps the zoom to that point. [Full editor](full-editor) paints a track and a thumb you can copy."
       ),
       p(
-        "the demo above stops the zoom at 3× with `maxZoom` on `Root`, marks a step at the limit as shown below and uses the styles from the zriz site."
+        "The demo above stops the zoom at 3× with `maxZoom` on `Root`, marks a step at the limit as shown below and uses the styles from the zriz site."
       )
     ),
     section(
-      "centre the thumb",
+      "Centre the thumb",
       p(
-        "zriz sets the thumb's `inset-inline-start` on a log scale, so 2× sits 26% along a 15× track. this centres a round thumb on that point:"
+        "zriz sets the thumb's `inset-inline-start` on a log scale, so 2× sits 26% along a 15× track. This centres a round thumb on that point:"
       ),
       code("zoom/thumb.css"),
       p(
-        "in a right-to-left layout, use `translate: 50% 0`. forced colours mode drops a plain background, so the second rule paints the thumb in `CanvasText`."
+        "In a right-to-left layout, use `translate: 50% 0`. Forced colours mode drops a plain background, so the second rule paints the thumb in `CanvasText`."
       )
     ),
     section(
-      "stop the slider at 5×",
+      "Stop the slider at 5×",
       p(
-        "pass the same `max` to `Zoom` and `ZoomThumb`. pinch still reaches 15×:"
+        "Pass the same `max` to `Zoom` and `ZoomThumb`. Pinch still reaches 15×:"
       ),
       code("zoom/max.jsx.tsx"),
       p(
-        "to cap every way of zooming, set `maxZoom` on `Root` instead. both parts follow it."
+        "To cap every way of zooming, set `maxZoom` on `Root` instead. Both parts follow it."
       )
     ),
     section(
-      "mark a step at the limit",
+      "Mark a step at the limit",
       p(
-        "at 1× and at `maxZoom`, a press does nothing, but the button stays enabled. a large `minSize` can stop the zoom below `maxZoom`, and `useZoom` does not report that stop, so this recipe does not mark it. `useZoom` tells you where the zoom is. use `aria-disabled` for this, because `disabled` drops keyboard focus from the button at the limit. render this inside `Root`:"
+        "At 1× and at `maxZoom`, a press does nothing, but the button stays enabled. A large `minSize` can stop the zoom below `maxZoom`, and `useZoom` does not report that stop, so this recipe does not mark it. `useZoom` tells you where the zoom is. Use `aria-disabled` for this, because `disabled` drops keyboard focus from the button at the limit. Render this inside `Root`:"
       ),
       code("zoom/steps.tsx"),
-      p("the browser dims only `disabled`, so paint the off state yourself:"),
+      p("The browser dims only `disabled`, so paint the off state yourself:"),
       code("zoom/steps.css")
     ),
     section(
-      "build your own slider",
+      "Build your own slider",
       p(
-        "`useZoom` hands a slider of your own the zoom and a commit callback. this one is a range input. render it inside `Root`:"
+        "`useZoom` hands a slider of your own the zoom and a commit callback. This one is a range input. Render it inside `Root`:"
       ),
       code("zoom/slider.tsx"),
       p(
-        "a range input moves in even steps, so 2× sits 7% along a 15× track. `Zoom` uses a log scale."
+        "A range input moves in even steps, so 2× sits 7% along a 15× track. `Zoom` uses a log scale."
       ),
-      p("[hooks](hooks) lists every field `useZoom` returns.")
+      p("[Hooks](hooks) lists every field `useZoom` returns.")
     ),
     section(
-      "keyboard",
-      p("these keys work while `Zoom` has focus:"),
+      "Keyboard",
+      p("These keys work while `Zoom` has focus:"),
       keys([
         {
           keys: [["left"], ["right"]],
-          text: "move 1/20 of the track. right zooms in, left in rtl",
+          text: "Move 1/20 of the track. Right zooms in, left in RTL",
         },
         {
           keys: [["up"], ["down"]],
-          text: "move 1/20 of the track. up zooms in",
+          text: "Move 1/20 of the track. Up zooms in",
         },
-        { keys: [["shift", "arrow keys"]], text: "move half the track" },
+        { keys: [["shift", "arrow keys"]], text: "Move half the track" },
         {
           keys: [["page up"], ["page down"]],
-          text: "the same as shift and an arrow key",
+          text: "The same as Shift and an arrow key",
         },
-        { keys: [["home"], ["end"]], text: "go to 1× or to `max`" },
+        { keys: [["home"], ["end"]], text: "Go to 1× or to `max`" },
       ]),
       p(
-        "each step multiplies the zoom by the same amount, about 1.14× on a 15× track."
+        "Each step multiplies the zoom by the same amount, about 1.14× on a 15× track."
       ),
-      p("escape during a drag cancels it and puts the zoom back.")
+      p("Escape during a drag cancels it and puts the zoom back.")
     ),
     section(
-      "api",
+      "API",
       part(
         "Zoom",
-        'renders a `<div role="slider">` anywhere inside `Root`. every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ dragging }`.',
+        'Renders a `<div role="slider">` anywhere inside `Root`. Every part also takes `className`, `render` and the props of its element, see [composition](composition). `className` and `render` get `{ dragging }`.',
         props([
           {
             name: "aria-label",
-            text: "names the slider for screen readers. development builds warn without it",
+            text: "Names the slider for screen readers. Development builds warn without it",
             type: "string",
           },
           {
             name: "max",
-            text: "the zoom at the end of the track. defaults to `maxZoom` on `Root`",
+            text: "The zoom at the end of the track. Defaults to `maxZoom` on `Root`",
             type: "number",
           },
           {
             name: "format",
-            text: 'how screen readers hear the zoom. by default 2 reads as `"200%"`. an `aria-valuetext` of yours wins over it',
+            text: 'How screen readers hear the zoom. By default 2 reads as `"200%"`. An `aria-valuetext` of yours wins over it',
             type: "Intl.NumberFormatOptions",
           },
         ]),
         attrs([
           {
             name: "data-dragging",
-            text: "while a pointer holds any `Zoom` track of this cropper or a `useZoom` slider moves, so a second copy lights up too",
+            text: "While a pointer holds any `Zoom` track of this cropper or a `useZoom` slider moves, so a second copy lights up too",
           },
         ])
       ),
       part(
         "ZoomThumb",
-        "renders an `aria-hidden` `<div>` inside `Zoom`. zriz writes `position: absolute` and `inset-inline-start`, from 0% at 1× to 100% at `max`.",
+        "Renders an `aria-hidden` `<div>` inside `Zoom`. zriz writes `position: absolute` and `inset-inline-start`, from 0% at 1× to 100% at `max`.",
         props([
           {
             name: "max",
-            text: "the zoom at the end of the track. defaults to `maxZoom` on `Root`. keep it equal to `max` on `Zoom`",
+            text: "The zoom at the end of the track. Defaults to `maxZoom` on `Root`. Keep it equal to `max` on `Zoom`",
             type: "number",
           },
         ])
       ),
       part(
         "ZoomStep",
-        'renders a `<button type="button">` anywhere inside `Root`. each press jumps at once, with no animation and no grid.',
+        'Renders a `<button type="button">` anywhere inside `Root`. Each press jumps at once, with no animation and no grid.',
         props([
           {
             name: "factor",
             required: true,
-            text: "multiplies the zoom on each press. below 1 zooms out, so 0.8 undoes 1.25",
+            text: "Multiplies the zoom on each press. Below 1 zooms out, so 0.8 undoes 1.25",
             type: "number",
           },
         ])
       )
     ),
   ],
-  lede: "a zoom slider and step buttons, for people with no wheel or pinch.",
+  lede: "A zoom slider and step buttons, for people with no wheel or pinch.",
 });
 
 export { ZOOM_PAGE };

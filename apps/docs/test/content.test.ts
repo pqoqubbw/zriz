@@ -93,11 +93,11 @@ describe("content", () => {
     );
 
     for (const name of ["DialTicks", "DialValue", "ZoomThumb"] as const) {
-      expect(rowOf(name)?.[1]).toBe("hidden");
+      expect(rowOf(name)?.[1]).toBe("Hidden");
     }
 
     expect(markup).toContain("<button");
-    expect(rowOf("ZoomStep")?.[1]).toContain("buttons");
+    expect(rowOf("ZoomStep")?.[1]).toContain("Buttons");
     expect(markup.match(/aria-hidden="true"/gu)).toHaveLength(3);
   });
 

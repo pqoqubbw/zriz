@@ -99,8 +99,8 @@ describe("aspect ratio demo", () => {
     await mountDemo("aspect-ratio");
     await ready();
 
-    expect(labels()).toStrictEqual(["free", "original", "1:1", "5:4", "16:9"]);
-    expect(checked()).toStrictEqual(["free"]);
+    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "5:4", "16:9"]);
+    expect(checked()).toStrictEqual(["Free"]);
     expect(button("Swap orientation").hasAttribute("disabled")).toBeTruthy();
     expect(panel().querySelector(item("dial"))).toBeNull();
     await expect(violations()).resolves.toStrictEqual([]);
@@ -119,17 +119,17 @@ describe("aspect ratio demo", () => {
 
     expect(ratio()).toBeCloseTo(9 / 16, 1);
     expect(checked()).toStrictEqual(["9:16"]);
-    expect(labels()).toStrictEqual(["free", "original", "1:1", "4:5", "9:16"]);
+    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "4:5", "9:16"]);
     await expect(violations()).resolves.toStrictEqual([]);
 
     button("Reset").click();
-    await expect.poll(checked).toStrictEqual(["free"]);
+    await expect.poll(checked).toStrictEqual(["Free"]);
   });
 
   it("moves the pick with the arrow keys", async () => {
     await mountDemo("aspect-ratio");
     await ready();
-    aspect("free").focus();
+    aspect("Free").focus();
     await userEvent.keyboard("{ArrowRight}{ArrowRight}");
     await settle();
 
@@ -147,7 +147,7 @@ describe("aspect ratio demo", () => {
     pick(await fixtureFile("portrait"));
     await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
 
-    expect(labels()).toStrictEqual(["free", "original", "1:1", "4:5", "9:16"]);
+    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "4:5", "9:16"]);
   });
 
   it("gives the zone buttons a 44 px hit box", async () => {

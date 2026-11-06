@@ -18,131 +18,131 @@ const EVENTS_PAGE = defineDoc({
       )
     ),
     section(
-      "save when the user lets go",
+      "Save when the user lets go",
       p(
-        "a drag, a pinch or a turn of the dial commits once, when the finger lifts. a thrown dial commits when it stops. a key on `Area`, `Dial` or `Zoom` commits once when it comes up, however long it was held, or when focus leaves. a write such as `rotate90()` commits on the next frame, and the turn you see animates after it. a gesture that ends where it started does not commit. the first photo, or a photo after `null`, fits the crop without a commit. a later photo commits only when fitting it changes the value, such as a locked aspect on a photo of another shape, and that commit has the reason `coverage`. to save a photo nobody touched, read `getValue()` or `getPixelCrop()` from the cropper in `actionsRef`, see [cropper](cropper)."
+        "A drag, a pinch or a turn of the dial commits once, when the finger lifts. A thrown dial commits when it stops. A key on `Area`, `Dial` or `Zoom` commits once when it comes up, however long it was held, or when focus leaves. A write such as `rotate90()` commits on the next frame, and the turn you see animates after it. A gesture that ends where it started does not commit. The first photo, or a photo after `null`, fits the crop without a commit. A later photo commits only when fitting it changes the value, such as a locked aspect on a photo of another shape, and that commit has the reason `coverage`. To save a photo nobody touched, read `getValue()` or `getPixelCrop()` from the cropper in `actionsRef`, see [cropper](cropper)."
       ),
       p(
-        "`stop()` and unmount commit synchronously. react warns if `onValueCommit` calls `flushSync` inside that unmount, so leave `flushSync` out of the handler."
+        "`stop()` and unmount commit synchronously. React warns if `onValueCommit` calls `flushSync` inside that unmount, so leave `flushSync` out of the handler."
       ),
       code("events/commit.jsx.tsx")
     ),
     section(
-      "follow one gesture from start to commit",
-      p("log both callbacks, then throw the dial:"),
+      "Follow one gesture from start to commit",
+      p("Log both callbacks, then throw the dial:"),
       code("events/log.jsx.tsx"),
       table({
-        columns: [column("log", "mono"), column("when", "prose")],
+        columns: [column("Log", "mono"), column("When", "prose")],
         rows: [
-          ["dial start", "the first frame the dial turns"],
-          ["dial move", "every later frame of the drag and of the throw"],
-          ["dial end", "the last frame of the throw"],
+          ["dial start", "The first frame the dial turns"],
+          ["dial move", "Every later frame of the drag and of the throw"],
+          ["dial end", "The last frame of the throw"],
           ["dial commit", "`onValueCommit`, in the same frame"],
         ],
       }),
       p(
-        "a drag that stops before the finger lifts has no `end`, and its last `move` goes straight to the commit. a write outside a gesture logs one `instant` change, then its commit."
+        "A drag that stops before the finger lifts has no `end`, and its last `move` goes straight to the commit. A write outside a gesture logs one `instant` change, then its commit."
       )
     ),
     section(
-      "reject a change",
+      "Reject a change",
       p(
-        "call `details.cancel()` and the crop snaps back to where the last change left it. this keeps the angle within 10° each way:"
+        "Call `details.cancel()` and the crop snaps back to where the last change left it. This keeps the angle within 10° each way:"
       ),
       code("events/cancel.jsx.tsx")
     ),
     section(
-      "change details",
-      p("the second argument of `onValueChange`:"),
+      "Change details",
+      p("The second argument of `onValueChange`:"),
       props(
         [
           {
             name: "reason",
-            text: "names what moved the crop, see reasons below",
+            text: "Names what moved the crop, see reasons below",
             type: "ChangeReason",
           },
           {
             name: "phase",
-            text: "is `start`, `move`, `end` or `instant`, see the order above",
+            text: "Is `start`, `move`, `end` or `instant`, see the order above",
             type: "ChangePhase",
           },
           {
             name: "changed",
-            text: "lists the fields that moved. never empty",
+            text: "Lists the fields that moved. Never empty",
             type: "readonly ValueField[]",
           },
           {
             name: "previous",
-            text: "holds what the last change left",
+            text: "Holds what the last change left",
             type: "CropValue",
           },
           {
             name: "event",
-            text: "holds the dom event behind the change",
+            text: "Holds the DOM event behind the change",
             type: "Event | undefined",
           },
-          { name: "cancel", text: "rejects this change", type: "() => void" },
+          { name: "cancel", text: "Rejects this change", type: "() => void" },
           {
             name: "isCanceled",
-            text: "is `true` once `cancel()` ran",
+            text: "Is `true` once `cancel()` ran",
             type: "boolean",
           },
         ],
-        "field"
+        "Field"
       )
     ),
     section(
-      "commit details",
-      p("the second argument of `onValueCommit`:"),
+      "Commit details",
+      p("The second argument of `onValueCommit`:"),
       props(
         [
           {
             name: "reason",
-            text: "names the gesture or write behind the commit",
+            text: "Names the gesture or write behind the commit",
             type: "ChangeReason",
           },
           {
             name: "previous",
-            text: "holds the last committed value. push it to a stack for [undo](undo)",
+            text: "Holds the last committed value. Push it to a stack for [undo](undo)",
             type: "CropValue",
           },
           {
             name: "pixelCrop",
-            text: "holds the export plan at scale 1 in source pixels, or `null` before a photo loads. use it for your own tools. [server crop](server-crop) sends the value from `getValue()` and recomputes the plan on the server, see [exporting](exporting)",
+            text: "Holds the export plan at scale 1 in source pixels, or `null` before a photo loads. Use it for your own tools. [Server crop](server-crop) sends the value from `getValue()` and recomputes the plan on the server, see [exporting](exporting)",
             type: "ExportPlan | null",
           },
           {
             name: "event",
-            text: "holds the event that ended the gesture, or the one passed with the write",
+            text: "Holds the event that ended the gesture, or the one passed with the write",
             type: "Event | undefined",
           },
         ],
-        "field"
+        "Field"
       )
     ),
     section(
-      "reasons",
+      "Reasons",
       p(
-        "every change and commit names its reason. inside a gesture, a write without its own reason reports the gesture's reason."
+        "Every change and commit names its reason. Inside a gesture, a write without its own reason reports the gesture's reason."
       ),
       table({
-        columns: [column("reason", "mono"), column("sent by", "prose")],
+        columns: [column("Reason", "mono"), column("Sent by", "prose")],
         rows: [
-          ["pan", "one finger or pointer dragging the photo, and `panBy()`"],
+          ["pan", "One finger or pointer dragging the photo, and `panBy()`"],
           [
             "pinch",
-            "two fingers pinching or twisting, or a trackpad pinch in safari",
+            "Two fingers pinching or twisting, or a trackpad pinch in Safari",
           ],
-          ["wheel", "a mouse wheel or trackpad scrolling or zooming the photo"],
-          ["resize", "a handle being dragged"],
-          ["dial", "the dial being dragged or thrown"],
+          ["wheel", "A mouse wheel or trackpad scrolling or zooming the photo"],
+          ["resize", "A handle being dragged"],
+          ["dial", "The dial being dragged or thrown"],
           [
             "keyboard",
-            "keys on `Area` and `Dial`. keys on `Zoom` report `zoom-control` on each change and `keyboard` on the commit",
+            "Keys on `Area` and `Dial`. Keys on `Zoom` report `zoom-control` on each change and `keyboard` on the commit",
           ],
           [
             "zoom-control",
-            "the `Zoom` slider, `ZoomStep` buttons and `useZoom`",
+            "The `Zoom` slider, `ZoomStep` buttons and `useZoom`",
           ],
           [
             "aspect",
@@ -150,22 +150,22 @@ const EVENTS_PAGE = defineDoc({
           ],
           [
             "orientation",
-            "the `Orientation` button, which swaps portrait and landscape",
+            "The `Orientation` button, which swaps portrait and landscape",
           ],
           ["rotate-90", "`Rotate` buttons and `rotate90()`"],
           ["flip", "`Flip` buttons and `flip()`"],
           ["reset", "`Reset` and `reset()`"],
           [
             "coverage",
-            "a later photo of another size, or new options, that refit the crop. the first photo sends nothing",
+            "A later photo of another size, or new options, that refit the crop. The first photo sends nothing",
           ],
           [
             "history",
-            "your own writes only. zriz never sends it, so [undo](undo) can skip those writes. `Root` animates them like `reset()`",
+            "Your own writes only. zriz never sends it, so [undo](undo) can skip those writes. `Root` animates them like `reset()`",
           ],
           [
             "controlled",
-            "the `rotation` and `zoom` props, on the commit and on a change when zriz applied another value. a new `value` prop sends nothing",
+            "The `rotation` and `zoom` props, on the commit and on a change when zriz applied another value. A new `value` prop sends nothing",
           ],
           [
             "imperative",
@@ -175,44 +175,44 @@ const EVENTS_PAGE = defineDoc({
       })
     ),
     section(
-      "listen on the cropper",
+      "Listen on the cropper",
       p(
-        'the cropper emits the two callbacks as `change` and `commit`, plus six more events. under `Root` or `useCropper`, `change` also fires when a controlled prop lands as passed, which `onValueChange` skips. in react, make the cropper with `useCropper` and listen in an effect: `useEffect(() => cropper.on("settle", onSettle), [cropper])`, see [hooks](hooks). `createCropper` comes from `@zriz/core`, installed as in [exporting](exporting). `on()` returns a function that removes the listener:'
+        'The cropper emits the two callbacks as `change` and `commit`, plus six more events. Under `Root` or `useCropper`, `change` also fires when a controlled prop lands as passed, which `onValueChange` skips. In React, make the cropper with `useCropper` and listen in an effect: `useEffect(() => cropper.on("settle", onSettle), [cropper])`, see [hooks](hooks). `createCropper` comes from `@zriz/core`, installed as in [exporting](exporting). `on()` returns a function that removes the listener:'
       ),
       code("events/on.ts"),
       table({
         columns: [
-          column("event", "mono", { width: 92 }),
-          column("listener gets", "mono", { width: 168 }),
-          column("what it does", "prose"),
+          column("Event", "mono", { width: 92 }),
+          column("Listener gets", "mono", { width: 168 }),
+          column("What it does", "prose"),
         ],
         rows: [
-          ["gesturestart", "reason, event", "fires when an input takes hold"],
+          ["gesturestart", "reason, event", "Fires when an input takes hold"],
           [
             "gestureend",
             "reason, event",
-            "fires when `end()` runs. for a thrown dial, that is when the throw stops",
+            "Fires when `end()` runs. For a thrown dial, that is when the throw stops",
           ],
           [
             "settle",
             "nothing",
-            "fires each time the last animation stops, springs included. `stop()` ends motion with no `settle`, so listen to `stop` for that case",
+            "Fires each time the last animation stops, springs included. `stop()` ends motion with no `settle`, so listen to `stop` for that case",
           ],
           [
             "frame",
             "{ time, value, state }",
-            "fires on every frame that moved. `useCropperFrame` wraps it",
+            "Fires on every frame that moved. `useCropperFrame` wraps it",
           ],
-          ["stop", "nothing", "fires when `stop()` ends all motion"],
-          ["destroy", "nothing", "fires once, when `destroy()` runs"],
+          ["stop", "nothing", "Fires when `stop()` ends all motion"],
+          ["destroy", "nothing", "Fires once, when `destroy()` runs"],
         ],
       }),
       p(
-        "a listener that throws stops nothing. the other listeners still run, the crop keeps working, and the error comes back as an uncaught error on a microtask."
+        "A listener that throws stops nothing. The other listeners still run, the crop keeps working, and the error comes back as an uncaught error on a microtask."
       )
     ),
   ],
-  lede: "two callbacks on `Root` report crop changes: `onValueChange` for live ui and `onValueCommit` for saving.",
+  lede: "Two callbacks on `Root` report crop changes: `onValueChange` for live UI and `onValueCommit` for saving.",
 });
 
 export { EVENTS_PAGE };

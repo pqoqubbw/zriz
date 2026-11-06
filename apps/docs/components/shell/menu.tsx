@@ -46,7 +46,7 @@ const Menu = ({ logo }: MenuProps) => {
         <Icon className="size-5" name="menu" />
       </Button>
       <dialog
-        aria-label="menu"
+        aria-label="Menu"
         className="m-0 h-dvh max-h-none w-full max-w-none bg-page text-ink backdrop:bg-transparent"
         onClose={() => {
           setOpen(false);
@@ -69,7 +69,7 @@ const Menu = ({ logo }: MenuProps) => {
             </Button>
           </div>
           <nav
-            aria-label="docs"
+            aria-label="Docs"
             className="-mx-1 flex-1 overflow-y-auto px-1 pt-3 pb-12"
           >
             {open && <NavList roomy />}

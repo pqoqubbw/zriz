@@ -18,7 +18,7 @@ const PLAYGROUND_PAGE = defineDoc({
   blocks: [
     demo("playground", 48),
     section(
-      "change the props",
+      "Change the props",
       caption("Root"),
       bind(
         "playground",
@@ -41,9 +41,9 @@ const PLAYGROUND_PAGE = defineDoc({
       )
     ),
     section(
-      "tilt the photo",
+      "Tilt the photo",
       p(
-        "perspective tilts the photo as if the camera leaned. no part sets it, so pass it in `value` or `defaultValue`, or call `setValue()`. [value](value) has its range."
+        "Perspective tilts the photo as if the camera leaned. No part sets it, so pass it in `value` or `defaultValue`, or call `setValue()`. [Value](value) has its range."
       ),
       bind(
         "playground",
@@ -54,28 +54,28 @@ const PLAYGROUND_PAGE = defineDoc({
       )
     ),
     section(
-      "copy the code",
+      "Copy the code",
       p(
-        "the code builds the cropper in the demo, with only the props you changed from their defaults:"
+        "The code builds the cropper in the demo, with only the props you changed from their defaults:"
       ),
       liveCode("playground/root.jsx.tsx", "code"),
-      actions("copy code", "copy-code"),
+      actions("Copy code", "copy-code"),
       p(
-        "the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. on a phone its stage is 320 px tall, not the 380 in the code. it tilts the photo with `setValue()` and listens to `onValueChange` and `onValueCommit` for the value and the events below."
+        "The demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. On a phone its stage is 320 px tall, not the 380 in the code. It tilts the photo with `setValue()` and listens to `onValueChange` and `onValueCommit` for the value and the events below."
       )
     ),
     section(
-      "watch the value",
+      "Watch the value",
       p(
-        "the crop as you move it, the same object `onValueChange` and `onValueCommit` hand you:"
+        "The crop as you move it, the same object `onValueChange` and `onValueCommit` hand you:"
       ),
       liveCode("playground/value.json", "value"),
-      bind("playground", actions("copy value", "copy-value"))
+      bind("playground", actions("Copy value", "copy-value"))
     ),
     section(
-      "watch the events",
+      "Watch the events",
       p(
-        "each row is a reason and a phase from `onValueChange`, or a commit from `onValueCommit`, as in [events](events), newest first:"
+        "Each row is a reason and a phase from `onValueChange`, or a commit from `onValueCommit`, as in [events](events), newest first:"
       ),
       bind(
         "playground",
@@ -88,14 +88,14 @@ const PLAYGROUND_PAGE = defineDoc({
       )
     ),
     section(
-      "export the crop",
+      "Export the crop",
       p(
-        'download the crop as a png made by `exportCrop` with `type: "image/png"`. with `shape` set to `"circle"` above, the corners come out transparent.'
+        'Download the crop as a PNG made by `exportCrop` with `type: "image/png"`. With `shape` set to `"circle"` above, the corners come out transparent.'
       ),
-      bind("playground", actions("download png", "download"))
+      bind("playground", actions("Download PNG", "download"))
     ),
   ],
-  lede: "change the main props on a live cropper and copy the code that matches what you see.",
+  lede: "Change the main props on a live cropper and copy the code that matches what you see.",
 });
 
 export { PLAYGROUND_PAGE };

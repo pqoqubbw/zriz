@@ -25,7 +25,7 @@ const CopyAction = ({ label, read }: CopyActionProps) => {
             aria-hidden="true"
             className={cn("col-start-1 row-start-1", !copied && "invisible")}
           >
-            copied
+            Copied
           </span>
         </span>
       </Button>

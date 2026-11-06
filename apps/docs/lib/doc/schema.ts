@@ -105,9 +105,9 @@ type Doc = {
 };
 
 const TABLE_HEADS = {
-  attrs: ["attribute", "when"],
-  keys: ["key", "what it does"],
-  variables: ["variable", "what it sets"],
+  attrs: ["Attribute", "When"],
+  keys: ["Key", "What it does"],
+  variables: ["Variable", "What it sets"],
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type {

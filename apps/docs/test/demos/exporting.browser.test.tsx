@@ -97,7 +97,7 @@ describe("exporting demo", () => {
     await mountDemo("exporting");
     await ready();
 
-    expect(checked()).toStrictEqual(["jpeg"]);
+    expect(checked()).toStrictEqual(["JPEG"]);
     await expect(violations()).resolves.toStrictEqual([]);
 
     await expect(download()).resolves.toStrictEqual({
@@ -109,16 +109,16 @@ describe("exporting demo", () => {
   it("downloads the format picked in the track", async () => {
     await mountDemo("exporting");
     await ready();
-    radio("png").click();
-    await expect.poll(checked).toStrictEqual(["png"]);
+    radio("PNG").click();
+    await expect.poll(checked).toStrictEqual(["PNG"]);
 
     await expect(download()).resolves.toStrictEqual({
       name: "zriz-crop.png",
       type: "image/png",
     });
 
-    radio("webp").click();
-    await expect.poll(checked).toStrictEqual(["webp"]);
+    radio("WebP").click();
+    await expect.poll(checked).toStrictEqual(["WebP"]);
     await expect(download()).resolves.toHaveProperty("type", WEBP);
   });
 });

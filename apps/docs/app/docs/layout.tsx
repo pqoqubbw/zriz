@@ -22,12 +22,12 @@ const DocsLayout = ({ children }: DocsLayoutProps) => (
         className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-3 focus-visible:left-4 focus-visible:bg-page max-md:hidden"
         href="#docs"
       >
-        skip to navigation
+        Skip to navigation
       </a>
       {children}
     </main>
     <nav
-      aria-label="docs"
+      aria-label="Docs"
       id="docs"
       className="sticky top-0 -mx-1 hidden max-h-dvh scrollbar-none flex-col gap-7 self-start overflow-y-auto px-1 pt-18 pb-12 *:shrink-0 md:col-start-1 md:row-start-1 md:flex"
     >

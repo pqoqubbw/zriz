@@ -9,7 +9,7 @@ const GET = async (_: Request, context: RouteContext<"/md/[slug]">) => {
   const { slug } = await context.params;
 
   if (!isSlug(slug)) {
-    return textResponse("not found\n", "text/markdown", { status: 404 });
+    return textResponse("Not found\n", "text/markdown", { status: 404 });
   }
 
   return textResponse(pageMarkdown(slug), "text/markdown", {

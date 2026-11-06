@@ -57,7 +57,7 @@ const PropList = ({ className, label, rows }: PropListProps) => (
           {row.required === true && (
             <>
               <NameGap />
-              <span className="font-medium text-accent">required</span>
+              <span className="font-medium text-accent">Required</span>
             </>
           )}
           {row.default !== undefined && (

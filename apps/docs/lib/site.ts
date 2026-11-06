@@ -9,7 +9,7 @@ const SITE_LINKS = {
 } as const;
 
 const SITE_DESCRIPTION =
-  "zriz is an image cropper for react with a straighten dial, like the crop tool in ios photos.";
+  "zriz is an image cropper for React with a straighten dial, like the crop tool in iOS Photos.";
 
 const LLMS_URL = `${SITE_ORIGIN}/llms.txt`;
 

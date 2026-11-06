@@ -45,7 +45,7 @@ const column = (
   options: Omit<Column, "kind" | "label"> = {}
 ): Column => ({ ...options, kind, label });
 
-const props = (rows: readonly PropRow[], label = "prop"): Block => ({
+const props = (rows: readonly PropRow[], label = "Prop"): Block => ({
   kind: "props",
   label,
   rows,

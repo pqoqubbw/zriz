@@ -60,10 +60,10 @@ const AspectZone = ({ ratios = RATIOS }: AspectZoneProps) => {
       <div className="flex gap-1.5">
         <Cropper.AspectGroup aria-label="Aspect ratio" render={<Track />}>
           <Cropper.AspectItem className={trackItemVariants()} value="free">
-            free
+            Free
           </Cropper.AspectItem>
           <Cropper.AspectItem className={trackItemVariants()} value="original">
-            original
+            Original
           </Cropper.AspectItem>
           <Cropper.AspectItem className={trackItemVariants()} value={1}>
             1:1

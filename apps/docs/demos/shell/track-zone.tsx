@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 
+import { trackLabel } from "@/demos/registry";
 import { useDemoDim } from "@/demos/shell/context";
 import { Zone } from "@/demos/shell/layout";
 import { Track, trackItemVariants } from "@/demos/shell/track";
@@ -41,7 +42,7 @@ const TrackZone = <Value extends string>({
               type="radio"
               value={item}
             />
-            {item}
+            {trackLabel(item)}
           </label>
         ))}
       </Track>

@@ -1,4 +1,4 @@
-import { DEMO_SPECS } from "@/demos/registry";
+import { DEMO_SPECS, trackLabel } from "@/demos/registry";
 import type {
   DemoName,
   DialZoneSpec,
@@ -117,7 +117,7 @@ const StaticTrack = ({ zone }: StaticTrackProps) => (
             data-checked={item === zone.selected ? "" : undefined}
             key={item}
           >
-            {item}
+            {trackLabel(item)}
           </span>
         ))}
       </Track>
@@ -166,7 +166,7 @@ const Frame = ({ name }: FrameProps) => {
       <Stage>
         <Corner side="start">
           <span className={chipVariants({ live: false })}>
-            <ChipContent icon="open-image" label="open" />
+            <ChipContent icon="open-image" label="Open" />
           </span>
         </Corner>
         <Corner side="end">

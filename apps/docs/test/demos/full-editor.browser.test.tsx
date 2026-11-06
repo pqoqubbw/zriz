@@ -104,8 +104,8 @@ describe("full editor demo", () => {
     await mountDemo("full-editor");
     await ready();
 
-    expect(labels()).toStrictEqual(["free", "original", "1:1", "5:4", "16:9"]);
-    expect(checked()).toStrictEqual(["free"]);
+    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "5:4", "16:9"]);
+    expect(checked()).toStrictEqual(["Free"]);
     expect(button("Swap orientation").hasAttribute("disabled")).toBeTruthy();
   });
 

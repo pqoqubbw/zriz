@@ -11,79 +11,79 @@ const size = (bytes: number): string =>
 const BUNDLE_SIZE_PAGE = defineDoc({
   blocks: [
     section(
-      "first load",
+      "First load",
       table({
         columns: [
-          column("set", "prose", { width: 136 }),
-          column("imports", "prose"),
-          column("brotli", "prose", { align: "end", width: 88 }),
+          column("Set", "prose", { width: 136 }),
+          column("Imports", "prose"),
+          column("Brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["editor", "every part from `@zriz/react/cropper`", "32.28 kB"],
-          ["avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "25.67 kB"],
-          ["root only", "`Root`", "18.20 kB"],
+          ["Editor", "Every part from `@zriz/react/cropper`", "32.28 kB"],
+          ["Avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "25.67 kB"],
+          ["Root only", "`Root`", "18.20 kB"],
           [
-            "vanilla avatar",
+            "Vanilla avatar",
             "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
             "21.10 kB",
           ],
-          ["server", "`toSharp` from `@zriz/core`", "723 B"],
-          ["stylesheet", "`styles.css`, which is optional", "893 B"],
+          ["Server", "`toSharp` from `@zriz/core`", "723 B"],
+          ["Stylesheet", "`styles.css`, which is optional", "893 B"],
         ],
       }),
       p(
-        "measured with size-limit 14.3.0 on the 0.0.0 packages. it bundles each set with rolldown 1.2.15, minifies it with oxc and leaves out react and react-dom. it compresses each output file with brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. the build uses the `production` export condition, so development warnings do not count."
+        "Measured with size-limit 14.3.0 on the 0.0.0 packages. It bundles each set with Rolldown 1.2.15, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the `production` export condition, so development warnings do not count."
       ),
-      p("with gzip, the stylesheet is 1020 B."),
+      p("With gzip, the stylesheet is 1020 B."),
       p(
-        "the same sets built with rollup 4, vite 7 and 8, webpack 5 and next 16, with turbopack or webpack, come out between 2.2% smaller and 7.4% larger. esbuild comes out up to 16.3% larger."
+        "The same sets built with Rollup 4, Vite 7 and 8, webpack 5 and Next 16, with Turbopack or webpack, come out between 2.2% smaller and 7.4% larger. esbuild comes out up to 16.3% larger."
       ),
       p(
-        'esbuild ignores the `production` condition unless you pass it, so it ships the development warnings. pass `conditions: ["module", "production"]` in production builds. `module` keeps the condition esbuild sets by default.'
+        'esbuild ignores the `production` condition unless you pass it, so it ships the development warnings. Pass `conditions: ["module", "production"]` in production builds. `module` keeps the condition esbuild sets by default.'
       )
     ),
     section(
-      "loaded later",
+      "Loaded later",
       p(
-        "four chunks stay out of the first load and download the first time a photo needs them. each row is what the chunk adds to the avatar set:"
+        "Four chunks stay out of the first load and download the first time a photo needs them. Each row is what the chunk adds to the avatar set:"
       ),
       table({
         columns: [
-          column("chunk", "prose", { width: 136 }),
-          column("loads when", "prose"),
-          column("brotli", "prose", { align: "end", width: 88 }),
+          column("Chunk", "prose", { width: 136 }),
+          column("Loads when", "prose"),
+          column("Brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
           [
-            "render",
-            "the first export. it starts downloading once the first photo attaches",
+            "Render",
+            "The first export. It starts downloading once the first photo attaches",
             size(LAZY_CHUNKS.render),
           ],
           [
-            "sharpen",
-            "the sharper redraw at rest and on deep zoom. it starts downloading after the first paint",
+            "Sharpen",
+            "The sharper redraw at rest and on deep zoom. It starts downloading after the first paint",
             size(LAZY_CHUNKS.sharpen),
           ],
-          ["svg", "the photo is an svg", size(LAZY_CHUNKS.svg)],
+          ["SVG", "The photo is an SVG", size(LAZY_CHUNKS.svg)],
           [
-            "source",
-            "you pass an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` to `loadImage`, or your `decode` option runs after the browser fails to decode. `Root` never loads it",
+            "Source",
+            "You pass an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` to `loadImage`, or your `decode` option runs after the browser fails to decode. `Root` never loads it",
             size(LAZY_CHUNKS.source),
           ],
         ],
       }),
       p(
-        `with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to ${size(AVATAR_TOTAL)}. rolldown, rollup, vite, webpack and next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. a chunk bundled alone is larger: \`render\` is 3.68 kB.`
+        `With all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to ${size(AVATAR_TOTAL)}. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.68 kB.`
       )
     ),
     section(
-      "dependencies",
+      "Dependencies",
       p(
-        "`@zriz/react` has `@zriz/core` and react as peers and no dependencies. `@zriz/core` has none either. both packages mark only their css as a side effect, so rollup, vite, webpack and next drop every part you do not import. esbuild drops their code too, but it still writes the four lazy chunks next to your bundle, even for a part such as `Rotate` that never loads them."
+        "`@zriz/react` has `@zriz/core` and React as peers and no dependencies. `@zriz/core` has none either. Both packages mark only their CSS as a side effect, so Rollup, Vite, webpack and Next drop every part you do not import. esbuild drops their code too, but it still writes the four lazy chunks next to your bundle, even for a part such as `Rotate` that never loads them."
       )
     ),
   ],
-  lede: "what each set of imports adds to your bundle, minified and compressed with brotli.",
+  lede: "What each set of imports adds to your bundle, minified and compressed with Brotli.",
 });
 
 export { BUNDLE_SIZE_PAGE };

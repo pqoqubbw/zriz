@@ -120,7 +120,7 @@ const converters: { [K in Kind]: Converter<K> } = {
   ],
   demo: (block) => [
     prose(
-      `the page at ${pageUrl(block.name)} runs this cropper: ${DEMO_SPECS[block.name].summary}.`
+      `The page at ${pageUrl(block.name)} runs this cropper: ${DEMO_SPECS[block.name].summary}.`
     ),
   ],
   excerpt: fenceOf,

@@ -23,14 +23,14 @@ const FooterLink = ({ children, href }: FooterLinkProps) => (
 const Footer = () => (
   <footer className="flex flex-wrap items-center justify-between gap-4 pt-24 pb-16 text-caption">
     <div className="flex items-center gap-5 text-soft">
-      <FooterLink href={SITE_LINKS.github}>github</FooterLink>
+      <FooterLink href={SITE_LINKS.github}>GitHub</FooterLink>
       <FooterLink href={SITE_LINKS.npm}>npm</FooterLink>
-      <FooterLink href={pagePath("changelog")}>changelog</FooterLink>
+      <FooterLink href={pagePath("changelog")}>Changelog</FooterLink>
       <FooterLink href="/llms.txt">llms.txt</FooterLink>
     </div>
     <div className="flex items-center gap-2 text-faint">
       <Mark className="size-4 shrink-0 text-ink opacity-45" />
-      made by dmytro
+      Made by Dmytro
     </div>
   </footer>
 );

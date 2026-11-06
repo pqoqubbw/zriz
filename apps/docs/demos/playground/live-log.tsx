@@ -8,7 +8,7 @@ const LiveLog = () => {
   if (rows.length === 0) {
     return (
       <div className="grid h-full place-items-center text-faint">
-        no events yet
+        No events yet
       </div>
     );
   }

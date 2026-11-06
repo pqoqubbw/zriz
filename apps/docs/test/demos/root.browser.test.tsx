@@ -80,7 +80,7 @@ describe("root demo", () => {
 
     observer.observe(find(item("root")), { attributes: true });
     button("Download").click();
-    await expect.poll(() => panel().textContent.includes("saved")).toBeTruthy();
+    await expect.poll(() => panel().textContent.includes("Saved")).toBeTruthy();
     observer.disconnect();
 
     expect(seen).toContain(true);

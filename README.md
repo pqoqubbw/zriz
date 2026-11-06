@@ -4,7 +4,7 @@ Headless image cropper for the web with the feel of iOS Photos. Straighten with 
 
 Work in progress. Docs at [zriz.dev](https://zriz.dev).
 
-| package                         |                                        |
+| Package                         |                                        |
 | ------------------------------- | -------------------------------------- |
 | [`@zriz/react`](packages/react) | Unstyled React parts                   |
 | [`@zriz/core`](packages/core)   | Framework-agnostic geometry and solver |
