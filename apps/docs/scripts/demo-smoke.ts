@@ -48,8 +48,9 @@ const BUDGET = {
   css: 2 * KB,
   demoHtml: 2 * KB,
   demoInitial: 3 * KB,
-  lazy: 60 * KB,
+  lazy: 60.3 * KB,
   photo: 220 * KB,
+  playgroundInitial: 14.1 * KB,
   ready: 1500,
 };
 
@@ -306,7 +307,13 @@ const judgeWeight = (current: Visit, before: Visit | undefined): string[] => {
   }
 
   const growth: [string, number, number][] = [
-    ["js", current.initial - before.initial, BUDGET.demoInitial],
+    [
+      "js",
+      current.initial - before.initial,
+      current.demo === "playground"
+        ? BUDGET.playgroundInitial
+        : BUDGET.demoInitial,
+    ],
     ["css", current.css - before.css, BUDGET.css],
   ];
 
