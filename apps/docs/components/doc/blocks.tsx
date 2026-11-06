@@ -4,14 +4,14 @@ import type { ReactNode } from "react";
 
 import { CodeFigure } from "@/components/doc/code-figure";
 import { CopyAction, CopyButton } from "@/components/doc/copy-button";
-import { Demo } from "@/components/doc/demo";
 import {
   Controls,
   DownloadAction,
   LiveCode,
   LiveLog,
   PlaygroundCopy,
-} from "@/components/doc/playground-blocks";
+} from "@/components/doc/deferred";
+import { Demo } from "@/components/doc/demo";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
 import { TableBlock } from "@/components/doc/tables/grid-table";
 import { PairTable } from "@/components/doc/tables/pair-table";

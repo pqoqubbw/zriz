@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 
-import { DemoMount } from "@/components/doc/demo-mount";
+import { DemoMount } from "@/components/doc/deferred";
 import { Panel } from "@/components/ui/panel";
 import { DEMO_SPECS } from "@/demos/registry";
 import type { DemoName } from "@/demos/registry";
