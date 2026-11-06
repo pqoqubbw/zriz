@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 
 import { Icon } from "@/components/ui/icon";
 import { Panel } from "@/components/ui/panel";
+import { useDemoDim } from "@/demos/shell/context";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
@@ -30,6 +31,8 @@ const NO_PLAN = "422: this crop does not fit this photo.";
 
 const INDENT = "  ";
 
+const LINE = 44;
+
 const isFlat = (items: readonly unknown[]): boolean =>
   items.every((each) => typeof each !== "object" || each === null);
 
@@ -48,7 +51,16 @@ const pretty = (data: unknown, depth = 0): string => {
   }
 
   if (typeof data === "object" && data !== null) {
-    const rows = Object.entries(data).map(
+    const entries: [string, unknown][] = Object.entries(data);
+    const line = `{ ${entries
+      .map(([key, each]) => `"${key}": ${JSON.stringify(each)}`)
+      .join(", ")} }`;
+
+    if (isFlat(entries.map(([, each]) => each)) && line.length <= LINE) {
+      return line;
+    }
+
+    const rows = entries.map(
       ([key, each]) => `${inner}"${key}": ${pretty(each, depth + 1)}`
     );
 
@@ -114,6 +126,7 @@ const useStale = (cropper: CropperApi, sent: Sent | null): boolean =>
 const Result = ({ sent }: ResultProps) => {
   const cropper = useLive();
   const stale = useStale(cropper, sent);
+  const dim = useDemoDim();
 
   if (!sent || sent.cropper !== cropper) {
     return null;
@@ -121,7 +134,8 @@ const Result = ({ sent }: ResultProps) => {
 
   return (
     <dl
-      className="mt-2 flex w-full flex-col gap-1 rounded-control bg-page p-4 font-mono text-code text-code-ink inset-shadow-edge data-stale:opacity-40"
+      className="mt-2 flex w-full flex-col gap-1 rounded-control bg-page p-4 font-mono text-code text-code-ink inset-shadow-edge data-dim:opacity-40 data-stale:opacity-40"
+      data-dim={dim ? "" : undefined}
       data-slot="result"
       data-stale={stale ? "" : undefined}
     >
