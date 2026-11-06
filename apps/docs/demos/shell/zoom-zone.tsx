@@ -57,7 +57,7 @@ const ZoomZone = () => {
     <Zone data-dim={dim ? "" : undefined} kind="zoom">
       <ZoneRow>
         <Cropper.ZoomStep
-          aria-disabled={atMin || undefined}
+          aria-disabled={(atMin && !dim) || undefined}
           aria-label="Zoom out"
           className={ghostVariants()}
           factor={1 / STEP}
@@ -82,7 +82,7 @@ const ZoomZone = () => {
           </Ruler>
         </Scale>
         <Cropper.ZoomStep
-          aria-disabled={atMax || undefined}
+          aria-disabled={(atMax && !dim) || undefined}
           aria-label="Zoom in"
           className={ghostVariants()}
           factor={STEP}
