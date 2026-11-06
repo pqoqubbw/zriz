@@ -6049,9 +6049,13 @@ what each set of imports adds to your bundle, minified and compressed with brotl
 | server | \`toSharp\` from \`@zriz/core\` | 723 B |
 | stylesheet | \`styles.css\`, which is optional | 893 B |
 
-measured with size-limit 14.3 on 5 november 2026. it bundles each set with rolldown, minifies it and compresses it with brotli, and it leaves out react and react-dom. the build uses the \`production\` export condition, so development warnings do not count.
+measured with size-limit 14.3.0 on the 0.0.0 packages. it bundles each set with rolldown 1.2.15, minifies it with oxc and leaves out react and react-dom. it compresses each output file with brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. the build uses the \`production\` export condition, so development warnings do not count.
 
 with gzip, the stylesheet is 1020 B.
+
+the same sets built with rollup 4, vite 7 and 8, webpack 5 and next 16, with turbopack or webpack, come out between 2.2% smaller and 7.4% larger. esbuild comes out up to 16.3% larger.
+
+esbuild ignores the \`production\` condition unless you pass it, so it ships the development warnings. pass \`conditions: ["module", "production"]\` in production builds. \`module\` keeps the condition esbuild sets by default.
 
 ## loaded later
 
@@ -6064,11 +6068,11 @@ four chunks stay out of the first load and download the first time a photo needs
 | svg | the photo is an svg | 891 B |
 | source | you pass an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` to \`loadImage\`, or your \`decode\` option runs after the browser fails to decode. \`Root\` never loads it | 557 B |
 
-with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.96 kB. your bundler keeps the code a chunk shares with the first load in the first load, so the chunks stay this small. a chunk bundled alone is larger: \`render\` is 3.67 kB.
+with all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.96 kB. rolldown, rollup, vite, webpack and next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. a chunk bundled alone is larger: \`render\` is 3.68 kB.
 
 ## dependencies
 
-\`@zriz/react\` has \`@zriz/core\` and react as peers and no dependencies. \`@zriz/core\` has none either. both packages mark only their css as a side effect, so your bundler drops every part you do not import.
+\`@zriz/react\` has \`@zriz/core\` and react as peers and no dependencies. \`@zriz/core\` has none either. both packages mark only their css as a side effect, so rollup, vite, webpack and next drop every part you do not import. esbuild drops their code too, but it still writes the four lazy chunks next to your bundle, even for a part such as \`Rotate\` that never loads them.
 "
 `;
 
@@ -7420,6 +7424,10 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 \`\`\`
+
+### why do node and jest fail on the stylesheet
+
+node cannot import a \`.css\` file, and jest cannot either until you map it. point \`\\.css$\` at an empty module with \`moduleNameMapper\` in your jest config. vitest and bun load the import as it is, and in an app your bundler handles it.
 
 ## photos and export
 
