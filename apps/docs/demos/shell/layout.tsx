@@ -73,7 +73,7 @@ const zoneRowVariants = cva("flex items-end gap-3", {
   variants: {
     dial: {
       false: "",
-      true: "*:not-data-[slot=ruler]:not-data-[slot=scale]:mb-2.5",
+      true: "*:not-data-[slot=ruler]:not-data-[slot=scale]:mb-2",
     },
   },
 });

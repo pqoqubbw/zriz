@@ -24,7 +24,7 @@ const DialZone = ({ end, start, value = true }: DialZoneProps) => {
   const dim = useDemoDim();
   const ruler = (
     <Ruler>
-      <div className="absolute inset-x-0 top-2.25">
+      <div className="absolute inset-x-0 top-2.75">
         <Cropper.Dial
           aria-label="Straighten"
           className="w-full focus-visible:corners-none"

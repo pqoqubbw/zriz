@@ -183,7 +183,7 @@ const DemoShell = ({
             />
           )}
           <StageContent
-            data-loading={photo.loading ? "" : undefined}
+            data-loading={photo.replacing ? "" : undefined}
             ref={content}
           >
             <Cropper.Viewport

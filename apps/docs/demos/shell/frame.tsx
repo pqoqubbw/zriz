@@ -59,7 +59,7 @@ const StaticGhost = ({ disabled = false, icon }: StaticGhostProps) => (
 );
 
 const StaticDialStrip = () => (
-  <div className="absolute inset-x-0 top-2.25">
+  <div className="absolute inset-x-0 top-2.75">
     <div className="dial-frame" data-slot="dial">
       <div data-slot="dial-ticks" />
     </div>
