@@ -61,7 +61,7 @@ const PLAYGROUND_PAGE = defineDoc({
       liveCode("playground/root.jsx.tsx", "code"),
       actions("copy code", "copy-code"),
       p(
-        "the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. it tilts the photo with `setValue()` and listens to `onValueChange` and `onValueCommit` for the value and the events below."
+        "the demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. on a phone its stage is 320 px tall, not the 380 in the code. it tilts the photo with `setValue()` and listens to `onValueChange` and `onValueCommit` for the value and the events below."
       )
     ),
     section(
