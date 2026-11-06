@@ -18,6 +18,7 @@ type IconPathElementProps = {
 
 const ICON_PATHS = {
   check: ["M4 10L8 14L16 6"],
+  chevron: ["M6 8L10 12L14 8"],
   close: ["M5 5L15 15M15 5L5 15"],
   copy: [
     "M9.5 7.5H14.5A2 2 0 0 1 16.5 9.5V14.5A2 2 0 0 1 14.5 16.5H9.5A2 2 0 0 1 7.5 14.5V9.5A2 2 0 0 1 9.5 7.5Z",

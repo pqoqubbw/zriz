@@ -53,4 +53,4 @@ const Heading = ({
 };
 
 export type { HeadingProps };
-export { Heading };
+export { Heading, headingVariants };

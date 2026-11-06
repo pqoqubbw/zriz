@@ -9,6 +9,7 @@
     "type": "next typegen && tsc --noEmit && tsc --noEmit -p snippets"
   },
   "dependencies": {
+    "@base-ui/react": "1.9.0",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@zriz/react": "workspace:*",
     "class-variance-authority": "0.7.1",

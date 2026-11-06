@@ -347,6 +347,32 @@
   transition-property: color, font-weight, letter-spacing;
 }
 
+@utility transition-color {
+  transition-property: color;
+}
+
+@utility faq-panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height 200ms var(--ease-out);
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    height: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media (width < 37rem) {
+    & figure {
+      margin-inline: 0;
+      border-radius: var(--radius-panel);
+    }
+  }
+}
+
 @utility corners-none {
   border-image-source: none;
 }

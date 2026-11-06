@@ -13,6 +13,7 @@ import {
   PlaygroundCopy,
 } from "@/components/doc/deferred";
 import { Demo } from "@/components/doc/demo";
+import { Faq, FaqItem } from "@/components/doc/faq";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
 import { TableBlock } from "@/components/doc/tables/grid-table";
 import { PairTable } from "@/components/doc/tables/pair-table";
@@ -202,17 +203,14 @@ const renderers: { [K in Kind]: Renderer<K> } = {
     <PropList className={className} label={block.label} rows={block.rows} />
   ),
   qa: (block, context) => (
-    <div className={cn("flex flex-col", context.className)}>
-      <Heading id={context.anchors.of(block)} level={3} variant="question">
-        {block.question}
-      </Heading>
+    <FaqItem id={context.anchors.of(block)} question={block.question}>
       <Flow
         anchors={context.anchors}
         blocks={block.blocks}
         first="answer"
         level={4}
       />
-    </div>
+    </FaqItem>
   ),
   section: (block, context) => (
     <section className="flex flex-col pb-14" data-copy="">
@@ -242,23 +240,56 @@ const render = <K extends Kind>(
   context: Context
 ): ReactNode => renderers[block.kind](block, context);
 
+const questionsFrom = (
+  blocks: readonly Block[],
+  start: number
+): BlockOf<"qa">[] => {
+  const run: BlockOf<"qa">[] = [];
+
+  for (const block of blocks.slice(start)) {
+    if (block.kind !== "qa") {
+      break;
+    }
+
+    run.push(block);
+  }
+
+  return run;
+};
+
 const Flow = ({ anchors, blocks, first, level }: FlowProps): ReactNode =>
   blocks.map((block, i) => {
     const previous = blocks[i - 1];
     const before = previous === undefined ? first : BLOCK_SLOTS[previous.kind];
+    const className = flowVariants({
+      gap: gap(first === "answer" ? "answer" : before, BLOCK_SLOTS[block.kind]),
+    });
+
+    if (block.kind === "qa") {
+      if (previous?.kind === "qa") {
+        return null;
+      }
+
+      const questions = questionsFrom(blocks, i);
+
+      return (
+        <Faq
+          className={className}
+          ids={questions.map((question) => anchors.of(question))}
+          key={`${i}-${block.kind}`}
+        >
+          {questions.map((question, j) => (
+            <Fragment key={`${j}-${question.question}`}>
+              {render(question, { anchors, className: "", level })}
+            </Fragment>
+          ))}
+        </Faq>
+      );
+    }
 
     return (
       <Fragment key={`${i}-${block.kind}`}>
-        {render(block, {
-          anchors,
-          className: flowVariants({
-            gap: gap(
-              first === "answer" ? "answer" : before,
-              BLOCK_SLOTS[block.kind]
-            ),
-          }),
-          level,
-        })}
+        {render(block, { anchors, className, level })}
       </Fragment>
     );
   });
