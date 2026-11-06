@@ -15,6 +15,12 @@ type PhotoDrop = {
   onDrop: (event: DragEvent) => void;
 };
 
+type PhotoEvents = {
+  check: boolean;
+  onCancel: () => void;
+  onOpen: () => void;
+};
+
 type Photo = {
   drop: PhotoDrop;
   dropping: boolean;
@@ -31,19 +37,36 @@ type Photo = {
 
 const NOT_AN_IMAGE = "not an image";
 
+const UNREADABLE = "can’t read this file";
+
 const ERROR_TEXT: Partial<Record<ZrizError["code"], string>> = {
-  blank: "can’t read this file",
+  blank: UNREADABLE,
   "cross-origin": "can’t open this link",
-  decode: "can’t read this file",
+  decode: UNREADABLE,
   timeout: "can’t open this link",
   "too-large": "too large",
   "unsupported-format": NOT_AN_IMAGE,
 };
 
+const readable = async (file: File): Promise<boolean> => {
+  try {
+    const bitmap = await createImageBitmap(file);
+
+    bitmap.close();
+
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const hasFiles = (event: DragEvent): boolean =>
   event.dataTransfer.types.includes("Files");
 
-const usePhoto = (initial: string, onOpen: () => void): Photo => {
+const usePhoto = (
+  initial: string,
+  { check, onCancel, onOpen }: PhotoEvents
+): Photo => {
   const [src, setSrc] = useState<Blob | string>(initial);
   const [status, setStatus] = useState<PhotoStatus>("first");
   const [loaded, setLoaded] = useState(false);
@@ -95,11 +118,32 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
       return;
     }
 
+    const swap = (): void => {
+      setSrc(file);
+      setPick((count) => count + 1);
+    };
+
     show(null);
     onOpen();
-    setSrc(file);
-    setPick((count) => count + 1);
     setStatus(loaded ? "replacing" : "first");
+
+    if (!check) {
+      swap();
+
+      return;
+    }
+
+    void readable(file).then((ok) => {
+      if (ok) {
+        swap();
+      } else {
+        onCancel();
+        setStatus(loaded ? "ready" : "empty");
+        show(UNREADABLE);
+      }
+
+      return ok;
+    });
   };
 
   return {
@@ -156,5 +200,5 @@ const usePhoto = (initial: string, onOpen: () => void): Photo => {
   };
 };
 
-export type { Photo, PhotoDrop };
+export type { Photo, PhotoDrop, PhotoEvents };
 export { usePhoto };

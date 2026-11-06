@@ -127,9 +127,13 @@ const DemoShell = ({
   const download = useDownload(actions, onAction ?? exportRun(exportOptions));
   const content = useRef<HTMLDivElement>(null);
   const still = useStill(photoProps !== undefined, content);
-  const photo = usePhoto(photoUrl(spec.photo), () => {
-    download.abort();
-    still.keep();
+  const photo = usePhoto(photoUrl(spec.photo), {
+    check: photoProps !== undefined,
+    onCancel: still.clear,
+    onOpen: () => {
+      download.abort();
+      still.keep();
+    },
   });
   const { dropping, pick, src } = photo;
   const locked = lock && download.busy;
