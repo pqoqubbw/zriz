@@ -31,7 +31,7 @@ const NO_PLAN = "422: this crop does not fit this photo.";
 
 const INDENT = "  ";
 
-const LINE = 44;
+const LINE = 64;
 
 const isFlat = (items: readonly unknown[]): boolean =>
   items.every((each) => typeof each !== "object" || each === null);
