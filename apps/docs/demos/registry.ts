@@ -128,7 +128,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
   avatar: {
     action: DOWNLOAD,
     below: false,
-    photo: "portrait",
+    photo: "landscape",
     shape: "circle",
     snippet: {
       differences: [
@@ -146,7 +146,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
       kind: "component",
     },
     summary:
-      "a 2:3 photo under a round crop, a zoom slider with zoom out and zoom in, and open, reset and download in the corners",
+      "a 3:2 photo under a round crop, a zoom slider with zoom out and zoom in, and open, reset and download in the corners",
     zones: [{ kind: "zoom" }],
   },
   buttons: {
