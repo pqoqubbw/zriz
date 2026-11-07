@@ -10,6 +10,7 @@ import { anchorsOf } from "@/lib/doc/anchors";
 import { plain } from "@/lib/doc/inline";
 import { DOCS } from "@/lib/docs";
 import { isSlug, markdownPath, pagePath, slugParams, titleOf } from "@/lib/nav";
+import { SITE_OPEN_GRAPH } from "@/lib/site";
 
 const generateStaticParams = slugParams;
 
@@ -28,6 +29,7 @@ const generateMetadata = async ({
       types: { "text/markdown": markdownPath(slug) },
     },
     description: plain(DOCS[slug].lede),
+    openGraph: { ...SITE_OPEN_GRAPH, url: pagePath(slug) },
     title: titleOf(slug),
   };
 };

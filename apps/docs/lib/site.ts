@@ -11,6 +11,12 @@ const SITE_LINKS = {
 const SITE_DESCRIPTION =
   "zriz is an image cropper for React with a straighten dial, like the crop tool in iOS Photos.";
 
+const SITE_OPEN_GRAPH = {
+  locale: "en_US",
+  siteName: "zriz",
+  type: "website",
+} as const;
+
 const LLMS_URL = `${SITE_ORIGIN}/llms.txt`;
 
 const LLMS_FULL_URL = `${SITE_ORIGIN}/llms-full.txt`;
@@ -28,5 +34,6 @@ export {
   pageUrl,
   SITE_DESCRIPTION,
   SITE_LINKS,
+  SITE_OPEN_GRAPH,
   SITE_ORIGIN,
 };

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 import { cn } from "@/lib/cn";
-import { SITE_DESCRIPTION, SITE_ORIGIN } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_OPEN_GRAPH, SITE_ORIGIN } from "@/lib/site";
 
 type RootLayoutProps = {
   children: ReactNode;
@@ -27,6 +27,7 @@ const paperMono = localFont({
 const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   metadataBase: new URL(SITE_ORIGIN),
+  openGraph: SITE_OPEN_GRAPH,
   title: { default: "zriz", template: "%s | zriz" },
 };
 
