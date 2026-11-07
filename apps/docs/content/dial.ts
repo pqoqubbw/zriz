@@ -21,7 +21,7 @@ const DIAL_PAGE = defineDoc({
       ),
       code("dial/anatomy.jsx.tsx"),
       p(
-        "The stylesheet makes `Dial` 40 px tall and clips its ticks at the sides only, so the zero dot above them stays in view. It draws the ticks and the centre line. `DialValue` ships bare."
+        "The stylesheet makes `Dial` 40 px tall and clips its ticks at the sides only, so the zero dot above them stays in view, and fades them out over 48 px at each side. It draws the ticks and the centre line. `DialValue` ships bare."
       ),
       p(
         "The demo above shows the angle to one decimal with a degree sign and uses the styles from the zriz site."
@@ -31,6 +31,12 @@ const DIAL_PAGE = defineDoc({
       "Drag and flick the ruler",
       p(
         "The first 10 px of a drag only pick up the ruler. After that, every 4 px turns 1°. A quick flick keeps it gliding after you let go, and past the limit it stretches and springs back. On touch, a vertical swipe scrolls the page instead."
+      ),
+      p(
+        "The ruler reads like a ruler, with positive angles to the right of 0°. Drag it left, or press the right arrow, and the angle grows past the centre line."
+      ),
+      p(
+        "A drag catches at 0°. Within 1° of it the angle holds at exactly 0°, and past that it carries on from 0° without a jump, so a level horizon takes no fiddling. A flick that comes to rest within 1° lands on 0°. Keys, the wheel and `setRotation` keep the exact angle."
       ),
       p(
         "The photo zooms in as the angle grows. One gesture back to 0° restores the zoom. Separate gestures keep it, as in iOS Photos, until `Reset` or `Zoom` takes it back."

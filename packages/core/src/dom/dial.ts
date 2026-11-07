@@ -50,6 +50,7 @@ type DialState = {
 const DIAL_TICKS = 41;
 const DIAL_STEP = 2.25;
 const DEFAULT_GAIN = 4;
+const SNAP_ZONE = 1;
 const DEFAULT_SLOP = 10;
 const AXIS_LOCK = 6;
 const DEFAULT_TAU = 95;
@@ -138,6 +139,7 @@ const dialHandlers = (
   let startY = 0;
   let lastX = 0;
   let startRotation = 0;
+  let snapSide = 0;
   let engaged = false;
   let locked = false;
   let width = 1;
@@ -162,6 +164,23 @@ const dialHandlers = (
       over === 0 ? 0 : Math.sign(over) * rubberBand(Math.abs(over), width),
       dragging
     );
+  };
+
+  const startAt = (rotation: number): void => {
+    startRotation = rotation;
+    snapSide = Math.abs(rotation) > SNAP_ZONE ? Math.sign(rotation) : 0;
+  };
+
+  const snapped = (raw: number): number => {
+    if (Math.abs(raw) <= SNAP_ZONE) {
+      snapSide = 0;
+
+      return 0;
+    }
+
+    const side = Math.sign(raw);
+
+    return side === snapSide ? raw : raw - side * SNAP_ZONE;
   };
 
   const settleOvershoot = (): void => {
@@ -199,8 +218,17 @@ const dialHandlers = (
     const target = clamp(rest, limit);
     const toLimit = rest !== target;
 
-    const land = (): void => {
+    const land = (rested: boolean): void => {
       stopGlide = null;
+
+      if (
+        rested &&
+        cropper.getValue().rotation !== 0 &&
+        Math.abs(cropper.getValue().rotation) <= SNAP_ZONE
+      ) {
+        show(0, false, event);
+      }
+
       cropper.end(event, owner);
     };
 
@@ -223,7 +251,7 @@ const dialHandlers = (
           Math.abs(motion.velocity) < STOP_SPEED
         ) {
           show(target, false, event);
-          land();
+          land(true);
 
           return false;
         }
@@ -236,7 +264,7 @@ const dialHandlers = (
       show(from + motion.value, false, event);
 
       if (Math.abs(motion.velocity) < STOP_SPEED) {
-        land();
+        land(true);
 
         return false;
       }
@@ -246,7 +274,7 @@ const dialHandlers = (
 
     stopGlide = () => {
       stop();
-      land();
+      land(false);
       settleOvershoot();
     };
 
@@ -377,7 +405,7 @@ const dialHandlers = (
       startX = event.clientX;
       lastX = startX;
       startY = event.clientY;
-      startRotation = cropper.getValue().rotation;
+      startAt(cropper.getValue().rotation);
       engaged = false;
       locked = false;
       tracker.reset();
@@ -410,7 +438,7 @@ const dialHandlers = (
       }
 
       if ((cropper as CropperInternals).rebase(owner)) {
-        startRotation = cropper.getValue().rotation;
+        startAt(cropper.getValue().rotation);
         startX = lastX;
         tracker.reset();
       }
@@ -450,10 +478,11 @@ const dialHandlers = (
         const over = dial.overshoot();
 
         if (over !== 0) {
-          startRotation =
+          startAt(
             cropper.getValue().rotation +
-            (Math.sign(over) * inverseRubberBand(Math.abs(over), width)) /
-              gain();
+              (Math.sign(over) * inverseRubberBand(Math.abs(over), width)) /
+                gain()
+          );
 
           startX = event.clientX;
         }
@@ -461,7 +490,7 @@ const dialHandlers = (
 
       const samples = event.getCoalescedEvents?.() ?? [];
 
-      const way = sign(event);
+      const way = -sign(event);
 
       for (const sample of samples.length > 0 ? samples : [event]) {
         tracker.push(
@@ -471,7 +500,9 @@ const dialHandlers = (
       }
 
       show(
-        startRotation + ((event.clientX - startX) * way) / scale / gain(),
+        snapped(
+          startRotation + ((event.clientX - startX) * way) / scale / gain()
+        ),
         true,
         event
       );
@@ -667,7 +698,7 @@ const bindDialTicks = (
 
     const dpr = win.devicePixelRatio || 1;
     const middle = ((ticks.length - 1) / 2) * spacing();
-    const sign = isRtl(dial.options().dir, strip) ? -1 : 1;
+    const sign = isRtl(dial.options().dir, strip) ? 1 : -1;
     const offset =
       centre -
       middle +
