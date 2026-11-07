@@ -10,6 +10,7 @@ export const PhotoCropper = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
@@ -19,7 +20,7 @@ export const PhotoCropper = () => {
         onError={(error) => console.error(error.code)}
       >
         <Cropper.Viewport
-          style={{ width: 400, height: 300, padding: 24 }}
+          style={{ maxWidth: 400, height: 300, padding: 24 }}
         >
           <Cropper.Image />
           <Cropper.Mask />
@@ -32,7 +33,7 @@ export const PhotoCropper = () => {
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>

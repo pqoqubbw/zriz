@@ -12,14 +12,14 @@ export const Editor = ({ src }: { src: string }) => {
       rotation={rotation}
       onValueChange={(value) => setRotation(value.rotation)}
     >
-      <Cropper.Viewport style={{ width: 480, height: 360 }}>
+      <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>

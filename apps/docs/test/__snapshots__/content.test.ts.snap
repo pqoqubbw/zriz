@@ -6,7 +6,7 @@ exports[`content > shows the approved code and colours 1`] = `
     "introduction",
     "introduction/parts.jsx.tsx",
     "<Cropper.Root src={photo} onValueCommit={save}>
-  <Cropper.Viewport style={{ width: 400, height: 300 }}>
+  <Cropper.Viewport style={{ maxWidth: 400, height: 300 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
@@ -17,7 +17,7 @@ exports[`content > shows the approved code and colours 1`] = `
   </Cropper.Dial>
 </Cropper.Root>",
     "<span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>src</span><span class=p>={</span>photo<span class=p>} </span><span class=a>onValueCommit</span><span class=p>={</span>save<span class=p>}&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300 </span><span class=p>}}&gt;</span>
+  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300 </span><span class=p>}}&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -48,7 +48,7 @@ export const PhotoCropper = () => {
   return (
     <Cropper.Root src={photo}>
       <Cropper.Viewport
-        style={{ width: 400, height: 300, padding: 24 }}
+        style={{ maxWidth: 400, height: 300, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -61,7 +61,7 @@ export const PhotoCropper = () => {
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -79,7 +79,7 @@ export const PhotoCropper = () => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>src</span><span class=p>={</span>photo<span class=p>}&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
@@ -92,7 +92,7 @@ export const PhotoCropper = () => {
       <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -115,6 +115,7 @@ export const PhotoCropper = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
@@ -124,7 +125,7 @@ export const PhotoCropper = () => {
         onError={(error) => console.error(error.code)}
       >
         <Cropper.Viewport
-          style={{ width: 400, height: 300, padding: 24 }}
+          style={{ maxWidth: 400, height: 300, padding: 24 }}
         >
           <Cropper.Image />
           <Cropper.Mask />
@@ -137,7 +138,7 @@ export const PhotoCropper = () => {
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>
@@ -157,6 +158,7 @@ export const PhotoCropper = () => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>input</span>
+        <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
         <span class=a>onChange</span><span class=p>={(</span>e<span class=p>) =&gt; </span><span class=t>setPhoto</span><span class=p>(</span>e<span class=p>.</span>target<span class=p>.</span>files<span class=p>?.[</span><span class=n>0</span><span class=p>] ?? </span><span class=k>null</span><span class=p>)}</span>
@@ -166,7 +168,7 @@ export const PhotoCropper = () => {
         <span class=a>onError</span><span class=p>={(</span>error<span class=p>) =&gt;</span> console<span class=p>.</span><span class=t>error</span><span class=p>(</span>error<span class=p>.</span>code<span class=p>)}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
-          <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>400</span><span class=p>,</span> height<span class=p>: </span><span class=n>300</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
         <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
@@ -179,7 +181,7 @@ export const PhotoCropper = () => {
         <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
           <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-          <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
         <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
         <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -435,10 +437,10 @@ export const PhotoCropper = () => {
   [
     "dial",
     "dial/width.jsx.tsx",
-    "<Cropper.Dial aria-label="Straighten" style={{ width: 361 }}>
+    "<Cropper.Dial aria-label="Straighten" style={{ maxWidth: 361 }}>
   <Cropper.DialTicks />
 </Cropper.Dial>",
-    "<span class=p>&lt;</span><span class=t>Cropper.Dial </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>" </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}&gt;</span>
+    "<span class=p>&lt;</span><span class=t>Cropper.Dial </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>" </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
 <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>",
   ],
@@ -967,14 +969,14 @@ export const Editor = ({ src }: { src: string }) => {
       rotation={rotation}
       onValueChange={(value) => setRotation(value.rotation)}
     >
-      <Cropper.Viewport style={{ width: 480, height: 360 }}>
+      <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -995,14 +997,14 @@ export const Editor = ({ src }: { src: string }) => {
       <span class=a>rotation</span><span class=p>={</span>rotation<span class=p>}</span>
       <span class=a>onValueChange</span><span class=p>={(</span>value<span class=p>) =&gt; </span><span class=t>setRotation</span><span class=p>(</span>value<span class=p>.</span>rotation<span class=p>)}</span>
     <span class=p>&gt;</span>
-      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -1145,7 +1147,9 @@ export const Editor = ({ src }: { src: string }) => {
   return (
     <>
       <Cropper.Root src={src} actionsRef={cropper}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -1171,7 +1175,9 @@ export const Editor = ({ src }: { src: string }) => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>src</span><span class=p>={</span>src<span class=p>} </span><span class=a>actionsRef</span><span class=p>={</span>cropper<span class=p>}&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -1201,7 +1207,9 @@ export const Editor = ({ src }: { src: string }) => {
     <>
       <button onClick={() => cropper.reset()}>reset</button>
       <Cropper.Root cropper={cropper} src={src}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -1226,7 +1234,9 @@ export const Editor = ({ src }: { src: string }) => {
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>button </span><span class=a>onClick</span><span class=p>={() =&gt;</span> cropper<span class=p>.</span><span class=t>reset</span><span class=p>()}&gt;</span>reset<span class=p>&lt;/</span><span class=t>button</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>cropper</span><span class=p>={</span>cropper<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>}&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -1588,6 +1598,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
     "loading-images",
     "loading-images/picker.jsx.tsx",
     "<input
+  aria-label="Choose a photo"
   type="file"
   accept="image/*"
   onChange={(event) =>
@@ -1595,13 +1606,14 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
   }
 />
 <Cropper.Root src={file}>
-  <Cropper.Viewport style={{ width: 480, height: 360 }}>
+  <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
   </Cropper.Viewport>
 </Cropper.Root>",
     "<span class=p>&lt;</span><span class=t>input</span>
+  <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
   <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
   <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt;</span>
@@ -1609,7 +1621,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
   <span class=p>}</span>
 <span class=p>/&gt;</span>
 <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>src</span><span class=p>={</span>file<span class=p>}&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -1703,6 +1715,7 @@ export const Heic = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*,.heic"
         onChange={(event) => {
@@ -1725,7 +1738,9 @@ export const Heic = ({ onSave }: Props) => {
         }}
       />
       <Cropper.Root actionsRef={cropper}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -1766,6 +1781,7 @@ export const Heic = ({ onSave }: Props) => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>input</span>
+        <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/*,.heic</span><span class=p>"</span>
         <span class=a>onChange</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
@@ -1788,7 +1804,9 @@ export const Heic = ({ onSave }: Props) => {
         <span class=p>}}</span>
       <span class=p>/&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>actionsRef</span><span class=p>={</span>cropper<span class=p>}&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -2201,7 +2219,9 @@ export const CropWithPreview = ({ file }: { file: File }) => {
         onLoad={() => void refresh()}
         onValueCommit={() => void refresh()}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -2261,7 +2281,9 @@ export const CropWithPreview = ({ file }: { file: File }) => {
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=k>void </span><span class=t>refresh</span><span class=p>()}</span>
         <span class=a>onValueCommit</span><span class=p>={() =&gt; </span><span class=k>void </span><span class=t>refresh</span><span class=p>()}</span>
       <span class=p>&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -2373,7 +2395,9 @@ export const Editor = ({ src }: { src: string }) => {
   return (
     <>
       <Cropper.Root cropper={cropper} src={src}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -2432,7 +2456,9 @@ export const Editor = ({ src }: { src: string }) => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Root </span><span class=a>cropper</span><span class=p>={</span>cropper<span class=p>} </span><span class=a>src</span><span class=p>={</span>src<span class=p>}&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -2513,7 +2539,7 @@ export const cleanCopy = async (input: Buffer) =>
   <div
     id="viewport"
     data-zriz-item="viewport"
-    style="width: 480px; height: 360px; padding: 24px"
+    style="max-width: 480px; height: 360px; padding: 24px"
   >
     <div id="photo" data-zriz-item="image"></div>
     <div id="mask" data-zriz-item="mask"></div>
@@ -2535,13 +2561,13 @@ export const cleanCopy = async (input: Buffer) =>
     <div id="ticks" data-zriz-item="dial-ticks"></div>
   </div>
 </div>
-<input id="file" type="file" accept="image/*" />
+<input id="file" type="file" aria-label="Choose a photo" accept="image/*" />
 <p id="status" role="alert"></p>",
     "<span class=p>&lt;</span><span class=t>div </span><span class=a>id</span><span class=p>="</span><span class=s>cropper</span><span class=p>" </span><span class=a>data-zriz-item</span><span class=p>="</span><span class=s>root</span><span class=p>"&gt;</span>
   <span class=p>&lt;</span><span class=t>div</span>
     <span class=a>id</span><span class=p>="</span><span class=s>viewport</span><span class=p>"</span>
     <span class=a>data-zriz-item</span><span class=p>="</span><span class=s>viewport</span><span class=p>"</span>
-    <span class=a>style</span><span class=p>="</span><span class=s>width: 480px; height: 360px; padding: 24px</span><span class=p>"</span>
+    <span class=a>style</span><span class=p>="</span><span class=s>max-width: 480px; height: 360px; padding: 24px</span><span class=p>"</span>
   <span class=p>&gt;</span>
     <span class=p>&lt;</span><span class=t>div </span><span class=a>id</span><span class=p>="</span><span class=s>photo</span><span class=p>" </span><span class=a>data-zriz-item</span><span class=p>="</span><span class=s>image</span><span class=p>"&gt;&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
     <span class=p>&lt;</span><span class=t>div </span><span class=a>id</span><span class=p>="</span><span class=s>mask</span><span class=p>" </span><span class=a>data-zriz-item</span><span class=p>="</span><span class=s>mask</span><span class=p>"&gt;&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
@@ -2563,7 +2589,7 @@ export const cleanCopy = async (input: Buffer) =>
     <span class=p>&lt;</span><span class=t>div </span><span class=a>id</span><span class=p>="</span><span class=s>ticks</span><span class=p>" </span><span class=a>data-zriz-item</span><span class=p>="</span><span class=s>dial-ticks</span><span class=p>"&gt;&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
   <span class=p>&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
 <span class=p>&lt;/</span><span class=t>div</span><span class=p>&gt;</span>
-<span class=p>&lt;</span><span class=t>input </span><span class=a>id</span><span class=p>="</span><span class=s>file</span><span class=p>" </span><span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>" </span><span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>" /&gt;</span>
+<span class=p>&lt;</span><span class=t>input </span><span class=a>id</span><span class=p>="</span><span class=s>file</span><span class=p>" </span><span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>" </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>" </span><span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>" /&gt;</span>
 <span class=p>&lt;</span><span class=t>p </span><span class=a>id</span><span class=p>="</span><span class=s>status</span><span class=p>" </span><span class=a>role</span><span class=p>="</span><span class=s>alert</span><span class=p>"&gt;&lt;/</span><span class=t>p</span><span class=p>&gt;</span>",
   ],
   [
@@ -2976,6 +3002,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
     "avatar",
     "avatar/avatar-picker.tsx",
     "<input
+  aria-label="Choose a photo"
   type="file"
   accept="image/*"
   onClick={(event) => {
@@ -2989,6 +3016,7 @@ cropper<span class=p>.</span><span class=t>destroy</span><span class=p>();</span
   }}
 />",
     "<span class=p>&lt;</span><span class=t>input</span>
+  <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
   <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
   <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
@@ -3193,6 +3221,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onClick={(event) => {
@@ -3289,6 +3318,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>input</span>
+        <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/*</span><span class=p>"</span>
         <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
@@ -3349,7 +3379,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
 ] as const;
 
 <Cropper.Viewport
-  style={{ width: 640, height: 480, padding: 24 }}
+  style={{ maxWidth: 640, height: 480, padding: 24 }}
 >
   <Cropper.Image />
   <Cropper.Mask />
@@ -3375,7 +3405,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
 <span class=p>] </span><span class=k>as const</span><span class=p>;</span>
 
 <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
-  <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
+  <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
 <span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
@@ -3400,7 +3430,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
 />
 <Cropper.Dial
   aria-label="Straighten"
-  style={{ width: 361 }}
+  style={{ maxWidth: 361 }}
 >
   <Cropper.DialTicks />
 </Cropper.Dial>",
@@ -3411,7 +3441,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
 <span class=p>/&gt;</span>
 <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
   <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-  <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+  <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
 <span class=p>&gt;</span>
   <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
 <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>",
@@ -3838,7 +3868,7 @@ export const Editor = ({ src, onSave }: Props) => {
       onError={() => setFailed(true)}
     >
       <Cropper.Viewport
-        style={{ width: 640, height: 480, padding: 24 }}
+        style={{ maxWidth: 640, height: 480, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -3859,7 +3889,7 @@ export const Editor = ({ src, onSave }: Props) => {
       />
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -4018,7 +4048,7 @@ export const Editor = ({ src, onSave }: Props) => {
       <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setFailed</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
     <span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480</span><span class=p>,</span> padding<span class=p>: </span><span class=n>24 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
@@ -4039,7 +4069,7 @@ export const Editor = ({ src, onSave }: Props) => {
       <span class=p>/&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -4147,6 +4177,7 @@ const upload = async () => {
 };
 
 <input
+  aria-label="Choose a photo"
   type="file"
   accept="image/jpeg,image/png,image/webp,image/avif"
   onClick={(event) => {
@@ -4234,6 +4265,7 @@ const upload = async () => {
 <span class=p>};</span>
 
 <span class=p>&lt;</span><span class=t>input</span>
+  <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
   <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
   <span class=a>accept</span><span class=p>="</span><span class=s>image/jpeg,image/png,image/webp,image/avif</span><span class=p>"</span>
   <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
@@ -4721,6 +4753,7 @@ export const CropUpload = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         onClick={(event) => {
@@ -4745,14 +4778,16 @@ export const CropUpload = () => {
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >
-        <Cropper.Viewport style={{ width: 640, height: 480 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 640, height: 480 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>
@@ -4841,6 +4876,7 @@ export const CropUpload = () => {
   <span class=k>return </span><span class=p>(</span>
     <span class=p>&lt;&gt;</span>
       <span class=p>&lt;</span><span class=t>input</span>
+        <span class=a>aria-label</span><span class=p>="</span><span class=s>Choose a photo</span><span class=p>"</span>
         <span class=a>type</span><span class=p>="</span><span class=s>file</span><span class=p>"</span>
         <span class=a>accept</span><span class=p>="</span><span class=s>image/jpeg,image/png,image/webp,image/avif</span><span class=p>"</span>
         <span class=a>onClick</span><span class=p>={(</span>event<span class=p>) =&gt; {</span>
@@ -4865,14 +4901,16 @@ export const CropUpload = () => {
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setReady</span><span class=p>(</span><span class=n>true</span><span class=p>)}</span>
         <span class=a>onError</span><span class=p>={() =&gt; </span><span class=t>setError</span><span class=p>(</span>unreadable<span class=p>)}</span>
       <span class=p>&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
         <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
           <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-          <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
         <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
         <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -5324,7 +5362,7 @@ if (saved?.id !== id) return null;",
     }
   }}
 >
-  <Cropper.Viewport style={{ width: 640, height: 480 }}>
+  <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
@@ -5343,7 +5381,7 @@ if (saved?.id !== id) return null;",
     <span class=p>}</span>
   <span class=p>}}</span>
 <span class=p>&gt;</span>
-  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
+  <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
     <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -5396,7 +5434,7 @@ export const SavedCrop = ({ id, src }: Props) => {
         }
       }}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
@@ -5447,7 +5485,7 @@ export const SavedCrop = ({ id, src }: Props) => {
         <span class=p>}</span>
       <span class=p>}}</span>
     <span class=p>&gt;</span>
-      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
+      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -5602,14 +5640,14 @@ const Editor = ({ src }: { src: string }) => {
       src={src}
       onValueCommit={remember}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -5671,14 +5709,14 @@ export const UndoEditor = ({ src }: { src: string }) => (
       <span class=a>src</span><span class=p>={</span>src<span class=p>}</span>
       <span class=a>onValueCommit</span><span class=p>={</span>remember<span class=p>}</span>
     <span class=p>&gt;</span>
-      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
+      <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>640</span><span class=p>,</span> height<span class=p>: </span><span class=n>480 </span><span class=p>}}&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Viewport</span><span class=p>&gt;</span>
       <span class=p>&lt;</span><span class=t>Cropper.Dial</span>
         <span class=a>aria-label</span><span class=p>="</span><span class=s>Straighten</span><span class=p>"</span>
-        <span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
+        <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>361 </span><span class=p>}}</span>
       <span class=p>&gt;</span>
         <span class=p>&lt;</span><span class=t>Cropper.DialTicks </span><span class=p>/&gt;</span>
       <span class=p>&lt;/</span><span class=t>Cropper.Dial</span><span class=p>&gt;</span>
@@ -5891,7 +5929,9 @@ export const Editor = ({ src }: { src: string }) => {
   return (
     <>
       <Cropper.Root cropper={cropper} src={src}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -6120,6 +6160,7 @@ Each pick bumps a counter that \`Root\` takes as its \`key\`, so every photo sta
 
 \`\`\`tsx
 <input
+  aria-label="Choose a photo"
   type="file"
   accept="image/*"
   onClick={(event) => {
@@ -6280,6 +6321,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onClick={(event) => {
@@ -7096,7 +7138,7 @@ The photo zooms in as the angle grows. One gesture back to 0° restores the zoom
 \`Dial\` fills its parent's width. Ticks sit 9 px apart, one every 2.25°, so 361 px fits all 41 ticks:
 
 \`\`\`tsx
-<Cropper.Dial aria-label="Straighten" style={{ width: 361 }}>
+<Cropper.Dial aria-label="Straighten" style={{ maxWidth: 361 }}>
   <Cropper.DialTicks />
 </Cropper.Dial>
 \`\`\`
@@ -7645,7 +7687,9 @@ export const CropWithPreview = ({ file }: { file: File }) => {
         onLoad={() => void refresh()}
         onValueCommit={() => void refresh()}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -7798,7 +7842,7 @@ const handles = [
 ] as const;
 
 <Cropper.Viewport
-  style={{ width: 640, height: 480, padding: 24 }}
+  style={{ maxWidth: 640, height: 480, padding: 24 }}
 >
   <Cropper.Image />
   <Cropper.Mask />
@@ -7828,7 +7872,7 @@ The dial fills its parent unless you give it a width, see [dial](https://zriz.de
 />
 <Cropper.Dial
   aria-label="Straighten"
-  style={{ width: 361 }}
+  style={{ maxWidth: 361 }}
 >
   <Cropper.DialTicks />
 </Cropper.Dial>
@@ -8146,7 +8190,7 @@ export const Editor = ({ src, onSave }: Props) => {
       onError={() => setFailed(true)}
     >
       <Cropper.Viewport
-        style={{ width: 640, height: 480, padding: 24 }}
+        style={{ maxWidth: 640, height: 480, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -8167,7 +8211,7 @@ export const Editor = ({ src, onSave }: Props) => {
       />
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -8257,7 +8301,9 @@ export const Editor = ({ src }: { src: string }) => {
   return (
     <>
       <Cropper.Root src={src} actionsRef={cropper}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -8292,7 +8338,9 @@ export const Editor = ({ src }: { src: string }) => {
     <>
       <button onClick={() => cropper.reset()}>reset</button>
       <Cropper.Root cropper={cropper} src={src}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -8518,7 +8566,7 @@ Each part renders one outer element, which takes your props, \`className\` and r
 
 \`\`\`tsx
 <Cropper.Root src={photo} onValueCommit={save}>
-  <Cropper.Viewport style={{ width: 400, height: 300 }}>
+  <Cropper.Viewport style={{ maxWidth: 400, height: 300 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
@@ -8549,6 +8597,7 @@ Open a photo from a file input, a URL or a blob, and check which formats and siz
 
 \`\`\`tsx
 <input
+  aria-label="Choose a photo"
   type="file"
   accept="image/*"
   onChange={(event) =>
@@ -8556,7 +8605,7 @@ Open a photo from a file input, a URL or a blob, and check which formats and siz
   }
 />
 <Cropper.Root src={file}>
-  <Cropper.Viewport style={{ width: 480, height: 360 }}>
+  <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
@@ -8679,6 +8728,7 @@ export const Heic = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*,.heic"
         onChange={(event) => {
@@ -8701,7 +8751,9 @@ export const Heic = ({ onSave }: Props) => {
         }}
       />
       <Cropper.Root actionsRef={cropper}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -8873,7 +8925,7 @@ export const PhotoCropper = () => {
   return (
     <Cropper.Root src={photo}>
       <Cropper.Viewport
-        style={{ width: 400, height: 300, padding: 24 }}
+        style={{ maxWidth: 400, height: 300, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -8886,7 +8938,7 @@ export const PhotoCropper = () => {
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -8918,6 +8970,7 @@ export const PhotoCropper = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
@@ -8927,7 +8980,7 @@ export const PhotoCropper = () => {
         onError={(error) => console.error(error.code)}
       >
         <Cropper.Viewport
-          style={{ width: 400, height: 300, padding: 24 }}
+          style={{ maxWidth: 400, height: 300, padding: 24 }}
         >
           <Cropper.Image />
           <Cropper.Mask />
@@ -8940,7 +8993,7 @@ export const PhotoCropper = () => {
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>
@@ -9211,7 +9264,7 @@ The recipe skips \`coverage\` commits. That is zriz fitting the crop to a new ph
     }
   }}
 >
-  <Cropper.Viewport style={{ width: 640, height: 480 }}>
+  <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
     <Cropper.Image />
     <Cropper.Mask />
     <Cropper.Area aria-label="Crop area" />
@@ -9267,7 +9320,7 @@ export const SavedCrop = ({ id, src }: Props) => {
         }
       }}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
@@ -9527,6 +9580,7 @@ const upload = async () => {
 };
 
 <input
+  aria-label="Choose a photo"
   type="file"
   accept="image/jpeg,image/png,image/webp,image/avif"
   onClick={(event) => {
@@ -9874,6 +9928,7 @@ export const CropUpload = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         onClick={(event) => {
@@ -9898,14 +9953,16 @@ export const CropUpload = () => {
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >
-        <Cropper.Viewport style={{ width: 640, height: 480 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 640, height: 480 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>
@@ -10378,14 +10435,14 @@ const Editor = ({ src }: { src: string }) => {
       src={src}
       onValueCommit={remember}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -10507,14 +10564,14 @@ export const Editor = ({ src }: { src: string }) => {
       rotation={rotation}
       onValueChange={(value) => setRotation(value.rotation)}
     >
-      <Cropper.Viewport style={{ width: 480, height: 360 }}>
+      <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
@@ -10582,7 +10639,7 @@ Give each element its \`data-zriz-item\`, so the stylesheet finds it, and give t
   <div
     id="viewport"
     data-zriz-item="viewport"
-    style="width: 480px; height: 360px; padding: 24px"
+    style="max-width: 480px; height: 360px; padding: 24px"
   >
     <div id="photo" data-zriz-item="image"></div>
     <div id="mask" data-zriz-item="mask"></div>
@@ -10604,7 +10661,7 @@ Give each element its \`data-zriz-item\`, so the stylesheet finds it, and give t
     <div id="ticks" data-zriz-item="dial-ticks"></div>
   </div>
 </div>
-<input id="file" type="file" accept="image/*" />
+<input id="file" type="file" aria-label="Choose a photo" accept="image/*" />
 <p id="status" role="alert"></p>
 \`\`\`
 

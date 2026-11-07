@@ -18,6 +18,7 @@ export const Heic = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*,.heic"
         onChange={(event) => {
@@ -40,7 +41,9 @@ export const Heic = ({ onSave }: Props) => {
         }}
       />
       <Cropper.Root actionsRef={cropper}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />

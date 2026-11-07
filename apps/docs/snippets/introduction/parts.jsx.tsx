@@ -7,7 +7,7 @@ declare const save: (value: CropValue) => void;
 
 export const example = (
   <Cropper.Root src={photo} onValueCommit={save}>
-    <Cropper.Viewport style={{ width: 400, height: 300 }}>
+    <Cropper.Viewport style={{ maxWidth: 400, height: 300 }}>
       <Cropper.Image />
       <Cropper.Mask />
       <Cropper.Area aria-label="Crop area" />

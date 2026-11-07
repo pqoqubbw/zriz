@@ -9,7 +9,7 @@ export const PhotoCropper = () => {
   return (
     <Cropper.Root src={photo}>
       <Cropper.Viewport
-        style={{ width: 400, height: 300, padding: 24 }}
+        style={{ maxWidth: 400, height: 300, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -22,7 +22,7 @@ export const PhotoCropper = () => {
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>

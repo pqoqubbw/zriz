@@ -48,7 +48,9 @@ export const CropWithPreview = ({ file }: { file: File }) => {
         onLoad={() => void refresh()}
         onValueCommit={() => void refresh()}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />

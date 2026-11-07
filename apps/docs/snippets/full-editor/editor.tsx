@@ -117,7 +117,7 @@ export const Editor = ({ src, onSave }: Props) => {
       onError={() => setFailed(true)}
     >
       <Cropper.Viewport
-        style={{ width: 640, height: 480, padding: 24 }}
+        style={{ maxWidth: 640, height: 480, padding: 24 }}
       >
         <Cropper.Image />
         <Cropper.Mask />
@@ -138,7 +138,7 @@ export const Editor = ({ src, onSave }: Props) => {
       />
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>

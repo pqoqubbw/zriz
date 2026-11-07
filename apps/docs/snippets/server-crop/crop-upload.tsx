@@ -72,6 +72,7 @@ export const CropUpload = () => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         onClick={(event) => {
@@ -96,14 +97,16 @@ export const CropUpload = () => {
         onLoad={() => setReady(true)}
         onError={() => setError(unreadable)}
       >
-        <Cropper.Viewport style={{ width: 640, height: 480 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 640, height: 480 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
         </Cropper.Viewport>
         <Cropper.Dial
           aria-label="Straighten"
-          style={{ width: 361 }}
+          style={{ maxWidth: 361 }}
         >
           <Cropper.DialTicks />
         </Cropper.Dial>

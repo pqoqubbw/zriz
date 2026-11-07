@@ -7,6 +7,7 @@ declare const setFile: (file: File | null) => void;
 export const example = (
   <>
     <input
+      aria-label="Choose a photo"
       type="file"
       accept="image/*"
       onChange={(event) =>
@@ -14,7 +15,7 @@ export const example = (
       }
     />
     <Cropper.Root src={file}>
-      <Cropper.Viewport style={{ width: 480, height: 360 }}>
+      <Cropper.Viewport style={{ maxWidth: 480, height: 360 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />

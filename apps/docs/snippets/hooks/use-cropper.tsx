@@ -14,7 +14,9 @@ export const Editor = ({ src }: { src: string }) => {
     <>
       <button onClick={() => cropper.reset()}>reset</button>
       <Cropper.Root cropper={cropper} src={src}>
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />

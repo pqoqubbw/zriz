@@ -41,7 +41,7 @@ export const SavedCrop = ({ id, src }: Props) => {
         }
       }}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />

@@ -50,6 +50,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
   return (
     <>
       <input
+        aria-label="Choose a photo"
         type="file"
         accept="image/*"
         onClick={(event) => {

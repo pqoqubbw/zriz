@@ -41,14 +41,14 @@ const Editor = ({ src }: { src: string }) => {
       src={src}
       onValueCommit={remember}
     >
-      <Cropper.Viewport style={{ width: 640, height: 480 }}>
+      <Cropper.Viewport style={{ maxWidth: 640, height: 480 }}>
         <Cropper.Image />
         <Cropper.Mask />
         <Cropper.Area aria-label="Crop area" />
       </Cropper.Viewport>
       <Cropper.Dial
         aria-label="Straighten"
-        style={{ width: 361 }}
+        style={{ maxWidth: 361 }}
       >
         <Cropper.DialTicks />
       </Cropper.Dial>
