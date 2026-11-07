@@ -1,7 +1,6 @@
 @layer properties, theme, base, components, utilities;
 @layer components.zriz {
   :where([data-zriz-item]) {
-    color-scheme: light dark;
     color-scheme: var(--zriz-scheme);
   }
   :where([data-theme="light"], .light) {
@@ -23,22 +22,19 @@
     color-scheme: dark;
   }
   :where([data-zriz-item="mask"]) {
-    background: var(--zriz-scrim, light-dark(#f7f7f7eb, #000000c7));
+    background: var(--zriz-scrim, #000000c7);
     transition: opacity 0.3s;
   }
   :where([data-zriz-item="mask"][data-interacting]) {
     opacity: 0.6;
     transition-duration: 0.2s;
   }
-  :where([data-transition="rotate"] [data-zriz-item="area"]) {
-    opacity: 0;
-  }
   :where([data-zriz-item="area"][data-visible])::after {
     content: "";
     pointer-events: none;
     position: absolute;
     inset: 1px;
-    outline: 1px solid var(--zriz-line, light-dark(#000, #fff));
+    outline: 1px solid var(--zriz-frame, #fff);
     border-radius: inherit;
   }
   :where([data-zriz-item="area"]:focus-visible) {
@@ -75,6 +71,14 @@
   :where([data-zriz-item="dial"]) {
     height: 40px;
     overflow-y: visible;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 48px,
+      #000 calc(100% - 48px),
+      transparent
+    );
+    mask-clip: no-clip;
   }
   :where(
     [data-zriz-item="root"]:is([data-panning], [data-pinching])
@@ -89,6 +93,10 @@
   :where([data-zriz-item="grid"]) {
     opacity: 0;
     transition: opacity 0.3s;
+  }
+  :where([data-shape="circle"] > [data-zriz-item="grid"]) {
+    border-radius: 50%;
+    overflow: clip;
   }
   :where([data-zriz-item="grid"][data-visible]) {
     opacity: 1;
@@ -110,7 +118,7 @@
     height: 20px;
     translate: -2px -2px;
     transform-origin: 2px 2px;
-    background: var(--zriz-line, light-dark(#000, #fff));
+    background: var(--zriz-frame, #fff);
     clip-path: polygon(0 0, 100% 0, 100% 3px, 3px 3px, 3px 100%, 0 100%);
   }
   :where([data-zriz-item="handle"][data-edge$="right"])::before {
@@ -142,7 +150,7 @@
     width: 1px;
     height: 27px;
     translate: -50% 0;
-    background: var(--zriz-line, light-dark(#000, #fff));
+    background: var(--zriz-line, CanvasText);
     transition: 0.25s;
   }
   :where([data-zriz-item="dial"][data-dragging])::after {
@@ -152,10 +160,16 @@
   :where([data-zriz-item="dial-ticks"] > *) {
     width: 1px;
     height: 10px;
-    background: var(--zriz-tick, light-dark(#949494, #666));
+    background: var(
+      --zriz-tick,
+      rgb(
+        from CanvasText calc(148 - r * 0.18) calc(148 - r * 0.18)
+          calc(148 - r * 0.18)
+      )
+    );
   }
   :where([data-zriz-item="dial-ticks"] > [data-major]) {
-    background: var(--zriz-line, light-dark(#000, #fff));
+    background: var(--zriz-line, CanvasText);
   }
   :where([data-zriz-item="dial-ticks"] > [data-fade]) {
     opacity: 0.25;
@@ -174,7 +188,16 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--zriz-line, light-dark(#000, #fff));
+    background: var(--zriz-line, CanvasText);
+  }
+  :where([data-zriz-item="root"][data-disabled])
+    :where(
+      [data-zriz-item="viewport"],
+      [data-zriz-item="area"],
+      [data-zriz-item="handle"],
+      [data-zriz-item="dial"]
+    ) {
+    cursor: not-allowed;
   }
   @media (forced-colors) {
     :where([data-zriz-item="dial"])::after,

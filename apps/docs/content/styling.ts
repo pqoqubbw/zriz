@@ -22,20 +22,26 @@ const STYLING_PAGE = defineDoc({
           column("What the stylesheet sets", "prose"),
         ],
         rows: [
-          ["Viewport", "`overflow: clip` and a grab cursor"],
+          [
+            "Viewport",
+            "`overflow: clip` and a grab cursor, `not-allowed` on it, the crop, the handles and the dial while `Root` is disabled",
+          ],
           ["Mask", "The scrim colour. It fades to 60% during a gesture"],
           [
             "Area",
-            'A 1 px outline inside the crop, a two-tone ring on keyboard focus, and `opacity: 0` on it and its handles while `Root` has `data-transition="rotate"`',
+            "A 1 px outline inside the crop and a two-tone ring on keyboard focus",
           ],
           [
             "Handle",
             'A corner mark of two short lines or an edge bar, and a resize cursor. Corners hide with `shape="circle"`',
           ],
-          ["Grid", "White lines that fade in during a gesture"],
+          [
+            "Grid",
+            "White lines that fade in during a gesture, clipped to the circle on a round crop",
+          ],
           [
             "Dial",
-            "40 px height, sideways clip, a grab cursor, centre line, tick colours, the zero dot",
+            "40 px height, sideways clip with a 48 px fade at each side, a grab cursor, centre line, tick colours, the zero dot",
           ],
         ],
       }),
@@ -84,15 +90,12 @@ const STYLING_PAGE = defineDoc({
           column("What it sets", "prose"),
         ],
         rows: [
-          [
-            "--zriz-scrim",
-            "`#f7f7f7eb`, `#000000c7`",
-            "The mask outside the crop",
-          ],
+          ["--zriz-scrim", "`#000000c7` in both", "The mask outside the crop"],
+          ["--zriz-frame", "`#fff` in both", "Crop outline and handle marks"],
           [
             "--zriz-line",
             "`#000`, `#fff`",
-            "Outline, handle marks, dial centre line, major ticks, zero dot",
+            "Dial centre line, major ticks, zero dot",
           ],
           ["--zriz-grid", "`#fff9` in both", "Grid lines"],
           ["--zriz-tick", "`#949494`, `#666`", "Minor ticks on the dial"],
@@ -114,7 +117,7 @@ const STYLING_PAGE = defineDoc({
     section(
       "Follow dark mode",
       p(
-        "The parts follow the page's `color-scheme`. The light values above apply in light mode and the dark values in dark mode."
+        "The dial follows the page's `color-scheme`: the light values above apply in light mode and the dark values in dark mode. The scrim and the crop frame sit over the photo, so they look the same in both."
       ),
       p("With this rule on the page, the parts follow the system setting:"),
       code("styling/scheme.css"),

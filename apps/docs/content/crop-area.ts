@@ -139,8 +139,8 @@ const CROP_AREA_PAGE = defineDoc({
           ],
           rows: [
             [
-              "--zriz-line",
-              "Paints the frame and the handle marks. [Styling](styling) lists its light and dark values",
+              "--zriz-frame",
+              "Paints the frame and the handle marks, `#fff` by default. [Styling](styling) lists every colour",
             ],
             [
               "--zriz-rotation",

@@ -15,8 +15,8 @@ const lookVariants = cva("", {
   variants: {
     look: {
       default: "",
-      ink: "[--zriz-accent:#3358d4] [--zriz-grid:#ffffffb3] [--zriz-line:#1e3a8a] [--zriz-scrim:#f5f7fbeb] [--zriz-tick:#93a3c4]",
-      soft: "[--zriz-accent:#c4785a] [--zriz-grid:#ffffff80] [--zriz-line:#57534e] [--zriz-scrim:#f8f6f2eb] [--zriz-tick:#b8b0a6]",
+      ink: "[--zriz-accent:#3358d4] [--zriz-frame:#1e3a8a] [--zriz-grid:#ffffffb3] [--zriz-line:#1e3a8a] [--zriz-scrim:#f5f7fbeb] [--zriz-tick:#93a3c4]",
+      soft: "[--zriz-accent:#c4785a] [--zriz-frame:#57534e] [--zriz-grid:#ffffff80] [--zriz-line:#57534e] [--zriz-scrim:#f8f6f2eb] [--zriz-tick:#b8b0a6]",
     } satisfies Record<Look, string>,
   },
 });

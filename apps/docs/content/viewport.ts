@@ -154,7 +154,7 @@ const VIEWPORT_PAGE = defineDoc({
         variables([
           {
             name: "--zriz-scrim",
-            text: "Paints the mask outside the crop. [Styling](styling) lists its light and dark values",
+            text: "Paints the mask outside the crop, `#000000c7` by default. [Styling](styling) lists every colour",
           },
         ]),
         p("The stylesheet fades it during a gesture, see [styling](styling).")
