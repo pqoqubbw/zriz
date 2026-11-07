@@ -141,6 +141,7 @@ const FLIP_OMEGA = 17.6 * TEMPO;
 const REDUCED_MS = 150;
 const REDUCED_OMEGA = 40;
 const SETTLED_PROGRESS = 0.9995;
+const TAU = 2 * Math.PI;
 
 const TRANSITION_BY_REASON: Partial<Record<string, Transition>> = {
   aspect: "morph",
@@ -311,17 +312,16 @@ const pose = (rect: Box, matrix: Matrix3): Pose | null => {
   };
 };
 
-const shortTurn = (from: Pose, to: Pose): number => {
-  const turn = to.angle - from.angle;
+const wrapTurn = (turn: number): number => turn - TAU * Math.round(turn / TAU);
 
-  return turn - 2 * Math.PI * Math.round(turn / (2 * Math.PI));
-};
+const shortTurn = (from: Pose, to: Pose): number =>
+  wrapTurn(to.angle - from.angle);
 
 const blendPose = (from: Pose, to: Pose, t: number, lead: number): Pose => {
   let turn = shortTurn(from, to);
 
   if (lead !== 0) {
-    turn += 2 * Math.PI * Math.round((lead - turn) / (2 * Math.PI));
+    turn += TAU * Math.round((lead - turn) / TAU);
   }
 
   return {
@@ -424,10 +424,7 @@ const leadOf = (
     return lead + (spin * (to.mirror < 0 ? -Math.PI : Math.PI)) / 2;
   }
 
-  const off = to.angle - from.angle - lead;
-
-  return turning &&
-    Math.abs(off - 2 * Math.PI * Math.round(off / (2 * Math.PI))) < 1e-3
+  return turning && Math.abs(wrapTurn(to.angle - from.angle - lead)) < 1e-3
     ? lead
     : 0;
 };
@@ -571,16 +568,6 @@ const viewOf = (cropper: Cropper): View => {
     photo = size ?? photo;
   };
 
-  const paint = (to: Pose | null, matrix: Matrix3): Matrix3 => {
-    if (!blend || !to || !shown) {
-      return matrix;
-    }
-
-    return blend.flip
-      ? lerpMatrix(blend.flip.from, blend.flip.to, blend.t)
-      : poseMatrix(shown);
-  };
-
   const compute = (): ViewFrame | null => {
     followPhoto();
     const state = cropper.getCropState();
@@ -609,22 +596,23 @@ const viewOf = (cropper: Cropper): View => {
     );
     const exact = exactBox(state, placement);
     const to = blend && pose(exact, matrix);
+    let rect = exact;
+
+    drawn = matrix;
 
     if (blend && to) {
       shown = blendPose(blend.from, to, blend.t, blend.lead);
+      ({ rect } = shown);
+
+      drawn = blend.flip
+        ? lerpMatrix(blend.flip.from, blend.flip.to, blend.t)
+        : poseMatrix(shown);
     }
-
-    const painted = paint(to, matrix);
-
-    drawn = painted;
 
     return {
       layout,
-      matrix: painted,
-      rect: snapBox(
-        blend?.flip?.rect ?? (to && shown ? shown.rect : exact),
-        layout.dpr
-      ),
+      matrix: drawn,
+      rect: snapBox(blend?.flip?.rect ?? rect, layout.dpr),
       scale: placement.scale,
       state,
     };
@@ -879,12 +867,10 @@ const viewOf = (cropper: Cropper): View => {
     clearTimers();
     endTransition();
 
-    const grids: Partial<Record<string, Grid>> = {
-      dial: chrome.grid,
-      keyboard: chrome.grid,
-    };
-
-    setChrome({ active: true, grid: grids[reason] ?? "coarse" });
+    setChrome({
+      active: true,
+      grid: reason === "dial" || reason === "keyboard" ? chrome.grid : "coarse",
+    });
 
     if (moving) {
       publish();
