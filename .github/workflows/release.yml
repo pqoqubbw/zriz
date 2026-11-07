@@ -107,7 +107,7 @@ jobs:
           for package in core react; do
             if ! output="$(npm stage publish "./tarballs/zriz-$package-$VERSION.tgz" 2>&1)"; then
               echo "$output"
-              if echo "$output" | grep -qiE 'already|exists|E409'; then
+              if echo "$output" | grep -qiE 'already|exists|previously|E409'; then
                 echo "::warning::@zriz/$package@$VERSION was staged or published before"
               else
                 status=1
