@@ -30,7 +30,9 @@ const Footer = () => (
     </div>
     <div className="flex items-center gap-2 text-faint">
       <Mark className="size-4 shrink-0 text-ink opacity-45" />
-      Made by Dmytro
+      <span>
+        made by <FooterLink href={SITE_LINKS.x}>dmytro</FooterLink>
+      </span>
     </div>
   </footer>
 );

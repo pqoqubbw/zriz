@@ -6,6 +6,7 @@ const SITE_ORIGIN = "https://zriz.dev";
 const SITE_LINKS = {
   github: "https://github.com/pqoqubbw/zriz",
   npm: "https://www.npmjs.com/package/@zriz/react",
+  x: "https://x.com/pqoqubbw",
 } as const;
 
 const SITE_DESCRIPTION =
