@@ -19,7 +19,7 @@ import {
 import type { PointerHandlers } from "./input";
 import { keyed, numberFormat, sliderAria, sliderKey } from "./slider";
 import type { KeyHandlers } from "./slider";
-import { isHtml, showFineGrid, snap, visualScale } from "./view";
+import { isHtml, showFineGrid, snap, subscribe, visualScale } from "./view";
 
 type DialOptions = {
   gain?: number | undefined;
@@ -73,13 +73,7 @@ const dialStateOf = (cropper: Cropper): SharedDial => {
   const state: SharedDial = {
     binders: 0,
     dragging: () => dragging,
-    onChange(listener) {
-      listeners.add(listener);
-
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    onChange: subscribe(listeners),
     options: () => options,
     overshoot: () => overshoot,
     set(nextOvershoot, nextDragging) {

@@ -1065,6 +1065,7 @@ export {
   showFineGrid,
   snap,
   stateAttributes,
+  subscribe,
   viewOf,
   visualScale,
 };
