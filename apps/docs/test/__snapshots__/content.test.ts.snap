@@ -2065,7 +2065,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
     const link = document.createElement("a");
 
     link.href = URL.createObjectURL(blob);
-    const extension = type === "image/webp" ? "webp" : "png";
+    const extension = type.replace("image/", "");
 
     link.download = \`crop.\${extension}\`;
     link.click();
@@ -2079,7 +2079,9 @@ export const SaveCrop = ({ file }: { file: File }) => {
         actionsRef={cropper}
         onLoad={() => setLoaded(file)}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -2134,7 +2136,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
     <span class=k>const</span> link <span class=p>=</span> document<span class=p>.</span><span class=t>createElement</span><span class=p>(</span><span class=s>"a"</span><span class=p>);</span>
 
     link<span class=p>.</span>href <span class=p>=</span> URL<span class=p>.</span><span class=t>createObjectURL</span><span class=p>(</span>blob<span class=p>);</span>
-    <span class=k>const</span> extension <span class=p>=</span> type <span class=p>=== </span><span class=s>"image/webp" </span><span class=p>? </span><span class=s>"webp" </span><span class=p>: </span><span class=s>"png"</span><span class=p>;</span>
+    <span class=k>const</span> extension <span class=p>=</span> type<span class=p>.</span><span class=t>replace</span><span class=p>(</span><span class=s>"image/"</span><span class=p>, </span><span class=s>""</span><span class=p>);</span>
 
     link<span class=p>.</span>download <span class=p>= </span><span class=s>\`crop.</span><span class=p>\${</span>extension<span class=p>}</span><span class=s>\`</span><span class=p>;</span>
     link<span class=p>.</span><span class=t>click</span><span class=p>();</span>
@@ -2148,7 +2150,9 @@ export const SaveCrop = ({ file }: { file: File }) => {
         <span class=a>actionsRef</span><span class=p>={</span>cropper<span class=p>}</span>
         <span class=a>onLoad</span><span class=p>={() =&gt; </span><span class=t>setLoaded</span><span class=p>(</span>file<span class=p>)}</span>
       <span class=p>&gt;</span>
-        <span class=p>&lt;</span><span class=t>Cropper.Viewport </span><span class=a>style</span><span class=p>={{</span> width<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}&gt;</span>
+        <span class=p>&lt;</span><span class=t>Cropper.Viewport</span>
+          <span class=a>style</span><span class=p>={{</span> maxWidth<span class=p>: </span><span class=n>480</span><span class=p>,</span> height<span class=p>: </span><span class=n>360 </span><span class=p>}}</span>
+        <span class=p>&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Image </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Mask </span><span class=p>/&gt;</span>
           <span class=p>&lt;</span><span class=t>Cropper.Area </span><span class=a>aria-label</span><span class=p>="</span><span class=s>Crop area</span><span class=p>" /&gt;</span>
@@ -6383,7 +6387,7 @@ What each set of imports adds to your bundle, minified and compressed with Brotl
 
 | Set | Imports | Brotli |
 | - | - | - |
-| Editor | Every part from \`@zriz/react/cropper\` | 32.28 kB |
+| Editor | Every part from \`@zriz/react/cropper\` | 32.31 kB |
 | Avatar | \`Root\`, \`Viewport\`, \`Image\`, \`Mask\`, \`Area\` | 25.67 kB |
 | Root only | \`Root\` | 18.20 kB |
 | Vanilla avatar | \`createCropper\`, \`loadImage\`, \`attachImage\`, \`bindViewport\`, \`bindPhoto\`, \`bindMask\` and \`bindArea\` | 21.10 kB |
@@ -6404,12 +6408,12 @@ Four chunks stay out of the first load and download the first time a photo needs
 
 | Chunk | Loads when | Brotli |
 | - | - | - |
-| Render | The first export. It starts downloading once the first photo attaches | 2.30 kB |
+| Render | The first export. It starts downloading once the first photo attaches | 2.94 kB |
 | Sharpen | The sharper redraw at rest and on deep zoom. It starts downloading after the first paint | 546 B |
 | SVG | The photo is an SVG | 891 B |
 | Source | You pass an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` to \`loadImage\`, or your \`decode\` option runs after the browser fails to decode. \`Root\` never loads it | 557 B |
 
-With all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 29.96 kB. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.68 kB.
+With all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 30.61 kB. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.68 kB.
 
 ## Dependencies
 
@@ -7550,7 +7554,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
     const link = document.createElement("a");
 
     link.href = URL.createObjectURL(blob);
-    const extension = type === "image/webp" ? "webp" : "png";
+    const extension = type.replace("image/", "");
 
     link.download = \`crop.\${extension}\`;
     link.click();
@@ -7564,7 +7568,9 @@ export const SaveCrop = ({ file }: { file: File }) => {
         actionsRef={cropper}
         onLoad={() => setLoaded(file)}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />
@@ -7597,10 +7603,10 @@ With \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
 
 - \`type\` \`"image/jpeg" | "image/png" | "image/webp"\` = \`"image/jpeg"\`
 
-  The file format. A circle crop defaults to PNG. JPEG has no transparency, so clear pixels come out white
+  The file format. A circle crop defaults to PNG. JPEG has no transparency, so clear pixels come out white. Safari cannot write WebP, so there you get JPEG, or PNG for a circle
 - \`quality\` \`number\` = \`0.9\`
 
-  JPEG and WebP quality, from 0 to 1
+  JPEG and WebP quality, from 0 to 1. For a JPEG photo the default drops to the photo's own quality, so the file does not grow when you only crop it
 - \`maxSize\` \`{ width, height }\`
 
   Scales the file down to fit inside this box, never up. A box with a side that is not a positive number is ignored
@@ -7614,7 +7620,7 @@ With \`shape="circle"\` on \`Root\`, \`exportCrop\` reads the shape and returns 
 
   Cancels a running export, which then rejects with \`aborted\`
 
-\`exportCrop\` resolves to \`{ blob, type, width, height, scaled, crop }\`. Read \`type\` before you name the file, because a browser that cannot encode the type you asked for returns PNG. \`scaled\` is \`true\` when the file came out smaller than the crop. Three things cause it: \`maxSize\`, the export size limit in [loading images](https://zriz.dev/docs/loading-images.md), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. \`crop\` is the export plan the file was drawn from, at the scale it came out.
+\`exportCrop\` resolves to \`{ blob, type, width, height, scaled, crop }\`. Read \`type\` before you name the file, because a browser that cannot encode the type you asked for returns another one. \`scaled\` is \`true\` when the file came out smaller than the crop. Three things cause it: \`maxSize\`, the export size limit in [loading images](https://zriz.dev/docs/loading-images.md), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. \`crop\` is the export plan the file was drawn from, at the scale it came out.
 
 Exports run one at a time, in the order you call them. An aborted export stops waiting at once, but one the browser already started holds the next one back until it ends.
 

@@ -19,7 +19,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           column("Brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["Editor", "Every part from `@zriz/react/cropper`", "32.28 kB"],
+          ["Editor", "Every part from `@zriz/react/cropper`", "32.31 kB"],
           ["Avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "25.67 kB"],
           ["Root only", "`Root`", "18.20 kB"],
           [

@@ -39,13 +39,13 @@ const EXPORTING_PAGE = defineDoc({
           {
             default: '"image/jpeg"',
             name: "type",
-            text: "The file format. A circle crop defaults to PNG. JPEG has no transparency, so clear pixels come out white",
+            text: "The file format. A circle crop defaults to PNG. JPEG has no transparency, so clear pixels come out white. Safari cannot write WebP, so there you get JPEG, or PNG for a circle",
             type: '"image/jpeg" | "image/png" | "image/webp"',
           },
           {
             default: "0.9",
             name: "quality",
-            text: "JPEG and WebP quality, from 0 to 1",
+            text: "JPEG and WebP quality, from 0 to 1. For a JPEG photo the default drops to the photo's own quality, so the file does not grow when you only crop it",
             type: "number",
           },
           {
@@ -73,7 +73,7 @@ const EXPORTING_PAGE = defineDoc({
         "Option"
       ),
       p(
-        "`exportCrop` resolves to `{ blob, type, width, height, scaled, crop }`. Read `type` before you name the file, because a browser that cannot encode the type you asked for returns PNG. `scaled` is `true` when the file came out smaller than the crop. Three things cause it: `maxSize`, the export size limit in [loading images](loading-images), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. `crop` is the export plan the file was drawn from, at the scale it came out."
+        "`exportCrop` resolves to `{ blob, type, width, height, scaled, crop }`. Read `type` before you name the file, because a browser that cannot encode the type you asked for returns another one. `scaled` is `true` when the file came out smaller than the crop. Three things cause it: `maxSize`, the export size limit in [loading images](loading-images), and the retry at half and a quarter of the size when the browser cannot draw or encode the file. `crop` is the export plan the file was drawn from, at the scale it came out."
       ),
       p(
         "Exports run one at a time, in the order you call them. An aborted export stops waiting at once, but one the browser already started holds the next one back until it ends."

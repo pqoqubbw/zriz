@@ -3,6 +3,7 @@ import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
 import { outputLimit, toZriz } from "./image";
 import type { ExportOptions, ExportResult, LoadedImage } from "./image";
+import { encoderQuality, jpegQuality } from "./jpeg-quality";
 import { loadElement } from "./media";
 import { renderKernel } from "./render-kernel";
 import type { RenderJob, RenderKernel, RenderReply } from "./render-kernel";
@@ -27,6 +28,32 @@ const renderOff = async (job: RenderJob): Promise<RenderReply> =>
 
 const renderHere = async (job: RenderJob): Promise<RenderReply> =>
   await rendering().here().render(job);
+
+const qualityFor = async (
+  image: LoadedImage,
+  options: ExportOptions,
+  type: string
+): Promise<number> => {
+  if (options.quality !== undefined) {
+    return options.quality;
+  }
+
+  if (
+    type === "image/png" ||
+    image.mime !== "image/jpeg" ||
+    !(image.source instanceof Blob)
+  ) {
+    return DEFAULT_QUALITY;
+  }
+
+  const source = await jpegQuality(image.source).catch(() => null);
+
+  if (source === null) {
+    return DEFAULT_QUALITY;
+  }
+
+  return Math.min(DEFAULT_QUALITY, await encoderQuality(source));
+};
 
 const firstScale = (
   base: Size,
@@ -64,6 +91,7 @@ const exportImage = async (
   const type =
     options.type ?? (options.shape === "circle" ? "image/png" : "image/jpeg");
   const first = firstScale(base, options, type);
+  const quality = await qualityFor(image, options, type);
   const scales = [first, first / 2, first / 4];
   const crops = scales.map((scale) => cropper.getPixelCrop(scale) ?? base);
   const plans = crops.map((plan) => ({
@@ -106,7 +134,7 @@ const exportImage = async (
         colorSpace: options.colorSpace ?? "srgb",
         image: state.image,
         plans,
-        quality: options.quality ?? DEFAULT_QUALITY,
+        quality,
         source,
         type,
       });

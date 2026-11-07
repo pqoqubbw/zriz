@@ -350,6 +350,39 @@ const renderKernel = (): RenderKernel => {
     });
   };
 
+  const encodes = new Map<string, Promise<boolean>>();
+
+  const supports = async (type: string): Promise<boolean> => {
+    let known = encodes.get(type);
+
+    if (!known) {
+      const probe = canvasFor(1, 1);
+
+      contextOf(probe, "srgb").fillRect(0, 0, 1, 1);
+
+      known = encode(probe, type, 1)
+        .then(
+          (blob) => blob.type === type,
+          () => false
+        )
+        .finally(() => {
+          free(probe);
+        });
+
+      encodes.set(type, known);
+    }
+
+    return await known;
+  };
+
+  const typeFor = async (job: RenderJob): Promise<string> => {
+    if (job.type !== "image/webp" || (await supports(job.type))) {
+      return job.type;
+    }
+
+    return job.circle ? "image/png" : "image/jpeg";
+  };
+
   const decodeFull = async (blob: Blob): Promise<ImageBitmap> => {
     try {
       return await createImageBitmap(blob);
@@ -359,7 +392,8 @@ const renderKernel = (): RenderKernel => {
   };
 
   return {
-    async render(job) {
+    async render(asked) {
+      const job = { ...asked, type: await typeFor(asked) };
       const opened =
         job.source instanceof Blob ? await decodeFull(job.source) : job.source;
       const full: Drawable =

@@ -36,7 +36,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
     const link = document.createElement("a");
 
     link.href = URL.createObjectURL(blob);
-    const extension = type === "image/webp" ? "webp" : "png";
+    const extension = type.replace("image/", "");
 
     link.download = `crop.${extension}`;
     link.click();
@@ -50,7 +50,9 @@ export const SaveCrop = ({ file }: { file: File }) => {
         actionsRef={cropper}
         onLoad={() => setLoaded(file)}
       >
-        <Cropper.Viewport style={{ width: 480, height: 360 }}>
+        <Cropper.Viewport
+          style={{ maxWidth: 480, height: 360 }}
+        >
           <Cropper.Image />
           <Cropper.Mask />
           <Cropper.Area aria-label="Crop area" />

@@ -128,7 +128,7 @@
         "dist/index.js": "{ createCropper }",
         "dist/dom/index.js": "{ bindViewport, bindPhoto, bindMask, bindArea, attachImage, loadImage }"
       },
-      "limit": "25394 B"
+      "limit": "26040 B"
     },
     {
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
@@ -152,7 +152,7 @@
       "name": "exportCrop total (with render chunk)",
       "path": "dist/dom/index.js",
       "import": "{ exportCrop }",
-      "limit": "4000 B"
+      "limit": "4650 B"
     },
     {
       "name": "loadImage",
@@ -167,7 +167,7 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3680 B"
+      "limit": "4330 B"
     },
     {
       "name": "lazy chunk dom/svg",

@@ -361,6 +361,17 @@ describe("load and export", () => {
     const result = await exportImage(cropper, image, { type: "image/webp" });
 
     expect(result.type).toBe(result.blob.type);
+    expect(["image/webp", "image/jpeg"]).toContain(result.type);
+  });
+
+  it("keeps a round crop transparent when the browser cannot write webp", async () => {
+    const image = await loadImage(await fixture("orient-1.jpg"));
+    const cropper = createCropper({ image });
+    const result = await exportImage(cropper, image, {
+      shape: "circle",
+      type: "image/webp",
+    });
+
     expect(["image/webp", "image/png"]).toContain(result.type);
   });
 
@@ -651,6 +662,61 @@ const centreRowDeviation = ({ data, height, width }: ImageData): number => {
     values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length
   );
 };
+
+const photoJpeg = async (quality: number): Promise<Blob> => {
+  const canvas = new OffscreenCanvas(1200, 900);
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("no 2d context");
+  }
+
+  const gradient = context.createLinearGradient(0, 0, 1200, 900);
+
+  gradient.addColorStop(0, "rgb(30 80 160)");
+  gradient.addColorStop(1, "rgb(220 160 60)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 1200, 900);
+  let seed = 7;
+
+  for (let i = 0; i < 6000; i += 1) {
+    seed = (seed * 16_807) % 2_147_483_647;
+    const x = seed % 1200;
+
+    seed = (seed * 16_807) % 2_147_483_647;
+    const y = seed % 900;
+
+    context.fillStyle = `hsl(${(x + y) % 360} 60% ${30 + (seed % 40)}%)`;
+    context.fillRect(x, y, 3 + (seed % 9), 3 + (seed % 7));
+  }
+
+  return await canvas.convertToBlob({ quality, type: "image/jpeg" });
+};
+
+describe("export size", () => {
+  it.each([0.6, 0.75, 0.85])(
+    "keeps a jpeg saved at %s no larger than the file it came from",
+    async (quality) => {
+      const source = await photoJpeg(quality);
+      const image = await loadImage(source);
+      const cropper = createCropper({ image });
+      const result = await exportImage(cropper, image);
+
+      expect(result.type).toBe("image/jpeg");
+      expect(result.width).toBe(1200);
+      expect(result.blob.size).toBeLessThanOrEqual(source.size * 1.05);
+    }
+  );
+
+  it("still takes the quality it is given", async () => {
+    const source = await photoJpeg(0.6);
+    const image = await loadImage(source);
+    const cropper = createCropper({ image });
+    const result = await exportImage(cropper, image, { quality: 0.95 });
+
+    expect(result.blob.size).toBeGreaterThan(source.size * 1.2);
+  });
+});
 
 describe("export quality", () => {
   it.each(["srgb", "display-p3"] as const)(

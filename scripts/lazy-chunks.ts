@@ -22,7 +22,7 @@ interface Measured {
 const CHECK_NAME = "avatar total (with lazy chunks)";
 const EMPTY_PROJECT_IMPORT_BROTLI = 18;
 const LIMITS: Record<string, number> = {
-  render: 2310,
+  render: 2950,
   sharpen: 556,
   source: 567,
   svg: 901,
