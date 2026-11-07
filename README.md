@@ -1,10 +1,10 @@
 # zriz
 
-Headless image cropper for the web with the feel of iOS Photos. Straighten with a dial, and the photo zooms just enough that the crop never shows an empty corner. Let go, and the crop box springs back to the centre.
+Headless image cropper for React and plain TypeScript, with the feel of the crop tool in iOS Photos. Crop a photo, straighten it with a dial, rotate, flip and zoom it, then export the result.
 
-- No empty corners at any angle, on screen and in the exported file.
-- Pinch, twist, wheel and trackpad zoom, with a rubber band at the edges.
 - Unstyled parts you compose and style yourself, plus an optional stylesheet.
+- Pinch, twist, wheel and trackpad zoom, with a rubber band at the edges.
+- No empty corners at any angle, on screen and in the exported file.
 - Full keyboard control, screen reader labels and reduced motion.
 - Export in a worker from the full-resolution photo, or crop on your server with sharp. A cropped JPEG never comes out at a higher quality than the photo it came from.
 - Opens SVG too, after a check that refuses a file that would freeze the page.

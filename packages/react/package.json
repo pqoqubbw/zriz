@@ -1,7 +1,7 @@
 {
   "name": "@zriz/react",
   "version": "0.0.0",
-  "description": "Headless image cropper for React with the feel of iOS Photos: straighten dial, no empty corners.",
+  "description": "Headless image cropper for React: crop, straighten, rotate, flip and zoom a photo.",
   "keywords": [
     "crop",
     "cropper",

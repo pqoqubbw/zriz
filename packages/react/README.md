@@ -1,6 +1,6 @@
 # @zriz/react
 
-Headless image cropper for React with the feel of iOS Photos. A dial straightens the photo, the photo zooms just enough that the crop never shows an empty corner, and the crop box springs back to the centre when you let go.
+Headless image cropper for React, with the feel of the crop tool in iOS Photos. Crop a photo, straighten it with a dial, rotate, flip and zoom it, then export the result. Every part comes unstyled.
 
 Docs and live demos: [zriz.dev](https://zriz.dev).
 
