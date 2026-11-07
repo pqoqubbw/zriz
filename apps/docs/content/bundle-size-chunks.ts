@@ -4,6 +4,6 @@ const LAZY_CHUNKS = {
   source: 557,
   svg: 2126,
 };
-const AVATAR_TOTAL = 31_834;
+const AVATAR_TOTAL = 31_593;
 
 export { AVATAR_TOTAL, LAZY_CHUNKS };
