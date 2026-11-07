@@ -72,7 +72,7 @@ const violations = async (): Promise<string[]> => {
   return result.violations.map((each) => `${each.id}: ${each.help}`);
 };
 
-const WEBP = server.browser === "webkit" ? "image/png" : "image/webp";
+const WEBP = server.browser === "webkit" ? "image/jpeg" : "image/webp";
 
 describe("exporting demo", () => {
   beforeEach(async () => {
