@@ -35,6 +35,7 @@
   }
   :where([data-zriz-item="area"][data-visible])::after {
     content: "";
+    pointer-events: none;
     position: absolute;
     inset: 1px;
     outline: 1px solid var(--zriz-line, light-dark(#000, #fff));

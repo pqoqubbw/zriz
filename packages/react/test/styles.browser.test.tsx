@@ -275,6 +275,41 @@ describe("default styles", () => {
     expect(document.elementFromPoint(left + 55, top + 5)).toBe(mask);
   });
 
+  it("lets every point of a handle's box reach the handle", async () => {
+    const api = createRef<CropperApi>();
+
+    await render(<Editor api={api} />);
+    await frames(3);
+    const handles = [
+      ...document.querySelectorAll<HTMLElement>('[data-zriz-item="handle"]'),
+    ];
+    const view = pick('[data-zriz-item="viewport"]').getBoundingClientRect();
+    const missed: string[] = [];
+
+    for (const handle of handles) {
+      const box = handle.getBoundingClientRect();
+      const left = Math.max(box.left, view.left);
+      const top = Math.max(box.top, view.top);
+      const right = Math.min(box.right, view.right);
+      const bottom = Math.min(box.bottom, view.bottom);
+
+      for (let x = left + 1; x < right - 1; x += 4) {
+        for (let y = top + 1; y < bottom - 1; y += 4) {
+          const hit = document.elementFromPoint(x, y);
+
+          if (!hit || !handle.contains(hit)) {
+            missed.push(
+              `${handle.dataset.edge} ${x - box.left},${y - box.top}`
+            );
+          }
+        }
+      }
+    }
+
+    expect(handles).toHaveLength(3);
+    expect(missed).toStrictEqual([]);
+  });
+
   it("writes a fallback gradient the engine accepts", () => {
     const box = { height: 200, width: 200, x: 10, y: 10 };
 

@@ -28,13 +28,13 @@ const BUNDLE_SIZE_PAGE = defineDoc({
             "21.10 kB",
           ],
           ["Server", "`toSharp` from `@zriz/core`", "723 B"],
-          ["Stylesheet", "`styles.css`, which is optional", "893 B"],
+          ["Stylesheet", "`styles.css`, which is optional", "900 B"],
         ],
       }),
       p(
         "Measured with size-limit 14.3.0 on the 0.0.0 packages. It bundles each set with Rolldown 1.2.15, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the `production` export condition, so development warnings do not count."
       ),
-      p("With gzip, the stylesheet is 1020 B."),
+      p("With gzip, the stylesheet is 1030 B."),
       p(
         "The same sets built with Rollup 4, Vite 7 and 8, webpack 5 and Next 16, with Turbopack or webpack, come out between 2.2% smaller and 7.4% larger. esbuild comes out up to 16.3% larger."
       ),
