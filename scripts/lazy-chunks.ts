@@ -25,7 +25,7 @@ const LIMITS: Record<string, number> = {
   render: 2950,
   sharpen: 556,
   source: 567,
-  svg: 901,
+  svg: 2140,
 };
 
 const root = path.resolve(import.meta.dirname, "..");

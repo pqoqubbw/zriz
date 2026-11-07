@@ -46,8 +46,8 @@ const ERRORS_PAGE = defineDoc({
           ],
           [
             "too-large",
-            "A file's header or decoded image has more pixels than `maxPixels`, 268402689 by default. This also covers a `decode` function, but not an SVG or an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` source",
-            "Send a smaller file. To open it anyway, load the photo yourself with a higher `maxPixels`, as in [loading images](loading-images)",
+            "A file's header or decoded image has more pixels than `maxPixels`, 268402689 by default. This also covers a `decode` function, but not an `img`, `video`, `canvas`, `OffscreenCanvas` or `ImageBitmap` source. An SVG fails with it when drawing it would freeze the page, see [security](security)",
+            "Send a smaller file. To open it anyway, load the photo yourself with a higher `maxPixels`, as in [loading images](loading-images). For an SVG, send a simpler file or a PNG of it",
           ],
           [
             "timeout",

@@ -68,7 +68,7 @@ const ROOT_PAGE = defineDoc({
           {
             default: "true",
             name: "svg",
-            text: "`false` refuses SVG files, which then fail with `decode`",
+            text: "`false` refuses SVG files, which then fail with `decode`. With `true`, an SVG that would freeze the page fails with `too-large`, see [security](security)",
             type: "boolean",
           },
           {

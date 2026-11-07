@@ -1,9 +1,13 @@
 import { drawn, fitEdge, loadElement, textOf } from "./media";
+import { guardSvg } from "./svg-guard";
 import { svgSize } from "./svg-size";
 
 const fromSvg = async (blob: Blob, edge: number): Promise<ImageBitmap> => {
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const size = fitEdge(svgSize(textOf(bytes)), edge);
+  const text = textOf(bytes);
+
+  guardSvg(text, bytes.length);
+  const size = fitEdge(svgSize(text), edge);
   const reader = new FileReader();
 
   await new Promise((resolve) => {

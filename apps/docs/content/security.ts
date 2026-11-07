@@ -123,7 +123,13 @@ const SECURITY_PAGE = defineDoc({
         "zriz draws an SVG through an `img` from a data URL, so the browser runs no script in it and fetches nothing it points at. We tried scripts, event attributes, `foreignObject`, external images, stylesheets, fonts and `use` in all three engines, with no script run and no request sent. The export is a bitmap, so nothing from the SVG source survives in it."
       ),
       p(
-        "An SVG still draws on the main thread. A file under 2 kB froze the tab for 8 to 15 seconds in our test, and `timeout` cannot stop it. Pass `svg={false}` to `Root` when people upload photos and you have no use for SVG."
+        "Drawing an SVG can still freeze the page. Firefox and Safari draw it on the main thread. A file under 1 kB that repeats one shape through nested `use` grows to a million shapes and froze all three engines for minutes in our test, and `timeout` cannot stop a drawing that has started."
+      ),
+      p(
+        "So zriz reads the file as XML before it draws and counts what the drawing would hold, through every `use`, marker and SVG image inside it. The load fails with `too-large` when the file would draw 50,000 shapes or more, holds 100,000 path points or more, 500,000 characters of text or more, applies a filter to 1,000 shapes or more, chains 40 filter steps or more, uses a convolution matrix of order 7 or more, nests `use` 12 levels deep, refers to itself, or is over 10 MB. The check takes about 10 ms on a 600 kB file. Of 53 real icons, logos, illustrations and maps we tried, none came close, and the largest held 17,916 path points."
+      ),
+      p(
+        "Nested patterns, masks, clip paths, blur and huge sizes need no check, because zriz draws an SVG at most at the preview size. No count can prove that every SVG draws fast, so when people upload photos and you have no use for SVG, pass `svg={false}` to `Root`."
       ),
       p(
         "The danger is your own code using the source. A blob URL of a file runs with your origin when it opens as a document, so a script inside the SVG acts as your site. An `img` is safe. These are not:"

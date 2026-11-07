@@ -6410,10 +6410,10 @@ Four chunks stay out of the first load and download the first time a photo needs
 | - | - | - |
 | Render | The first export. It starts downloading once the first photo attaches | 2.94 kB |
 | Sharpen | The sharper redraw at rest and on deep zoom. It starts downloading after the first paint | 546 B |
-| SVG | The photo is an SVG | 891 B |
+| SVG | The photo is an SVG | 2.13 kB |
 | Source | You pass an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` to \`loadImage\`, or your \`decode\` option runs after the browser fails to decode. \`Root\` never loads it | 557 B |
 
-With all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 30.61 kB. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.68 kB.
+With all four chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to 31.83 kB. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild splits that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.68 kB.
 
 ## Dependencies
 
@@ -7295,7 +7295,7 @@ Every \`ZrizError\` has a \`code\` from the table below, and its message starts 
 | \`cross-origin\` | The server sent the photo without \`Access-Control-Allow-Origin\`, the network dropped, \`connect-src\` in a content security policy blocked the URL, or an \`img\`, \`video\`, \`canvas\` or \`ImageBitmap\` you pass is tainted. Send the header. If the request needs cookies, pass \`crossOrigin="use-credentials"\` to \`Root\`. Add the host to \`connect-src\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`unsupported-format\` | The browser could not decode a HEIC, JPEG XL or TIFF file, because it does not support the format or the file is damaged, either on load or when an export decodes the original again. Try another copy of the file. Call \`loadImage\` yourself with your own \`decode\` function, as in [loading images](https://zriz.dev/docs/loading-images.md), or convert the file to JPEG first |
 | \`decode\` | The URL answered with an error status, the file cannot be read, the file is cut short, the bytes are not an image, Safari refused a BMP with a v4 or v5 header, a zriz chunk failed to download, an \`img\`, \`video\` or \`canvas\` you pass cannot be read, a \`video\` has no current frame, \`img-src\` in a content security policy blocked an SVG or a display-p3 export, the browser gave no 2D canvas, or an export could not decode the original again. Open the URL and check the response. If you are offline, try again once the network is back. If the same error comes back, reload the page, because a browser can keep a failed chunk until then. Wait for \`loadeddata\` before you pass a \`video\`. [Loading images](https://zriz.dev/docs/loading-images.md) lists the \`img-src\` sources |
-| \`too-large\` | A file's header or decoded image has more pixels than \`maxPixels\`, 268402689 by default. This also covers a \`decode\` function, but not an SVG or an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source. Send a smaller file. To open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
+| \`too-large\` | A file's header or decoded image has more pixels than \`maxPixels\`, 268402689 by default. This also covers a \`decode\` function, but not an \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source. An SVG fails with it when drawing it would freeze the page, see [security](https://zriz.dev/docs/security.md). Send a smaller file. To open it anyway, load the photo yourself with a higher \`maxPixels\`, as in [loading images](https://zriz.dev/docs/loading-images.md). For an SVG, send a simpler file or a PNG of it |
 | \`timeout\` | A URL sent no bytes for 15 s, a photo took over 15 s to decode after its last byte, or an export took over 30 s. Time spent waiting behind other photos or exports does not count. Send a smaller file or export a smaller \`maxSize\`. For a slow network, load the photo yourself with a longer \`timeout\`, as in [loading images](https://zriz.dev/docs/loading-images.md) |
 | \`aborted\` | The \`signal\` you passed fired, a new photo or a detach came while the export code was still downloading, or a photo from an \`img\`, \`video\`, \`canvas\`, SVG or \`decode\` function was freed while the export waited its turn. A new photo after that does not stop the export and you get the old crop, so abort with your own \`signal\` when the photo changes. \`Root\` also aborts its own load when \`src\` changes and never reports it. Nothing. Skip this code in your catch |
 | \`blank\` | The browser drew an empty canvas at the export size, then at half and a quarter of it. This is the canvas memory limit, mostly on phones. Set \`maxSize\` to 2048 by 2048 or less |
@@ -8646,7 +8646,7 @@ If that server wants a token in a header, fetch the photo yourself with that hea
 | JPEG, PNG, WebP, AVIF, GIF | Open in every current browser |
 | BMP | Opens in every current browser, but Safari cannot open some BMP files with a v4 or v5 header. Those fail with \`decode\`. Pass a \`decode\` function to open them, or convert the file to JPEG first |
 | HEIC, JPEG XL, TIFF | Open where the browser decodes them. They fail with \`unsupported-format\` elsewhere, and when the file is damaged |
-| SVG | Takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. With one side and a \`viewBox\`, the other follows the ratio. With no \`viewBox\`, a missing width opens at 300 and a missing height at 150. A side in \`%\` or \`em\` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing |
+| SVG | Takes its size from \`width\` and \`height\` in px, in, cm, mm, q, pt or pc, or from \`viewBox\`. With one side and a \`viewBox\`, the other follows the ratio. With no \`viewBox\`, a missing width opens at 300 and a missing height at 150. A side in \`%\` or \`em\` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing. One that would freeze the page fails with \`too-large\`, see [security](https://zriz.dev/docs/security.md) |
 | Animated GIF, PNG, WebP, AVIF | Open on their first frame. From a file or URL, \`animated\` on the loaded image is \`true\`, and always for a GIF. A HEIC sequence also reports \`true\`. An \`img\`, \`video\`, \`canvas\`, \`OffscreenCanvas\` or \`ImageBitmap\` source always reports \`false\`, even an \`img\` showing a GIF. An \`img\` already playing opens on the frame it shows in Safari, so pass a \`Blob\` for the first frame |
 
 zriz walks the structure of a JPEG, PNG, AVIF or HEIC before it decodes, so a file cut short fails with \`decode\` in every browser. Data after the end of the file still opens. Firefox opens a cut GIF, and Firefox and Safari open a cut BMP, with the missing part painted in.
@@ -9120,7 +9120,7 @@ Renders a \`<div>\`. Every other part goes inside it. Every part also takes \`cl
   The longest side of the preview in pixels. The default follows the screen, see [loading images](https://zriz.dev/docs/loading-images.md). A grid of small \`Root\`s saves memory with a low one. A new \`previewEdge\`, \`crossOrigin\` or \`svg\` loads the photo again and fires \`onLoad\` again. The crop stays, so keep \`previewEdge\` steady
 - \`svg\` \`boolean\` = \`true\`
 
-  \`false\` refuses SVG files, which then fail with \`decode\`
+  \`false\` refuses SVG files, which then fail with \`decode\`. With \`true\`, an SVG that would freeze the page fails with \`too-large\`, see [security](https://zriz.dev/docs/security.md)
 - \`image\` \`Size | null\`
 
   The photo's pixel size up front, read once
@@ -9419,7 +9419,11 @@ zriz reads the pixel count before it decodes and refuses a file over \`maxPixels
 
 zriz draws an SVG through an \`img\` from a data URL, so the browser runs no script in it and fetches nothing it points at. We tried scripts, event attributes, \`foreignObject\`, external images, stylesheets, fonts and \`use\` in all three engines, with no script run and no request sent. The export is a bitmap, so nothing from the SVG source survives in it.
 
-An SVG still draws on the main thread. A file under 2 kB froze the tab for 8 to 15 seconds in our test, and \`timeout\` cannot stop it. Pass \`svg={false}\` to \`Root\` when people upload photos and you have no use for SVG.
+Drawing an SVG can still freeze the page. Firefox and Safari draw it on the main thread. A file under 1 kB that repeats one shape through nested \`use\` grows to a million shapes and froze all three engines for minutes in our test, and \`timeout\` cannot stop a drawing that has started.
+
+So zriz reads the file as XML before it draws and counts what the drawing would hold, through every \`use\`, marker and SVG image inside it. The load fails with \`too-large\` when the file would draw 50,000 shapes or more, holds 100,000 path points or more, 500,000 characters of text or more, applies a filter to 1,000 shapes or more, chains 40 filter steps or more, uses a convolution matrix of order 7 or more, nests \`use\` 12 levels deep, refers to itself, or is over 10 MB. The check takes about 10 ms on a 600 kB file. Of 53 real icons, logos, illustrations and maps we tried, none came close, and the largest held 17,916 path points.
+
+Nested patterns, masks, clip paths, blur and huge sizes need no check, because zriz draws an SVG at most at the preview size. No count can prove that every SVG draws fast, so when people upload photos and you have no use for SVG, pass \`svg={false}\` to \`Root\`.
 
 The danger is your own code using the source. A blob URL of a file runs with your origin when it opens as a document, so a script inside the SVG acts as your site. An \`img\` is safe. These are not:
 

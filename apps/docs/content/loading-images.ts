@@ -47,7 +47,7 @@ const LOADING_IMAGES_PAGE = defineDoc({
           ],
           [
             "SVG",
-            "Takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. With one side and a `viewBox`, the other follows the ratio. With no `viewBox`, a missing width opens at 300 and a missing height at 150. A side in `%` or `em` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing",
+            "Takes its size from `width` and `height` in px, in, cm, mm, q, pt or pc, or from `viewBox`. With one side and a `viewBox`, the other follows the ratio. With no `viewBox`, a missing width opens at 300 and a missing height at 150. A side in `%` or `em` counts as missing. zriz draws it once at that size, at most the preview size, and exports from that drawing. One that would freeze the page fails with `too-large`, see [security](security)",
           ],
           [
             "Animated GIF, PNG, WebP, AVIF",
