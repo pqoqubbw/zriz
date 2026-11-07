@@ -165,7 +165,7 @@ const EVENTS_PAGE = defineDoc({
           ],
           [
             "controlled",
-            "The `rotation` and `zoom` props, on the commit and on a change when zriz applied another value. A new `value` prop sends nothing",
+            'The `rotation` and `zoom` props, on the commit and on a change when zriz applied another value, and `shape="circle"` setting the aspect to 1 without a morph. A new `value` prop sends nothing',
           ],
           [
             "imperative",

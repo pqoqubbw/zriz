@@ -17,6 +17,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -156,7 +157,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   ref
 ) {
   const cropper = useCropper({
-    aspect: shape === "circle" ? 1 : aspect,
+    aspect: shape === "circle" && aspect !== undefined ? 1 : aspect,
     cropper: external,
     defaultValue,
     disabled,
@@ -177,13 +178,28 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
   );
 
   const view = viewOf(cropper);
+  const shaped = useRef(false);
 
   useIsomorphicLayoutEffect(() => {
     setCropShape(cropper, shape);
+    const release =
+      shape === "circle"
+        ? (cropper as CropperInternals).retarget({ aspect: 1, lock: true })
+        : undefined;
 
-    return shape === "circle"
-      ? (cropper as CropperInternals).retarget({ aspect: 1, lock: true })
-      : undefined;
+    if (release && cropper.getValue().aspect !== 1) {
+      cropper.setValue(
+        { aspect: 1 },
+        {
+          emit: shaped.current && cropper.getState().ready,
+          reason: "controlled",
+        }
+      );
+    }
+
+    shaped.current = true;
+
+    return release;
   }, [cropper, shape]);
 
   useCircleAspect(cropper, shape, aspect, defaultValue?.aspect, !!external);
