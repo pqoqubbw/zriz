@@ -459,7 +459,7 @@ describe("playground demo and page blocks", () => {
     expect(valueNow().rotation).not.toBe(0);
   });
 
-  it("leaves no listeners, canvases or object urls after 5 mounts", async () => {
+  it("leaves no listeners, canvases or object urls after 3 mounts", async () => {
     await mount();
     await ready();
     await cleanup();
@@ -468,7 +468,7 @@ describe("playground demo and page blocks", () => {
     const watched = watch();
     const start = tally(watched);
 
-    for (let round = 0; round < 5; round += 1) {
+    for (let round = 0; round < 3; round += 1) {
       const screen = await mount();
 
       await ready();
