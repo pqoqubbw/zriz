@@ -6,7 +6,8 @@ Headless image cropper for the web with the feel of iOS Photos. Straighten with 
 - Pinch, twist, wheel and trackpad zoom, with a rubber band at the edges.
 - Unstyled parts you compose and style yourself, plus an optional stylesheet.
 - Full keyboard control, screen reader labels and reduced motion.
-- Export in a worker from the full-resolution photo, or crop on your server with sharp.
+- Export in a worker from the full-resolution photo, or crop on your server with sharp. A cropped JPEG never comes out at a higher quality than the photo it came from.
+- Opens SVG too, after a check that refuses a file that would freeze the page.
 - Zero runtime dependencies. React 18.2 and 19 from one build, and a plain TypeScript API for everything else.
 
 Docs, demos and the API live at [zriz.dev](https://zriz.dev).
