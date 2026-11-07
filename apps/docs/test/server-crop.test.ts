@@ -304,7 +304,7 @@ describe("the documented crop route", () => {
     const response = await post(input, "{}");
 
     expect(response.status).toBe(415);
-    await expect(response.text()).resolves.toContain("jpeg");
+    await expect(response.text()).resolves.toContain("JPEG");
   });
 
   it("opens an avif", async () => {

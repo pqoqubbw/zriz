@@ -30,7 +30,7 @@ const AVATAR_PAGE = defineDoc({
       ),
       excerpt(
         "avatar/avatar-picker.tsx",
-        ["const unreadable", '"this photo'],
+        ["const unreadable", '"This photo'],
         ['{status === "failed"', null]
       )
     ),

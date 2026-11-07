@@ -47,7 +47,7 @@ const SERVER_CROP_PAGE = defineDoc({
       ),
       excerpt(
         "server-crop/crop-upload.tsx",
-        ["const unreadable", '"this photo'],
+        ["const unreadable", '"This photo'],
         ["const [picks", null],
         ["const last", null],
         ["useEffect(() => () => last", ");"],
