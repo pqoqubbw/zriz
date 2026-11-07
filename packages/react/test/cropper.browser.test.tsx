@@ -1352,16 +1352,68 @@ const quietFor = async (ms: number): Promise<void> => {
   });
 };
 
+type AnswerWindow = { close: () => Promise<void> };
+
+const realNow = performance.now.bind(performance);
+
+const afterWindow = (): number => realNow() + ANSWER_WINDOW_MS;
+
+const answerWindow = (): AnswerWindow => {
+  const realTimeout = globalThis.setTimeout;
+  const pending = new Map<ReturnType<typeof setTimeout>, () => void>();
+
+  vi.spyOn(globalThis, "setTimeout").mockImplementation((run, ms) => {
+    const watched =
+      (ms ?? 0) >= 1000 &&
+      new Error("timer").stack?.includes("use-cropper") === true;
+    const id = realTimeout(() => {
+      pending.delete(id);
+
+      if (typeof run === "function") {
+        run();
+      }
+    }, ms);
+
+    if (watched && typeof run === "function") {
+      pending.set(id, () => {
+        run();
+      });
+    }
+
+    return id;
+  });
+
+  return {
+    close: async () => {
+      vi.spyOn(performance, "now").mockImplementation(afterWindow);
+
+      for (const [id, fire] of pending) {
+        pending.delete(id);
+        clearTimeout(id);
+        fire();
+      }
+
+      await frames(2);
+    },
+  };
+};
+
 type Mirrored = { commits: number[]; rotation: number; trail: number[] };
 
 const rotationMirror =
-  (wait: number, settle: number) => async (): Promise<Mirrored> => {
+  (wait: number, settle: number, closing = false) =>
+  async (): Promise<Mirrored> => {
+    const answers = answerWindow();
     const parent = await lateParent(wait);
 
     await parent.press();
     await parent.press();
     await expect.poll(parent.prop, { timeout: 2000 }).toBe(2);
     await quietFor(settle);
+
+    if (closing) {
+      await answers.close();
+    }
 
     return {
       commits: parent.commits,
@@ -1592,10 +1644,7 @@ describe("a controlled parent that answers late", () => {
   it.each([
     ["a parent a little late", rotationMirror(LATE_MS, LATE_MS * 4)],
     ["a parent slower than the first press", rotationMirror(400, 600)],
-    [
-      "a mirror once the window closes",
-      rotationMirror(400, ANSWER_WINDOW_MS + 400),
-    ],
+    ["a mirror once the window closes", rotationMirror(400, 600, true)],
     ["a value object mirror", valueMirror],
   ])("never rewinds %s", async (_name, run) => {
     const out = await run();
@@ -1694,24 +1743,26 @@ describe("a controlled parent that answers late", () => {
   ])(
     "applies %s when the answer window closes",
     async (_name, setup, held, applied) => {
+      const answers = answerWindow();
       const parent = await setup();
 
       await parent.write();
       expect(parent.read()).toBeCloseTo(held);
-      await quietFor(ANSWER_WINDOW_MS);
+      await answers.close();
       expect(parent.read()).toBe(applied);
       parent.after?.();
     }
   );
 
   it("keeps a press made after the parent wrote a reported value", async () => {
+    const answers = answerWindow();
     const parent = await lateParent(0, undefined, false);
 
     await parent.press();
     await parent.press();
     await parent.write(1);
     await parent.press();
-    await quietFor(ANSWER_WINDOW_MS);
+    await answers.close();
     expect(parent.api.current?.getValue().rotation).toBe(3);
   });
 
@@ -1738,6 +1789,7 @@ describe("a controlled parent that answers late", () => {
       );
     };
 
+    const answers = answerWindow();
     const screen = await render(<Host image={PHOTO} />);
 
     await frames(3);
@@ -1756,7 +1808,7 @@ describe("a controlled parent that answers late", () => {
     await screen.rerender(<Host image={PHOTO} />);
     await frames(2);
     api.current?.setRotation(7, { emit: false });
-    await quietFor(ANSWER_WINDOW_MS);
+    await answers.close();
     expect(api.current?.getValue().rotation).toBe(7);
   });
 
