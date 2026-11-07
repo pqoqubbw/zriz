@@ -463,6 +463,7 @@ describe("playground demo and page blocks", () => {
     await mount();
     await ready();
     await cleanup();
+    await wait(1200);
 
     const watched = watch();
     const start = tally(watched);
