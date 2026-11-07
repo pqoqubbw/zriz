@@ -32,15 +32,19 @@ const useBomb = (levels: number, fan = 4): Blob =>
 const repeat = (count: number, item: (index: number) => string): string =>
   Array.from({ length: count }, (_, index) => item(index)).join("");
 
-const outcome = async (blob: Blob): Promise<{ code: string; ms: number }> => {
+const outcome = async (
+  blob: Blob
+): Promise<{ code: string; message: string; ms: number }> => {
   const start = performance.now();
-  const code = await loadImage(blob).then(
-    () => "loaded",
-    (error: unknown) =>
-      error instanceof ZrizError ? error.code : String(error)
+  const [code, message] = await loadImage(blob).then(
+    (): [string, string] => ["loaded", ""],
+    (error: unknown): [string, string] =>
+      error instanceof ZrizError
+        ? [error.code, error.message]
+        : [String(error), String(error)]
   );
 
-  return { code, ms: performance.now() - start };
+  return { code, message, ms: performance.now() - start };
 };
 
 describe("svg that would freeze the page", () => {
@@ -99,9 +103,10 @@ describe("svg that would freeze the page", () => {
       ),
     ],
   ])("refuses %s before it draws", async (_name, blob) => {
-    const { code, ms } = await outcome(blob);
+    const { code, message, ms } = await outcome(blob);
 
     expect(code).toBe("too-large");
+    expect(message).toContain("SVG");
     expect(ms).toBeLessThan(1000);
   });
 });
@@ -132,26 +137,10 @@ describe("svg that draws fine", () => {
         '<marker id="a"><path d="M0 0 L4 2 L0 4 z"/></marker>'
       ),
     ],
+    ["the viewBox fixture", new Blob([viewbox], { type: "image/svg+xml" })],
+    ["the zriz logo", new Blob([logo], { type: "image/svg+xml" })],
+    ["the zriz mark", new Blob([mark], { type: "image/svg+xml" })],
   ])("opens %s", async (_name, blob) => {
     await expect(outcome(blob)).resolves.toMatchObject({ code: "loaded" });
-  });
-
-  it.each([
-    ["the viewBox fixture", viewbox],
-    ["the zriz logo", logo],
-    ["the zriz mark", mark],
-  ])("opens %s", async (_name, text) => {
-    await expect(
-      outcome(new Blob([text], { type: "image/svg+xml" }))
-    ).resolves.toMatchObject({ code: "loaded" });
-  });
-
-  it("names what went wrong", async () => {
-    const error: unknown = await loadImage(useBomb(10)).catch(
-      (error_: unknown) => error_
-    );
-
-    expect(error).toBeInstanceOf(ZrizError);
-    expect(error).toHaveProperty("message", expect.stringContaining("SVG"));
   });
 });

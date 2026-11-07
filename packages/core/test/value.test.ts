@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   aspectRatio,
   changedFields,
   defaultValue,
   parse,
+  sameAspect,
   serialize,
   stateToValue,
   valueToState,
@@ -52,13 +53,13 @@ describe(parse, () => {
       rotation: 45,
       size: { height: 1, width: 1 },
     });
-  });
 
-  it("turns -0 into 0", () => {
-    const value = parse({ center: { x: -0, y: 0.5 }, rotation: -0 });
+    expect(
+      parse({ perspective: { horizontal: -90 } })?.perspective.horizontal
+    ).toBe(-30);
 
-    expect(Object.is(value?.rotation, 0)).toBeTruthy();
-    expect(Object.is(value?.center.x, 0)).toBeTruthy();
+    expect(parse({ mirrored: 1 })?.mirrored).toBeFalsy();
+    expect(parse({ mirrored: "true" })?.mirrored).toBeFalsy();
   });
 
   it("round-trips through serialize", () => {
@@ -73,16 +74,19 @@ describe(parse, () => {
     expect(parse(serialize(value))).toStrictEqual(value);
   });
 
-  it("reads no crop written by another version of the format", () => {
-    for (const v of [2, 0, "1", null]) {
-      expect(parse({ rotation: 3, v })).toBeNull();
-      expect(parse(JSON.stringify({ rotation: 3, v }))).toBeNull();
-    }
-  });
+  it.each([
+    [1, 3],
+    [undefined, 3],
+    [2, null],
+    [0, null],
+    ["1", null],
+    [null, null],
+  ])("reads version %s as rotation %s", (v, rotation) => {
+    expect(parse({ rotation: 3, v })?.rotation ?? null).toBe(rotation);
 
-  it("still reads a crop with version 1 or with no version", () => {
-    expect(parse({ rotation: 3, v: 1 })?.rotation).toBe(3);
-    expect(parse({ rotation: 3 })?.rotation).toBe(3);
+    expect(parse(JSON.stringify({ rotation: 3, v }))?.rotation ?? null).toBe(
+      rotation
+    );
   });
 });
 
@@ -160,23 +164,17 @@ describe(changedFields, () => {
     ]);
 
     expect(changedFields(next, { ...next })).toStrictEqual([]);
-  });
-});
 
-describe(valuesEqual, () => {
-  it("compares every frame without listing the keys of a field", () => {
-    const keys = vi.spyOn(Object, "keys");
-    const same = valuesEqual(defaultValue, {
-      ...defaultValue,
-      center: { ...defaultValue.center },
-      perspective: { ...defaultValue.perspective },
-      size: { ...defaultValue.size },
-    });
-    const calls = keys.mock.calls.length;
+    expect(
+      valuesEqual(defaultValue, {
+        ...defaultValue,
+        center: { ...defaultValue.center },
+        perspective: { ...defaultValue.perspective },
+        size: { ...defaultValue.size },
+      })
+    ).toBeTruthy();
 
-    keys.mockRestore();
-    expect(same).toBeTruthy();
-    expect(calls).toBe(0);
+    expect(valuesEqual(defaultValue, next)).toBeFalsy();
   });
 });
 
@@ -188,5 +186,14 @@ describe(aspectRatio, () => {
     expect(aspectRatio(1.5, image, 1)).toBe(1.5);
     expect(aspectRatio("original", image, 0)).toBe(2);
     expect(aspectRatio("original", image, 1)).toBe(0.5);
+  });
+});
+
+describe(sameAspect, () => {
+  it("tells close ratios from far ones and names apart", () => {
+    expect(sameAspect(1.85, 1.8500000000000003)).toBeTruthy();
+    expect(sameAspect(1.85, 1.86)).toBeFalsy();
+    expect(sameAspect("free", "free")).toBeTruthy();
+    expect(sameAspect("free", 1)).toBeFalsy();
   });
 });

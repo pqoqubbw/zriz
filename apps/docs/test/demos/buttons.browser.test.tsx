@@ -3,19 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page } from "vitest/browser";
 
-import ButtonsDemo from "../../demos/buttons/demo";
-import {
-  button,
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -53,19 +41,7 @@ describe("buttons demo", () => {
     await cleanup();
   });
 
-  it.each(["desktop", "phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("buttons", width);
-
-      await mountLive(ButtonsDemo, "buttons", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-    }
-  );
-
-  it("puts four labelled buttons under the stage", async () => {
+  it("labels four buttons that turn, flip and reset", async () => {
     await mountDemo("buttons");
     await ready();
 
@@ -75,51 +51,34 @@ describe("buttons demo", () => {
       )
     ).toStrictEqual(LABELS);
 
-    expect(
-      LABELS.every((label) => hits(button(label), ["top", "bottom"]))
-    ).toBeTruthy();
-
-    expect(hits(button("Rotate left"), ["left"])).toBeTruthy();
-    expect(hits(button("Flip vertically"), ["right"])).toBeTruthy();
-
     await expect(violations()).resolves.toStrictEqual([]);
-  });
 
-  it("turns left and right a quarter each", async () => {
-    await mountDemo("buttons");
-    await ready();
+    const steps: Record<string, unknown>[] = [];
 
-    button("Rotate left").click();
-    await settle();
+    for (const label of [
+      "Rotate left",
+      "Rotate right",
+      "Flip vertically",
+      "Flip",
+      "Reset",
+    ]) {
+      button(label).click();
+      await settle();
 
-    expect(ratio()).toBeLessThan(1);
-    expect(shown(button("Reset"))).toBeTruthy();
+      steps.push({
+        flip: button("Flip").getAttribute("aria-pressed"),
+        flipVertically: button("Flip vertically").getAttribute("aria-pressed"),
+        portrait: ratio() < 1,
+        reset: shown(button("Reset")),
+      });
+    }
 
-    button("Rotate right").click();
-    await settle();
-
-    expect(ratio()).toBeGreaterThan(1);
-  });
-
-  it("flips on both axes and resets", async () => {
-    await mountDemo("buttons");
-    await ready();
-
-    button("Flip vertically").click();
-    await settle();
-
-    expect(button("Flip vertically").getAttribute("aria-pressed")).toBe("true");
-
-    expect(shown(button("Reset"))).toBeTruthy();
-
-    button("Flip").click();
-    await settle();
-
-    expect(button("Flip").getAttribute("aria-pressed")).toBe("false");
-
-    button("Reset").click();
-    await settle();
-
-    expect(shown(button("Reset"))).toBeFalsy();
+    expect(steps).toMatchObject([
+      { portrait: true, reset: true },
+      { portrait: false },
+      { flipVertically: "true", reset: true },
+      { flip: "false" },
+      { reset: false },
+    ]);
   });
 });

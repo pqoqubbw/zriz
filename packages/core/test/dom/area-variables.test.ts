@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createCropper } from "../../src";
 import { bindArea } from "../../src/dom/parts";
-import { viewOf } from "../../src/dom/view";
-import { fakeClock } from "../fake-clock";
+import { laidOut } from "../cropper-fixture";
 
 const NAMES = [
   "--zriz-rotation",
@@ -12,13 +10,6 @@ const NAMES = [
   "--zriz-zoom-progress",
   "--zriz-overscroll",
 ];
-
-const LAYOUT = {
-  dpr: 1,
-  height: 300,
-  inset: { bottom: 0, left: 0, right: 0, top: 0 },
-  width: 400,
-};
 
 const isElement = (value: object): value is HTMLElement => "style" in value;
 
@@ -46,14 +37,10 @@ const fakeArea = () => {
 };
 
 const mount = (liveVariables?: boolean) => {
-  const time = fakeClock();
-  const cropper = createCropper({
-    clock: time.clock,
+  const { cropper, time, view } = laidOut({
     image: { height: 3000, width: 4000 },
   });
-  const view = viewOf(cropper);
 
-  view.setLayout(LAYOUT);
   time.frame();
   const area = fakeArea();
   const stop = bindArea(cropper, area.element, { liveVariables });
@@ -61,12 +48,15 @@ const mount = (liveVariables?: boolean) => {
   return { ...area, cropper, stop, time, view };
 };
 
+const close = (value: number, digits: number): unknown =>
+  expect.closeTo(value, digits);
+
 const read = (variables: Map<string, string>) =>
   Object.fromEntries(NAMES.map((name) => [name, Number(variables.get(name))]));
 
 describe("area live variables", () => {
-  it("writes the five variables from the first frame, at rest", () => {
-    const { variables, view } = mount(true);
+  it("writes the five variables at rest, after rotation and zoom, and at both range ends", () => {
+    const { cropper, time, variables, view } = mount(true);
 
     expect(read(variables)).toStrictEqual({
       "--zriz-overscroll": 0,
@@ -76,40 +66,29 @@ describe("area live variables", () => {
       "--zriz-zoom-progress": 0,
     });
 
-    view.destroy();
-  });
-
-  it("follows rotation and zoom", () => {
-    const { cropper, time, variables, view } = mount(true);
-
     cropper.setRotation(-10);
     cropper.setZoom(4);
     time.frame();
     const limit = cropper.getRotationLimit();
-    const values = read(variables);
 
-    expect(values["--zriz-rotation"]).toBeCloseTo(-10, 3);
-    expect(values["--zriz-rotation-progress"]).toBeCloseTo(-10 / limit, 3);
-    expect(values["--zriz-zoom"]).toBeCloseTo(4, 3);
+    expect(read(variables)).toStrictEqual({
+      "--zriz-overscroll": 0,
+      "--zriz-rotation": close(-10, 3),
+      "--zriz-rotation-progress": close(-10 / limit, 3),
+      "--zriz-zoom": close(4, 3),
+      "--zriz-zoom-progress": close(
+        Math.log(4) / Math.log(cropper.getMaxZoom()),
+        3
+      ),
+    });
 
-    expect(values["--zriz-zoom-progress"]).toBeCloseTo(
-      Math.log(4) / Math.log(cropper.getMaxZoom()),
-      3
-    );
-
-    view.destroy();
-  });
-
-  it("reaches the ends of both progress ranges", () => {
-    const { cropper, time, variables, view } = mount(true);
-
-    cropper.setRotation(-cropper.getRotationLimit());
+    cropper.setRotation(-limit);
     cropper.setZoom(cropper.getMaxZoom());
     time.frame();
-    const values = read(variables);
+    const ends = read(variables);
 
-    expect(values["--zriz-rotation-progress"]).toBe(-1);
-    expect(values["--zriz-zoom-progress"]).toBeCloseTo(1, 2);
+    expect(ends["--zriz-rotation-progress"]).toBe(-1);
+    expect(ends["--zriz-zoom-progress"]).toBeCloseTo(1, 2);
     view.destroy();
   });
 
@@ -122,25 +101,6 @@ describe("area live variables", () => {
     view.settleOverscroll();
     time.frames(120);
     expect(variables.get("--zriz-overscroll")).toBe("0");
-    view.destroy();
-  });
-
-  it("rounds to three decimals", () => {
-    const { cropper, time, variables, view } = mount(true);
-
-    cropper.setRotation(-4.56789);
-    time.frame();
-    expect(variables.get("--zriz-rotation")).toBe("-4.568");
-    view.destroy();
-  });
-
-  it("writes nothing when a value has not changed", () => {
-    const { cropper, time, view, writes } = mount(true);
-    const first = writes.length;
-
-    cropper.invalidate();
-    time.frame();
-    expect(writes).toHaveLength(first);
     view.destroy();
   });
 

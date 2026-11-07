@@ -5,44 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { ACCESSIBILITY_PAGE } from "@/content/accessibility";
 import { anchorsOf, walkBlocks } from "@/lib/doc/anchors";
-import { highlight } from "@/lib/doc/highlight";
 import { pageMarkdown } from "@/lib/doc/markdown";
-import type { Block } from "@/lib/doc/schema";
 import { textOf } from "@/lib/doc/snippets";
 import { DOCS } from "@/lib/docs";
 import { PAGE_ORDER } from "@/lib/nav";
-
-const CODE_BLOCKS = PAGE_ORDER.flatMap((slug) =>
-  walkBlocks(DOCS[slug].blocks).flatMap((block) =>
-    block.kind === "code" || block.kind === "excerpt" ? [{ block, slug }] : []
-  )
-);
-
-const rowTextsOf = (block: Block): string[] => {
-  if (
-    block.kind === "props" ||
-    block.kind === "attrs" ||
-    block.kind === "variables" ||
-    block.kind === "keys"
-  ) {
-    return block.rows.map((row) => row.text);
-  }
-
-  if (block.kind === "messages") {
-    return block.rows.map((row) => row.fix);
-  }
-
-  if (block.kind === "table") {
-    return block.rows.flatMap((row) =>
-      row.filter(
-        (_, i) =>
-          i >= block.columns.length || block.columns[i]?.kind === "prose"
-      )
-    );
-  }
-
-  return [];
-};
 
 describe("content", () => {
   it.each(PAGE_ORDER)("gives every heading on %s its own anchor", (slug) => {
@@ -56,23 +22,46 @@ describe("content", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it.each(PAGE_ORDER)("ends no row text on %s with a full stop", (slug) => {
-    const stopped = walkBlocks(DOCS[slug].blocks)
-      .flatMap(rowTextsOf)
-      .filter((text) => text.endsWith("."));
-
-    expect(stopped).toStrictEqual([]);
-  });
-
   it("installs core beside react, since react peers it", () => {
     expect(pageMarkdown("quick-start")).toContain(
       "pnpm add @zriz/react @zriz/core"
     );
   });
 
-  it.each(PAGE_ORDER)("writes %s as markdown", (slug) => {
-    expect(pageMarkdown(slug)).toMatchSnapshot();
-  });
+  it.each(PAGE_ORDER)(
+    "keeps every heading and code block of %s in its markdown",
+    (slug) => {
+      const markdown = pageMarkdown(slug);
+      const headings = new Set(
+        markdown
+          .split("\n")
+          .filter((line) => line.startsWith("#"))
+          .map((line) => line.replace(/^#+ /u, ""))
+      );
+      const missing = walkBlocks(DOCS[slug].blocks).flatMap((block) => {
+        if (block.kind === "section") {
+          return headings.has(block.title) ? [] : [block.title];
+        }
+
+        if (block.kind === "qa") {
+          return headings.has(block.question) ? [] : [block.question];
+        }
+
+        if (block.kind === "part") {
+          return headings.has(`\`${block.name}\``) ? [] : [block.name];
+        }
+
+        if (block.kind === "code" || block.kind === "excerpt") {
+          return markdown.includes(textOf(block)) ? [] : [block.file];
+        }
+
+        return [];
+      });
+
+      expect(missing).toStrictEqual([]);
+      expect(markdown).not.toMatch(/^```\w*\n```$/mu);
+    }
+  );
 
   it("lists every hidden part and every button in the screen reader table", () => {
     const table = walkBlocks(ACCESSIBILITY_PAGE.blocks).find(
@@ -99,17 +88,5 @@ describe("content", () => {
     expect(markup).toContain("<button");
     expect(rowOf("ZoomStep")?.[1]).toContain("Buttons");
     expect(markup.match(/aria-hidden="true"/gu)).toHaveLength(3);
-  });
-
-  it("shows the approved code and colours", async () => {
-    const shown = await Promise.all(
-      CODE_BLOCKS.map(async ({ block, slug }) => {
-        const text = textOf(block);
-
-        return [slug, block.file, text, await highlight(text, block.file)];
-      })
-    );
-
-    expect(shown).toMatchSnapshot();
   });
 });

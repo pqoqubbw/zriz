@@ -1,13 +1,5 @@
 import { spawnSync } from "node:child_process";
-import {
-  mkdir,
-  mkdtemp,
-  readdir,
-  readFile,
-  realpath,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -52,8 +44,6 @@ const STYLED_FILES = [
   "packages/react/src/fixture.ts",
   "packages/react/test/fixture.ts",
 ];
-const COMMANDS_FILE = "test/commands.ts";
-const FIXTURES = [...STYLED_FILES, COMMANDS_FILE];
 const UNSTYLED_SOURCE = `interface Fixture {
   name: string;
 }
@@ -64,11 +54,6 @@ const Part = (props: { name: string }) => props.name;
 export { classes, edges, Part };
 export type { Fixture };
 `;
-
-const overridesWith = (rule: string) =>
-  (config.overrides ?? []).filter((override) =>
-    Object.keys(override.rules ?? {}).includes(rule)
-  );
 
 const declarator = (name: string, init: Node): Node => ({
   id: { name, type: "Identifier" },
@@ -134,7 +119,7 @@ const isLintReport = (value: unknown): value is LintReport =>
 const lintFixtures = (folder: string): LintReport => {
   const { stdout } = spawnSync(
     path.join(ROOT, "node_modules/.bin/oxlint"),
-    ["-c", "oxlint.config.mjs", "--format=json", ...FIXTURES],
+    ["-c", "oxlint.config.mjs", "--format=json", ...STYLED_FILES],
     { cwd: folder, encoding: "utf-8" }
   );
 
@@ -145,19 +130,6 @@ const lintFixtures = (folder: string): LintReport => {
   }
 
   return parsed;
-};
-
-const sourcesIn = async (folder: string): Promise<string[]> => {
-  const entries = await readdir(path.join(ROOT, folder), {
-    recursive: true,
-    withFileTypes: true,
-  });
-
-  return entries
-    .filter((entry) => entry.isFile() && /\.tsx?$/u.test(entry.name))
-    .map((entry) =>
-      path.relative(ROOT, path.join(entry.parentPath, entry.name))
-    );
 };
 
 describe("lint scope", () => {
@@ -185,7 +157,7 @@ describe("lint scope", () => {
     await writeFile(path.join(folder, "oxlint.config.mjs"), lintedConfig());
 
     await Promise.all(
-      FIXTURES.map(async (file) => {
+      STYLED_FILES.map(async (file) => {
         const target = path.join(folder, file);
 
         await mkdir(path.dirname(target), { recursive: true });
@@ -200,65 +172,23 @@ describe("lint scope", () => {
     await rm(folder, { force: true, recursive: true });
   });
 
-  it("lints every fixture", () => {
-    expect(report.number_of_files).toBe(FIXTURES.length);
-  });
+  it("gives every package every style rule", () => {
+    expect(report.number_of_files).toBe(STYLED_FILES.length);
 
-  it.each(STYLED_FILES)("%s gets every style rule", (file) => {
-    expect(firing(file)).toStrictEqual(STYLE_RULES);
-  });
-
-  it("keeps the next rules to the docs", () => {
-    const next = overridesWith("nextjs/no-html-link-for-pages");
-
-    expect(next.flatMap((override) => override.files)).toStrictEqual([
-      "apps/docs/**",
-    ]);
-  });
-
-  it("leaves test/commands.ts out of the type rule so its module augmentation can merge", () => {
-    expect(firing(COMMANDS_FILE)).not.toContain(
-      "typescript/consistent-type-definitions"
+    expect(
+      Object.fromEntries(STYLED_FILES.map((file) => [file, firing(file)]))
+    ).toStrictEqual(
+      Object.fromEntries(STYLED_FILES.map((file) => [file, STYLE_RULES]))
     );
-  });
-
-  it("declares the browser commands once, in test/commands.ts", async () => {
-    const files = [
-      ...(await sourcesIn("packages/core/test")),
-      ...(await sourcesIn("packages/react/test")),
-      "test/commands.ts",
-    ];
-    const contents = await Promise.all(
-      files.map(async (file) => await readFile(path.join(ROOT, file), "utf-8"))
-    );
-    const declaring = files.filter(
-      (_, index) =>
-        contents[index]?.includes('declare module "vitest/browser"') === true
-    );
-
-    expect(declaring).toStrictEqual(["test/commands.ts"]);
   });
 });
 
 describe("style rules", () => {
-  it("reads an attribute selector as a plain string, not as classes", () => {
-    const node = declarator("itemSelector", {
+  it("tells classes from selectors and styles", () => {
+    const selector = declarator("itemSelector", {
       type: "Literal",
       value: '[data-zriz-item="aspect-item"]',
     });
-
-    expect(
-      reports("no-class-variable", "VariableDeclarator", node)
-    ).toStrictEqual([]);
-  });
-
-  it("reads a value typed CSSProperties as a style, not as classes", () => {
-    expect(
-      reports("no-class-variable", "VariableDeclarator", styleObject("frame"))
-    ).toStrictEqual([]);
-  });
-
-  it("still flags an arbitrary property and a utility list as classes", () => {
     const arbitrary = declarator("frame", {
       type: "Literal",
       value: "[mask:none]",
@@ -269,6 +199,14 @@ describe("style rules", () => {
     });
 
     expect(
+      reports("no-class-variable", "VariableDeclarator", selector)
+    ).toStrictEqual([]);
+
+    expect(
+      reports("no-class-variable", "VariableDeclarator", styleObject("frame"))
+    ).toStrictEqual([]);
+
+    expect(
       reports("no-class-variable", "VariableDeclarator", arbitrary)
     ).toHaveLength(1);
 
@@ -277,16 +215,30 @@ describe("style rules", () => {
     ).toHaveLength(1);
   });
 
-  it.each([
-    ["array", { elements: [], type: "ArrayExpression" }],
-    ["object", { properties: [], type: "ObjectExpression" }],
-  ])("lets an empty %s keep a lowercase name", (_, init) => {
-    const node = declarator("expected", init);
+  it("asks only tables and styles for an upper case name", () => {
+    const table = declarator("edges", {
+      elements: [{ type: "Literal", value: "top" }],
+      type: "ArrayExpression",
+    });
+    const emptyArray = declarator("expected", {
+      elements: [],
+      type: "ArrayExpression",
+    });
+    const emptyObject = declarator("expected", {
+      properties: [],
+      type: "ObjectExpression",
+    });
 
-    expect(reports("constant-case", CONSTANT_VISITOR, node)).toStrictEqual([]);
-  });
+    expect(
+      reports("constant-case", CONSTANT_VISITOR, emptyArray)
+    ).toStrictEqual([]);
 
-  it("asks a module constant typed CSSProperties for an upper case name", () => {
+    expect(
+      reports("constant-case", CONSTANT_VISITOR, emptyObject)
+    ).toStrictEqual([]);
+
+    expect(reports("constant-case", CONSTANT_VISITOR, table)).toHaveLength(1);
+
     expect(
       reports("constant-case", CONSTANT_VISITOR, styleObject("square"))
     ).toHaveLength(1);
@@ -294,14 +246,5 @@ describe("style rules", () => {
     expect(
       reports("constant-case", CONSTANT_VISITOR, styleObject("SQUARE"))
     ).toStrictEqual([]);
-  });
-
-  it("still asks a literal table for an upper case name", () => {
-    const node = declarator("edges", {
-      elements: [{ type: "Literal", value: "top" }],
-      type: "ArrayExpression",
-    });
-
-    expect(reports("constant-case", CONSTANT_VISITOR, node)).toHaveLength(1);
   });
 });

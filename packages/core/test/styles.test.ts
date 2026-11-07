@@ -11,12 +11,12 @@ const source = readFileSync(
 const version = (major: number, minor = 0): number =>
   major * 65_536 + minor * 256;
 
-const lower = (): string =>
+const lower = (targets: Record<string, number>): string =>
   transform({
     code: source,
     filename: "styles.css",
     minify: true,
-    targets: { chrome: version(111), safari: version(16, 4) },
+    targets,
   }).code.toString();
 
 describe("styles", () => {
@@ -34,40 +34,19 @@ describe("styles", () => {
     }
   });
 
-  it("keeps colours when a consumer's bundler lowers light-dark()", () => {
-    const css = lower();
+  it("keeps its default colours and the page colour scheme through a bundler", () => {
+    expect(source.toString()).not.toContain("light-dark(");
 
-    expect(css).toContain("var(--lightningcss-light");
-
-    expect(css).toMatch(
-      /:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light:initial;[^}]*--lightningcss-dark: ;/u
+    expect(lower({ chrome: version(111), safari: version(16, 4) })).toContain(
+      "CanvasText"
     );
 
-    expect(css).toMatch(
-      /@media[^{]*prefers-color-scheme:\s*dark[^{]*\{:where\(\[data-zriz-item\]\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
-    );
-
-    expect(css).toMatch(
-      /\[data-zriz-item\]:is\(\[data-theme=dark\],\.dark\)\)\{[^}]*--lightningcss-light: ;[^}]*--lightningcss-dark:initial/u
-    );
-  });
-
-  it("still follows the page colour scheme when nothing is lowered", () => {
-    const css = transform({
-      code: source,
-      filename: "styles.css",
-      minify: true,
-      targets: {
+    expect(
+      lower({
         chrome: version(139),
         firefox: version(142),
         safari: version(18),
-      },
-    }).code.toString();
-
-    expect(css).toContain(
-      "color-scheme:light dark;color-scheme:var(--zriz-scheme)"
-    );
-
-    expect(css).not.toContain("--lightningcss");
+      })
+    ).not.toContain("--lightningcss");
   });
 });

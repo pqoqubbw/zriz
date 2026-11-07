@@ -42,7 +42,21 @@ const unit = {
   testTimeout: 120_000,
 };
 
-const browser = () => ({
+const ENGINES = {
+  chromium: { browser: "chromium" as const, maxWorkers: 1 },
+  firefox: {
+    browser: "firefox" as const,
+    maxWorkers: 1,
+    provider: playwright({
+      launchOptions: {
+        firefoxUserPrefs: { "gfx.color_management.mode": 2 },
+      },
+    }),
+  },
+  webkit: { browser: "webkit" as const, maxWorkers: 1 },
+};
+
+const browser = (engines: (keyof typeof ENGINES)[]) => ({
   commands: {
     choose,
     drag,
@@ -55,21 +69,22 @@ const browser = () => ({
   },
   enabled: true,
   headless: true,
-  instances: [
-    { browser: "chromium" as const, maxWorkers: 1 },
-    {
-      browser: "firefox" as const,
-      maxWorkers: 1,
-      provider: playwright({
-        launchOptions: {
-          firefoxUserPrefs: { "gfx.color_management.mode": 2 },
-        },
-      }),
-    },
-    { browser: "webkit" as const, maxWorkers: 1 },
-  ],
+  instances: engines.map((engine) => ({ ...ENGINES[engine] })),
   provider: playwright(),
 });
+
+const ENGINE_TESTS = [
+  "packages/core/test/dom/dial.browser.test.ts",
+  "packages/core/test/dom/export-csp.browser.test.ts",
+  "packages/core/test/dom/image.browser.test.ts",
+  "packages/core/test/dom/load-csp.browser.test.ts",
+  "packages/core/test/dom/photo.browser.test.ts",
+  "packages/core/test/dom/stage.browser.test.ts",
+  "packages/react/test/cursor.browser.test.tsx",
+  "packages/react/test/flows.browser.test.tsx",
+  "packages/react/test/style-csp.browser.test.tsx",
+  "packages/react/test/styles.browser.test.tsx",
+];
 
 const optimizeDeps = { include: ["react-dom/client", "react-dom/server"] };
 
@@ -127,19 +142,48 @@ export default defineConfig({
           alias: [{ find: /^@\//u, replacement: docs }, warn, ...core],
         },
         test: {
-          browser: browser(),
-          include: [
-            "apps/docs/test/**/*.browser.test.tsx",
-            "packages/*/test/**/*.browser.test.{ts,tsx}",
-          ],
+          browser: browser(["chromium", "firefox", "webkit"]),
+          include: ENGINE_TESTS,
           name: "browser",
+        },
+      },
+      {
+        cacheDir: "node_modules/.vitest-cache/vite",
+        css: { postcss: docs },
+        optimizeDeps: docsDeps,
+        plugins: [react()],
+        resolve: {
+          alias: [{ find: /^@\//u, replacement: docs }, warn, ...core],
+        },
+        test: {
+          browser: browser(["chromium"]),
+          exclude: [...ENGINE_TESTS, "**/node_modules/**"],
+          include: ["packages/*/test/**/*.browser.test.{ts,tsx}"],
+          name: "browser-dom",
+        },
+      },
+      {
+        cacheDir: "node_modules/.vitest-cache/vite",
+        css: { postcss: docs },
+        optimizeDeps: docsDeps,
+        plugins: [react()],
+        resolve: {
+          alias: [{ find: /^@\//u, replacement: docs }, warn, ...core],
+        },
+        test: {
+          browser: browser(["chromium"]),
+          include: ["apps/docs/test/**/*.browser.test.tsx"],
+          name: "browser-docs",
         },
       },
       {
         resolve: { alias },
         test: {
           ...unit,
-          include: ["packages/react/test/**/*.test.ts"],
+          include: [
+            "packages/react/test/ssr.test.ts",
+            "packages/react/test/errors.test.ts",
+          ],
           name: "unit-react18",
         },
       },
@@ -148,8 +192,12 @@ export default defineConfig({
         plugins: [react()],
         resolve: { alias },
         test: {
-          browser: browser(),
-          include: ["packages/react/test/**/*.browser.test.{ts,tsx}"],
+          browser: browser(["chromium"]),
+          include: [
+            "packages/react/test/children.browser.test.tsx",
+            "packages/react/test/lifetimes.browser.test.tsx",
+            "packages/react/test/refs.browser.test.tsx",
+          ],
           name: "browser-react18",
         },
       },

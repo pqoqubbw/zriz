@@ -1,4 +1,4 @@
-import { assert, double, pre, property } from "fast-check";
+import { assert, pre, property } from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,8 +6,7 @@ import {
   rubberBand,
   rubberBandPoint,
 } from "../../src/geometry";
-
-const num = (min: number, max: number) => double({ max, min, noNaN: true });
+import { num } from "./arbitraries";
 
 describe("rubber band", () => {
   it("is zero at zero, slope c, bounded by d, monotone and invertible", () => {
@@ -28,6 +27,8 @@ describe("rubber band", () => {
     );
 
     expect(rubberBand(1e-6, 100) / 1e-6).toBeCloseTo(0.55, 5);
+    expect(inverseRubberBand(10, 10)).toBe(Number.POSITIVE_INFINITY);
+    expect(inverseRubberBand(12, 10)).toBe(Number.POSITIVE_INFINITY);
   });
 
   it("stretches a point past its limit along the same line, without a jump", () => {
@@ -52,10 +53,5 @@ describe("rubber band", () => {
     expect(
       rubberBandPoint({ x: 1e-9, y: 0 }, { x: 0, y: 0 }, 50).x
     ).toBeCloseTo(0, 8);
-  });
-
-  it("has no inverse at or past the distance", () => {
-    expect(inverseRubberBand(10, 10)).toBe(Number.POSITIVE_INFINITY);
-    expect(inverseRubberBand(12, 10)).toBe(Number.POSITIVE_INFINITY);
   });
 });

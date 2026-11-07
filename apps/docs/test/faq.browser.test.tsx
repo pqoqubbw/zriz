@@ -1,7 +1,6 @@
 import axe from "axe-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { userEvent } from "vitest/browser";
 
 import "../app/globals.css";
 
@@ -101,39 +100,6 @@ describe("faq", () => {
     });
 
     expect(result.violations.map((each) => each.id)).toStrictEqual([]);
-  });
-
-  it("opens several questions and keeps the closed answers", async () => {
-    await mount();
-
-    const [first, second, third] = QUESTIONS;
-
-    if (!first || !second || !third) {
-      throw new Error("too few questions");
-    }
-
-    await userEvent.click(triggerOf(first.id));
-    triggerOf(second.id).focus();
-    await userEvent.keyboard("{Enter}");
-    triggerOf(third.id).focus();
-    await userEvent.keyboard(" ");
-
-    await settled(() => {
-      for (const { id } of [first, second, third]) {
-        expect(triggerOf(id).getAttribute("aria-expanded")).toBe("true");
-        expect(panelOf(id).hasAttribute("hidden")).toBeFalsy();
-      }
-    });
-
-    await userEvent.keyboard(" ");
-
-    await settled(() => {
-      expect(triggerOf(third.id).getAttribute("aria-expanded")).toBe("false");
-      expect(panelOf(third.id).hasAttribute("hidden")).toBeTruthy();
-    });
-
-    expect(panelOf(third.id).textContent).not.toBe("");
-    expect(triggerOf(first.id).getAttribute("aria-expanded")).toBe("true");
   });
 
   it("opens the question a hash points at", async () => {

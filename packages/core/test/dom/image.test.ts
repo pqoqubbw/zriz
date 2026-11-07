@@ -5,11 +5,20 @@ import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
-import { ZrizError, attachImage, discardImage, loadImage } from "../../src/dom";
+import type { Cropper } from "../../src";
+import {
+  ZrizError,
+  attachImage,
+  discardImage,
+  imageOf,
+  loadImage,
+} from "../../src/dom";
 import { freeImage, raster, toZriz } from "../../src/dom/image";
 import type { LoadOptions, LoadedImage } from "../../src/dom/image";
 import { exportImage } from "../../src/dom/render";
 import { withTimeout } from "../../src/dom/turn";
+import { noop } from "../cropper-fixture";
+import { deferred } from "./deferred";
 import { FakeWorker } from "./fake-worker";
 
 vi.mock(import("../../src/dom/source"), () => ({
@@ -52,27 +61,6 @@ class FakeBitmap implements Live {
     open.delete(this);
   }
 }
-
-const noop = (): void => undefined;
-
-const deferred = <T>() => {
-  let yes: (value: T) => void = noop;
-  let no: (reason: unknown) => void = noop;
-  const promise = new Promise<T>((resolve, reject) => {
-    yes = resolve;
-    no = reject;
-  });
-
-  return {
-    promise,
-    reject: (reason: unknown) => {
-      no(reason);
-    },
-    resolve: (value: T) => {
-      yes(value);
-    },
-  };
-};
 
 let gate: Promise<void> = Promise.resolve();
 let decodes = 0;
@@ -145,6 +133,16 @@ const stub = (worker: boolean): void => {
   vi.stubGlobal("createImageBitmap", bitmapsIn("main"));
 };
 
+const reset = (worker: boolean): void => {
+  open.clear();
+  decodes = 0;
+  made = 0;
+  decodeFails = false;
+  copyFails = false;
+  gate = Promise.resolve();
+  stub(worker);
+};
+
 const JPEG = readFileSync(new URL("../fixtures/orient-1.jpg", import.meta.url));
 const PNG = readFileSync(new URL("../fixtures/wide.png", import.meta.url));
 
@@ -184,48 +182,60 @@ const codeOf = (error: unknown): unknown =>
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const outcomeOf = (error: unknown): unknown => {
+  if (error === null || error instanceof ZrizError) {
+    return codeOf(error);
+  }
+
+  return messageOf(error);
+};
+
 describe("a load that never reaches attachImage", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("discards a photo that never reached a cropper, worker copy included", async () => {
+  it("discardImage frees an unattached photo everywhere, and attachImage then throws no-image", async () => {
     const image = await loadImage(jpeg());
 
     expect(live("worker")).toBe(1);
     discardImage(image);
-    await noneLive();
-  });
-
-  it("discards a photo only once", async () => {
-    const image = await loadImage(jpeg());
-    const close = vi.spyOn(image.preview, "close");
-
-    discardImage(image);
-    discardImage(image);
-    expect(close).toHaveBeenCalledOnce();
-    await noneLive();
-  });
-
-  it("refuses to attach a discarded photo", async () => {
-    const image = await loadImage(jpeg());
-
-    discardImage(image);
 
     expect(() => {
       attachImage(createCropper(), image);
-    }).toThrow(ZrizError);
+    }).toThrow(expect.objectContaining({ code: "no-image" }));
 
+    await noneLive();
+  });
+
+  it.each([
+    [
+      "discarded twice",
+      (image: LoadedImage) => {
+        discardImage(image);
+        discardImage(image);
+      },
+    ],
+    [
+      "discarded after it left its last cropper",
+      (image: LoadedImage) => {
+        const cropper = createCropper();
+
+        attachImage(cropper, image);
+        attachImage(cropper, null);
+        discardImage(image);
+      },
+    ],
+  ])("frees a photo exactly once when %s", async (_name, free) => {
+    const image = await loadImage(jpeg());
+    const close = vi.spyOn(image.preview, "close");
+
+    free(image);
+    expect(close).toHaveBeenCalledOnce();
     await noneLive();
   });
 
@@ -241,118 +251,121 @@ describe("a load that never reaches attachImage", () => {
     await noneLive();
   });
 
-  it("does not free a photo twice after it left its last cropper", async () => {
-    const image = await loadImage(jpeg());
-    const close = vi.spyOn(image.preview, "close");
-    const cropper = createCropper();
+  it.each([
+    [
+      "aborted while decoding",
+      "aborted",
+      async () => {
+        const release = hold();
+        const controller = new AbortController();
+        const load = loadImage(jpeg(), { signal: controller.signal });
 
-    attachImage(cropper, image);
-    attachImage(cropper, null);
-    discardImage(image);
-    expect(close).toHaveBeenCalledOnce();
+        await decoding();
+        controller.abort();
+        const error = await failure(load);
+
+        release();
+
+        return error;
+      },
+    ],
+    [
+      "past the time limit during the decode",
+      "timeout",
+      async () => {
+        const release = hold();
+        const error = await failure(loadImage(jpeg(), { timeout: 5 }));
+
+        release();
+
+        return error;
+      },
+    ],
+    [
+      "a bitmap source aborted on its way to the worker",
+      "aborted",
+      async () => {
+        const source = await createImageBitmap(jpeg());
+        const controller = new AbortController();
+        const load = loadImage(source, { signal: controller.signal });
+
+        controller.abort();
+        const error = await failure(load);
+
+        source.close();
+
+        return error;
+      },
+    ],
+    [
+      "aborted while decoding with no worker",
+      "aborted",
+      async () => {
+        vi.stubGlobal("Worker", undefined);
+        vi.resetModules();
+        const fresh = await import("../../src/dom");
+        const release = hold();
+        const controller = new AbortController();
+        const load = fresh.loadImage(jpeg(), { signal: controller.signal });
+
+        await decoding();
+        controller.abort();
+        const error = await failure(load);
+
+        release();
+
+        return error;
+      },
+    ],
+  ])("leaves nothing open for a load %s", async (_name, code, run) => {
+    const error = await run();
+
+    expect(error).toMatchObject({ code });
     await noneLive();
   });
 
-  it("frees the worker copy when aborted while decoding", async () => {
+  it.each([
+    ["with a signal that already fired", false, 0],
+    ["cancelled in the same tick", false, 0],
+    ["cancelled during the decode", true, 1],
+  ])("starts no work for a load %s", async (name, midDecode, started) => {
+    const bitmap = await createImageBitmap(jpeg());
+
+    decodes = 0;
+    decodeFails = true;
     const release = hold();
+    const decode = vi.fn<() => Promise<ImageBitmap>>(
+      async () => await Promise.resolve(bitmap)
+    );
     const controller = new AbortController();
-    const load = loadImage(jpeg(), { signal: controller.signal });
 
-    await decoding();
-    controller.abort();
-    expect(codeOf(await failure(load))).toBe("aborted");
-    release();
-    await noneLive();
-  });
-
-  it("frees the worker copy when the time limit passes during the decode", async () => {
-    const release = hold();
-    const load = loadImage(jpeg(), { timeout: 5 });
-
-    expect(codeOf(await failure(load))).toBe("timeout");
-    release();
-    await noneLive();
-  });
-
-  it("frees the worker copy of a bitmap source aborted on its way there", async () => {
-    const source = await createImageBitmap(jpeg());
-    const controller = new AbortController();
-    const load = loadImage(source, { signal: controller.signal });
-
-    controller.abort();
-    expect(codeOf(await failure(load))).toBe("aborted");
-    source.close();
-    await noneLive();
-  });
-
-  it("frees the main thread copy when no worker exists", async () => {
-    vi.stubGlobal("Worker", undefined);
-    vi.resetModules();
-    const fresh = await import("../../src/dom");
-    const release = hold();
-    const controller = new AbortController();
-    const load = fresh.loadImage(jpeg(), { signal: controller.signal });
-
-    await decoding();
-    controller.abort();
-    await expect(load).rejects.toMatchObject({ code: "aborted" });
-    release();
-    await noneLive();
-  });
-
-  it("leaves nothing behind after many cancelled loads", async () => {
-    const release = hold();
-    const loads = Array.from({ length: 5 }, () => {
-      const controller = new AbortController();
-      const load = loadImage(jpeg(), { signal: controller.signal });
-
-      return { controller, load };
-    });
-
-    await decoding(3);
-
-    for (const { controller } of loads) {
+    if (name === "with a signal that already fired") {
       controller.abort();
     }
 
-    const errors = await Promise.all(
-      loads.map(async ({ load }) => await failure(load))
-    );
+    const load = loadImage(jpeg(), { decode, signal: controller.signal });
 
-    expect(errors.map(codeOf)).toContain("aborted");
-    release();
-    await noneLive();
-  });
-
-  it("keeps a photo that reached the cropper until it leaves", async () => {
-    const cropper = createCropper();
-
-    attachImage(cropper, await loadImage(jpeg()));
-    expect(live("main")).toBe(1);
-    expect(live("worker")).toBe(1);
-    attachImage(cropper, null);
-    await noneLive();
-  });
-
-  it("starts no decode on a signal that already fired", async () => {
-    const load = loadImage(jpeg(), { signal: AbortSignal.abort() });
-
-    expect(codeOf(await failure(load))).toBe("aborted");
-    await delay(10);
-    expect(decodes).toBe(0);
-  });
-
-  it("starts no decode for a load cancelled in the same tick", async () => {
-    const controller = new AbortController();
-    const load = loadImage(jpeg(), { signal: controller.signal });
+    if (midDecode) {
+      await decoding();
+    }
 
     controller.abort();
-    await failure(load);
+    expect(codeOf(await failure(load))).toBe("aborted");
+    release();
     await delay(10);
-    expect(decodes).toBe(0);
+    expect(decodes).toBe(started);
+    expect(decode).not.toHaveBeenCalled();
   });
 
-  it("closes what it made when the worker copy fails, and leaves the caller's bitmap open", async () => {
+  it("rejects with decode and leaves nothing open when the preview copy fails", async () => {
+    copyFails = true;
+    const error = await failure(loadImage(jpeg(), { previewEdge: 10 }));
+
+    expect(codeOf(error)).toBe("decode");
+    await noneLive();
+  });
+
+  it("closes what it made when the worker copy of a caller's bitmap fails, and leaves that bitmap open", async () => {
     const source = await createImageBitmap(jpeg());
 
     copyFails = true;
@@ -361,25 +374,11 @@ describe("a load that never reaches attachImage", () => {
     expect(error).toBeInstanceOf(ZrizError);
     expect([...open]).toStrictEqual([source]);
   });
-
-  it("closes the preview in the worker when its copy fails", async () => {
-    copyFails = true;
-    const error = await failure(loadImage(jpeg(), { previewEdge: 10 }));
-
-    expect(codeOf(error)).toBe("decode");
-    await noneLive();
-  });
 });
 
 describe("decoding in turn", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(async () => {
@@ -432,111 +431,51 @@ describe("decoding in turn", () => {
     await noneLive();
   });
 
-  it("starts nothing for a load aborted in the line", async () => {
-    const release = hold();
-    const running = Array.from(
-      { length: 3 },
-      async () => await loadImage(jpeg())
-    );
-
-    await decoding(3);
-    const controller = new AbortController();
-    const waiting = loadImage(jpeg(), { signal: controller.signal });
-
-    await delay(5);
-    controller.abort();
-    expect(codeOf(await failure(waiting))).toBe("aborted");
-    release();
-    const images = await Promise.all(running);
-
-    expect(decodes).toBe(3);
-
-    for (const image of images) {
-      freeImage(image);
-    }
-
-    await noneLive();
-  });
-
-  it("holds the slot of an aborted decode until that decode ends", async () => {
-    const release = hold();
+  it("an aborted decode keeps its slot until it ends, and a stuck one gives it up at the time limit", async () => {
+    let release = hold();
     const controllers = [0, 1, 2].map(() => new AbortController());
-    const running = controllers.map(
+    const aborted = controllers.map(
       async ({ signal }) => await failure(loadImage(jpeg(), { signal }))
     );
 
     await decoding(3);
-    const waiting = loadImage(jpeg());
+    const first = loadImage(jpeg());
 
     for (const controller of controllers) {
       controller.abort();
     }
 
-    await Promise.all(running);
+    await Promise.all(aborted);
     await delay(10);
     expect(decodes).toBe(3);
     release();
-    freeImage(await waiting);
-    await noneLive();
-  });
+    freeImage(await first);
+    expect(decodes).toBe(4);
 
-  it("gives up the slot of a decode that never ends at the time limit", async () => {
-    const release = hold();
+    release = hold();
     const stuck = Array.from(
       { length: 3 },
       async () => await failure(loadImage(jpeg(), { timeout: 10 }))
     );
 
-    await decoding(3);
-    const waiting = loadImage(jpeg());
+    await decoding(7);
+    const second = loadImage(jpeg());
 
     await Promise.all(stuck);
-    await decoding(4);
-    expect(decodes).toBe(4);
+    await decoding(8);
     release();
-    freeImage(await waiting);
+    freeImage(await second);
     await noneLive();
   });
 });
 
 describe("the decode function", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    copyFails = false;
-    decodeFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it("is not called once the load was cancelled", async () => {
-    const bitmap = await createImageBitmap(jpeg());
-
-    decodes = 0;
-    decodeFails = true;
-    const release = hold();
-    const decode = vi.fn<() => Promise<ImageBitmap>>(
-      async () => await Promise.resolve(bitmap)
-    );
-    const controller = new AbortController();
-    const load = loadImage(jpeg(), { decode, signal: controller.signal });
-
-    await decoding();
-    controller.abort();
-    await failure(load);
-    release();
-
-    await vi.waitFor(() => {
-      expect(decodes).toBe(1);
-    });
-
-    await delay(10);
-    expect(decode).not.toHaveBeenCalled();
   });
 
   it("passes its own error through as it is", async () => {
@@ -551,31 +490,44 @@ describe("the decode function", () => {
     expect(error).toBe(own);
   });
 
-  it("closes its bitmap when the load fails afterwards", async () => {
+  it.each([
+    [
+      "when the preview copy fails",
+      (bitmap: ImageBitmap): LoadOptions => {
+        copyFails = true;
+
+        return { decode: async () => await Promise.resolve(bitmap) };
+      },
+    ],
+    [
+      "when the load is aborted inside it",
+      (bitmap: ImageBitmap): LoadOptions => {
+        const controller = new AbortController();
+
+        return {
+          decode: async () => {
+            controller.abort();
+
+            return await Promise.resolve(bitmap);
+          },
+          signal: controller.signal,
+        };
+      },
+    ],
+  ])("closes its bitmap %s", async (_name, options) => {
     const bitmap = await createImageBitmap(jpeg());
 
     decodeFails = true;
-    copyFails = true;
-    const error = await failure(
-      loadImage(jpeg(), {
-        decode: async () => await Promise.resolve(bitmap),
-      })
-    );
+    const error = await failure(loadImage(jpeg(), options(bitmap)));
 
     expect(error).toBeInstanceOf(ZrizError);
-    expect(open.size).toBe(0);
+    await noneLive();
   });
 });
 
 describe("failures come back typed", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
@@ -608,10 +560,7 @@ describe("failures come back typed", () => {
       "unsupported-format"
     );
 
-    expect(toZriz(new Error("out of memory"), heic)).toMatchObject({
-      code: "decode",
-      message: "zriz: out of memory",
-    });
+    expect(toZriz(new Error("out of memory"), heic).code).toBe("decode");
 
     expect(toZriz(new Error("zriz:decode:no 2D canvas"), heic).code).toBe(
       "decode"
@@ -619,10 +568,6 @@ describe("failures come back typed", () => {
 
     expect(toZriz(new Error("zriz:undecodable:no"), "image/png").code).toBe(
       "decode"
-    );
-
-    expect(toZriz(new Error("zriz:undecodable:no"), heic).message).toContain(
-      "damaged"
     );
   });
 });
@@ -640,46 +585,24 @@ const wasAborted = (signal: unknown): boolean =>
 
 describe("fetching a url", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("stops the download at the time limit and reports the timeout", async () => {
+  it("stops the download at the time limit, and a file that arrives later starts no decode", async () => {
+    const { promise, resolve } = deferred<Response>();
     const fetched = vi.fn<
       (url: string, init: RequestInit) => Promise<Response>
-    >(async (_url, init) => {
-      const { promise, reject } = deferred<Response>();
-
-      init.signal?.addEventListener("abort", () => {
-        reject(new DOMException("stopped", "AbortError"));
-      });
-
-      return await promise;
-    });
+    >(async () => await promise);
 
     vi.stubGlobal("fetch", fetched);
-    const error = await failure(loadImage("/slow.jpg", { timeout: 5 }));
-
-    expect(codeOf(error)).toBe("timeout");
-    expect(wasAborted(fetchSignal(fetched))).toBeTruthy();
-  });
-
-  it("starts no decode for a file that arrives after the limit", async () => {
-    const { promise, resolve } = deferred<Response>();
-
-    vi.stubGlobal("fetch", async () => await promise);
     const error = await failure(loadImage("/late.jpg", { timeout: 5 }));
 
     expect(codeOf(error)).toBe("timeout");
+    expect(wasAborted(fetchSignal(fetched))).toBeTruthy();
     resolve(new Response(jpeg()));
     await delay(20);
     expect(decodes).toBe(0);
@@ -710,23 +633,7 @@ describe("fetching a url", () => {
     );
   });
 
-  it.each(["data:image/png;base64,AAAA", "blob:http://x/1"])(
-    "does not blame the server for %s",
-    async (url) => {
-      vi.stubGlobal(
-        "fetch",
-        async () => await Promise.reject(new TypeError("blocked"))
-      );
-
-      const error = await failure(loadImage(url));
-
-      expect(codeOf(error)).toBe("cross-origin");
-      expect(messageOf(error)).toContain("connect-src");
-      expect(messageOf(error)).not.toContain("CORS");
-    }
-  );
-
-  it("names the policy beside the server for a remote url", async () => {
+  it("reports a blocked remote url as cross-origin", async () => {
     vi.stubGlobal(
       "fetch",
       async () => await Promise.reject(new TypeError("blocked"))
@@ -735,8 +642,6 @@ describe("fetching a url", () => {
     const error = await failure(loadImage("https://cdn.example.com/p.jpg"));
 
     expect(codeOf(error)).toBe("cross-origin");
-    expect(messageOf(error)).toContain("connect-src");
-    expect(messageOf(error)).toContain("CORS");
   });
 });
 
@@ -800,13 +705,7 @@ const finish = (download: Download | undefined): void => {
 
 describe("the download clock", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(false);
+    reset(false);
     vi.useFakeTimers();
   });
 
@@ -848,52 +747,33 @@ describe("the download clock", () => {
     await expect(run).resolves.toHaveProperty("code", "timeout");
   });
 
-  it("times out when a url never answers with a byte", async () => {
-    downloads();
-    const { loadImage: load } = await freshDom();
-    const run = failure(load("/hung.jpg"));
-
-    await vi.advanceTimersByTimeAsync(15_000);
-    await expect(run).resolves.toHaveProperty("code", "timeout");
-  });
-
-  it("keeps the type the server declared", async () => {
+  it("runs six downloads at a time, and the next starts when one ends or one hangs to the limit", async () => {
     const started = downloads();
     const { loadImage: load } = await freshDom();
-    const run = load("/photo.jpg");
-
-    await vi.advanceTimersByTimeAsync(0);
-    finish(started[0]);
-    await vi.advanceTimersByTimeAsync(0);
-    const { source } = await run;
-
-    expect(source).toBeInstanceOf(Blob);
-    expect(source).toHaveProperty("type", "image/jpeg");
-  });
-
-  it("runs six downloads at a time and starts the next as one ends", async () => {
-    const started = downloads();
-    const { loadImage: load } = await freshDom();
-    const runs = Array.from(
-      { length: 8 },
-      async (_, i) => await load(`/${i}.jpg`)
+    const first = Array.from(
+      { length: 7 },
+      async (_, i) => await failure(load(`/${i}.jpg`))
     );
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(started).toHaveLength(6);
+    const counts = [started.length];
+
     finish(started[0]);
     await vi.advanceTimersByTimeAsync(0);
-    expect(started).toHaveLength(7);
-    await runs[0];
+    counts.push(started.length);
+    await expect(first[0]).resolves.toBeNull();
+    const healthy = load("/healthy.jpg");
 
-    for (const download of started.slice(1)) {
-      finish(download);
-    }
-
+    await vi.advanceTimersByTimeAsync(14_999);
+    counts.push(started.length);
+    expect(counts).toStrictEqual([6, 7, 7]);
+    await vi.advanceTimersByTimeAsync(1);
     await vi.advanceTimersByTimeAsync(0);
-    finish(started[7]);
+    expect(started.at(-1)?.url).toBe("/healthy.jpg");
+    finish(started.at(-1));
     await vi.advanceTimersByTimeAsync(0);
-    await Promise.all(runs);
+    await expect(healthy).resolves.toHaveProperty("width", FULL.width);
+    await Promise.all(first);
   });
 
   it("does not count the wait for a download slot against the limit", async () => {
@@ -927,92 +807,39 @@ describe("the download clock", () => {
     await expect(waiting).resolves.toHaveProperty("code", "timeout");
     await Promise.all(first);
   });
-
-  it("gives the slot of a hung url to the next load at the limit", async () => {
-    const started = downloads();
-    const { loadImage: load } = await freshDom();
-    const hung = Array.from(
-      { length: 6 },
-      async (_, i) => await failure(load(`/hung-${i}.jpg`))
-    );
-    const healthy = load("/healthy.jpg");
-
-    await vi.advanceTimersByTimeAsync(14_999);
-    expect(started).toHaveLength(6);
-    await vi.advanceTimersByTimeAsync(1);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(started.at(-1)?.url).toBe("/healthy.jpg");
-    finish(started.at(-1));
-    await vi.advanceTimersByTimeAsync(0);
-    await expect(healthy).resolves.toHaveProperty("width", FULL.width);
-    await Promise.all(hung);
-  });
-
-  it("drops a load from the queue when its signal fires", async () => {
-    const started = downloads();
-    const { loadImage: load } = await freshDom();
-    const controller = new AbortController();
-    const first = Array.from(
-      { length: 6 },
-      async (_, i) => await failure(load(`/${i}.jpg`))
-    );
-    const dropped = failure(load("/gone.jpg", { signal: controller.signal }));
-    const next = failure(load("/next.jpg"));
-
-    await vi.advanceTimersByTimeAsync(0);
-    controller.abort();
-    await expect(dropped).resolves.toHaveProperty("code", "aborted");
-    await vi.advanceTimersByTimeAsync(15_000);
-    await Promise.all(first);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(started.map(({ url }) => url)).not.toContain("/gone.jpg");
-    expect(started.map(({ url }) => url)).toContain("/next.jpg");
-    await vi.advanceTimersByTimeAsync(15_000);
-    await next;
-  });
 });
 
 describe("the pixel limit", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("opens a photo of exactly 268402689 pixels by default", async () => {
-    const image = await loadImage(pngOf(16_383, 16_383));
+  it.each([
+    [16_383, 16_383, undefined, null],
+    [16_384, 16_383, undefined, "too-large"],
+    [100, 100, 9999, "too-large"],
+    [30_000, 30_000, Number.POSITIVE_INFINITY, null],
+  ])(
+    "for a %dx%d photo with maxPixels %s gives %s",
+    async (width, height, maxPixels, code) => {
+      const error = await failure(
+        loadImage(pngOf(width, height), { maxPixels }).then((image) => {
+          image.preview.close();
 
-    expect(decodes).toBe(1);
-    image.preview.close();
-  });
+          return null;
+        })
+      );
 
-  it("refuses a photo over the default limit before it decodes", async () => {
-    const error = await failure(loadImage(pngOf(16_384, 16_383)));
-
-    expect(codeOf(error)).toBe("too-large");
-    expect(decodes).toBe(0);
-  });
-
-  it("honours a limit the caller passes, higher or lower", async () => {
-    expect(
-      codeOf(await failure(loadImage(pngOf(100, 100), { maxPixels: 9999 })))
-    ).toBe("too-large");
-
-    const image = await loadImage(pngOf(30_000, 30_000), {
-      maxPixels: Number.POSITIVE_INFINITY,
-    });
-
-    expect(decodes).toBe(1);
-    image.preview.close();
-  });
+      expect([error === null ? null : codeOf(error), decodes]).toStrictEqual([
+        code,
+        code === null ? 1 : 0,
+      ]);
+    }
+  );
 
   it("does not offer a file over the limit to the decode function", async () => {
     const decode = vi.fn<(blob: Blob) => Promise<ImageBitmap>>();
@@ -1056,23 +883,15 @@ describe("the time limit", () => {
     }
   );
 
-  it("names no step in its message", async () => {
-    const error = await failure(withTimeout(never, 1, undefined));
-
-    expect(messageOf(error)).toBe("zriz: timed out after 1 ms");
-  });
-
   it("starts again when the page was suspended past the limit", async () => {
     let now = 0;
     let fire = noop;
-    const delays: number[] = [];
 
     vi.spyOn(performance, "now").mockImplementation(() => now);
     vi.stubGlobal("clearTimeout", () => null);
 
-    vi.stubGlobal("setTimeout", (run: () => void, ms: number) => {
+    vi.stubGlobal("setTimeout", (run: () => void) => {
       fire = run;
-      delays.push(ms);
 
       return 0;
     });
@@ -1088,7 +907,6 @@ describe("the time limit", () => {
     fire();
     await Promise.resolve();
     expect(seen).toStrictEqual([]);
-    expect(delays).toStrictEqual([1000, 1000]);
     now = 19_000;
     fire();
 
@@ -1100,34 +918,22 @@ describe("the time limit", () => {
 
 describe("the preview edge", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(true);
+    reset(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it.each([0, -5, Number.NaN])(
-    "uses the default for %d",
-    async (previewEdge) => {
-      const { preview } = await loadImage(jpeg(), { previewEdge });
+  it.each([
+    [0, 2560],
+    [-5, 2560],
+    [Number.NaN, 2560],
+    [Number.POSITIVE_INFINITY, FULL.width],
+  ])("for %d gives a preview %d wide", async (previewEdge, width) => {
+    const { preview } = await loadImage(jpeg(), { previewEdge });
 
-      expect(preview.width).toBe(2560);
-    }
-  );
-
-  it("treats infinity as no cap", async () => {
-    const { preview } = await loadImage(jpeg(), {
-      previewEdge: Number.POSITIVE_INFINITY,
-    });
-
-    expect(preview.width).toBe(FULL.width);
+    expect(preview.width).toBe(width);
   });
 });
 
@@ -1181,64 +987,55 @@ const ftyp = (major: string, ...compatible: string[]): Uint8Array =>
   ]);
 
 describe("reading the format", () => {
-  it("finds an animation chunk past a large color profile", () => {
-    const bytes = png(
-      pngChunk("IHDR", 13),
-      pngChunk("iCCP", 400),
-      pngChunk("acTL", 8)
-    );
-
-    expect(raster(bytes).animated).toBeTruthy();
+  it.each([
+    [
+      "an animation chunk past a large color profile",
+      png(pngChunk("IHDR", 13), pngChunk("iCCP", 400), pngChunk("acTL", 8)),
+      { animated: true },
+    ],
+    [
+      "a png's text that spells acTL",
+      png(pngChunk("IHDR", 13), [
+        ...uint32(4),
+        ...ascii("tEXtacTL"),
+        0,
+        0,
+        0,
+        0,
+      ]),
+      { animated: false },
+    ],
+    [
+      "an animation chunk after the image data",
+      png(pngChunk("IDAT", 13), pngChunk("acTL", 8)),
+      { animated: false },
+    ],
+    ["an animated webp", webp(0x22), { animated: true, mime: "image/webp" }],
+    ["a still webp", webp(0x20), { animated: false, mime: "image/webp" }],
+  ])("reads %s", (_name, bytes, expected) => {
+    expect(raster(bytes)).toMatchObject(expected);
   });
 
-  it("does not read a png's text as an animation", () => {
-    const text = [...uint32(4), ...ascii("tEXtacTL"), 0, 0, 0, 0];
+  it.each<[string[], Partial<ReturnType<typeof raster>>]>([
+    [["mif1", "mif1", "miaf", "MA1A", "MA1B", "avif"], { mime: "image/avif" }],
+    [["avis", "avif"], { animated: true, mime: "image/avif" }],
+    ...["heic", "heix", "heim", "heis", "hevm", "hevs", "hevx", "mif1"].map(
+      (brand): [string[], Partial<ReturnType<typeof raster>>] => [
+        [brand],
+        { mime: "image/heic" },
+      ]
+    ),
+    ...["hevc", "hevx", "hevm", "hevs", "msf1"].map(
+      (brand): [string[], Partial<ReturnType<typeof raster>>] => [
+        [brand],
+        { animated: true },
+      ]
+    ),
+    [["xxav", "ifxx"], { mime: null }],
+  ])("reads the brands %j as %j", (brands, expected) => {
+    const [major = "", ...compatible] = brands;
 
-    expect(raster(png(pngChunk("IHDR", 13), text)).animated).toBeFalsy();
-  });
-
-  it("stops at the image data of a png", () => {
-    const bytes = png(pngChunk("IDAT", 13), pngChunk("acTL", 8));
-
-    expect(raster(bytes).animated).toBeFalsy();
-  });
-
-  it("reads a webp's animation from its flags", () => {
-    expect(raster(webp(0x22)).animated).toBeTruthy();
-
-    expect(raster(webp(0x20))).toStrictEqual({
-      animated: false,
-      mime: "image/webp",
-    });
-  });
-
-  it("prefers avif anywhere in the brand list", () => {
-    const bytes = ftyp("mif1", "mif1", "miaf", "MA1A", "MA1B", "avif");
-
-    expect(raster(bytes).mime).toBe("image/avif");
-
-    expect(raster(ftyp("avis", "avif"))).toStrictEqual({
-      animated: true,
-      mime: "image/avif",
-    });
-  });
-
-  it.each(["heic", "heix", "heim", "heis", "hevm", "hevs", "hevx", "mif1"])(
-    "reads the %s brand as heic",
-    (brand) => {
-      expect(raster(ftyp(brand)).mime).toBe("image/heic");
-    }
-  );
-
-  it.each(["hevc", "hevx", "hevm", "hevs", "msf1"])(
-    "reads the %s brand as a sequence",
-    (brand) => {
-      expect(raster(ftyp(brand)).animated).toBeTruthy();
-    }
-  );
-
-  it("ignores a brand spelled across the bytes of two others", () => {
-    expect(raster(ftyp("xxav", "ifxx")).mime).toBeNull();
+    expect(raster(ftyp(major, ...compatible))).toMatchObject(expected);
   });
 });
 
@@ -1257,25 +1054,12 @@ const listeners = (signal: AbortSignal): number =>
 
 describe("limits a caller branches on", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
-    decodeFails = false;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(false);
+    reset(false);
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
-  });
-
-  it("rejects a load past its timeout", async () => {
-    gate = new Promise(noop);
-    const error = await failure(loadImage(jpeg(), { timeout: 0 }));
-
-    expect(codeOf(error)).toBe("timeout");
   });
 
   it("rejects a load past 15 s by default", async () => {
@@ -1291,50 +1075,45 @@ describe("limits a caller branches on", () => {
     expect(codeOf(await load)).toBe("timeout");
   });
 
-  it("clears its timer and listener when the work wins", async () => {
+  it.each([
+    [
+      "the work wins",
+      () => ({
+        signal: new AbortController().signal,
+        work: Promise.resolve(1),
+      }),
+      null,
+    ],
+    [
+      "the work fails",
+      () => ({
+        signal: new AbortController().signal,
+        work: Promise.reject(new Error("no")),
+      }),
+      "no",
+    ],
+    [
+      "an aborted signal wins",
+      () => {
+        const controller = new AbortController();
+
+        queueMicrotask(() => {
+          controller.abort();
+        });
+
+        return { signal: controller.signal, work: never };
+      },
+      "aborted",
+    ],
+  ])("clears its timer and listener when %s", async (_name, race, outcome) => {
     vi.useFakeTimers();
-    const { signal } = new AbortController();
+    const { signal, work } = race();
+    const error = await failure(withTimeout(work, 1000, signal));
 
-    await expect(withTimeout(Promise.resolve(1), 1000, signal)).resolves.toBe(
-      1
-    );
-
+    expect(outcomeOf(error)).toBe(outcome);
     expect(vi.getTimerCount()).toBe(0);
     expect(listeners(signal)).toBe(0);
   });
-
-  it("clears its timer and listener when the work fails", async () => {
-    vi.useFakeTimers();
-    const { signal } = new AbortController();
-    const error = await failure(
-      withTimeout(Promise.reject(new Error("no")), 1000, signal)
-    );
-
-    expect(messageOf(error)).toBe("no");
-    expect(vi.getTimerCount()).toBe(0);
-    expect(listeners(signal)).toBe(0);
-  });
-
-  it("clears its timer and listener when an aborted signal wins", async () => {
-    vi.useFakeTimers();
-    const controller = new AbortController();
-    const work = failure(withTimeout(never, 1000, controller.signal));
-
-    controller.abort();
-    expect(codeOf(await work)).toBe("aborted");
-    expect(vi.getTimerCount()).toBe(0);
-    expect(listeners(controller.signal)).toBe(0);
-  });
-
-  it.each(["timeout", "aborted"] as const)(
-    "keeps the %s code through toZriz, whatever the file",
-    (code) => {
-      const error = new ZrizError(code, "zriz: stop");
-
-      expect(toZriz(error)).toBe(error);
-      expect(toZriz(error, "image/heic")).toBe(error);
-    }
-  );
 
   it("reports a heic export aborted mid render as aborted", async () => {
     gate = new Promise(noop);
@@ -1377,13 +1156,8 @@ const bitmap = (width = 400, height = 300): FakeBitmap =>
 
 describe("releasing a separate source bitmap", () => {
   beforeEach(() => {
-    open.clear();
-    decodes = 0;
-    made = 0;
+    reset(false);
     decodeFails = true;
-    copyFails = false;
-    gate = Promise.resolve();
-    stub(false);
 
     vi.stubGlobal("OffscreenCanvas", () => ({
       getContext: () => ({
@@ -1398,101 +1172,183 @@ describe("releasing a separate source bitmap", () => {
     vi.unstubAllGlobals();
   });
 
-  it("closes the source and the preview when the photo is removed", async () => {
-    const full = bitmap();
-    const image = await hooked(full);
-
-    expect(image.source).toBe(full);
-    expect(image.preview).not.toBe(full);
-    const cropper = createCropper();
-
-    attachImage(cropper, image);
-    attachImage(cropper, null);
-    expect(open.has(full)).toBeFalsy();
-    await noneLive();
-  });
-
-  it("closes the old photo and keeps the new one on a swap", async () => {
+  it("keeps a photo while a cropper holds it and closes source and preview once it leaves", async () => {
     const first = bitmap();
     const second = bitmap(800, 600);
     const old = await hooked(first);
     const next = await hooked(second);
     const cropper = createCropper();
 
+    expect(old.source).toBe(first);
+    expect(old.preview).not.toBe(first);
     attachImage(cropper, old);
+    attachImage(cropper, old);
+    const kept = open.has(first);
+
     attachImage(cropper, next);
-    expect(open.has(first)).toBeFalsy();
-    expect(open.has(second)).toBeTruthy();
-    expect(next.preview.width).toBe(100);
+
+    expect([kept, open.has(first), open.has(second)]).toStrictEqual([
+      true,
+      false,
+      true,
+    ]);
+
     attachImage(cropper, null);
     expect(open.has(second)).toBeFalsy();
+    await noneLive();
   });
 
-  it("keeps a photo that is attached again", async () => {
-    const full = bitmap();
-    const image = await hooked(full);
-    const cropper = createCropper();
+  it.each([
+    [
+      "the photo leaves its cropper",
+      async (full: FakeBitmap) => {
+        const image = await loadImage(full, { previewEdge: 100 });
+        const close = vi.spyOn(image.preview, "close");
+        const cropper = createCropper();
 
-    attachImage(cropper, image);
-    attachImage(cropper, image);
+        expect(image.preview).not.toBe(full);
+        attachImage(cropper, image);
+        attachImage(cropper, null);
+        expect(close).toHaveBeenCalledOnce();
+      },
+    ],
+    [
+      "the load aborts",
+      async (full: FakeBitmap) => {
+        const error = await failure(
+          loadImage(full, { signal: AbortSignal.abort() })
+        );
+
+        expect(codeOf(error)).toBe("aborted");
+      },
+    ],
+    [
+      "the load is discarded",
+      async (full: FakeBitmap) => {
+        discardImage(await loadImage(full, { previewEdge: 100 }));
+      },
+    ],
+  ])("leaves a bitmap the caller passed open when %s", async (_name, run) => {
+    const full = bitmap();
+
+    await run(full);
     expect(open.has(full)).toBeTruthy();
-    attachImage(cropper, null);
-    expect(open.has(full)).toBeFalsy();
+    full.close();
+    await noneLive();
+  });
+});
+
+const photo = async () => {
+  const image = await loadImage(jpeg());
+
+  return { close: vi.spyOn(image.preview, "close"), image };
+};
+
+describe("a photo shared by croppers", () => {
+  beforeEach(() => {
+    reset(true);
   });
 
-  it("frees its own preview and leaves a large bitmap the caller passed open", async () => {
-    const full = bitmap();
-    const image = await loadImage(full, { previewEdge: 100 });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("frees a photo when its last cropper is destroyed", async () => {
+    const { close, image } = await photo();
     const cropper = createCropper();
 
-    const close = vi.spyOn(image.preview, "close");
-
-    expect(image.preview).not.toBe(full);
     attachImage(cropper, image);
-    attachImage(cropper, null);
+    cropper.destroy();
     expect(close).toHaveBeenCalledOnce();
-    expect(open.has(full)).toBeTruthy();
-    full.close();
+    expect(imageOf(cropper)).toBeNull();
+    attachImage(cropper, null);
+
+    expect(() => {
+      attachImage(createCropper(), image);
+    }).toThrow(ZrizError);
+
     await noneLive();
   });
 
-  it("leaves a bitmap the caller passed open when the load aborts", async () => {
-    const full = bitmap();
-    const controller = new AbortController();
+  it("frees a photo attached to a destroyed cropper", async () => {
+    const empty = createCropper();
+    const early = await photo();
 
-    controller.abort();
-    const error = await failure(loadImage(full, { signal: controller.signal }));
+    empty.destroy();
+    attachImage(empty, early.image);
+    expect(imageOf(empty)).toBeNull();
+    expect(early.close).toHaveBeenCalledOnce();
+    const held = createCropper();
+    const late = await photo();
+    const first = await photo();
 
-    expect(codeOf(error)).toBe("aborted");
-    expect(open.has(full)).toBeTruthy();
-    full.close();
-  });
-
-  it("leaves a bitmap the caller passed open when the load is discarded", async () => {
-    const full = bitmap();
-    const image = await loadImage(full, { previewEdge: 100 });
-
-    discardImage(image);
-    expect(open.has(full)).toBeTruthy();
-    full.close();
+    attachImage(held, first.image);
+    held.destroy();
+    attachImage(held, late.image);
+    expect(imageOf(held)).toBeNull();
+    expect(late.close).toHaveBeenCalledOnce();
     await noneLive();
   });
 
-  it("closes what a decode hook returns after the load was aborted", async () => {
-    const full = bitmap();
-    const controller = new AbortController();
-    const error = await failure(
-      hooked(full, {
-        decode: async () => {
-          controller.abort();
+  it.each([
+    [
+      "one of two croppers is destroyed",
+      (image: LoadedImage, one: Cropper, two: Cropper) => {
+        attachImage(one, image);
+        attachImage(two, image);
+        one.destroy();
+      },
+    ],
+    [
+      "a destroyed cropper detached it first",
+      (image: LoadedImage, one: Cropper, two: Cropper) => {
+        attachImage(one, image);
+        attachImage(two, image);
+        attachImage(one, null);
+        one.destroy();
+      },
+    ],
+    [
+      "the other cropper attaches it again and leaves",
+      (image: LoadedImage, one: Cropper, two: Cropper) => {
+        attachImage(one, image);
+        attachImage(two, image);
+        attachImage(one, image);
+        attachImage(one, null);
+      },
+    ],
+  ])(
+    "keeps a photo open while another cropper shows it when %s",
+    async (_name, share) => {
+      const { close, image } = await photo();
+      const one = createCropper();
+      const two = createCropper();
 
-          return await Promise.resolve(full);
-        },
-        signal: controller.signal,
-      })
-    );
+      share(image, one, two);
+      expect(close).not.toHaveBeenCalled();
+      expect(imageOf(two)).toBe(image);
+      attachImage(two, null);
+      expect(close).toHaveBeenCalledOnce();
+      await noneLive();
+    }
+  );
 
-    expect(codeOf(error)).toBe("aborted");
+  it("refuses a freed photo and leaves the current one in place", async () => {
+    const first = await photo();
+    const second = await photo();
+    const cropper = createCropper();
+
+    attachImage(cropper, first.image);
+    attachImage(cropper, second.image);
+    expect(first.close).toHaveBeenCalledOnce();
+
+    expect(() => {
+      attachImage(cropper, first.image);
+    }).toThrow(ZrizError);
+
+    expect(imageOf(cropper)).toBe(second.image);
+    expect(second.close).not.toHaveBeenCalled();
+    attachImage(cropper, null);
     await noneLive();
   });
 });

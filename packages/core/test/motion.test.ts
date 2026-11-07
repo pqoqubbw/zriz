@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../src";
 import { decay, frameClock, spring, velocityTracker } from "../src/motion";
+import { noop } from "./cropper-fixture";
 
 const integrate = (
   x0: number,
@@ -29,20 +30,17 @@ describe(spring, () => {
   it.each([
     ["critical", 1],
     ["over", 1.4],
-  ])("%s damping matches numeric integration", (_, zeta) => {
-    const exact = spring(100, -300, 16.1, zeta, 120).value;
-
-    expect(exact).toBeCloseTo(integrate(100, -300, 16.1, zeta, 120), 1);
-  });
-
-  it("starts at the given displacement and velocity", () => {
-    for (const zeta of [1, 1.4]) {
+  ])(
+    "%s damping starts where it is told and matches numeric integration",
+    (_, zeta) => {
       const start = spring(42, 7, 20, zeta, 0);
+      const exact = spring(100, -300, 16.1, zeta, 120).value;
 
       expect(start.value).toBeCloseTo(42, 10);
       expect(start.velocity).toBeCloseTo(7, 8);
+      expect(exact).toBeCloseTo(integrate(100, -300, 16.1, zeta, 120), 1);
     }
-  });
+  );
 
   it("is the same through hitches as in one step", () => {
     fcAssert(
@@ -63,10 +61,6 @@ describe(spring, () => {
       )
     );
   });
-
-  it("settles a recentre in about 0.39 s at omega 16.1", () => {
-    expect(Math.abs(spring(1, 0, 16.1, 1, 390).value)).toBeLessThan(0.02);
-  });
 });
 
 const travelAt = (hz: number): number => {
@@ -85,11 +79,8 @@ const travelAt = (hz: number): number => {
 };
 
 describe(decay, () => {
-  it("travels velocity times tau in total", () => {
+  it("travels velocity times tau in total, the same at 60 and 120 Hz", () => {
     expect(decay(1000, 95, 1e6).value).toBeCloseTo(95, 9);
-  });
-
-  it("travels the same distance at 60 and 120 Hz", () => {
     expect(travelAt(60)).toBeCloseTo(travelAt(120), 6);
   });
 });
@@ -125,65 +116,89 @@ describe(velocityTracker, () => {
     expect(tracker.velocity(296)).toBeCloseTo(2000, 6);
   });
 
-  it("forgets the motion before a pause, even if a still sample follows", () => {
-    const tracker = velocityTracker();
-
-    for (let t = 0; t <= 40; t += 8) {
-      tracker.push(t, t * 2);
+  it.each([
+    [
+      "a still sample",
+      [
+        [0, 0],
+        [8, 16],
+        [16, 32],
+        [24, 48],
+        [32, 64],
+        [40, 80],
+        [130, 80],
+      ],
+      131,
+    ],
+    [
+      "a twitch",
+      [
+        [0, 0],
+        [8, 16],
+        [16, 32],
+        [130, 33],
+        [131, 35],
+      ],
+      132,
+    ],
+    [
+      "nothing",
+      [
+        [0, 0],
+        [40, 40],
+        [80, 80],
+      ],
+      121,
+    ],
+  ] as const)(
+    "forgets the motion before a pause followed by %s",
+    (_, samples, at) => {
+      expect(fed(samples).velocity(at)).toBe(0);
     }
+  );
 
-    tracker.push(130, 80);
-    expect(tracker.velocity(131)).toBe(0);
-  });
-
-  it("gives zero for samples less than 10 ms apart", () => {
-    const twitch = fed([
-      [0, 0],
-      [1, 2],
-    ]);
-
-    expect(twitch.velocity(1)).toBe(0);
-    const longer = fed([
-      [0, 0],
-      [1, 2],
-      [2, 2],
-      [9, 2],
-    ]);
-
-    expect(longer.velocity(9)).toBe(0);
-  });
-
-  it("forgets the motion before a pause when a twitch follows", () => {
-    const tracker = fed([
-      [0, 0],
-      [8, 16],
-      [16, 32],
-      [130, 33],
-      [131, 35],
-    ]);
-
-    expect(tracker.velocity(132)).toBe(0);
-  });
-
-  it("keeps two samples one 60 hz frame apart", () => {
-    const tracker = fed([
-      [0, 0],
-      [1000 / 60, 10],
-    ]);
-
-    expect(tracker.velocity(1000 / 60)).toBeCloseTo(600, 6);
-  });
-
-  it("gives zero after a 40 ms pause", () => {
-    const tracker = velocityTracker();
-
-    for (let t = 0; t <= 80; t += 8) {
-      tracker.push(t, t);
+  it.each([
+    [
+      [
+        [0, 0],
+        [1, 2],
+      ],
+      1,
+      0,
+    ],
+    [
+      [
+        [0, 0],
+        [1, 2],
+        [2, 2],
+        [9, 2],
+      ],
+      9,
+      0,
+    ],
+    [
+      [
+        [0, 0],
+        [1000 / 60, 10],
+      ],
+      1000 / 60,
+      600,
+    ],
+    [
+      [
+        [0, 0],
+        [40, 40],
+        [80, 80],
+      ],
+      120,
+      1000,
+    ],
+  ] as const)(
+    "reads %j at %d ms as %d, nothing from under 10 ms of samples",
+    (samples, at, velocity) => {
+      expect(fed(samples).velocity(at)).toBeCloseTo(velocity, 6);
     }
-
-    expect(tracker.velocity(120)).toBeCloseTo(1000, 6);
-    expect(tracker.velocity(121)).toBe(0);
-  });
+  );
 });
 
 const frames = () => {
@@ -214,14 +229,20 @@ describe(frameClock, () => {
     vi.unstubAllGlobals();
   });
 
-  it("steps on a timer when no frame comes", () => {
-    frames();
+  it("steps on a timer when no frame comes, and only once", () => {
+    const queue = frames();
     const step = vi.fn<(time: number) => void>();
 
     frameClock().request(step);
     vi.advanceTimersByTime(249);
     expect(step).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
+    expect(step).toHaveBeenCalledOnce();
+
+    for (const run of queue.values()) {
+      run(300);
+    }
+
     expect(step).toHaveBeenCalledOnce();
   });
 
@@ -239,32 +260,58 @@ describe(frameClock, () => {
     expect(step).toHaveBeenCalledExactlyOnceWith(16);
   });
 
-  it("drops the frame when the timer wins", () => {
-    const queue = frames();
-
-    frameClock().request(vi.fn<(time: number) => void>());
-    vi.advanceTimersByTime(250);
-    expect(queue.size).toBe(0);
-  });
-
-  it("cancels the frame and the timer", () => {
-    const queue = frames();
-    const step = vi.fn<(time: number) => void>();
+  it.each([
+    [
+      "frames",
+      () => {
+        frames();
+      },
+    ],
+    ["no frames", noop],
+  ])("cancels one request and leaves the others with %s", (_, install) => {
+    install();
     const clock = frameClock();
-    const handle = clock.request(step);
+    const dropped = vi.fn<(time: number) => void>();
+    const kept = vi.fn<(time: number) => void>();
+    const handle = clock.request(dropped);
 
+    clock.request(kept);
     clock.cancel(handle);
     vi.advanceTimersByTime(1000);
-    expect(step).not.toHaveBeenCalled();
-    expect(queue.size).toBe(0);
+    expect(dropped).not.toHaveBeenCalled();
+    expect(kept).toHaveBeenCalledOnce();
   });
 
-  it("uses a short timer where there are no frames at all", () => {
-    const step = vi.fn<(time: number) => void>();
+  it("still reports writes, finishes held motion and commits once on a page where frames stop", () => {
+    frames();
+    const commits: number[] = [];
+    let changes = 0;
+    const cropper = createCropper({
+      image: { height: 300, width: 400 },
+      onValueChange: () => {
+        changes += 1;
+      },
+      onValueCommit: (value) => {
+        commits.push(value.rotation);
+      },
+    });
+    let ticks = 0;
 
-    frameClock().request(step);
-    vi.advanceTimersByTime(17);
-    expect(step).toHaveBeenCalledOnce();
+    cropper.setRotation(5);
+
+    cropper.run(() => {
+      ticks += 1;
+
+      return ticks < 2;
+    });
+
+    vi.advanceTimersByTime(2000);
+    expect(commits).toStrictEqual([5]);
+    expect(changes).toBe(1);
+    expect(ticks).toBe(2);
+    expect(cropper.getState().committed.rotation).toBe(5);
+    expect(cropper.getState().settling).toBeFalsy();
+    cropper.destroy();
   });
 });
 
@@ -287,19 +334,6 @@ describe("the timer clock used in node", () => {
     expect(step).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(step).toHaveBeenCalledExactlyOnceWith(start + 16);
-  });
-
-  it("cancels one frame and leaves the others", () => {
-    const clock = frameClock();
-    const dropped = vi.fn<(time: number) => void>();
-    const kept = vi.fn<(time: number) => void>();
-    const handle = clock.request(dropped);
-
-    clock.request(kept);
-    clock.cancel(handle);
-    vi.advanceTimersByTime(17);
-    expect(dropped).not.toHaveBeenCalled();
-    expect(kept).toHaveBeenCalledOnce();
   });
 
   it("drives a cropper with no clock option and goes idle", () => {

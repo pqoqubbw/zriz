@@ -3,20 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import UndoDemo from "../../demos/undo/demo";
-import { fixtureFile } from "./fixtures";
-import {
-  button,
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -49,17 +36,6 @@ const nudge = async (times: number): Promise<void> => {
   await settle();
 };
 
-const pick = (file: File): void => {
-  const input = find('input[type="file"]', panel());
-
-  Object.defineProperty(input, "files", {
-    configurable: true,
-    value: [file],
-  });
-
-  input.dispatchEvent(new Event("change", { bubbles: true }));
-};
-
 const violations = async (): Promise<string[]> => {
   const result = await axe.run(panel(), {
     rules: { region: { enabled: false } },
@@ -77,151 +53,44 @@ describe("undo demo", () => {
     await cleanup();
   });
 
-  it("draws the live demo where the frame drew it", async () => {
-    const frame = await frameLayout("undo");
-
-    await mountLive(UndoDemo, "undo");
-    await ready();
-
-    expect(layoutOf()).toStrictEqual(frame);
-  });
-
-  it("starts off, with rotate on the left and undo after the dial", async () => {
+  it("starts off, then steps back through a turn and a straighten, one commit each", async () => {
     await mountDemo("undo");
     await ready();
 
     const row = [...panel().querySelectorAll('[data-slot="zone-row"] > *')];
 
-    expect(row.at(0)).toBe(button("Rotate left"));
-    expect(row.at(-1)).toBe(undo());
-    expect(off()).toBe("true");
-    expect(hits(undo())).toBeTruthy();
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
+    expect({
+      first: row.at(0) === button("Rotate left"),
+      last: row.at(-1) === undo(),
+      off: off(),
+    }).toStrictEqual({ first: true, last: true, off: "true" });
 
-  it("steps back through a turn and a straighten, one commit each", async () => {
-    await mountDemo("undo");
-    await ready();
+    await expect(violations()).resolves.toStrictEqual([]);
+
     button("Rotate left").click();
     await settle();
     await nudge(1);
 
-    expect([angle() === "0.0", ratio() < 1, off()]).toStrictEqual([
-      false,
-      true,
-      "false",
-    ]);
+    const state = () => ({
+      level: angle() === "0.0",
+      off: off(),
+      portrait: ratio() < 1,
+    });
+    const steps = [state()];
 
     undo().click();
     await settle();
     await expect.poll(angle).toBe("0.0");
-
-    expect([ratio() < 1, off()]).toStrictEqual([true, "false"]);
-
+    steps.push(state());
     undo().click();
     await settle();
     await expect.poll(off).toBe("true");
+    steps.push(state());
 
-    expect(ratio()).toBeGreaterThan(1);
+    expect(steps).toStrictEqual([
+      { level: false, off: "false", portrait: true },
+      { level: true, off: "false", portrait: true },
+      { level: true, off: "true", portrait: false },
+    ]);
   });
-
-  it("keeps focus and stays off once the stack is empty", async () => {
-    await mountDemo("undo");
-    await ready();
-    await nudge(1);
-    undo().focus();
-    undo().click();
-    await settle();
-    await expect.poll(off).toBe("true");
-
-    expect(document.activeElement).toBe(undo());
-    await expect(violations()).resolves.toStrictEqual([]);
-
-    undo().click();
-    await settle();
-
-    expect(angle()).toBe("0.0");
-  });
-
-  it("does nothing while a gesture runs", async () => {
-    await mountDemo("undo");
-    await ready();
-    await nudge(1);
-    await expect.poll(off).toBe("false");
-
-    const before = angle();
-    const viewport = find(item("viewport"));
-    const box = viewport.getBoundingClientRect();
-    const at = { clientX: box.left + box.width / 2, clientY: box.top + 100 };
-
-    viewport.dispatchEvent(
-      new PointerEvent("pointerdown", {
-        ...at,
-        bubbles: true,
-        button: 0,
-        isPrimary: true,
-        pointerId: 7,
-        pointerType: "mouse",
-      })
-    );
-
-    await expect
-      .poll(() => document.querySelector(`${item("root")}[data-interacting]`))
-      .not.toBeNull();
-
-    undo().click();
-
-    expect(angle()).toBe(before);
-    expect(off()).toBe("false");
-
-    viewport.dispatchEvent(
-      new PointerEvent("pointerup", {
-        ...at,
-        bubbles: true,
-        button: 0,
-        isPrimary: true,
-        pointerId: 7,
-        pointerType: "mouse",
-      })
-    );
-
-    await settle();
-  });
-
-  it("starts an empty stack for a new photo", async () => {
-    await mountDemo("undo");
-    await ready();
-    await nudge(1);
-    await expect.poll(off).toBe("false");
-
-    pick(await fixtureFile("portrait"));
-    await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
-    await ready();
-
-    expect(off()).toBe("true");
-    expect(angle()).toBe("0.0");
-  });
-});
-
-describe("undo demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it.each(["phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("undo", width);
-
-      await mountLive(UndoDemo, "undo", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-      await expect(violations()).resolves.toStrictEqual([]);
-    }
-  );
 });

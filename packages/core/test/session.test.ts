@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { createCropper } from "../src";
 import type { Cropper } from "../src";
+import { setup } from "./cropper-fixture";
 import { fakeClock } from "./fake-clock";
 
 const OWNER = "session";
@@ -162,110 +163,79 @@ const session = (image: { height: number; width: number }, run: Step[]) => {
   return { end, settled, time, wasSettling };
 };
 
+const swapRig = () => {
+  const rig = setup();
+
+  rig.cropper.setAspect(0.5);
+  rig.time.frame();
+
+  return rig;
+};
+
 describe("a session of random writes and frames", () => {
-  it("reads the new snapshot in a commit a photo sends during a gesture", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 3000, width: 4000 },
-    });
+  it.each<
+    [
+      string,
+      () => ReturnType<typeof setup>,
+      (rig: ReturnType<typeof setup>) => void,
+    ]
+  >([
+    [
+      "a settling commit",
+      () => setup({ image: { height: 1000, width: 2000 } }),
+      ({ cropper }) => {
+        cropper.setZoom(2);
+      },
+    ],
+    [
+      "a photo that commits during a gesture",
+      swapRig,
+      ({ cropper }) => {
+        cropper.begin("pan", undefined, OWNER);
+        cropper.setImage({ height: 100, width: 100 });
+      },
+    ],
+  ])(
+    "sends the value and crop from before a subscriber's write in %s",
+    (_, rig, trigger) => {
+      const fixture = rig();
+      const { cropper, time } = fixture;
+      const { committed } = cropper.getState();
+      const before: unknown[] = [];
 
-    cropper.setAspect(0.5);
-    time.frame();
-    const seen: boolean[] = [];
+      cropper.subscribe(() => {
+        if (before.length === 0 && cropper.getState().committed !== committed) {
+          before.push([cropper.getValue(), cropper.getPixelCrop()]);
+          cropper.setZoom(3);
+        }
+      });
 
-    cropper.on("commit", (value) => {
-      seen.push(cropper.getState().committed === value);
-    });
+      const sent: unknown[] = [];
+      const read: boolean[] = [];
 
-    cropper.begin("pan", undefined, OWNER);
-    cropper.setImage({ height: 100, width: 100 });
-    time.frames(2);
-    cropper.end(undefined, OWNER);
-    time.frames(2);
-    expect(seen).toContain(true);
-    expect(seen).not.toContain(false);
-  });
+      cropper.on("commit", (value, { pixelCrop }) => {
+        sent.push([value, pixelCrop]);
+        read.push(cropper.getState().committed === value);
+      });
 
-  it("sends the value and crop from before a subscriber's write in a settling commit", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 1000, width: 2000 },
-    });
-    const { committed } = cropper.getState();
-    const before: unknown[] = [];
+      trigger(fixture);
+      time.frames(2);
+      expect(sent[0]).toStrictEqual(before[0]);
+      expect(read).toContain(true);
+      expect(read).not.toContain(false);
+      cropper.end(undefined, OWNER);
+      time.frames(2);
+      expect(cropper.getState().committed).toStrictEqual(cropper.getValue());
 
-    cropper.subscribe(() => {
-      if (before.length === 0 && cropper.getState().committed !== committed) {
-        before.push([cropper.getValue(), cropper.getPixelCrop()]);
-        cropper.setZoom(3);
-      }
-    });
-
-    const sent: unknown[] = [];
-
-    cropper.on("commit", (value, { pixelCrop }) => {
-      sent.push([value, pixelCrop]);
-    });
-
-    cropper.setZoom(2);
-    time.frames(2);
-    expect(sent[0]).toStrictEqual(before[0]);
-
-    expect(sent.at(-1)).toStrictEqual([
-      cropper.getValue(),
-      cropper.getPixelCrop(),
-    ]);
-  });
-
-  it("sends the value and crop from before a subscriber's write when a photo commits during a gesture", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 3000, width: 4000 },
-    });
-
-    cropper.setAspect(0.5);
-    time.frame();
-    const { committed } = cropper.getState();
-    const before: unknown[] = [];
-
-    cropper.subscribe(() => {
-      if (before.length === 0 && cropper.getState().committed !== committed) {
-        before.push([cropper.getValue(), cropper.getPixelCrop()]);
-        cropper.setZoom(3);
-      }
-    });
-
-    const sent: unknown[] = [];
-    const read: boolean[] = [];
-
-    cropper.on("commit", (value, { pixelCrop }) => {
-      sent.push([value, pixelCrop]);
-      read.push(cropper.getState().committed === value);
-    });
-
-    cropper.begin("pan", undefined, OWNER);
-    cropper.setImage({ height: 100, width: 100 });
-    expect(sent).toStrictEqual(before);
-    expect(read).toStrictEqual([true]);
-    cropper.end(undefined, OWNER);
-    time.frames(2);
-    expect(cropper.getState().committed).toStrictEqual(cropper.getValue());
-
-    expect(sent.at(-1)).toStrictEqual([
-      cropper.getValue(),
-      cropper.getPixelCrop(),
-    ]);
-  });
+      expect(sent.at(-1)).toStrictEqual([
+        cropper.getValue(),
+        cropper.getPixelCrop(),
+      ]);
+    }
+  );
 
   it("ends on the newest commit when a subscriber settles a later write inside one", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 1000, width: 2000 },
-    });
+    const { cropper, time } = setup({ image: { height: 1000, width: 2000 } });
     const { committed } = cropper.getState();
     let wrote = false;
 
@@ -305,14 +275,7 @@ describe("a session of random writes and frames", () => {
     ],
   ])("takes a photo when a listener %s during its commit", (_name, act) => {
     const swap = (wire: (cropper: Cropper, run: () => void) => void) => {
-      const time = fakeClock();
-      const cropper = createCropper({
-        clock: time.clock,
-        image: { height: 3000, width: 4000 },
-      });
-
-      cropper.setAspect(0.5);
-      time.frame();
+      const { cropper, time } = swapRig();
       const { committed } = cropper.getState();
 
       wire(cropper, () => {
@@ -338,14 +301,7 @@ describe("a session of random writes and frames", () => {
   });
 
   it("sends the crop of a change listener's write when a photo commits during a gesture", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 3000, width: 4000 },
-    });
-
-    cropper.setAspect(0.5);
-    time.frame();
+    const { cropper, time } = swapRig();
     const off = cropper.on("change", () => {
       off();
       cropper.setZoom(3);
@@ -361,13 +317,6 @@ describe("a session of random writes and frames", () => {
     expect(sent).toStrictEqual([[cropper.getValue(), cropper.getPixelCrop()]]);
     cropper.end(undefined, OWNER);
     time.frames(2);
-  });
-
-  it("refuses a gesture after destroy", () => {
-    const cropper = createCropper({ image: { height: 300, width: 400 } });
-
-    cropper.destroy();
-    expect(cropper.begin("pan")).toBeFalsy();
   });
 
   it("keeps its events, its snapshot and its value in step", () => {

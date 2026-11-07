@@ -7,51 +7,36 @@ const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
 const SLOW = 1000;
 
-const quick = (run: () => void): void => {
-  const start = performance.now();
-
-  run();
-  expect(performance.now() - start).toBeLessThan(SLOW);
-};
-
 describe("sniffing svg text", () => {
   it.each([
-    "<svg>",
-    '<?xml version="1.0"?>\n<svg width="1">',
-    '<?xml version="1.0"?><?xml-stylesheet href="a.css"?><svg>',
-    "<!-- a -- b -->\n<svg>",
-    '<!DOCTYPE svg PUBLIC "a" "b"><svg>',
-    '<!DOCTYPE svg [ <!ENTITY a "b"> ] ><svg>',
-    "  <!---->  <!-- x --><svg\n>",
-    '<svg:svg xmlns:svg="http://www.w3.org/2000/svg">',
-    '<?xml version="1.0"?><my-ns.1:svg xmlns:my-ns.1="a">',
-  ])("accepts %s", (text) => {
-    expect(sniff(encode(text)).mime).toBe("image/svg+xml");
-  });
-
-  it.each([
-    "<svgx>",
-    "<html><svg>",
-    "<!-- open <svg>",
-    "<?xml <svg>",
-    "text",
-    "<svg:svgx>",
-    "<:svg>",
-    "<a:b:svg>",
-  ])("refuses %s", (text) => {
-    expect(sniff(encode(text)).mime).toBeNull();
+    ["<svg>", "image/svg+xml"],
+    ['<?xml version="1.0"?>\n<svg width="1">', "image/svg+xml"],
+    [
+      '<?xml version="1.0"?><?xml-stylesheet href="a.css"?><svg>',
+      "image/svg+xml",
+    ],
+    ["<!-- a -- b -->\n<svg>", "image/svg+xml"],
+    ['<!DOCTYPE svg PUBLIC "a" "b"><svg>', "image/svg+xml"],
+    ['<!DOCTYPE svg [ <!ENTITY a "b"> ] ><svg>', "image/svg+xml"],
+    ["  <!---->  <!-- x --><svg\n>", "image/svg+xml"],
+    ['<svg:svg xmlns:svg="http://www.w3.org/2000/svg">', "image/svg+xml"],
+    ['<?xml version="1.0"?><my-ns.1:svg xmlns:my-ns.1="a">', "image/svg+xml"],
+    ["<svgx>", null],
+    ["<html><svg>", null],
+    ["<!-- open <svg>", null],
+    ["<?xml <svg>", null],
+    ["text", null],
+    ["<svg:svgx>", null],
+    ["<:svg>", null],
+    ["<a:b:svg>", null],
+  ])("sniffs %s as %s", (text, mime) => {
+    expect(sniff(encode(text)).mime).toBe(mime);
   });
 
   it("reads a prolog longer than the old head", () => {
     const text = `<?xml version="1.0"?><!-- ${"x".repeat(1000)} --><svg>`;
 
     expect(sniff(encode(text)).mime).toBe("image/svg+xml");
-  });
-
-  it("stays fast on a long name with no prefix", () => {
-    quick(() => {
-      expect(sniff(encode(`<${"a".repeat(1_000_000)}`)).mime).toBeNull();
-    });
   });
 
   it("reads little and big endian text", () => {
@@ -69,18 +54,6 @@ describe("sniffing svg text", () => {
 
     expect(sniff(le).mime).toBe("image/svg+xml");
     expect(sniff(be).mime).toBe("image/svg+xml");
-  });
-
-  it.each([
-    ["<!---->", 30],
-    ["<!DOCTYPE a[]>", 26],
-    ["<!DOCTYPE >", 26],
-    ["<!-- a -->\n", 30],
-    ["<?a?>", 500],
-  ])("stays fast on a long prolog, case %#", (unit, count) => {
-    quick(() => {
-      expect(sniff(encode(`${unit.repeat(count)}<svgx`)).mime).toBeNull();
-    });
   });
 });
 
@@ -102,37 +75,23 @@ describe("the size of an svg", () => {
     ['<svg width="1em" height="2ex">', 300, 150],
     ['<svg:svg xmlns:svg="a" width="400" height="200"/>', 400, 200],
     ['<?xml version="1.0"?><s:svg viewBox="0 0 30 20"/>', 30, 20],
+    ['<!-- <svg width="1" height="1"> --><svg viewBox="0 0 100 50"/>', 100, 50],
+    [
+      '<!DOCTYPE svg [ <!ENTITY a "<svg width=\'1\' height=\'1\'>"> ]><svg width="9" height="9"/>',
+      9,
+      9,
+    ],
+    ['<svg data-note="a>b" width="100" height="50"/>', 100, 50],
+    [
+      `<svg data-note=" width='999' height='999'" viewBox="0 0 10 10"/>`,
+      10,
+      10,
+    ],
   ])("reads %s", (text, width, height) => {
     const size = svgSize(text);
 
     expect(size.width).toBeCloseTo(width);
     expect(size.height).toBeCloseTo(height);
-  });
-
-  it("skips a commented root", () => {
-    const text =
-      '<!-- <svg width="1" height="1"> --><svg viewBox="0 0 100 50"/>';
-
-    expect(svgSize(text)).toStrictEqual({ height: 50, width: 100 });
-  });
-
-  it("skips a root inside a doctype", () => {
-    const text =
-      '<!DOCTYPE svg [ <!ENTITY a "<svg width=\'1\' height=\'1\'>"> ]><svg width="9" height="9"/>';
-
-    expect(svgSize(text)).toStrictEqual({ height: 9, width: 9 });
-  });
-
-  it("reads past a closing bracket inside a value", () => {
-    const text = '<svg data-note="a>b" width="100" height="50"/>';
-
-    expect(svgSize(text)).toStrictEqual({ height: 50, width: 100 });
-  });
-
-  it("does not read an attribute out of another one's value", () => {
-    const text = `<svg data-note=" width='999' height='999'" viewBox="0 0 10 10"/>`;
-
-    expect(svgSize(text)).toStrictEqual({ height: 10, width: 10 });
   });
 
   it.each([
@@ -146,38 +105,68 @@ describe("the size of an svg", () => {
     expect(Number.isFinite(width) && width > 0).toBeTruthy();
     expect(Number.isFinite(height) && height > 0).toBeTruthy();
   });
+});
 
-  it.each([
-    ["<svg ", 60_000],
-    ['<svg "', 60_000],
-    ["<!--", 200_000],
-    ["<!DOCTYPE a", 100_000],
-  ])("stays fast on text with no closed root, case %#", (unit, count) => {
-    quick(() => {
-      expect(svgSize(unit.repeat(count))).toStrictEqual({
-        height: 150,
-        width: 300,
-      });
-    });
-  });
+describe("hostile svg text", () => {
+  it.each<readonly [string, () => unknown, unknown]>([
+    [
+      "a long name with no prefix",
+      () => sniff(encode(`<${"a".repeat(1_000_000)}`)).mime,
+      null,
+    ],
+    ...(
+      [
+        ["<!---->", 30],
+        ["<!DOCTYPE a[]>", 26],
+        ["<!DOCTYPE >", 26],
+        ["<!-- a -->\n", 30],
+        ["<?a?>", 500],
+      ] as const
+    ).map(
+      ([unit, count]) =>
+        [
+          `a long prolog of ${unit}`,
+          () => sniff(encode(`${unit.repeat(count)}<svgx`)).mime,
+          null,
+        ] as const
+    ),
+    ...(
+      [
+        ["<svg ", 60_000],
+        ['<svg "', 60_000],
+        ["<!--", 200_000],
+        ["<!DOCTYPE a", 100_000],
+      ] as const
+    ).map(
+      ([unit, count]) =>
+        [
+          `an unclosed root of ${unit}`,
+          () => svgSize(unit.repeat(count)),
+          { height: 150, width: 300 },
+        ] as const
+    ),
+    ...(["a", "e"] as const).map(
+      (unit) =>
+        [
+          `a long run of ${unit} in a tag`,
+          () => {
+            const value = unit.repeat(2_000_000);
 
-  it.each([
-    ["a", 2_000_000],
-    ["e", 2_000_000],
-  ])("stays fast on a long run of %s in a tag", (unit, count) => {
-    quick(() => {
-      const value = unit.repeat(count);
+            return svgSize(`<svg width="${value}" ${value}>`);
+          },
+          { height: 150, width: 300 },
+        ] as const
+    ),
+    [
+      "a root behind a huge comment",
+      () =>
+        svgSize(`<!--${"x".repeat(20_000_000)}--><svg width="4" height="2">`),
+      { height: 2, width: 4 },
+    ],
+  ])("reads %s in linear time", (_name, run, expected) => {
+    const start = performance.now();
 
-      expect(svgSize(`<svg width="${value}" ${value}>`)).toStrictEqual({
-        height: 150,
-        width: 300,
-      });
-    });
-  });
-
-  it("opens a root behind a huge comment", () => {
-    const text = `<!--${"x".repeat(20_000_000)}--><svg width="4" height="2">`;
-
-    expect(svgSize(text)).toStrictEqual({ height: 2, width: 4 });
+    expect(run()).toStrictEqual(expected);
+    expect(performance.now() - start).toBeLessThan(SLOW);
   });
 });

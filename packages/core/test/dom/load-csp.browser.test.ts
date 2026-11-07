@@ -62,48 +62,57 @@ describe("load under a policy without blob: or data:", () => {
     attachImage(cropper, null);
   });
 
-  it("names connect-src for a blocked data url", async () => {
-    const message = await messageOf(loadImage(PIXEL));
+  it.each([
+    ["data", async () => await Promise.resolve(PIXEL)],
+    ["blob", async () => await Promise.resolve(URL.createObjectURL(jpeg))],
+  ])("names connect-src for a blocked %s url", async (scheme, url) => {
+    const source = await url();
+    const message = await messageOf(loadImage(source));
 
-    await violated("connect-src", "data");
+    URL.revokeObjectURL(source);
+    await violated("connect-src", scheme);
     expect(message).toContain("connect-src");
     expect(message).not.toContain("CORS");
   });
 
-  it("names connect-src for a blocked blob url", async () => {
-    const url = URL.createObjectURL(jpeg);
-    const message = await messageOf(loadImage(url));
+  it.each([
+    [
+      "data",
+      "an svg",
+      async () =>
+        await loadImage(
+          new Blob(
+            [
+              '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>',
+            ],
+            { type: "image/svg+xml" }
+          )
+        ),
+    ],
+    [
+      "blob",
+      "a display-p3 export",
+      async () => {
+        const cropper = createCropper();
 
-    URL.revokeObjectURL(url);
-    await violated("connect-src", "blob");
-    expect(message).toContain("connect-src");
-    expect(message).not.toContain("CORS");
-  });
+        attachImage(cropper, await loadImage(jpeg));
 
-  it("names img-src and the scheme for a blocked svg", async () => {
-    const svg = new Blob(
-      ['<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'],
-      { type: "image/svg+xml" }
-    );
-    const message = await messageOf(loadImage(svg));
+        try {
+          return await exportCrop(cropper, {
+            colorSpace: "display-p3",
+            type: "image/png",
+          });
+        } finally {
+          attachImage(cropper, null);
+        }
+      },
+    ],
+  ])("names img-src and %s: for a blocked %s", async (scheme, _name, run) => {
+    const message = await messageOf(run());
 
-    await violated("img-src", "data");
+    await violated("img-src", scheme);
     expect(message).toContain("img-src");
-    expect(message).toContain("data:");
-  });
-
-  it("names img-src and the scheme for a blocked display-p3 export", async () => {
-    const cropper = createCropper();
-
-    attachImage(cropper, await loadImage(jpeg));
-    const message = await messageOf(
-      exportCrop(cropper, { colorSpace: "display-p3", type: "image/png" })
-    );
-
-    attachImage(cropper, null);
-    await violated("img-src", "blob");
-    expect(message).toContain("img-src");
-    expect(message).toContain("blob:");
+    expect(message).toContain(`${scheme}:`);
   });
 });
 

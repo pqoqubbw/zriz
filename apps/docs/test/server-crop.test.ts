@@ -78,6 +78,9 @@ const sizeOf = async (response: Response) => {
   return [width, height];
 };
 
+const png = async (width: number, height: number) =>
+  await gradient(width, height).png().toBuffer();
+
 const IMAGE = { height: 300, width: 400 };
 
 const clientPlan = (patch: Parameters<typeof createCropper>[0]) => {
@@ -90,8 +93,8 @@ const clientPlan = (patch: Parameters<typeof createCropper>[0]) => {
 };
 
 describe("the security recipes", () => {
-  it("cleanCopy fills clear pixels white, as the route does", async () => {
-    const input = await sharp({
+  it("cleanCopy turns an upload upright, drops its blocks and fills clear pixels white", async () => {
+    const clear = await sharp({
       create: {
         background: { alpha: 0, b: 0, g: 0, r: 255 },
         channels: 4,
@@ -101,24 +104,20 @@ describe("the security recipes", () => {
     })
       .png()
       .toBuffer();
-    const pixels = await sharp(await cleanCopy(input))
-      .raw()
-      .toBuffer();
-
-    expect([...pixels.subarray(0, 3)]).toStrictEqual([255, 255, 255]);
-  });
-
-  it("cleanCopy drops the blocks of an upload and turns it upright", async () => {
-    const input = await gradient(64, 48)
+    const tagged = await gradient(64, 48)
       .jpeg()
       .withExif({ IFD0: { Copyright: "a-marker" } })
       .withMetadata({ orientation: 6 })
       .toBuffer();
+    const pixels = await sharp(await cleanCopy(clear))
+      .raw()
+      .toBuffer();
     const out = await cleanCopy(
-      Buffer.concat([input, Buffer.from("a-marker")])
+      Buffer.concat([tagged, Buffer.from("a-marker")])
     );
     const meta = await sharp(out).metadata();
 
+    expect([...pixels.subarray(0, 3)]).toStrictEqual([255, 255, 255]);
     expect(out.includes("a-marker")).toBeFalsy();
     expect(meta.exif).toBeUndefined();
     expect([meta.width, meta.height]).toStrictEqual([48, 64]);
@@ -235,66 +234,177 @@ describe("the documented crop route", () => {
     expect(response.status).toBe(401);
   });
 
-  it("refuses a body longer than the length it declares", async () => {
-    const response = await post(Buffer.alloc(51 * 1024 * 1024), "{}", "10");
-
-    expect(response.status).toBe(413);
-  });
-
-  it("refuses a negative length", async () => {
-    const input = await gradient(8, 8).png().toBuffer();
-
-    await expect(post(input, "{}", "-5")).resolves.toHaveProperty(
-      "status",
-      413
-    );
-  });
-
   it.each([
-    ["multipart/form-data; boundary=x", "not a form"],
-    ["application/json", "{}"],
-  ])("answers 400 for a %s body that is no form", async (type, body) => {
-    const response = await POST(
-      new Request("http://zriz.test/api/crop", {
-        body,
-        headers: { "content-length": "9", "content-type": type },
-        method: "POST",
-      })
-    );
-
-    expect(response.status).toBe(400);
-  });
-
-  it("answers 400 for an empty file", async () => {
-    await expect(post(Buffer.alloc(0), "{}")).resolves.toHaveProperty(
-      "status",
-      400
-    );
-  });
-
-  it("answers 422 for a value too long to be a crop", async () => {
-    const input = await gradient(8, 8).png().toBuffer();
-    const value = JSON.stringify({ note: "x".repeat(8192) });
-
-    await expect(post(input, value)).resolves.toHaveProperty("status", 422);
-  });
-
-  it.each([
-    [
-      "svg",
-      async () =>
-        await Promise.resolve(
+    {
+      name: "a form body that is no form",
+      send: async () =>
+        await POST(
+          new Request("http://zriz.test/api/crop", {
+            body: "not a form",
+            headers: {
+              "content-length": "9",
+              "content-type": "multipart/form-data; boundary=x",
+            },
+            method: "POST",
+          })
+        ),
+    },
+    {
+      name: "a json body",
+      send: async () =>
+        await POST(
+          new Request("http://zriz.test/api/crop", {
+            body: "{}",
+            headers: {
+              "content-length": "9",
+              "content-type": "application/json",
+            },
+            method: "POST",
+          })
+        ),
+    },
+    {
+      name: "an empty file",
+      send: async () => await post(Buffer.alloc(0), "{}"),
+    },
+    { name: "no file", send: async () => await post(null, "{}") },
+    { name: "no value", send: async () => await post(await png(8, 8), null) },
+    {
+      name: "a file sharp cannot open",
+      send: async () => await post(Buffer.from("not a photo"), "{}"),
+    },
+    {
+      name: "an svg",
+      send: async () =>
+        await post(
           Buffer.from(
             '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"/>'
-          )
+          ),
+          "{}"
         ),
-    ],
-    ["tiff", async () => await gradient(8, 8).tiff().toBuffer()],
-    ["gif", async () => await gradient(8, 8).gif().toBuffer()],
-  ])("answers 400 for a %s and never decodes it", async (_format, make) => {
+    },
+    {
+      name: "a tiff",
+      send: async () =>
+        await post(await gradient(8, 8).tiff().toBuffer(), "{}"),
+    },
+    {
+      name: "a gif",
+      send: async () => await post(await gradient(8, 8).gif().toBuffer(), "{}"),
+    },
+  ])("answers 400 for $name", async ({ send }) => {
+    await expect(send()).resolves.toHaveProperty("status", 400);
+  });
+
+  it.each([
+    {
+      length: "10",
+      make: async () => await Promise.resolve(Buffer.alloc(51 * 1024 * 1024)),
+      name: "a body longer than the length it declares",
+    },
+    {
+      length: "-5",
+      make: async () => await png(8, 8),
+      name: "a negative length",
+    },
+    {
+      length: null,
+      make: async () => await png(8, 8),
+      name: "a body that declares no length",
+    },
+    {
+      length: String(64 * 1024 * 1024),
+      make: async () => await png(8, 8),
+      name: "a body over the cap, before it reads the form",
+      watch: () => vi.spyOn(Request.prototype, "formData"),
+    },
+    {
+      make: async () =>
+        await sharp({
+          create: {
+            background: "#000",
+            channels: 3,
+            height: 11_000,
+            width: 11_000,
+          },
+        })
+          .png()
+          .toBuffer(),
+      name: "a photo over its pixel limit, before it decodes",
+      watch: () => vi.spyOn(sharp.prototype, "toBuffer"),
+    },
+  ])("answers 413 for $name", async ({ length, make, watch }) => {
+    const input = await make();
+    const untouched = watch?.();
+    const response = await post(input, "{}", length);
+
+    expect(response.status).toBe(413);
+    expect(untouched?.mock.calls ?? []).toStrictEqual([]);
+  });
+
+  it.each([
+    {
+      make: async () => await png(8, 8),
+      name: "a value too long to be a crop",
+      value: JSON.stringify({ note: "x".repeat(8192) }),
+    },
+    {
+      make: async () => await png(8, 8),
+      name: "a value that is no json",
+      value: "not json",
+    },
+    {
+      make: async () => await png(8, 8),
+      name: "a value that is no object",
+      value: "[1]",
+    },
+    {
+      make: async () => await png(64, 64),
+      name: "a value with perspective",
+      value: JSON.stringify({ perspective: { horizontal: 5, vertical: 5 } }),
+    },
+    ...[2, 3, 6, 8].map((orientation) => ({
+      make: async () =>
+        await gradient(64, 48).webp().withMetadata({ orientation }).toBuffer(),
+      name: `a webp tagged with orientation ${orientation}`,
+      value: "{}",
+    })),
+  ])("answers 422 for $name", async ({ make, value }) => {
+    await expect(post(await make(), value)).resolves.toHaveProperty(
+      "status",
+      422
+    );
+  });
+
+  it.each([
+    {
+      make: async () => await gradient(16, 16).avif({ effort: 0 }).toBuffer(),
+      name: "an avif",
+      size: [16, 16],
+    },
+    {
+      make: async () =>
+        await gradient(64, 48)
+          .webp()
+          .withMetadata({ orientation: 1 })
+          .toBuffer(),
+      name: "a webp tagged upright",
+      size: [64, 48],
+    },
+    {
+      make: async () =>
+        await gradient(64, 48)
+          .jpeg()
+          .withMetadata({ orientation: 6 })
+          .toBuffer(),
+      name: "a jpeg, turned upright from its tag before it reads the value",
+      size: [48, 64],
+    },
+  ])("opens $name", async ({ make, size }) => {
     const response = await post(await make(), "{}");
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(200);
+    await expect(sizeOf(response)).resolves.toStrictEqual(size);
   });
 
   it("names the formats it takes for a heic it cannot decode", async () => {
@@ -305,32 +415,6 @@ describe("the documented crop route", () => {
 
     expect(response.status).toBe(415);
     await expect(response.text()).resolves.toContain("JPEG");
-  });
-
-  it("opens an avif", async () => {
-    const input = await gradient(16, 16).avif({ effort: 0 }).toBuffer();
-
-    await expect(post(input, "{}")).resolves.toHaveProperty("status", 200);
-  });
-
-  it("answers 413 for a photo over its pixel limit before it decodes", async () => {
-    const toBuffer = vi.spyOn(sharp.prototype, "toBuffer");
-    const input = await sharp({
-      create: {
-        background: "#000",
-        channels: 3,
-        height: 11_000,
-        width: 11_000,
-      },
-    })
-      .png()
-      .toBuffer();
-
-    toBuffer.mockClear();
-    const response = await post(input, "{}");
-
-    expect(response.status).toBe(413);
-    expect(toBuffer).not.toHaveBeenCalled();
   });
 
   it("answers 503 for a crop over the limit of crops at once", async () => {
@@ -419,88 +503,6 @@ describe("the documented crop route", () => {
 
     expect(response.status).toBe(200);
     expect("zrizMark" in {}).toBeFalsy();
-  });
-
-  it("answers 400 without a file or a value", async () => {
-    const input = await gradient(8, 8).png().toBuffer();
-
-    await expect(post(null, "{}")).resolves.toHaveProperty("status", 400);
-    await expect(post(input, null)).resolves.toHaveProperty("status", 400);
-  });
-
-  it("answers 400 when sharp cannot open the file", async () => {
-    const response = await post(Buffer.from("not a photo"), "{}");
-
-    expect(response.status).toBe(400);
-  });
-
-  it("answers 422 for a value it cannot read", async () => {
-    const input = await gradient(8, 8).png().toBuffer();
-
-    await expect(post(input, "not json")).resolves.toHaveProperty(
-      "status",
-      422
-    );
-
-    await expect(post(input, "[1]")).resolves.toHaveProperty("status", 422);
-  });
-
-  it("answers 422 for a value with perspective", async () => {
-    const input = await gradient(64, 64).png().toBuffer();
-    const value = JSON.stringify({
-      perspective: { horizontal: 5, vertical: 5 },
-    });
-
-    await expect(post(input, value)).resolves.toHaveProperty("status", 422);
-  });
-
-  it.each([2, 3, 6, 8])(
-    "answers 422 for a webp tagged with orientation %i",
-    async (orientation) => {
-      const input = await gradient(64, 48)
-        .webp()
-        .withMetadata({ orientation })
-        .toBuffer();
-
-      await expect(post(input, "{}")).resolves.toHaveProperty("status", 422);
-    }
-  );
-
-  it("opens a webp tagged upright", async () => {
-    const input = await gradient(64, 48)
-      .webp()
-      .withMetadata({ orientation: 1 })
-      .toBuffer();
-
-    await expect(post(input, "{}")).resolves.toHaveProperty("status", 200);
-  });
-
-  it("turns a jpeg upright from its tag before it reads the value", async () => {
-    const input = await gradient(64, 48)
-      .jpeg()
-      .withMetadata({ orientation: 6 })
-      .toBuffer();
-    const response = await post(input, "{}");
-
-    await expect(sizeOf(response)).resolves.toStrictEqual([48, 64]);
-  });
-
-  it("refuses a body over the cap before it reads the form", async () => {
-    const formData = vi.spyOn(Request.prototype, "formData");
-    const input = await gradient(8, 8).png().toBuffer();
-    const response = await post(input, "{}", String(64 * 1024 * 1024));
-
-    expect(response.status).toBe(413);
-    expect(formData).not.toHaveBeenCalled();
-  });
-
-  it("refuses a body that declares no length", async () => {
-    const input = await gradient(8, 8).png().toBuffer();
-
-    await expect(post(input, "{}", null)).resolves.toHaveProperty(
-      "status",
-      413
-    );
   });
 
   it("stays inside the photo for a value far out of range", async () => {

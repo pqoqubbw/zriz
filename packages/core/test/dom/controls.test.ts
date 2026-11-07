@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { createCropper } from "../../src";
 import type { Cropper, CropperOptions } from "../../src";
 import {
   areaKeyHandlers,
@@ -8,79 +7,32 @@ import {
   zoomHandlers,
   zoomProgress,
 } from "../../src/dom/controls";
-import { dialHandlers, dialState, tickData } from "../../src/dom/dial";
-import { viewOf } from "../../src/dom/view";
-import { fakeClock } from "../fake-clock";
+import { dialHandlers } from "../../src/dom/dial";
+import {
+  cast,
+  dialTrack,
+  isObject,
+  key,
+  laidOut,
+  pointer as fakePointer,
+  setup as rig,
+  stubDom,
+} from "../cropper-fixture";
+import type { KeyInit } from "../cropper-fixture";
 
-type KeyInit = {
-  altKey?: boolean;
-  key: string;
-  shiftKey?: boolean;
-};
-
-const isObject = (value: unknown): boolean =>
-  typeof value === "object" && value !== null;
-const isKey = (value: unknown): value is KeyboardEvent => isObject(value);
 const isFocus = (value: unknown): value is FocusEvent => isObject(value);
-const isPointer = (value: unknown): value is PointerEvent => isObject(value);
 const isElement = (value: unknown): value is Element => isObject(value);
-
-const cast = <T>(value: unknown, is: (value: unknown) => value is T): T => {
-  if (!is(value)) {
-    throw new Error("unreachable");
-  }
-
-  return value;
-};
-
-const key = (init: KeyInit): KeyboardEvent =>
-  cast(
-    {
-      altKey: false,
-      currentTarget: null,
-      preventDefault: () => {},
-      shiftKey: false,
-      ...init,
-    },
-    isKey
-  );
+const isKey = (value: unknown): value is KeyboardEvent => isObject(value);
 
 const blur = (): FocusEvent => cast({}, isFocus);
 
 const pointer = (clientX: number, timeStamp: number): PointerEvent =>
-  cast(
-    {
-      button: 0,
-      clientX,
-      clientY: 20,
-      pointerId: 1,
-      pointerType: "touch",
-      target: null,
-      timeStamp,
-    },
-    isPointer
-  );
+  fakePointer(clientX, timeStamp, { pointerType: "touch" });
 
-const track: Element = cast(
-  {
-    getBoundingClientRect: () => ({ width: 361 }),
-    getClientRects: () => [{}],
-    ownerDocument: {},
-    setPointerCapture: () => {},
-  },
-  isElement
-);
+const track = dialTrack();
 
-const setup = (options: CropperOptions = {}) => {
-  const time = fakeClock();
-  const cropper = createCropper({
-    clock: time.clock,
-    image: { height: 300, width: 400 },
-    ...options,
-  });
-
-  return { cropper, time };
-};
+const setup = (options: CropperOptions = {}) =>
+  rig({ image: { height: 300, width: 400 }, ...options });
 
 const press = (
   handlers: ReturnType<typeof areaKeyHandlers>,
@@ -90,96 +42,63 @@ const press = (
   handlers.onKeyUp(key(init));
 };
 
-const gridRig = () => {
-  const { cropper, time } = setup();
-  const view = viewOf(cropper);
+const glide = (cropper: Cropper) => {
+  const handlers = dialHandlers(cropper, {}, () => track);
 
-  view.setLayout({
-    dpr: 1,
-    height: 300,
-    inset: { bottom: 0, left: 0, right: 0, top: 0 },
-    width: 400,
-  });
+  handlers.onPointerDown(pointer(0, 0));
 
-  return { cropper, time, view };
+  for (let i = 1; i <= 8; i += 1) {
+    handlers.onPointerMove(pointer(15 + i * 15, i * 8));
+  }
+
+  handlers.onPointerUp(pointer(135, 66));
+
+  return handlers;
 };
 
 describe("the fine grid", () => {
-  beforeEach(() => {
-    vi.stubGlobal("document", new EventTarget());
-    vi.stubGlobal("addEventListener", vi.fn<() => void>());
-    vi.stubGlobal("removeEventListener", vi.fn<() => void>());
-  });
+  stubDom();
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("stays off on a press that does not move", () => {
-    const { cropper, time, view } = gridRig();
+  it("stays off on a still press, appears past the slop and goes on release", () => {
+    const { cropper, time, view } = laidOut();
     const handlers = dialHandlers(cropper, {}, () => track);
 
     handlers.onPointerDown(pointer(100, 0));
     time.frames(70);
     expect(view.chrome().grid).toBe("none");
     expect(view.chrome().active).toBeTruthy();
-    handlers.onPointerUp(pointer(100, 1200));
-  });
-
-  it("appears on the first movement past the slop", () => {
-    const { cropper, time, view } = gridRig();
-    const handlers = dialHandlers(cropper, {}, () => track);
-
-    handlers.onPointerDown(pointer(100, 0));
-    handlers.onPointerMove(pointer(105, 8));
+    handlers.onPointerMove(pointer(105, 1208));
     time.frame();
     expect(view.chrome().grid).toBe("none");
-    handlers.onPointerMove(pointer(130, 16));
+    handlers.onPointerMove(pointer(130, 1216));
     time.frame();
     expect(view.chrome().grid).toBe("fine");
-    handlers.onPointerUp(pointer(130, 1000));
+    handlers.onPointerUp(pointer(130, 2200));
     time.frames(2);
     expect(view.chrome().grid).toBe("none");
   });
 
-  it("does not come back after the release of a drag", () => {
-    const { cropper, time, view } = gridRig();
-    const handlers = dialHandlers(cropper, {}, () => track);
-
-    handlers.onPointerDown(pointer(100, 0));
-    handlers.onPointerMove(pointer(130, 16));
-    handlers.onPointerUp(pointer(130, 1000));
-    time.frames(2);
-    expect(view.chrome().grid).toBe("none");
-  });
-
-  it("appears for a dial key and goes with its release", () => {
-    const { cropper, time, view } = gridRig();
+  it.each([
+    ["a key that turns", 0, "ArrowRight", "fine"],
+    ["0 at 0°", 0, "0", "none"],
+    ["a key at the limit", 45, "ArrowRight", "none"],
+  ])("shows %s on the dial as %s", (_name, start, name, grid) => {
+    const { cropper, time, view } = laidOut();
     const keys = dialHandlers(cropper, {}, () => track);
 
-    keys.onKeyDown(key({ key: "ArrowRight" }));
-    expect(view.chrome().grid).toBe("fine");
-    keys.onKeyUp(key({ key: "ArrowRight" }));
+    cropper.setRotation(Math.min(start, cropper.getRotationLimit()), {
+      emit: false,
+    });
+
+    keys.onKeyDown(key({ key: name }));
+    expect(view.chrome().grid).toBe(grid);
+    keys.onKeyUp(key({ key: name }));
     time.frames(2);
     expect(view.chrome().grid).toBe("none");
-  });
-
-  it("stays off for a dial key that leaves the angle where it is", () => {
-    const { cropper, view } = gridRig();
-    const keys = dialHandlers(cropper, {}, () => track);
-
-    keys.onKeyDown(key({ key: "0" }));
-    expect(view.chrome().grid).toBe("none");
-    keys.onKeyUp(key({ key: "0" }));
-
-    cropper.setRotation(cropper.getRotationLimit(), { emit: false });
-    keys.onKeyDown(key({ key: "ArrowRight" }));
-    expect(view.chrome().grid).toBe("none");
-    keys.onKeyUp(key({ key: "ArrowRight" }));
   });
 
   it("stays off for an area key", () => {
-    const { cropper, time, view } = gridRig();
+    const { cropper, time, view } = laidOut();
     const keys = areaKeyHandlers(cropper);
 
     cropper.setRotation(5, { emit: false });
@@ -220,6 +139,29 @@ describe("area keys", () => {
     const crop = cropper.getCropState()?.crop;
 
     expect(crop?.width).toBeCloseTo(crop?.height ?? 0, 6);
+
+    const floor = laidOut(
+      {
+        defaultValue: { aspect: 1 },
+        image: { height: 3000, width: 4000 },
+        minSize: { height: 512, width: 512 },
+      },
+      {
+        dpr: 1,
+        height: 1000,
+        inset: { bottom: 0, left: 0, right: 0, top: 0 },
+        width: 1000,
+      }
+    );
+    const shrink = areaKeyHandlers(floor.cropper);
+
+    for (let i = 0; i < 60; i += 1) {
+      press(shrink, { altKey: true, key: "ArrowLeft", shiftKey: true });
+      floor.time.frames(3);
+    }
+
+    expect(floor.cropper.getCropState()?.crop.width).toBeCloseTo(512, 6);
+    expect(floor.cropper.getCropState()?.crop.height).toBeCloseTo(512, 6);
   });
 
   it("stops growing rather than move the centre at the photo's edge", () => {
@@ -234,99 +176,32 @@ describe("area keys", () => {
     expect(cropper.getValue().center.y).toBeCloseTo(before.center.y, 9);
     expect(cropper.getValue().size.width).toBeCloseTo(before.size.width, 9);
   });
-
-  it("resizes one side of a free crop", () => {
-    const { cropper } = setup();
-
-    cropper.setZoom(2);
-    const before = cropper.getValue().size;
-
-    press(areaKeyHandlers(cropper), { altKey: true, key: "ArrowLeft" });
-    const after = cropper.getValue().size;
-
-    expect(after.width).toBeCloseTo(before.width / 1.01, 9);
-    expect(after.height).toBe(before.height);
-  });
 });
 
 describe("focus loss", () => {
-  it("ends a held Area key when focus leaves", () => {
+  it.each([
+    ["Area", areaKeyHandlers, "="],
+    ["Zoom", zoomHandlers, "End"],
+    ["Dial", dialHandlers, "ArrowRight"],
+  ] as const)("ends a held %s key when focus leaves", (_name, bind, name) => {
     const { cropper } = setup();
-    const keys = areaKeyHandlers(cropper);
+    const keys = bind(cropper);
 
-    keys.onKeyDown(key({ key: "=" }));
+    keys.onKeyDown(key({ key: name }));
     expect(cropper.getState().interacting).toBe("keyboard");
     keys.onBlur(blur());
     expect(cropper.getState().interacting).toBeNull();
     expect(cropper.begin("pan")).toBeTruthy();
   });
-
-  it("ends a held Zoom key when focus leaves", () => {
-    const { cropper } = setup();
-    const keys = zoomHandlers(cropper);
-
-    keys.onKeyDown(key({ key: "End" }));
-    expect(cropper.getState().interacting).toBe("keyboard");
-    keys.onBlur(blur());
-    expect(cropper.getState().interacting).toBeNull();
-  });
-
-  it("ends a held Dial key when focus leaves", () => {
-    const { cropper } = setup();
-    const keys = dialHandlers(cropper);
-
-    keys.onKeyDown(key({ key: "ArrowRight" }));
-    expect(cropper.getState().interacting).toBe("keyboard");
-    keys.onBlur(blur());
-    expect(cropper.getState().interacting).toBeNull();
-  });
 });
 
-const pastTheStop = (cropper: Cropper) => {
-  const handlers = dialHandlers(cropper, {}, () => track);
-
-  handlers.onPointerDown(pointer(0, 0));
-  handlers.onPointerMove(pointer(30, 8));
-  handlers.onPointerMove(pointer(300, 16));
-  handlers.onPointerUp(pointer(300, 200));
-
-  return handlers;
-};
-
-describe("dial bounce", () => {
-  beforeEach(() => {
-    vi.stubGlobal("document", new EventTarget());
-    vi.stubGlobal("addEventListener", vi.fn<() => void>());
-    vi.stubGlobal("removeEventListener", vi.fn<() => void>());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("stops at the limit, overshoots and springs back", () => {
-    const { cropper, time } = setup();
-
-    pastTheStop(cropper);
-    expect(cropper.getValue().rotation).toBe(45);
-    expect(dialState(cropper).overshoot()).toBeGreaterThan(0);
-    time.frames(120);
-    expect(dialState(cropper).overshoot()).toBe(0);
-    expect(cropper.getValue().rotation).toBe(45);
-  });
+describe("a dial glide", () => {
+  stubDom();
 
   it("stops a glide when a key lands, and commits once", () => {
-    const commit = vi.fn<() => void>();
-    const { cropper, time } = setup({ onValueCommit: commit });
-    const handlers = dialHandlers(cropper, {}, () => track);
+    const { commit, cropper, time } = setup();
+    const handlers = glide(cropper);
 
-    handlers.onPointerDown(pointer(0, 0));
-
-    for (let i = 1; i <= 8; i += 1) {
-      handlers.onPointerMove(pointer(15 + i * 15, i * 8));
-    }
-
-    handlers.onPointerUp(pointer(135, 66));
     time.frames(3);
     expect(commit).not.toHaveBeenCalled();
     handlers.onKeyDown(key({ key: "ArrowLeft" }));
@@ -343,25 +218,18 @@ describe("dial bounce", () => {
 
   it("a press on the zoom track during a glide takes hold at once", () => {
     const { cropper, time } = setup();
-    const handlers = dialHandlers(cropper, {}, () => track);
     const box = cast(
       {
         getBoundingClientRect: () => ({ left: 0, width: 361 }),
         getClientRects: () => [{}],
         ownerDocument: {},
-        setPointerCapture: () => {},
+        setPointerCapture: () => null,
       },
       isElement
     );
     const zoom = zoomHandlers(cropper, {}, () => box);
 
-    handlers.onPointerDown(pointer(0, 0));
-
-    for (let i = 1; i <= 8; i += 1) {
-      handlers.onPointerMove(pointer(15 + i * 15, i * 8));
-    }
-
-    handlers.onPointerUp(pointer(135, 66));
+    glide(cropper);
     time.frames(3);
     expect(cropper.getState().interacting).toBe("dial");
     const held = cropper.getValue().rotation;
@@ -376,17 +244,10 @@ describe("dial bounce", () => {
 
   it("an area key during a glide acts and keeps the key from the page", () => {
     const { cropper, time } = setup();
-    const handlers = dialHandlers(cropper, {}, () => track);
     const keys = areaKeyHandlers(cropper);
 
     cropper.setZoom(2);
-    handlers.onPointerDown(pointer(0, 0));
-
-    for (let i = 1; i <= 8; i += 1) {
-      handlers.onPointerMove(pointer(15 + i * 15, i * 8));
-    }
-
-    handlers.onPointerUp(pointer(135, 66));
+    glide(cropper);
     time.frames(3);
     const { x } = cropper.getValue().center;
     const prevent = vi.fn<() => void>();
@@ -408,28 +269,13 @@ describe("dial bounce", () => {
     expect(cropper.getValue().center.x).not.toBe(x);
     keys.onKeyUp(key({ key: "ArrowRight" }));
   });
-
-  it("still springs back when a key lands during the bounce", () => {
-    const { cropper, time } = setup();
-    const keys = pastTheStop(cropper);
-
-    time.frames(2);
-    expect(dialState(cropper).overshoot()).toBeGreaterThan(0);
-    keys.onKeyDown(key({ key: "ArrowLeft" }));
-    keys.onKeyUp(key({ key: "ArrowLeft" }));
-    time.frames(120);
-    expect(dialState(cropper).overshoot()).toBe(0);
-    expect(cropper.getValue().rotation).toBe(44);
-  });
 });
 
-describe("pure control helpers", () => {
-  it("puts zoom on a log scale, so 2x sits 26% along a 15x track", () => {
+describe("the zoom track", () => {
+  it("puts zoom on a log scale, so 2x sits 26% along a 15x track, and clamps at both ends", () => {
     expect(zoomProgress(2)).toBeCloseTo(0.256, 3);
     expect(zoomAt(zoomProgress(2))).toBeCloseTo(2, 9);
-  });
 
-  it("clamps the zoom track at both ends", () => {
     expect([1, 0.5, 15, 30].map((zoom) => zoomProgress(zoom))).toStrictEqual([
       0, 0, 1, 1,
     ]);
@@ -437,11 +283,31 @@ describe("pure control helpers", () => {
     expect(zoomProgress(2, 1)).toBe(0);
     expect([zoomAt(-1), zoomAt(2)]).toStrictEqual([1, 15]);
   });
+});
 
-  it("marks the ruler's majors, zero and faded ends", () => {
-    expect(tickData(0)).toStrictEqual({ fade: 0, major: true, zero: false });
-    expect(tickData(20)).toStrictEqual({ fade: null, major: true, zero: true });
-    expect(tickData(21).major).toBeFalsy();
-    expect([2, 3, 40].map((i) => tickData(i).fade)).toStrictEqual([2, null, 0]);
+describe("zoom keys past the slider's end", () => {
+  stubDom();
+
+  it("leave a zoom above the end there until a key moves it down", () => {
+    const { cropper } = setup({ image: { height: 3000, width: 4000 } });
+    const handlers = zoomHandlers(cropper, { max: 5 });
+
+    const after = (name: string): number => {
+      cropper.setZoom(10);
+      handlers.onKeyDown(key({ key: name }));
+      handlers.onKeyUp(key({ key: name }));
+
+      return cropper.getZoom();
+    };
+
+    const up = after("ArrowUp");
+    const down = after("ArrowDown");
+
+    expect({
+      down: down > 5 && down < 10,
+      end: after("End"),
+      home: after("Home"),
+      up,
+    }).toStrictEqual({ down: true, end: 5, home: 1, up: 10 });
   });
 });

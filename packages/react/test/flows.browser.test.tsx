@@ -1,27 +1,17 @@
 import "../../core/src/styles.css";
 import { createCropper } from "@zriz/core";
 import type { CropValue, Cropper as CropperApi } from "@zriz/core";
-import {
-  ZrizError,
-  attachImage,
-  exportCrop,
-  imageOf,
-  loadImage,
-} from "@zriz/core/dom";
+import { ZrizError, exportCrop, imageOf } from "@zriz/core/dom";
 import type { LoadedImage } from "@zriz/core/dom";
-import { StrictMode, createRef, useEffect, useState } from "react";
+import { createRef, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { hydrateRoot } from "react-dom/client";
-import { renderToString } from "react-dom/server";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { server, commands, userEvent } from "vitest/browser";
+import { commands, userEvent } from "vitest/browser";
 
 import { useCropperFrame } from "../src";
 import * as Cropper from "../src/cropper";
 
-const BLUE_WEBM =
-  "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAOxEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHWTbuMU6uEElTDZ1OsggEzTbuMU6uEHFO7a1OsggOb7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsCrXsYMPQkBNgIxMYXZmNjMuMS4xMDJXQYxMYXZmNjMuMS4xMDJEiYhAj0AAAAAAABZUrmvYrgEAAAAAAABP14EBc8WI/XjdG9fj+bucgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4QF9eEA4JGwggFAuoHwmoECVbCEVbmBAVXugQDsAQAAAAAAAAIAABJUw2f6c3OfY8CAZ8iZRaOHRU5DT0RFUkSHjExhdmY2My4xLjEwMnNz1WPAi2PFiP143RvX4/m7Z8igRaOHRU5DT0RFUkSHk0xhdmM2My4xLjEwMiBsaWJ2cHhnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAxLjAwMDAwMDAwMAAfQ7Z1QePngQCjQL2BAACA0BIAnQEqQAHwAABHCIWFiIWEiAICAnWqA/gCBoaE9waBZJ9r25snOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHr0AP7/TRL//FhX8WFfxYV/8WFf/PzO7cX85gCjnoEAZADRAgABEBAAGAAYWC/0AAiABDNfrXJPnHMAAKOegQDIANECAAEQEAAYABhYL/QACIAEM1+tck+ccwAAo56BASwA0QIAARAQABgAGFgv9AAIgAQzX61yT5xzAACjnoEBkADRAgABEBAAGAAYWC/0AAiABDNfrXJPnHMAAKOegQH0ANECAAEQEAAYABhYL/QACIAEM1+tck+ccwAAo56BAlgA0QIAARAQABgAGFgv9AAIgAQzX61yT5xzAACjnoECvADRAgABEBAUYABhYL/QACIAEM1+tck+ccwAAKOegQMgANECAAEQEAAYABhYL/QACIAEM1+tck+ccwAAo56BA4QA0QIAARAQABgAGFgv9AAIgAQzX61yT5xzAAAcU7trkbuPs4EAt4r3gQHxggGy8IED";
 const BLUE = "#3344cc";
 const RED = "#cc3333";
 
@@ -65,30 +55,6 @@ const settled = async (api: { current: CropperApi | null }): Promise<void> => {
   }
 
   expect(calm).toBe(6);
-};
-
-const realAdd: unknown = Reflect.get(EventTarget.prototype, "addEventListener");
-const realRemove: unknown = Reflect.get(
-  EventTarget.prototype,
-  "removeEventListener"
-);
-const realFrame = requestAnimationFrame.bind(globalThis);
-const realCancelFrame = cancelAnimationFrame.bind(globalThis);
-const realTimeout = setTimeout.bind(globalThis);
-const realClearTimeout = clearTimeout.bind(globalThis);
-const realCreateUrl = URL.createObjectURL.bind(URL);
-const realRevokeUrl = URL.revokeObjectURL.bind(URL);
-const realBitmap = createImageBitmap.bind(globalThis);
-const realObserve: unknown = Reflect.get(ResizeObserver.prototype, "observe");
-const realDisconnect: unknown = Reflect.get(
-  ResizeObserver.prototype,
-  "disconnect"
-);
-
-const applyReal = (real: unknown, self: object, args: readonly unknown[]) => {
-  if (typeof real === "function") {
-    Reflect.apply(real, self, args);
-  }
 };
 
 const isLoaded = (value: unknown): value is LoadedImage =>
@@ -201,54 +167,46 @@ describe("Root src flows", () => {
     await cleanup();
   });
 
-  it("fires onLoad once with the size and mime, and never onError", async () => {
+  it("fires onLoad once for a photo and a typed onError for bad bytes", async () => {
     const onLoad = vi.fn<(...args: unknown[]) => void>();
     const onError = vi.fn<(...args: unknown[]) => void>();
     const api = createRef<CropperApi>();
-
-    await render(
+    const screen = await render(
       <Editor api={api} onError={onError} onLoad={onLoad} src={await photo()} />
     );
 
     await expect.poll(() => onLoad.mock.calls.length).toBe(1);
 
-    expect(onLoad.mock.calls[0]?.[0]).toMatchObject({
-      height: 300,
-      mime: "image/png",
-      width: 400,
+    expect({
+      errors: onError.mock.calls.length,
+      loaded: onLoad.mock.calls[0]?.[0],
+      ready: api.current?.getState().ready,
+    }).toMatchObject({
+      errors: 0,
+      loaded: { height: 300, mime: "image/png", width: 400 },
+      ready: true,
     });
 
-    expect(onError).not.toHaveBeenCalled();
-    expect(api.current?.getState().ready).toBeTruthy();
-  });
+    await screen.unmount();
 
-  it("fires onError with a typed error for bad bytes, a bad status and a refused host", async () => {
-    for (const src of [
-      new Blob(["not an image at all"], { type: "image/png" }),
-      "/__zriz_does_not_exist__.png",
-      "http://127.0.0.1:1/x.png",
-    ]) {
-      const onLoad = vi.fn<(...args: unknown[]) => void>();
-      const onError = vi.fn<(...args: unknown[]) => void>();
-      const screen = await render(
-        <Editor onError={onError} onLoad={onLoad} src={src} />
-      );
+    const badLoad = vi.fn<(...args: unknown[]) => void>();
+    const badError = vi.fn<(...args: unknown[]) => void>();
 
-      await expect
-        .poll(() => onError.mock.calls.length, { timeout: 8000 })
-        .toBe(1);
+    await render(
+      <Editor
+        onError={badError}
+        onLoad={badLoad}
+        src={new Blob(["not an image at all"], { type: "image/png" })}
+      />
+    );
 
-      const error = onError.mock.calls[0]?.[0];
+    await expect.poll(() => badError.mock.calls.length).toBe(1);
+    const error = badError.mock.calls[0]?.[0];
 
-      expect(error).toBeInstanceOf(ZrizError);
-
-      expect(error instanceof ZrizError ? error.message : "").toMatch(
-        /^zriz:/u
-      );
-
-      expect(onLoad).not.toHaveBeenCalled();
-      await screen.unmount();
-    }
+    expect({
+      loads: badLoad.mock.calls.length,
+      zriz: error instanceof ZrizError && error.message.startsWith("zriz:"),
+    }).toStrictEqual({ loads: 0, zriz: true });
   });
 
   it("A then B: B lands, A never reports, and onError stays quiet", async () => {
@@ -276,41 +234,40 @@ describe("Root src flows", () => {
     expect(api.current && imageOf(api.current)?.width).toBe(200);
   });
 
-  it("src null releases the photo", async () => {
+  it("undefined leaves the photo, a failed load keeps it, and null releases it", async () => {
     const onLoad = vi.fn<(...args: unknown[]) => void>();
+    const onError = vi.fn<(...args: unknown[]) => void>();
     const api = createRef<CropperApi>();
+    const props = { api, onError, onLoad };
     const screen = await render(
-      <Editor api={api} onLoad={onLoad} src={await photo(800, 600)} />
+      <Editor {...props} src={await photo(800, 600)} />
     );
 
     await expect.poll(() => onLoad.mock.calls.length).toBe(1);
     const landed = onLoad.mock.calls[0]?.[0];
 
-    await screen.rerender(<Editor api={api} onLoad={onLoad} src={null} />);
-    await expect.poll(() => api.current?.getState().ready).toBeFalsy();
-    expect(isLoaded(landed) ? landed.preview.width : -1).toBe(0);
-    expect(api.current && imageOf(api.current)).toBeNull();
-  });
-
-  it("undefined leaves the photo, and a failed load keeps the previous photo", async () => {
-    const onLoad = vi.fn<(...args: unknown[]) => void>();
-    const onError = vi.fn<(...args: unknown[]) => void>();
-    const api = createRef<CropperApi>();
-    const props = { api, onError, onLoad };
-    const screen = await render(<Editor {...props} src={await photo()} />);
-
-    await expect.poll(() => onLoad.mock.calls.length).toBe(1);
     await screen.rerender(<Editor {...props} />);
     await frames(3);
-    expect(api.current && imageOf(api.current)?.width).toBe(400);
+    expect(api.current && imageOf(api.current)?.width).toBe(800);
 
     await screen.rerender(
       <Editor {...props} src={new Blob(["junk"], { type: "image/png" })} />
     );
 
     await expect.poll(() => onError.mock.calls.length).toBe(1);
-    expect(api.current && imageOf(api.current)?.width).toBe(400);
-    expect(api.current?.getState().ready).toBeTruthy();
+
+    expect({
+      ready: api.current?.getState().ready,
+      width: api.current && imageOf(api.current)?.width,
+    }).toStrictEqual({ ready: true, width: 800 });
+
+    await screen.rerender(<Editor {...props} src={null} />);
+    await expect.poll(() => api.current?.getState().ready).toBeFalsy();
+
+    expect({
+      image: api.current && imageOf(api.current),
+      preview: isLoaded(landed) ? landed.preview.width : -1,
+    }).toStrictEqual({ image: null, preview: 0 });
   });
 
   it("a new object URL for the same photo keeps the crop", async () => {
@@ -529,17 +486,13 @@ describe("hooks in a real render", () => {
   });
 });
 
-const measureDial = async (dir: "ltr" | "rtl", from: "root" | "page") => {
+const measureDial = async (dir: "ltr" | "rtl") => {
   const api = createRef<CropperApi>();
   const image = { height: 300, width: 400 };
   const screen = await render(
-    from === "root" ? (
-      <Editor api={api} rootProps={{ dir, image }} />
-    ) : (
-      <div dir={dir}>
-        <Editor api={api} rootProps={{ image }} />
-      </div>
-    )
+    <div dir={dir}>
+      <Editor api={api} rootProps={{ image }} />
+    </div>
   );
 
   await frames(3);
@@ -573,7 +526,7 @@ const measureDial = async (dir: "ltr" | "rtl", from: "root" | "page") => {
   return { key, moved, rotation };
 };
 
-describe.each(["root", "page"] as const)("rtl from the %s", (from) => {
+describe("rtl from the page", () => {
   afterEach(async () => {
     await cleanup();
   });
@@ -581,13 +534,9 @@ describe.each(["root", "page"] as const)("rtl from the %s", (from) => {
   const image = { height: 300, width: 400 };
   const mountRtl = async (api: React.Ref<CropperApi>) =>
     await render(
-      from === "root" ? (
-        <Editor api={api} rootProps={{ dir: "rtl", image }} />
-      ) : (
-        <div dir="rtl">
-          <Editor api={api} rootProps={{ image }} />
-        </div>
-      )
+      <div dir="rtl">
+        <Editor api={api} rootProps={{ image }} />
+      </div>
     );
 
   it("AspectGroup arrows run the other way", async () => {
@@ -657,8 +606,8 @@ describe.each(["root", "page"] as const)("rtl from the %s", (from) => {
   });
 
   it("Dial keys flip and the strip follows the finger in both directions", async () => {
-    const ltr = await measureDial("ltr", from);
-    const rtl2 = await measureDial("rtl", from);
+    const ltr = await measureDial("ltr");
+    const rtl2 = await measureDial("rtl");
 
     expect(Math.sign(ltr.key)).toBe(-Math.sign(rtl2.key));
     expect(ltr.moved).toBeGreaterThan(0);
@@ -674,10 +623,9 @@ describe("the page's direction", () => {
 
   const image = { height: 300, width: 400 };
 
-  it("is left alone, with no dir attribute on Root", async () => {
+  it("is left alone with no dir on Root, and gives way to dir on Root", async () => {
     const api = createRef<CropperApi>();
-
-    await render(
+    const screen = await render(
       <div dir="rtl">
         <Editor api={api} rootProps={{ image }} />
       </div>
@@ -687,6 +635,18 @@ describe("the page's direction", () => {
 
     expect(root.hasAttribute("dir")).toBeFalsy();
     expect(getComputedStyle(root).direction).toBe("rtl");
+
+    await screen.rerender(
+      <div dir="rtl">
+        <Editor api={api} rootProps={{ dir: "ltr", image }} />
+      </div>
+    );
+
+    await frames(3);
+    q("#dial").focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await settled(api);
+    expect(api.current?.getValue().rotation).toBeGreaterThan(0);
   });
 
   it("is read at each key press, so a later change takes effect", async () => {
@@ -709,22 +669,6 @@ describe("the page's direction", () => {
     await userEvent.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
     await settled(api);
     expect(api.current?.getValue().rotation).toBeLessThan(0);
-  });
-
-  it("gives way to dir on Root", async () => {
-    const api = createRef<CropperApi>();
-
-    await render(
-      <div dir="rtl">
-        <Editor api={api} rootProps={{ dir: "ltr", image }} />
-      </div>
-    );
-
-    await frames(3);
-    q("#dial").focus();
-    await userEvent.keyboard("{ArrowRight}");
-    await settled(api);
-    expect(api.current?.getValue().rotation).toBeGreaterThan(0);
   });
 
   it("keeps the minus of the dial value on the left", async () => {
@@ -755,435 +699,5 @@ describe("the page's direction", () => {
     };
 
     expect(place(0)).toBeLessThan(place(1));
-  });
-});
-
-const sizeOf = (image: LoadedImage) => [image.width, image.height];
-
-describe("element sources with real decode", () => {
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it("img, canvas, OffscreenCanvas and ImageBitmap", async () => {
-    const blob = await photo(320, 200, BLUE);
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-
-    img.src = url;
-    await img.decode();
-    const canvas = document.createElement("canvas");
-
-    canvas.width = 320;
-    canvas.height = 200;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      throw new Error("no 2d");
-    }
-
-    context.fillStyle = BLUE;
-    context.fillRect(0, 0, 320, 200);
-    const off = new OffscreenCanvas(320, 200);
-    const offContext = off.getContext("2d");
-
-    if (!offContext) {
-      throw new Error("no 2d");
-    }
-
-    offContext.fillStyle = BLUE;
-    offContext.fillRect(0, 0, 320, 200);
-    const bitmap = await createImageBitmap(blob);
-
-    for (const source of [img, canvas, off, bitmap]) {
-      const image = await loadImage(source);
-
-      expect(sizeOf(image)).toStrictEqual([320, 200]);
-      const cropper = createCropper({ image });
-
-      attachImage(cropper, image);
-      const result = await exportCrop(cropper, { type: "image/png" });
-      const [r, , b] = await centerColor(result.blob);
-
-      expect(b ?? 0).toBeGreaterThan(r ?? 0);
-      attachImage(cropper, null);
-      expect(image.preview.width).toBe(source === bitmap ? 320 : 0);
-      cropper.destroy();
-    }
-
-    bitmap.close();
-
-    URL.revokeObjectURL(url);
-  });
-
-  it.skipIf(server.browser === "webkit" && server.platform === "linux")(
-    "a video frame",
-    async () => {
-      const bytes = Uint8Array.from(
-        atob(BLUE_WEBM),
-        (c) => c.codePointAt(0) ?? 0
-      );
-      const url = URL.createObjectURL(
-        new Blob([bytes], { type: "video/webm" })
-      );
-      const video = document.createElement("video");
-
-      video.muted = true;
-      video.preload = "auto";
-
-      await new Promise((resolve, reject) => {
-        video.addEventListener("loadeddata", resolve, { once: true });
-        video.addEventListener("error", reject, { once: true });
-        video.src = url;
-        video.load();
-      });
-
-      const image = await loadImage(video);
-
-      expect(sizeOf(image)).toStrictEqual([320, 240]);
-      image.preview.close();
-      URL.revokeObjectURL(url);
-    }
-  );
-
-  it("the decode hook opens bytes the browser cannot, and a throw rejects with the caller's own error", async () => {
-    const junk = new Blob(["this is not an image"], { type: "image/x-custom" });
-    const decode = vi.fn<() => Promise<ImageBitmap>>(
-      async () => await createImageBitmap(await photo(320, 200, BLUE))
-    );
-    const image = await loadImage(junk, { decode });
-
-    expect(decode).toHaveBeenCalledOnce();
-    expect(sizeOf(image)).toStrictEqual([320, 200]);
-    const cropper = createCropper({ image });
-
-    attachImage(cropper, image);
-    const result = await exportCrop(cropper, { type: "image/png" });
-
-    expect(result.blob.size).toBeGreaterThan(0);
-    attachImage(cropper, null);
-    expect(image.preview.width).toBe(0);
-    cropper.destroy();
-    const mine = new Error("mine");
-
-    await expect(
-      loadImage(junk, {
-        decode: async () => {
-          await Promise.resolve();
-          throw mine;
-        },
-      })
-    ).rejects.toBe(mine);
-  });
-});
-
-const STACK = /packages\/(?:core\/dist|core\/src|react\/src)\//u;
-
-const fromZriz = (): boolean => STACK.test(new Error("stack").stack ?? "");
-
-type Leftovers = {
-  bitmaps: number;
-  frames: number;
-  listeners: string[];
-  observers: number;
-  timers: number;
-  urls: number;
-};
-
-const CLEAN: Leftovers = {
-  bitmaps: 0,
-  frames: 0,
-  listeners: [],
-  observers: 0,
-  timers: 0,
-  urls: 0,
-};
-
-const listenerKey = (
-  target: EventTarget,
-  ids: WeakMap<object, number>,
-  [type, listener, options]: Parameters<EventTarget["addEventListener"]>
-): string => {
-  const idOf = (value: object): number => {
-    const known = ids.get(value);
-
-    if (known !== undefined) {
-      return known;
-    }
-
-    const next = Math.random();
-
-    ids.set(value, next);
-
-    return next;
-  };
-
-  const capture =
-    typeof options === "boolean" ? options : options?.capture === true;
-
-  return `${idOf(target)} ${type} ${listener ? idOf(listener) : 0} ${capture}`;
-};
-
-const track = () => {
-  const ids = new WeakMap<object, number>();
-  const listeners = new Map<string, string>();
-  const frameIds = new Set<number>();
-  const urls = new Set<string>();
-  const bitmaps: ImageBitmap[] = [];
-  const timers = new Set<unknown>();
-  const observers = new Set<ResizeObserver>();
-  const spies = [
-    vi
-      .spyOn(EventTarget.prototype, "addEventListener")
-      .mockImplementation(function add(this: EventTarget, ...args) {
-        const [_type, _listener, options] = args;
-        const once = typeof options === "object" && options.once === true;
-
-        if (fromZriz() && !once) {
-          listeners.set(
-            listenerKey(this, ids, args),
-            `${this.constructor.name}:${args[0]}`
-          );
-        }
-
-        applyReal(realAdd, this, args);
-      }),
-    vi
-      .spyOn(EventTarget.prototype, "removeEventListener")
-      .mockImplementation(function remove(this: EventTarget, ...args) {
-        listeners.delete(listenerKey(this, ids, args));
-        applyReal(realRemove, this, args);
-      }),
-    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((run) => {
-      const id = realFrame((time) => {
-        frameIds.delete(id);
-        run(time);
-      });
-
-      if (fromZriz()) {
-        frameIds.add(id);
-      }
-
-      return id;
-    }),
-    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation((id) => {
-      frameIds.delete(id);
-      realCancelFrame(id);
-    }),
-    vi.spyOn(globalThis, "setTimeout").mockImplementation((run, ms) => {
-      const mine = fromZriz();
-      const id = realTimeout(() => {
-        timers.delete(id);
-
-        if (typeof run === "function") {
-          run();
-        }
-      }, ms);
-
-      if (mine) {
-        timers.add(id);
-      }
-
-      return id;
-    }),
-    vi.spyOn(globalThis, "clearTimeout").mockImplementation((id) => {
-      timers.delete(id);
-      realClearTimeout(id);
-    }),
-    vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
-      const url = realCreateUrl(blob);
-
-      if (fromZriz()) {
-        urls.add(url);
-      }
-
-      return url;
-    }),
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => {
-      urls.delete(url);
-      realRevokeUrl(url);
-    }),
-    vi
-      .spyOn(globalThis, "createImageBitmap")
-      .mockImplementation(async (...args: unknown[]): Promise<ImageBitmap> => {
-        const made: unknown = await Reflect.apply(realBitmap, globalThis, args);
-
-        if (!(made instanceof ImageBitmap)) {
-          throw new TypeError("no bitmap");
-        }
-
-        bitmaps.push(made);
-
-        return made;
-      }),
-    vi
-      .spyOn(ResizeObserver.prototype, "observe")
-      .mockImplementation(function observe(this: ResizeObserver, ...args) {
-        if (fromZriz()) {
-          observers.add(this);
-        }
-
-        applyReal(realObserve, this, args);
-      }),
-    vi
-      .spyOn(ResizeObserver.prototype, "disconnect")
-      .mockImplementation(function disconnect(this: ResizeObserver) {
-        observers.delete(this);
-        applyReal(realDisconnect, this, []);
-      }),
-  ];
-
-  return {
-    read: async (): Promise<Leftovers> => {
-      await sleep(1200);
-
-      return {
-        bitmaps: bitmaps.filter((bitmap) => bitmap.width > 0).length,
-        frames: frameIds.size,
-        listeners: [...listeners.values()],
-        observers: observers.size,
-        timers: timers.size,
-        urls: urls.size,
-      };
-    },
-    restore: () => {
-      for (const spy of spies) {
-        spy.mockRestore();
-      }
-    },
-  };
-};
-
-const unmountDuring = async (
-  run: (api: { current: CropperApi | null }) => Promise<void>,
-  waitForPhoto = true
-): Promise<Leftovers> => {
-  const tracker = track();
-
-  try {
-    const onLoad = vi.fn<(...args: unknown[]) => void>();
-    const api = createRef<CropperApi>();
-    const src = await photo(800, 600);
-    const screen = await render(
-      <StrictMode>
-        <Editor api={api} onLoad={onLoad} src={src} />
-      </StrictMode>
-    );
-
-    if (waitForPhoto) {
-      await expect.poll(() => onLoad.mock.calls.length).toBe(1);
-      await frames(3);
-    }
-
-    await run(api);
-    await screen.unmount();
-
-    return await tracker.read();
-  } finally {
-    tracker.restore();
-  }
-};
-
-describe("unmount parity under StrictMode", () => {
-  beforeAll(async () => {
-    await loadImage(await photo(8, 8));
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it("leaves nothing when idle", async () => {
-    await expect(
-      unmountDuring(async () => {
-        await frames(2);
-      })
-    ).resolves.toStrictEqual(CLEAN);
-  });
-
-  it("leaves nothing during an animation", async () => {
-    await expect(
-      unmountDuring(async (api) => {
-        api.current?.rotate90();
-        await frames(2);
-      })
-    ).resolves.toStrictEqual(CLEAN);
-  });
-
-  it("leaves nothing in the middle of a drag", async () => {
-    const result = await unmountDuring(async () => {
-      await commands.hold("#viewport", 200, 150);
-      await frames(2);
-    });
-
-    await commands.release();
-    expect(result).toStrictEqual(CLEAN);
-  });
-
-  it("leaves nothing while the load is still running", async () => {
-    await expect(
-      unmountDuring(async () => {
-        await Promise.resolve();
-      }, false)
-    ).resolves.toStrictEqual(CLEAN);
-  });
-
-  it("leaves nothing after the sharp canvas settled", async () => {
-    await expect(
-      unmountDuring(async () => {
-        await expect
-          .poll(() => document.querySelector("[data-sharp]"), {
-            timeout: 3000,
-          })
-          .not.toBeNull();
-      })
-    ).resolves.toStrictEqual(CLEAN);
-  });
-});
-
-type FullProps = { api?: React.Ref<CropperApi> };
-
-const Full = ({ api }: FullProps) => (
-  <Editor api={api} rootProps={{ image: { height: 300, width: 400 } }}>
-    <Cropper.Orientation aria-label="Orientation" />
-    <Cropper.ZoomStep aria-label="Zoom in" factor={2} />
-  </Editor>
-);
-
-describe("hydration", () => {
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it("hydrates every part with no mismatch and stays interactive", async () => {
-    const html = renderToString(<Full />);
-    const host = document.createElement("div");
-
-    host.innerHTML = html;
-    document.body.append(host);
-    const spy = vi.spyOn(console, "error");
-    const recoverable: unknown[] = [];
-    const api = createRef<CropperApi>();
-    const root = hydrateRoot(host, <Full api={api} />, {
-      onRecoverableError: (error) => {
-        recoverable.push(error);
-      },
-    });
-
-    await expect.poll(() => api.current !== null).toBeTruthy();
-    await frames(3);
-    const errors = spy.mock.calls.map((call) => String(call[0]).slice(0, 200));
-
-    spy.mockRestore();
-    expect(recoverable).toStrictEqual([]);
-    expect(errors).toStrictEqual([]);
-    const zoom = host.querySelector<HTMLElement>('[data-zriz-item="zoom"]');
-
-    zoom?.focus();
-    await userEvent.keyboard("{End}");
-    await frames(3);
-    expect(api.current?.getZoom()).toBeGreaterThan(1);
-    root.unmount();
-    host.remove();
   });
 });

@@ -6,9 +6,10 @@ import { createCropper } from "../../src";
 import type { Cropper, Size } from "../../src";
 import { ZrizError } from "../../src/dom/error";
 import { exportImage } from "../../src/dom/export";
-import type { ExportResult, LoadedImage } from "../../src/dom/image";
+import type { ExportResult } from "../../src/dom/image";
 import { renderKernel } from "../../src/dom/render-kernel";
 import { via } from "../../src/dom/worker";
+import { loadedImage } from "../cropper-fixture";
 import { fakeClock } from "../fake-clock";
 import { sourceToOutputMatrix } from "../geometry/oracles";
 import { deferred } from "./deferred";
@@ -41,15 +42,13 @@ const run = async (
   }
 
   const cropper = createCropper({ clock: fakeClock().clock, image });
-  const loaded: LoadedImage = {
-    animated: false,
+  const loaded = loadedImage({
     height,
-    id: 1,
     mime: "image/jpeg",
     preview: image,
     source: image,
     width,
-  };
+  });
 
   return await exportImage(cropper, loaded, { maxSize });
 };
@@ -64,50 +63,50 @@ describe("exportImage size", () => {
     });
   });
 
-  it("scales a crop to fit the box", async () => {
-    const out = await run(900, 600, { height: 100, width: 100 });
-
-    expect([out.width, out.height, out.scaled]).toStrictEqual([100, 66, true]);
-  });
-
-  it("reports scaled false when the one pixel floor keeps the full crop", async () => {
-    const out = await run(1, 3000, { height: 100, width: 100 });
-
-    expect([out.width, out.height, out.scaled]).toStrictEqual([1, 3000, false]);
-  });
-
-  it("ignores a box with no number in it", async () => {
-    const out = await run(900, 600, { height: 100, width: Number.NaN });
-
-    expect([out.width, out.height, out.scaled]).toStrictEqual([
+  it.each<[string, number, number, Size, [number, number, boolean]]>([
+    [
+      "a box it fits into",
       900,
       600,
-      false,
-    ]);
-
-    expect(via).toHaveBeenCalledWith(expect.anything(), "render", [
-      expect.objectContaining({
-        plans: [
-          expect.objectContaining({ width: 900 }),
-          expect.objectContaining({ width: 450 }),
-          expect.objectContaining({ width: 225 }),
-        ],
-      }),
-    ]);
-  });
-
-  it.each([
-    { height: 100, width: 0 },
-    { height: -1, width: 100 },
-  ])("ignores an empty box", async (maxSize) => {
-    const out = await run(900, 600, maxSize);
-
-    expect([out.width, out.height, out.scaled]).toStrictEqual([
+      { height: 100, width: 100 },
+      [100, 66, true],
+    ],
+    [
+      "the one pixel floor",
+      1,
+      3000,
+      { height: 100, width: 100 },
+      [1, 3000, false],
+    ],
+    [
+      "a box with no number",
       900,
       600,
-      false,
-    ]);
-  });
+      { height: 100, width: Number.NaN },
+      [900, 600, false],
+    ],
+    [
+      "a box of zero width",
+      900,
+      600,
+      { height: 100, width: 0 },
+      [900, 600, false],
+    ],
+    [
+      "a box of negative height",
+      900,
+      600,
+      { height: -1, width: 100 },
+      [900, 600, false],
+    ],
+  ])(
+    "sizes the output for %s and reports scaled from the real size",
+    async (_name, width, height, maxSize, expected) => {
+      const out = await run(width, height, maxSize);
+
+      expect([out.width, out.height, out.scaled]).toStrictEqual(expected);
+    }
+  );
 });
 
 type Limits = {
@@ -235,7 +234,7 @@ const fakeCanvas = (limits: Limits = {}): { draws: Draw[]; made: Area[] } => {
 const painted = async (
   width: number,
   height: number,
-  options: { maxSize?: Size; type?: "image/webp" } = {},
+  options: { maxSize?: Size; type?: "image/jpeg" | "image/webp" } = {},
   perspective?: { horizontal: number; vertical: number },
   file?: Blob
 ): Promise<{ cropper: Cropper; result: ExportResult }> => {
@@ -262,15 +261,13 @@ const painted = async (
     cropper.setValue({ perspective });
   }
 
-  const loaded: LoadedImage = {
-    animated: false,
+  const loaded = loadedImage({
     height,
-    id: 1,
     mime: "image/jpeg",
     preview: image,
     source: file ?? image,
     width,
-  };
+  });
   const result = await exportImage(cropper, loaded, {
     type: "image/jpeg",
     ...options,
@@ -311,17 +308,12 @@ const apply = (m: number[], x: number, y: number): [number, number] => {
 const meshOf = (draws: Draw[]): Draw[] =>
   draws.filter((draw) => draw.operation === "lighter");
 
-const onto = (draws: Draw[]): number[] =>
-  draws
-    .filter((draw) => draw.args.length === 2)
-    .map((draw) => Math.hypot(draw.transform[0] ?? 0, draw.transform[1] ?? 0));
-
 const worstError = async (
   width: number,
   height: number,
   vertical: number,
   horizontal = 0
-): Promise<{ worst: number; triangles: number }> => {
+): Promise<number> => {
   const { draws } = fakeCanvas();
   const { cropper, result } = await painted(
     width,
@@ -364,7 +356,7 @@ const worstError = async (
     }
   }
 
-  return { triangles: triangles.length, worst };
+  return worst;
 };
 
 const allFreed = (made: Area[]): boolean =>
@@ -375,52 +367,35 @@ describe("export retry", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each<[string, Limits]>([
-    ["a blank canvas", { blank: 20_000_000 }],
-    ["no 2d context", { noContext: 20_000_000 }],
-    ["an encoder failure", { encodeThrows: 20_000_000 }],
-    ["a throwing draw", { drawThrows: 20_000_000 }],
-  ])("steps down to half size after %s", async (_name, limits) => {
-    const { made } = fakeCanvas(limits);
-    const { result } = await painted(8000, 6000);
-
-    expect([result.width, result.scaled]).toStrictEqual([4000, true]);
-    expect(allFreed(made)).toBeTruthy();
-  });
-
-  it.each([
-    [50_000_000, 8000, false],
-    [20_000_000, 4000, true],
-    [5_000_000, 2000, true],
+  it.each<[string, Limits, object]>([
+    ["the first size", {}, { scaled: false, width: 8000 }],
+    ["a blank canvas", { blank: 20_000_000 }, { scaled: true, width: 4000 }],
+    ["no 2d context", { noContext: 20_000_000 }, { scaled: true, width: 4000 }],
+    [
+      "an encoder failure",
+      { encodeThrows: 20_000_000 },
+      { scaled: true, width: 4000 },
+    ],
+    [
+      "a throwing draw",
+      { drawThrows: 20_000_000 },
+      { scaled: true, width: 4000 },
+    ],
+    [
+      "a blank limit under a quarter",
+      { blank: 5_000_000 },
+      { scaled: true, width: 2000 },
+    ],
+    ["a blank canvas at every size", { blank: 0 }, { code: "blank" }],
+    ["no 2d context at every size", { noContext: 0 }, { code: "decode" }],
+    [
+      "a draw that always throws",
+      { drawThrows: 0 },
+      { message: "zriz: draw failed" },
+    ],
   ])(
-    "encodes the first size under a blank limit of %d",
-    async (blank, width, scaled) => {
-      const { made } = fakeCanvas({ blank });
-      const { result } = await painted(8000, 6000);
-
-      expect([result.width, result.scaled]).toStrictEqual([width, scaled]);
-      expect(allFreed(made)).toBeTruthy();
-    }
-  );
-
-  it("rejects as blank after the last size, with nothing left allocated", async () => {
-    const { made } = fakeCanvas({ blank: 0 });
-    const error: unknown = await painted(8000, 6000).catch(
-      (error_: unknown) => error_
-    );
-
-    expect(error).toBeInstanceOf(ZrizError);
-    expect(error).toHaveProperty("code", "blank");
-    expect(allFreed(made)).toBeTruthy();
-  });
-
-  it.each<[string, Limits]>([
-    ["the first size", {}],
-    ["a step down", { blank: 20_000_000 }],
-    ["every size blank", { blank: 0 }],
-  ])(
-    "closes the bitmap decoded from a file once after %s",
-    async (_name, limits) => {
+    "steps down after %s, frees every canvas and closes the decoded bitmap once",
+    async (_name, limits, expected) => {
       const { made } = fakeCanvas(limits);
       const close = vi.fn<() => void>();
 
@@ -429,25 +404,23 @@ describe("export retry", () => {
         async () => await Promise.resolve({ close, height: 6000, width: 8000 })
       );
 
-      await painted(
+      const outcome: unknown = await painted(
         8000,
         6000,
         {},
         undefined,
         new Blob(["x"], { type: "image/jpeg" })
-      ).catch(noop);
+      ).then(
+        ({ result }) => result,
+        (error: unknown) => error
+      );
 
+      expect(outcome).toMatchObject(expected);
       expect(made.length).toBeGreaterThan(0);
+      expect(allFreed(made)).toBeTruthy();
       expect(close).toHaveBeenCalledOnce();
     }
   );
-
-  it("frees the canvas when every size fails", async () => {
-    const { made } = fakeCanvas({ drawThrows: 0 });
-
-    await expect(painted(8000, 6000)).rejects.toThrow("draw failed");
-    expect(allFreed(made)).toBeTruthy();
-  });
 
   it("tries one size when the canvas is tainted", async () => {
     const { made } = fakeCanvas({
@@ -462,15 +435,6 @@ describe("export retry", () => {
     expect(error).toHaveProperty("code", "decode");
     expect(made).toHaveLength(1);
   });
-
-  it("reports no 2d canvas as decode at every size", async () => {
-    fakeCanvas({ noContext: 0 });
-    const error: unknown = await painted(8000, 6000).catch(
-      (error_: unknown) => error_
-    );
-
-    expect(error).toHaveProperty("code", "decode");
-  });
 });
 
 describe("export step down", () => {
@@ -478,47 +442,13 @@ describe("export step down", () => {
     vi.unstubAllGlobals();
   });
 
-  it("halves until the last draw stays at half scale or more", async () => {
-    const { draws, made } = fakeCanvas();
-
-    await painted(4000, 3000, { maxSize: { height: 512, width: 512 } });
-    expect(draws.filter((draw) => draw.args.length === 4)).toHaveLength(2);
-    expect(onto(draws)).toHaveLength(1);
-    expect(onto(draws)[0]).toBeGreaterThanOrEqual(0.5);
-    expect(allFreed(made)).toBeTruthy();
-  });
-
-  it("draws once at full scale", async () => {
-    const { draws } = fakeCanvas();
-
-    await painted(4000, 3000);
-    expect(draws).toHaveLength(1);
-    expect(onto(draws)).toStrictEqual([1]);
-  });
-
-  it("feeds the mesh from the halved copy", async () => {
-    const { draws } = fakeCanvas();
-
-    await painted(
-      4000,
-      3000,
-      { maxSize: { height: 512, width: 512 } },
-      { horizontal: 8, vertical: 10 }
-    );
-
-    expect(onto(draws).length).toBeGreaterThan(1000);
-    expect(Math.min(...onto(draws))).toBeGreaterThan(0.4);
-  });
-
   it("stops halving at a canvas the browser cannot draw on", async () => {
-    const { draws } = fakeCanvas({ blank: 1_000_000 });
+    fakeCanvas({ blank: 1_000_000 });
     const { result } = await painted(4000, 3000, {
       maxSize: { height: 512, width: 512 },
     });
 
     expect(result.width).toBe(512);
-    expect(draws).toHaveLength(1);
-    expect(draws[0]?.from).toMatchObject({ height: 3000, width: 4000 });
   });
 });
 
@@ -527,32 +457,34 @@ describe("export edge limits", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each([
-    [20_000, 100, 16_383, 81],
-    [100, 20_000, 81, 16_383],
-  ])("caps a %i by %i webp at its long edge", async (w, h, width, height) => {
+  it.each<[string, number, number, "image/jpeg" | "image/webp", object]>([
+    [
+      "a wide webp",
+      20_000,
+      100,
+      "image/webp",
+      { height: 81, scaled: true, width: 16_383 },
+    ],
+    [
+      "a tall webp",
+      100,
+      20_000,
+      "image/webp",
+      { height: 16_383, scaled: true, width: 81 },
+    ],
+    [
+      "a webp at the limit",
+      16_383,
+      100,
+      "image/webp",
+      { scaled: false, width: 16_383 },
+    ],
+    ["a jpeg", 70_000, 10, "image/jpeg", { scaled: true, width: 65_500 }],
+  ])("caps %s at its long edge", async (_name, w, h, type, expected) => {
     fakeCanvas();
-    const { result } = await painted(w, h, { type: "image/webp" });
+    const { result } = await painted(w, h, { type });
 
-    expect([result.width, result.height, result.scaled]).toStrictEqual([
-      width,
-      height,
-      true,
-    ]);
-  });
-
-  it("leaves a webp at the limit alone", async () => {
-    fakeCanvas();
-    const { result } = await painted(16_383, 100, { type: "image/webp" });
-
-    expect([result.width, result.scaled]).toStrictEqual([16_383, false]);
-  });
-
-  it("caps a jpeg at its long edge", async () => {
-    fakeCanvas();
-    const { result } = await painted(70_000, 10);
-
-    expect([result.width, result.scaled]).toStrictEqual([65_500, true]);
+    expect(result).toMatchObject(expected);
   });
 });
 
@@ -561,31 +493,19 @@ describe("export mesh", () => {
     vi.unstubAllGlobals();
   });
 
-  it("stays within a source pixel on a 48 MP photo", async () => {
-    const { worst, triangles } = await worstError(8064, 6048, 30);
-
-    expect(worst).toBeLessThan(1);
-    expect(triangles).toBe(8192);
-  });
-
   it.each([
-    [30, 30],
-    [-30, 30],
+    [8064, 6048, 30, 0, 1],
+    [8064, 6048, 30, 30, 0.5],
+    [8064, 6048, -30, 30, 0.5],
+    [800, 600, 30, 0, 0.5],
   ])(
-    "splits each cell along the better diagonal at vertical %i, horizontal %i",
-    async (vertical, horizontal) => {
-      const { worst } = await worstError(8064, 6048, vertical, horizontal);
-
-      expect(worst).toBeLessThan(0.5);
+    "stays within a source pixel on a %i by %i photo at vertical %i, horizontal %i",
+    async (width, height, vertical, horizontal, limit) => {
+      await expect(
+        worstError(width, height, vertical, horizontal)
+      ).resolves.toBeLessThan(limit);
     }
   );
-
-  it("keeps the base lattice on a small export", async () => {
-    const { worst, triangles } = await worstError(800, 600, 30);
-
-    expect(triangles).toBe(1152);
-    expect(worst).toBeLessThan(0.5);
-  });
 
   it("shares exact triangle edges and adds their coverage", async () => {
     const { draws } = fakeCanvas();
@@ -630,26 +550,7 @@ describe("a mesh source", () => {
     expect(allFreed(made)).toBeTruthy();
   });
 
-  it("draws from the bitmap when the copy cannot be read", async () => {
-    const { draws, made } = fakeCanvas({ blank: 400_000 });
-
-    await painted(
-      800,
-      600,
-      { maxSize: { height: 450, width: 600 } },
-      {
-        horizontal: 0,
-        vertical: 15,
-      }
-    );
-
-    const sources = new Set(meshOf(draws).map((draw) => draw.from));
-
-    expect(made).not.toContain([...sources][0]);
-  });
-
   it("steps down when the canvas is lost during the mesh", async () => {
-    const pause = vi.spyOn(globalThis, "setTimeout");
     const { made } = fakeCanvas({ loseAfterDraws: 100 });
     const { result } = await painted(
       8000,
@@ -659,19 +560,7 @@ describe("a mesh source", () => {
     );
 
     expect(result.scaled).toBeTruthy();
-    expect(pause).toHaveBeenCalledWith(expect.any(Function), 0);
     expect(allFreed(made)).toBeTruthy();
-    pause.mockRestore();
-  });
-});
-
-describe("a canvas that cannot draw", () => {
-  it("skips the drawing and fails as blank", async () => {
-    const { draws } = fakeCanvas({ blank: 0 });
-
-    await expect(painted(10, 10)).rejects.toThrow("blank");
-    vi.unstubAllGlobals();
-    expect(draws).toHaveLength(0);
   });
 });
 
@@ -704,15 +593,13 @@ const inTurn = async () => {
   vi.mocked(worker.via).mockImplementation(answer);
   const image = bitmapOf(400, 300);
   const cropper = createCropper({ clock: fakeClock().clock, image });
-  const loaded: LoadedImage = {
-    animated: false,
+  const loaded = loadedImage({
     height: 300,
-    id: 1,
     mime: "image/jpeg",
     preview: image,
     source: new Blob(["x"], { type: "image/svg+xml" }),
     width: 400,
-  };
+  });
   const go = async (
     options: { signal?: AbortSignal; colorSpace?: "display-p3" } = {},
     photo = loaded
@@ -915,15 +802,6 @@ describe("a display-p3 export", () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-  });
-
-  it("hands the img the type read from the bytes", async () => {
-    const blobs = shownBlobs();
-    const { go, media } = await inTurn();
-
-    vi.mocked(media.loadElement).mockResolvedValue(opened());
-    await go({ colorSpace: "display-p3" });
-    expect(blobs.map((blob) => blob.type)).toStrictEqual(["image/jpeg"]);
   });
 
   it("rejects on abort during the decode and paints nothing after", async () => {

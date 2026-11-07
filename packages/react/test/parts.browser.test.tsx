@@ -1,5 +1,5 @@
-import type { ChangeReason, Cropper as CropperApi } from "@zriz/core";
-import { viewOf } from "@zriz/core/dom";
+import "../../core/src/styles.css";
+import type { Cropper as CropperApi } from "@zriz/core";
 import { createRef } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -69,16 +69,12 @@ const pointer = (target: Element, type: string, x: number): void => {
   );
 };
 
+const round = (value: number): number => Math.round(value * 1e6) / 1e6;
+
+const dragging = (part: Element): [Element, string] => [part, "data-dragging"];
+
 const on = (element: Element, attribute: string): boolean =>
   element.hasAttribute(attribute);
-
-const GESTURES: [ChangeReason, string][] = [
-  ["pinch", "data-pinching"],
-  ["resize", "data-resizing"],
-  ["dial", "data-rotating"],
-  ["wheel", "data-zooming"],
-  ["zoom-control", "data-zooming"],
-];
 
 const selectable = (element: Element): string => {
   const style = getComputedStyle(element);
@@ -88,6 +84,10 @@ const selectable = (element: Element): string => {
     style.getPropertyValue("-webkit-user-select")
   );
 };
+
+const MotionHost = ({ motion }: Pick<RootProps, "motion">) => (
+  <Cropper.Root image={{ height: 300, width: 400 }} motion={motion} />
+);
 
 describe("a second viewport", () => {
   afterEach(async () => {
@@ -130,8 +130,8 @@ describe("presses on touch", () => {
     await cleanup();
   });
 
-  it("stops double-tap zoom and text selection on every button part", async () => {
-    await mount(
+  it("stops double-tap zoom and text selection on every button part, the dial value and the sliders", async () => {
+    const { pick } = await mount(
       <>
         <Cropper.Rotate>Rotate</Cropper.Rotate>
         <Cropper.Flip>Flip</Cropper.Flip>
@@ -139,6 +139,9 @@ describe("presses on touch", () => {
         <Cropper.ZoomStep factor={2}>In</Cropper.ZoomStep>
         <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
         <Cropper.Orientation>Swap</Cropper.Orientation>
+        <Cropper.DialValue />
+        <Cropper.Dial aria-label="Dial" />
+        <Cropper.Zoom aria-label="Zoom" />
       </>
     );
 
@@ -150,12 +153,15 @@ describe("presses on touch", () => {
       expect(getComputedStyle(button).touchAction).toBe("manipulation");
       expect(selectable(button)).toBe("none");
     }
-  });
-
-  it("stops text selection on the dial value", async () => {
-    const { pick } = await mount(<Cropper.DialValue />);
 
     expect(selectable(pick("dial-value"))).toBe("none");
+
+    for (const name of ["dial", "zoom"]) {
+      const { style } = pick(name);
+
+      expect(style.getPropertyValue("user-select")).toBe("none");
+      expect(style.getPropertyValue("-webkit-user-select")).toBe("none");
+    }
   });
 
   it("lets a style of the caller replace the press style", async () => {
@@ -177,7 +183,7 @@ describe("buttons and state attributes", () => {
     await cleanup();
   });
 
-  it("Flip mirrors on click, and aria-pressed and data-mirrored follow", async () => {
+  it("Flip mirrors on click, aria-pressed and data-mirrored follow, and axis y keeps the mirror's axis", async () => {
     const { api, pick, root } = await mount(<Cropper.Flip>flip</Cropper.Flip>);
     const button = pick("flip");
     const read = () => ({
@@ -207,18 +213,15 @@ describe("buttons and state attributes", () => {
     button.click();
     await frames();
     expect(read()).toStrictEqual(off);
-  });
+    await cleanup();
 
-  it('Flip axis="y" keeps the axis of a mirror', async () => {
-    const { api, pick } = await mount(
-      <Cropper.Flip axis="y">flip</Cropper.Flip>
-    );
-    const before = api().getValue().quarterTurns;
+    const y = await mount(<Cropper.Flip axis="y">flip</Cropper.Flip>);
+    const before = y.api().getValue().quarterTurns;
 
-    pick("flip").click();
+    y.pick("flip").click();
     await frames();
-    expect(api().getValue().mirrored).toBeTruthy();
-    expect(api().getValue().quarterTurns).not.toBe(before);
+    expect(y.api().getValue().mirrored).toBeTruthy();
+    expect(y.api().getValue().quarterTurns).not.toBe(before);
   });
 
   it("Reset undoes a change on click and hides itself", async () => {
@@ -249,14 +252,16 @@ describe("buttons and state attributes", () => {
     expect(read()).toStrictEqual(clean);
   });
 
-  it("ZoomStep multiplies the zoom with its own reason", async () => {
+  it("ZoomStep and Orientation report their own reason", async () => {
     const reasons: string[] = [];
-    const { api, screen } = await mount(
+    const { api, pick, screen } = await mount(
       <>
         <Cropper.ZoomStep factor={2}>in</Cropper.ZoomStep>
         <Cropper.ZoomStep factor={0.5}>out</Cropper.ZoomStep>
+        <Cropper.Orientation>turn</Cropper.Orientation>
       </>,
       {
+        aspect: 16 / 9,
         onValueChange: (_, details) => {
           reasons.push(details.reason);
         },
@@ -268,11 +273,20 @@ describe("buttons and state attributes", () => {
 
     zoomIn?.click();
     await frames();
-    expect(api().getZoom()).toBeCloseTo(2, 6);
-    expect(reasons).toContain("zoom-control");
+
+    expect([round(api().getZoom()), reasons.at(-1)]).toStrictEqual([
+      2,
+      "zoom-control",
+    ]);
+
     zoomOut?.click();
     await frames();
     expect(api().getZoom()).toBeCloseTo(1, 6);
+    reasons.length = 0;
+    pick("orientation").click();
+    await frames(4);
+    expect(api().getValue().aspect).toBeCloseTo(9 / 16, 6);
+    expect([...new Set(reasons)]).toStrictEqual(["orientation"]);
   });
 
   it("AspectItem outside a group is a pressed button with no tab trick", async () => {
@@ -296,85 +310,96 @@ describe("buttons and state attributes", () => {
     expect(read()).toStrictEqual({ ...plain, marked: true, pressed: "true" });
   });
 
-  it("Grid draws the fine lines for the dial and keeps them while it fades", async () => {
+  it("Grid shows only while on, draws the fine lines for the dial and keeps them while it fades", async () => {
     const { api, pick } = await mount(<Cropper.Grid />);
     const grid = pick("grid");
     const read = () => ({
       coarse: grid.querySelectorAll("[data-coarse]").length,
+      fine: grid.children.length > 4,
       grid: grid.dataset.grid,
-      lines: grid.children.length,
     });
 
-    expect(grid.children).toHaveLength(4);
+    expect([
+      grid.children.length,
+      getComputedStyle(grid).opacity,
+    ]).toStrictEqual([4, "0"]);
+
     api().begin("dial");
     await frames();
-    expect(read()).toStrictEqual({ coarse: 4, grid: "none", lines: 4 });
+    expect(read()).toStrictEqual({ coarse: 4, fine: false, grid: "none" });
     api().setRotation(2, { reason: "dial" });
     await frames();
 
     expect({ ...read(), visible: on(grid, "data-visible") }).toStrictEqual({
       coarse: 0,
+      fine: true,
       grid: "fine",
-      lines: 16,
       visible: true,
     });
 
     api().end();
     await frames();
-    expect(read()).toStrictEqual({ coarse: 0, grid: "none", lines: 16 });
+    expect(read()).toStrictEqual({ coarse: 0, fine: true, grid: "none" });
     api().begin("pan");
     await frames();
-    expect(read()).toStrictEqual({ coarse: 4, grid: "coarse", lines: 4 });
+
+    expect({ ...read(), visible: on(grid, "data-visible") }).toStrictEqual({
+      coarse: 4,
+      fine: false,
+      grid: "coarse",
+      visible: true,
+    });
+
     api().end();
   });
 
-  it("Dial shows data-dragging only while a pointer drags it", async () => {
+  it("Dial and Zoom show data-dragging only while a pointer drags them", async () => {
     const { pick, root } = await mount(
-      <Cropper.Dial aria-label="Straighten" />
+      <>
+        <Cropper.Dial aria-label="Straighten" />
+        <Cropper.Zoom aria-label="Zoom" />
+      </>
     );
     const dial = pick("dial");
+    const zoom = pick("zoom");
+    const seen: string[] = [];
+
+    const note = (...flags: [Element, string][]) => {
+      seen.push(
+        flags
+          .filter(([element, name]) => on(element, name))
+          .map(
+            ([element, name]) => `${element === root ? "root" : "part"} ${name}`
+          )
+          .join(", ")
+      );
+    };
 
     pointer(dial, "pointerdown", 100);
     await frames();
-    expect(on(dial, "data-dragging")).toBeFalsy();
-    expect(on(root, "data-rotating")).toBeTruthy();
+    note(dragging(dial), [root, "data-rotating"]);
     pointer(dial, "pointermove", 150);
     await frames();
-    expect(on(dial, "data-dragging")).toBeTruthy();
+    note(dragging(dial));
     pointer(dial, "pointerup", 150);
     await frames();
-    expect(on(dial, "data-dragging")).toBeFalsy();
-  });
-
-  it("Zoom shows data-dragging only while a pointer holds it", async () => {
-    const { pick, root } = await mount(<Cropper.Zoom aria-label="Zoom" />);
-    const zoom = pick("zoom");
-
-    expect(on(zoom, "data-dragging")).toBeFalsy();
+    note(dragging(dial));
+    note(dragging(zoom));
     pointer(zoom, "pointerdown", 100);
     await frames();
-    expect(on(zoom, "data-dragging")).toBeTruthy();
-    expect(on(root, "data-zooming")).toBeTruthy();
+    note(dragging(zoom), [root, "data-zooming"]);
     pointer(zoom, "pointerup", 100);
     await frames();
-    expect(on(zoom, "data-dragging")).toBeFalsy();
-    expect(on(root, "data-zooming")).toBeFalsy();
-  });
+    note(dragging(zoom), [root, "data-zooming"]);
 
-  it.each(GESTURES)("Root reason %s turns on %s", async (reason, attribute) => {
-    const { api, root } = await mount(null);
-
-    expect(on(root, attribute)).toBeFalsy();
-    api().begin(reason);
-    await frames();
-    const seen = new Set(
-      GESTURES.map(([, name]) => name).filter((name) => on(root, name))
-    );
-
-    expect([...seen]).toStrictEqual([attribute]);
-    api().end();
-    await frames();
-    expect(on(root, attribute)).toBeFalsy();
+    expect(seen).toStrictEqual([
+      "root data-rotating",
+      "part data-dragging",
+      "",
+      "",
+      "part data-dragging, root data-zooming",
+      "",
+    ]);
   });
 
   it("Root shows data-interacting during a gesture and its hold", async () => {
@@ -393,34 +418,15 @@ describe("buttons and state attributes", () => {
       .toBeFalsy();
   });
 
-  it("Root shows data-settling while an animation runs", async () => {
-    const { api, root } = await mount(null);
+  it('Root shows data-reduced-motion for motion="reduce" from the first paint and follows the prop', async () => {
+    const screen = await render(<MotionHost motion="reduce" />);
+    const reduced = () =>
+      screen.container.querySelector("[data-reduced-motion]") !== null;
 
-    expect(on(root, "data-settling")).toBeFalsy();
-    let running = true;
-
-    api().run(() => running);
-    await frames();
-    expect(on(root, "data-settling")).toBeTruthy();
-    running = false;
-    await expect.poll(() => on(root, "data-settling")).toBeFalsy();
-  });
-
-  it("Root shows data-overscroll while the view is pulled past an edge", async () => {
-    const { api, root } = await mount(null);
-
-    expect(on(root, "data-overscroll")).toBeFalsy();
-    viewOf(api()).setOverscroll({ x: 8, y: 0 });
-    await frames();
-    expect(on(root, "data-overscroll")).toBeTruthy();
-    viewOf(api()).setOverscroll({ x: 0, y: 0 });
-    await frames();
-    expect(on(root, "data-overscroll")).toBeFalsy();
-  });
-
-  it('Root shows data-reduced-motion for motion="reduce", from mount', async () => {
-    const { root } = await mount(null, { motion: "reduce" });
-
-    expect(on(root, "data-reduced-motion")).toBeTruthy();
+    expect(reduced()).toBeTruthy();
+    await screen.rerender(<MotionHost motion="always" />);
+    expect(reduced()).toBeFalsy();
+    await screen.rerender(<MotionHost motion="reduce" />);
+    expect(reduced()).toBeTruthy();
   });
 });

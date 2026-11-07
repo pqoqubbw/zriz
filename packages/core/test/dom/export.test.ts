@@ -2,17 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createCropper } from "../../src";
 import { exportCrop, exportImage, ZrizError } from "../../src/dom";
-import type { LoadedImage } from "../../src/dom";
-
-const LOADED: LoadedImage = {
-  animated: false,
-  height: 1,
-  id: 1,
-  mime: "image/png",
-  preview: { close: () => {}, height: 1, width: 1 },
-  source: new Blob(),
-  width: 1,
-};
+import { loadedImage } from "../cropper-fixture";
 
 describe("export without a photo", () => {
   it.each([
@@ -27,7 +17,7 @@ describe("export without a photo", () => {
     ],
     [
       "exportImage on a cropper with no photo",
-      async () => await exportImage(createCropper(), LOADED),
+      async () => await exportImage(createCropper(), loadedImage()),
     ],
   ])("rejects %s", async (_name, run) => {
     const attempt = run();

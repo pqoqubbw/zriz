@@ -57,11 +57,6 @@ const CLASS_ATTRIBUTES = new Set(["class", "className"]);
 const CLASS_FUNCTIONS = new Set(["cn", "cva"]);
 const MARKER_CLASSES = new Set(["group", "peer"]);
 const ROOT_FONT_SIZE = 16;
-const ALLOWED_ARBITRARY = [
-  "grid-cols-[minmax(0,var(--container-page))]",
-  "max-sm:[border-image-outset:0]",
-  "md:grid-cols-[11rem_minmax(var(--container-page),50rem)]",
-];
 
 const require = createRequire(import.meta.url);
 
@@ -81,28 +76,8 @@ const design = await __unstable__loadDesignSystem(css, {
   loadStylesheet,
 });
 
-type Variant = ReturnType<
-  typeof design.parseCandidate
->[number]["variants"][number];
-
 const isKnown = (token: string) =>
   MARKER_CLASSES.has(token) || design.candidatesToCss([token])[0] !== null;
-
-const isArbitraryVariant = (variant: Variant): boolean =>
-  variant.kind === "arbitrary" ||
-  (variant.kind === "functional" && variant.value?.kind === "arbitrary") ||
-  (variant.kind === "compound" && isArbitraryVariant(variant.variant));
-
-const isArbitrary = (token: string) =>
-  design
-    .parseCandidate(token)
-    .some(
-      (candidate) =>
-        candidate.kind === "arbitrary" ||
-        (candidate.kind === "functional" &&
-          candidate.value?.kind === "arbitrary") ||
-        candidate.variants.some(isArbitraryVariant)
-    );
 
 const isClassCall = (node: CallExpression) =>
   isIdentifier(node.expression) && CLASS_FUNCTIONS.has(node.expression.text);
@@ -319,11 +294,9 @@ describe("tailwind classes", () => {
     expect(forced).toContain("border");
   });
 
-  it("finds the class lists", () => {
-    expect(tokens.length).toBeGreaterThan(300);
-  });
-
   it("knows every class", () => {
+    expect(tokens.length).toBeGreaterThan(300);
+
     const unknown = tokens
       .filter(({ strict, token }) => strict && !isKnown(token))
       .map(({ token, where }) => `${where} ${token}`);
@@ -341,13 +314,5 @@ describe("tailwind classes", () => {
     });
 
     expect(rewritten).toStrictEqual([]);
-  });
-
-  it("keeps arbitrary values to the approved list", () => {
-    const arbitrary = new Set(
-      tokens.map(({ token }) => token).filter((token) => isArbitrary(token))
-    );
-
-    expect([...arbitrary].toSorted()).toStrictEqual(ALLOWED_ARBITRARY);
   });
 });

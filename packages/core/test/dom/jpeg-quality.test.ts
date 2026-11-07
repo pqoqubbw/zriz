@@ -38,35 +38,44 @@ describe("reading the quality of a jpeg", () => {
     }
   );
 
-  it("skips app segments and the chroma table before it", async () => {
-    const blob = jpeg(
-      segment(
-        0xe1,
-        Array.from({ length: 5000 }, () => 7)
-      ),
-      segment(0xdb, [0x01, ...scaled(40), 0x00, ...scaled(80)])
-    );
-
-    await expect(jpegQuality(blob)).resolves.toBeCloseTo(0.8, 1);
-  });
-
-  it("finds the luminance table in a later segment", async () => {
-    const blob = jpeg(
-      segment(0xdb, [0x01, ...scaled(40)]),
-      segment(0xdb, [0x00, ...scaled(80)])
-    );
-
-    await expect(jpegQuality(blob)).resolves.toBeCloseTo(0.8, 1);
-  });
-
-  it("reads a 16 bit table", async () => {
-    const wide = scaled(70).flatMap((value) => [
-      Math.floor(value / 256),
-      value % 256,
-    ]);
-    const blob = jpeg(segment(0xdb, [0x10, ...wide]));
-
-    await expect(jpegQuality(blob)).resolves.toBeCloseTo(0.7, 1);
+  it.each([
+    [
+      "past an app segment and the chroma table",
+      () =>
+        jpeg(
+          segment(
+            0xe1,
+            Array.from({ length: 5000 }, () => 7)
+          ),
+          segment(0xdb, [0x01, ...scaled(40), 0x00, ...scaled(80)])
+        ),
+      0.8,
+    ],
+    [
+      "in a later segment",
+      () =>
+        jpeg(
+          segment(0xdb, [0x01, ...scaled(40)]),
+          segment(0xdb, [0x00, ...scaled(80)])
+        ),
+      0.8,
+    ],
+    [
+      "in a 16 bit table",
+      () =>
+        jpeg(
+          segment(0xdb, [
+            0x10,
+            ...scaled(70).flatMap((value) => [
+              Math.floor(value / 256),
+              value % 256,
+            ]),
+          ])
+        ),
+      0.7,
+    ],
+  ])("finds the luminance table %s", async (_name, file, quality) => {
+    await expect(jpegQuality(file())).resolves.toBeCloseTo(quality, 1);
   });
 
   it("gives null for a file that is not a jpeg or has no table", async () => {

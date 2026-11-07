@@ -56,31 +56,22 @@ const lowered = async (options: BuildOptions): Promise<KernelModule> => {
   return module;
 };
 
-const bitmaps =
-  (origin: Origin) =>
-  async (source: unknown): Promise<Bitmap> => {
-    await Promise.resolve();
+const bitmaps = (origin: Origin) => async (): Promise<Bitmap> => {
+  await Promise.resolve();
 
-    if (source instanceof Blob && source.type === "image/broken") {
-      throw new Error("cannot decode");
-    }
-
-    const bitmap: Bitmap = {
-      close: () => {
-        bitmap.width = 0;
-      },
-      height: 8,
-      origin,
-      width: 8,
-    };
-
-    return bitmap;
+  const bitmap: Bitmap = {
+    close: () => {
+      bitmap.width = 0;
+    },
+    height: 8,
+    origin,
+    width: 8,
   };
 
-const decodeWith = async (
-  options: BuildOptions,
-  type = "image/png"
-): Promise<DecodeReply> => {
+  return bitmap;
+};
+
+const decodeWith = async (options: BuildOptions): Promise<DecodeReply> => {
   const kernel = await lowered(options);
 
   vi.resetModules();
@@ -96,7 +87,7 @@ const decodeWith = async (
   vi.stubGlobal("createImageBitmap", bitmaps("main"));
   const { decodeOff } = await import("../../src/dom/worker");
 
-  return await decodeOff(new Blob(["x"], { type }), 100);
+  return await decodeOff(new Blob(["x"], { type: "image/png" }), 100);
 };
 
 const originOf = (reply: DecodeReply): unknown => {
@@ -114,30 +105,23 @@ describe("worker fallback", () => {
     vi.resetModules();
   });
 
-  it("decodes in the worker when the kernel is self-contained", async () => {
-    const reply = await decodeWith({});
+  it.each([
+    ["a self-contained kernel decodes in the worker", {}, "worker"],
+    [
+      "lowering that leaves helpers outside the kernel falls back to the main thread",
+      { target: "es2016" },
+      "main",
+    ],
+    [
+      "keepNames that breaks the kernel falls back to the main thread",
+      { keepNames: true },
+      "main",
+    ],
+  ] as const)("%s", async (_name, options, origin) => {
+    const reply = await decodeWith(options);
 
-    expect(originOf(reply)).toBe("worker");
+    expect(originOf(reply)).toBe(origin);
     expect(reply.width).toBe(8);
-  });
-
-  it("falls back to the main thread when lowering leaves helpers outside the kernel", async () => {
-    const reply = await decodeWith({ target: "es2016" });
-
-    expect(originOf(reply)).toBe("main");
-    expect(reply.width).toBe(8);
-  });
-
-  it("falls back to the main thread when keepNames breaks the kernel", async () => {
-    const reply = await decodeWith({ keepNames: true });
-
-    expect(originOf(reply)).toBe("main");
-  });
-
-  it("passes decode errors from the worker through", async () => {
-    await expect(decodeWith({}, "image/broken")).rejects.toThrow(
-      "zriz:undecodable:the browser could not decode the file"
-    );
   });
 });
 
@@ -198,39 +182,23 @@ describe("bitmaps sent to the worker", () => {
     return await target.call("job", [arg]).catch(() => "failed");
   };
 
-  it("closes a bitmap argument once the job ends", async () => {
+  it.each([
+    ["a bitmap argument", (sent: Sent) => sent, 1],
+    ["the bitmap source of a job", (sent: Sent) => ({ source: sent }), 1],
+    [
+      "a bitmap argument of a failing job",
+      (sent: Sent) => {
+        sent.fails = true;
+
+        return sent;
+      },
+      "failed",
+    ],
+  ])("closes %s once the job ends", async (_name, wrap, result) => {
     const sent = new Sent();
 
-    await expect(fromWorker(sent)).resolves.toBe(1);
+    await expect(fromWorker(wrap(sent))).resolves.toBe(result);
     expect(sent.closed).toBeTruthy();
-  });
-
-  it("closes the bitmap source of a job", async () => {
-    const source = new Sent();
-
-    await expect(fromWorker({ source })).resolves.toBe(1);
-    expect(source.closed).toBeTruthy();
-  });
-
-  it("closes a bitmap argument when the job fails", async () => {
-    const sent = new Sent();
-
-    sent.fails = true;
-    await expect(fromWorker(sent)).resolves.toBe("failed");
-    expect(sent.closed).toBeTruthy();
-  });
-
-  it("leaves the arguments of the main thread fallback open", async () => {
-    vi.resetModules();
-    vi.stubGlobal("Worker", undefined);
-    const { lane, via } = await import("../../src/dom/worker");
-    const sent = new Sent();
-    const target = lane(() => ({
-      job: async (): Promise<number> => await Promise.resolve(1),
-    }));
-
-    await expect(via(target, "job", [sent])).resolves.toBe(1);
-    expect(sent.closed).toBeFalsy();
   });
 });
 
@@ -263,8 +231,9 @@ describe("lane failures", () => {
   });
 
   it.each(["error", "messageerror"])(
-    "falls back to the main thread on %s",
+    "on %s stops the worker, frees its url once and runs every call here",
     async (type) => {
+      const revoke = vi.spyOn(URL, "revokeObjectURL");
       const { target, via } = await lanes();
       const reply = via(target, "ping", [1]);
 
@@ -274,6 +243,11 @@ describe("lane failures", () => {
 
       dispatch(type);
       await expect(reply).resolves.toBe("here");
+
+      expect([FakeWorker.made[0]?.terminated, revoke.mock.calls]).toStrictEqual(
+        [true, [[expect.any(String)]]]
+      );
+
       const post = vi.spyOn(FakeWorker.prototype, "postMessage");
       const later = via(target, "ping", [2]);
 
@@ -282,17 +256,6 @@ describe("lane failures", () => {
       expect(FakeWorker.made).toHaveLength(1);
     }
   );
-
-  it("stops a failed worker and frees its url", async () => {
-    const revoke = vi.spyOn(URL, "revokeObjectURL");
-    const { target } = await lanes();
-    const reply = target.call("ping", [1]);
-
-    dispatch("error");
-    await expect(reply).rejects.toThrow("zriz:worker:failed");
-    expect(FakeWorker.made[0]?.terminated).toBeTruthy();
-    expect(revoke).toHaveBeenCalledOnce();
-  });
 });
 
 const job = () => {

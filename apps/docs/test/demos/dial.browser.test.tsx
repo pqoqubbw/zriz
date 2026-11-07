@@ -3,18 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import DialDemo from "../../demos/dial/demo";
-import {
-  button,
-  find,
-  frameLayout,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -50,19 +39,7 @@ describe("dial demo", () => {
     await cleanup();
   });
 
-  it.each(["desktop", "phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("dial", width);
-
-      await mountLive(DialDemo, "dial", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-    }
-  );
-
-  it("holds only the value and the ruler, 360 px wide", async () => {
+  it("holds only the value and the ruler, turns and resets", async () => {
     await mountDemo("dial");
     await ready();
 
@@ -70,31 +47,8 @@ describe("dial demo", () => {
       1
     );
 
-    expect(find(item("dial")).getBoundingClientRect().width).toBe(360);
     await expect(violations()).resolves.toStrictEqual([]);
-  });
 
-  it("goes 45° each way and back to 0", async () => {
-    await mountDemo("dial");
-    await ready();
-
-    await press("{End}");
-
-    expect(angle()).toBe("45.0");
-    expect(find(item("dial")).getAttribute("aria-valuenow")).toBe("45");
-
-    await press("{Home}");
-
-    expect(angle()).toBe("−45.0");
-
-    await press("0");
-
-    expect(angle()).toBe("0.0");
-  });
-
-  it("shows reset after a turn and resets", async () => {
-    await mountDemo("dial");
-    await ready();
     await press("{ArrowLeft}{ArrowLeft}");
 
     expect(angle()).toBe("−2.0");

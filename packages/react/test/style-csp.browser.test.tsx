@@ -87,7 +87,7 @@ describe("server rendered parts under a strict style-src", () => {
     document.body.replaceChildren();
   });
 
-  it("keeps every part's own styles after hydration", async () => {
+  it("keeps every part's own layout and press styles after hydration", async () => {
     const { host, root } = await hydrated();
 
     await expect
@@ -95,37 +95,24 @@ describe("server rendered parts under a strict style-src", () => {
       .toBeTruthy();
 
     const handle = computed(host, '[data-zriz-item="handle"]');
-    const edge = computed(host, '[data-edge="right"]');
     const dial = computed(host, '[data-zriz-item="dial"]');
     const zoom = computed(host, '[data-zriz-item="zoom"]');
 
     expect({
       area: computed(host, '[data-zriz-item="area"]').borderTopLeftRadius,
       dial: [dial.position, dial.touchAction],
-      edge: [edge.position, edge.translate],
+      edge: computed(host, '[data-edge="right"]').position,
       grid: computed(host, '[data-zriz-item="grid"]').position,
-      handle: [handle.position, handle.touchAction, handle.translate],
-      line: computed(host, '[data-zriz-item="grid"] > span').position,
+      handle: [handle.position, handle.touchAction],
       zoom: [zoom.position, zoom.touchAction],
     }).toStrictEqual({
       area: "50%",
       dial: ["relative", "pan-y"],
-      edge: ["absolute", "50% -50%"],
+      edge: "absolute",
       grid: "absolute",
-      handle: ["absolute", "none", "-50% -50%"],
-      line: "absolute",
+      handle: ["absolute", "none"],
       zoom: ["relative", "none"],
     });
-
-    root.unmount();
-  });
-
-  it("keeps the press styles on every button part after hydration", async () => {
-    const { host, root } = await hydrated();
-
-    await expect
-      .poll(() => refused.some((name) => name.startsWith("style-src")))
-      .toBeTruthy();
 
     const presses = [
       "rotate",

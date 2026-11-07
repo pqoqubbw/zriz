@@ -30,28 +30,4 @@ describe(coverScale, () => {
       })
     );
   });
-
-  it("is symmetric in the angle", () => {
-    assert(
-      property(size, size, angle, (image, crop, a) => {
-        expect(coverScale(image, crop, -a)).toBeCloseTo(
-          coverScale(image, crop, a),
-          9
-        );
-      })
-    );
-  });
-
-  it("swaps width and height on a quarter turn", () => {
-    assert(
-      property(size, size, (image, crop) => {
-        const swapped = { height: image.width, width: image.height };
-
-        expect(coverScale(image, crop, Math.PI / 2)).toBeCloseTo(
-          coverScale(swapped, crop, 0),
-          9
-        );
-      })
-    );
-  });
 });

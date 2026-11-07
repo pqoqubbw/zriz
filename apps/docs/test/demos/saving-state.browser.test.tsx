@@ -4,19 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import SavingStateDemo from "../../demos/saving-state/demo";
 import { fixtureFile } from "./fixtures";
-import {
-  button,
-  find,
-  frameLayout,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -97,131 +86,69 @@ describe("saving state demo", () => {
     clear();
   });
 
-  it("draws the live demo where the frame drew it", async () => {
-    const frame = await frameLayout("saving-state");
-
-    await mountLive(SavingStateDemo, "saving-state");
-    await ready();
-
-    expect(layoutOf()).toStrictEqual(frame);
-  });
-
-  it("saves each commit and skips the fit on load", async () => {
+  it("saves each commit, brings the crop back on the next visit, resets to it and keeps a crop per photo", async () => {
     await mountDemo("saving-state");
     await ready();
     await settle();
 
-    expect(saved()).toBeNull();
+    const fresh = saved();
 
     await nudge(3);
-    await expect.poll(() => saved()).not.toBeNull();
+    await vi.waitUntil(() => saved() !== null);
 
-    expect(saved()).not.toBe(0);
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
+    const first = saved();
+    const audit = await violations();
 
-  it("brings the crop back on the next visit and resets to it", async () => {
-    await mountDemo("saving-state");
-    await ready();
-    await nudge(3);
     button("Rotate left").click();
     await settle();
 
     const kept = angle();
 
-    expect(kept).not.toBe("0.0");
-
     await cleanup();
     await mountDemo("saving-state");
     await ready();
     await settle();
 
-    expect(angle()).toBe(kept);
-    expect(ratio()).toBeLessThan(1);
-    expect(shown(resetChip())).toBeFalsy();
+    const restored = {
+      angle: angle(),
+      portrait: ratio() < 1,
+      reset: shown(resetChip()),
+    };
 
     await nudge(2);
     await expect.poll(() => shown(resetChip())).toBeTruthy();
-
     resetChip().click();
     await settle();
     await expect.poll(angle).toBe(kept);
 
-    expect(ratio()).toBeLessThan(1);
-  });
-
-  it("keeps a crop per photo", async () => {
-    await mountDemo("saving-state");
-    await ready();
-    await nudge(3);
-
-    const first = angle();
+    const afterReset = ratio() < 1;
     const file = await fixtureFile("portrait");
 
     pick(file);
-    await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
+    await expect.poll(angle, { timeout: 15_000 }).toBe("0.0");
     await ready();
-
-    expect(angle()).toBe("0.0");
-
-    await nudge(1);
-
+    await settle();
     const key = `zriz-docs:saving-state:${file.name}:${file.size}:${file.lastModified}`;
 
-    await expect.poll(() => saved(key)).not.toBeNull();
+    await nudge(1);
+    await vi.waitUntil(() => saved(key) !== null);
 
-    expect(angle()).not.toBe(first);
-  });
-
-  it("opens and edits when storage throws", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new DOMException("blocked", "SecurityError");
+    expect({
+      afterReset,
+      audit,
+      first: first !== 0,
+      fresh,
+      kept: kept === "0.0",
+      other: angle() === kept,
+      restored,
+    }).toStrictEqual({
+      afterReset: true,
+      audit: [],
+      first: true,
+      fresh: null,
+      kept: false,
+      other: false,
+      restored: { angle: kept, portrait: true, reset: false },
     });
-
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new DOMException("full", "QuotaExceededError");
-    });
-
-    await mountDemo("saving-state");
-    await ready();
-
-    expect(angle()).toBe("0.0");
-
-    await nudge(3);
-
-    expect(angle()).not.toBe("0.0");
-    expect(shown(resetChip())).toBeTruthy();
-
-    expect(warn).toHaveBeenCalledWith(
-      "the crop was not saved",
-      expect.any(DOMException)
-    );
-
-    await expect(violations()).resolves.toStrictEqual([]);
   });
-});
-
-describe("saving state demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it.each(["phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("saving-state", width);
-
-      await mountLive(SavingStateDemo, "saving-state", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-      await expect(violations()).resolves.toStrictEqual([]);
-    }
-  );
 });

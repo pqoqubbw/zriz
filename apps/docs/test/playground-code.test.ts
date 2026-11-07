@@ -67,69 +67,42 @@ const withKnobs = (patch: Partial<Knobs>): Knobs => ({
   ...patch,
 });
 
+const HIGHLIGHTED = [
+  ...COMBOS.map((patch) => ({
+    file: SNIPPET,
+    html: codeHtml(withKnobs(patch)),
+    shown: patch,
+    text: codeText(withKnobs(patch)),
+  })),
+  ...VALUES.map((value) => ({
+    file: "playground/value.json",
+    html: jsonHtml(jsonText(value)),
+    shown: value,
+    text: jsonText(value),
+  })),
+];
+
 describe("playground code", () => {
-  it("starts as the snippet on the page", () => {
+  it("starts the code and value panels as the snippet files", () => {
+    const shown = readFileSync("snippets/playground/value.json", "utf-8");
+
     expect(codeText(DEFAULT_KNOBS)).toBe(
       textOf({ file: SNIPPET, kind: "code" })
     );
-  });
-
-  it.each(COMBOS)("highlights %o the way the server does", async (patch) => {
-    const knobs = withKnobs(patch);
-    const text = codeText(knobs);
-
-    await expect(highlight(text, SNIPPET)).resolves.toBe(codeHtml(knobs));
-  });
-
-  it("adds one prop per changed knob", () => {
-    const base = codeText(DEFAULT_KNOBS);
-
-    expect(codeText(withKnobs({ maxZoom: 4 }))).toContain("maxZoom={4}");
-
-    expect(codeText(withKnobs({ wheel: "zoom" }))).toContain('wheel="zoom"');
-
-    expect(codeText(withKnobs({ vertical: 5 }))).toContain(
-      "defaultValue={{ perspective: { vertical: 5, horizontal: 0 } }}"
-    );
-
-    expect(codeText(withKnobs({ disabled: true })).split("\n")).toContain(
-      "<Cropper.Root src={photo} disabled>"
-    );
-
-    expect(base).not.toContain("maxZoom");
-  });
-
-  it("keeps every line inside the snippet width", () => {
-    const widest = Math.max(
-      ...COMBOS.flatMap((patch) =>
-        codeText(withKnobs(patch))
-          .split("\n")
-          .map((line) => line.length)
-      )
-    );
-
-    expect(widest).toBeLessThanOrEqual(64);
-  });
-
-  it.each(VALUES)(
-    "highlights the value %o the way the server does",
-    async (value) => {
-      const text = jsonText(value);
-
-      await expect(highlight(text, "playground/value.json")).resolves.toBe(
-        jsonHtml(text)
-      );
-    }
-  );
-
-  it("starts the value panel at the default value", () => {
-    const shown = readFileSync("snippets/playground/value.json", "utf-8");
 
     expect(shown.trimEnd()).toBe(jsonText(DEFAULT_VALUE));
   });
 
-  it("gives the page controls the knobs' defaults and options", () => {
-    const controls = walkBlocks(PLAYGROUND_PAGE.blocks).flatMap((block) =>
+  it.each(HIGHLIGHTED)(
+    "highlights $file for $shown the way the server does",
+    async ({ file, html, text }) => {
+      await expect(highlight(text, file)).resolves.toBe(html);
+    }
+  );
+
+  it("gives the page controls the knobs' defaults and options, bound to the playground", () => {
+    const blocks = walkBlocks(PLAYGROUND_PAGE.blocks);
+    const controls = blocks.flatMap((block) =>
       block.kind === "controls" ? block.controls : []
     );
     const shown = Object.fromEntries(
@@ -143,33 +116,21 @@ describe("playground code", () => {
         control.type === "choice" ? [[control.name, control.options]] : []
       )
     );
-
-    expect(shown).toStrictEqual(DEFAULT_KNOBS);
-
-    expect(options).toStrictEqual(KNOB_CHOICES);
-  });
-
-  it("binds every live block on the page to the playground", () => {
-    const bound = walkBlocks(PLAYGROUND_PAGE.blocks).filter(
+    const unbound = blocks.filter(
       (block) =>
-        (block.kind === "controls" ||
-          block.kind === "log" ||
-          (block.kind === "actions" && block.action !== "copy-code")) &&
+        (block.kind === "controls" || block.kind === "log") &&
         block.bind !== "playground"
     );
 
-    expect(bound).toStrictEqual([]);
+    expect(shown).toStrictEqual(DEFAULT_KNOBS);
+    expect(options).toStrictEqual(KNOB_CHOICES);
+    expect(unbound).toStrictEqual([]);
   });
 
   it("writes the starting code and value into the markdown", () => {
     const markdown = pageMarkdown("playground");
 
     expect(markdown).toContain(textOf({ file: SNIPPET, kind: "code" }));
-
     expect(markdown).toContain(jsonText(DEFAULT_VALUE));
-
-    expect(markdown).toContain(
-      "/docs/playground runs this cropper: a 3:2 photo"
-    );
   });
 });

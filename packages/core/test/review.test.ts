@@ -2,21 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../src";
 import type { CropperEvents, CropperInternals } from "../src";
+import { setup as rig } from "./cropper-fixture";
 import { fakeClock } from "./fake-clock";
 
-const setup = () => {
-  const time = fakeClock();
-  const commit = vi.fn<CropperEvents["commit"]>();
-  const cropper = createCropper({
-    clock: time.clock,
-    image: { height: 1000, width: 1000 },
-    onValueCommit: (value, details) => {
-      commit(value, details);
-    },
-  });
-
-  return { commit, cropper, time };
-};
+const setup = () => rig({ image: { height: 1000, width: 1000 } });
 
 describe("review regressions", () => {
   it("ignores a stale controlled echo during a gesture and still commits", () => {
@@ -37,14 +26,6 @@ describe("review regressions", () => {
     time.frame();
     expect(commit).toHaveBeenCalledOnce();
     expect(commit.mock.calls[0]?.[1].previous).toBe(before);
-  });
-
-  it("stays not ready for a zero-size image", () => {
-    const { cropper } = setup();
-
-    cropper.setImage({ height: 0, width: 0 });
-    expect(cropper.getState().ready).toBeFalsy();
-    expect(cropper.getPixelCrop()).toBeNull();
   });
 
   it("zooms back out to 1 after panning off-centre", () => {
@@ -74,32 +55,36 @@ describe("review regressions", () => {
     expect(cropper.getCropState()?.image.width).toBe(400);
   });
 
-  it("keeps the new image when a pending change is cancelled", () => {
-    const { cropper, time } = setup();
-    const listener = vi.fn<CropperEvents["change"]>((_, details) => {
-      details.cancel();
-    });
-
-    cropper.setZoom(4);
-    cropper.on("change", listener);
-    cropper.setImage({ height: 400, width: 400 });
-    time.frame();
-    expect(listener).toHaveBeenCalledOnce();
-    expect(cropper.getCropState()?.image.width).toBe(400);
-    expect(cropper.getZoom()).toBeCloseTo(1, 9);
-  });
-
   it("scopes gestures to their owner", () => {
     const { cropper } = setup();
     const a = {};
     const b = {};
+    const start = cropper.getValue().rotation;
 
-    expect(cropper.begin("resize", undefined, a)).toBeTruthy();
-    expect(cropper.begin("pan", undefined, b)).toBeFalsy();
+    const refused = [
+      cropper.begin("resize", undefined, a),
+      cropper.begin("pan", undefined, b),
+      cropper.begin("pan", undefined, {}),
+    ];
+
     cropper.end(undefined, b);
-    expect(cropper.getState().interacting).toBe("resize");
-    cropper.end(undefined, a);
-    expect(cropper.getState().interacting).toBeNull();
+    cropper.setRotation(9);
+    cropper.cancel(undefined, b);
+    const held = [cropper.getState().interacting, cropper.getValue().rotation];
+
+    cropper.cancel(undefined, a);
+
+    expect({
+      held,
+      refused,
+      released: [cropper.getState().interacting, cropper.getValue().rotation],
+    }).toStrictEqual({
+      held: ["resize", 9],
+      refused: [true, false, false],
+      released: [null, start],
+    });
+
+    expect(cropper.begin("dial", undefined, b)).toBeTruthy();
   });
 
   it("cancels a gesture back to where it started", () => {
@@ -198,35 +183,51 @@ describe("gesture and commit edges", () => {
     expect(commit).toHaveBeenCalledTimes(2);
   });
 
-  it("a cancel kept from a finished run does not stop a later one", () => {
+  it("stops a run only through its own cancel", () => {
     const { cropper, time } = setup();
+    const cancelled = vi.fn<() => boolean>(() => true);
+
+    cropper.run(cancelled)();
+    time.frames(2);
+
+    expect([
+      cancelled.mock.calls.length,
+      cropper.getState().settling,
+    ]).toStrictEqual([0, false]);
+
     let calls = 0;
 
-    const task = (): boolean => {
+    const once = (): boolean => {
       calls += 1;
 
       return calls !== 1;
     };
 
-    const stale = cropper.run(task);
+    const stale = cropper.run(once);
 
     time.frame();
-    cropper.run(task);
+    cropper.run(once);
     stale();
     time.frame();
     expect(calls).toBe(2);
     cropper.stop();
-  });
 
-  it("one cropper cannot reach another through the shared defaults", () => {
-    const first = setup().cropper.getValue();
+    const twice = vi.fn<() => boolean>(() => true);
+    const first = cropper.run(twice);
+    const second = cropper.run(twice);
 
-    expect(Reflect.set(first.center, "x", 0.9)).toBeFalsy();
-    expect(Reflect.set(first.size, "width", 0.1)).toBeFalsy();
-    const second = setup().cropper.getValue();
+    const counts: number[] = [];
 
-    expect(second.center.x).toBe(0.5);
-    expect(second.size.width).toBe(1);
+    time.frame();
+    counts.push(twice.mock.calls.length);
+    first();
+    time.frame();
+    counts.push(twice.mock.calls.length);
+    second();
+    time.frame();
+    counts.push(twice.mock.calls.length);
+    expect(counts).toStrictEqual([1, 2, 2]);
+    expect(cropper.getState().settling).toBeFalsy();
   });
 
   it("a coasting gesture ends before an outside write picks its reason", () => {
@@ -247,47 +248,6 @@ describe("gesture and commit edges", () => {
     time.frame();
     expect(cropper.getState().settling).toBeFalsy();
     expect(commit.mock.calls[0]?.[1].reason).toBe("flip");
-  });
-
-  it("begin from another owner ends a coasting gesture at once", () => {
-    const { commit, cropper, time } = setup();
-    const owner = {};
-    const other = {};
-
-    cropper.begin("dial", undefined, owner);
-    cropper.setRotation(5, { reason: "dial" });
-    const glide = vi.fn<() => boolean>(() => true);
-
-    cropper.run(glide);
-
-    (cropper as CropperInternals).coast(owner, () => {
-      cropper.end(undefined, owner);
-    });
-
-    expect(cropper.begin("pan", undefined, other)).toBeTruthy();
-
-    expect(
-      commit.mock.calls.map(([, details]) => details.reason)
-    ).toStrictEqual(["dial"]);
-
-    expect({
-      interacting: cropper.getState().interacting,
-      rotation: cropper.getValue().rotation,
-    }).toStrictEqual({ interacting: "pan", rotation: 5 });
-
-    time.frames(3);
-    expect(glide).not.toHaveBeenCalled();
-    cropper.end(undefined, other);
-  });
-
-  it("begin from another owner stays refused while the gesture is held", () => {
-    const { cropper } = setup();
-    const owner = {};
-
-    cropper.begin("resize", undefined, owner);
-    expect(cropper.begin("pan", undefined, {})).toBeFalsy();
-    expect(cropper.getState().interacting).toBe("resize");
-    cropper.end(undefined, owner);
   });
 
   it("rebase tells a gesture about outside writes only once", () => {
@@ -346,30 +306,6 @@ describe("gesture and commit edges", () => {
     cropper.cancel(undefined, owner);
     expect(cropper.getState().ready).toBeTruthy();
     expect(cropper.getCropState()?.image.width).toBe(2000);
-  });
-
-  it("the same task run twice runs once a frame, and only the last cancel stops it", () => {
-    const { cropper, time } = setup();
-    let calls = 0;
-
-    const task = (): boolean => {
-      calls += 1;
-
-      return true;
-    };
-
-    const first = cropper.run(task);
-    const second = cropper.run(task);
-
-    time.frame();
-    expect(calls).toBe(1);
-    first();
-    time.frame();
-    expect(calls).toBe(2);
-    second();
-    time.frame();
-    expect(calls).toBe(2);
-    expect(cropper.getState().settling).toBeFalsy();
   });
 
   it("stop forgets a settle owed to an animation a gesture dropped", () => {

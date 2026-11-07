@@ -1,4 +1,4 @@
-import { sinCosDegrees, toQuarterTurns } from "../../src/geometry/angle";
+import { sinCosDegrees } from "../../src/geometry/angle";
 import {
   applyMatrix2,
   multiplyMatrix3,
@@ -21,7 +21,6 @@ import type {
   Matrix3,
   Perspective,
   Point,
-  QuarterTurns,
   Size,
 } from "../../src/geometry/types";
 
@@ -32,9 +31,6 @@ const absSinCos = (degrees: number): { sin: number; cos: number } => {
 
   return { cos: Math.abs(cos), sin: Math.abs(sin) };
 };
-
-const clamp = (value: number, limit: number): number =>
-  Math.min(Math.max(value, -Math.max(limit, 0)), Math.max(limit, 0));
 
 const panBox = (
   image: Size,
@@ -48,44 +44,6 @@ const panBox = (
     x: (image.width - (width * cos + height * sin)) / 2,
     y: (image.height - (width * sin + height * cos)) / 2,
   };
-};
-
-const clampPan = (
-  image: Size,
-  angle: number,
-  width: number,
-  height: number,
-  centre: Point
-): Point => {
-  const box = panBox(image, angle, width, height);
-  const straightened = applyMatrix2(rotationMatrix(-angle), centre);
-  const clamped = {
-    x: clamp(straightened.x, box.x),
-    y: clamp(straightened.y, box.y),
-  };
-
-  if (clamped.x === straightened.x && clamped.y === straightened.y) {
-    return centre;
-  }
-
-  return applyMatrix2(rotationMatrix(angle), clamped);
-};
-
-const coverScaleAt = (
-  image: Size,
-  view: Size,
-  angle: number,
-  centre: Point
-): number => {
-  const { sin, cos } = absSinCos(angle);
-  const straightened = applyMatrix2(rotationMatrix(-angle), centre);
-
-  return Math.max(
-    (view.width * cos + view.height * sin) /
-      (image.width - 2 * Math.abs(straightened.x)),
-    (view.width * sin + view.height * cos) /
-      (image.height - 2 * Math.abs(straightened.y))
-  );
 };
 
 const largestCropAt = (
@@ -102,24 +60,6 @@ const largestCropAt = (
   );
 
   return { height, width: aspect * height };
-};
-
-type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-
-const EXIF_ORIENTATIONS: Readonly<
-  Record<
-    ExifOrientation,
-    { readonly turns: QuarterTurns; readonly flip: boolean }
-  >
-> = {
-  1: { flip: false, turns: 0 },
-  2: { flip: true, turns: 0 },
-  3: { flip: false, turns: 2 },
-  4: { flip: true, turns: 2 },
-  5: { flip: true, turns: 3 },
-  6: { flip: false, turns: 1 },
-  7: { flip: true, turns: 1 },
-  8: { flip: false, turns: 3 },
 };
 
 const sourceToOutputMatrix = (
@@ -183,14 +123,6 @@ const isPerspectiveValid = (
   );
 };
 
-const splitAngle = (
-  degrees: number
-): { turns: QuarterTurns; angle: number } => {
-  const turns = Math.round(degrees / 90);
-
-  return { angle: degrees - 90 * turns, turns: toQuarterTurns(turns) };
-};
-
 const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
   const turned = turnedSize(state.image, state.turns);
   const tolerance = epsilon * Math.max(turned.width, turned.height);
@@ -207,16 +139,11 @@ const isCropCovered = (state: CropState, epsilon = 1e-9): boolean => {
   });
 };
 
-export type { ExifOrientation };
 export {
-  EXIF_ORIENTATIONS as exifOrientations,
   applyAffine,
-  clampPan,
-  coverScaleAt,
   isCropCovered,
   isPerspectiveValid,
   largestCropAt,
   panBox,
   sourceToOutputMatrix,
-  splitAngle,
 };

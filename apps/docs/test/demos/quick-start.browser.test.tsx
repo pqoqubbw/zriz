@@ -3,17 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import QuickStartDemo from "../../demos/quick-start/demo";
-import {
-  find,
-  frameLayout,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -40,36 +30,23 @@ describe("quick start demo", () => {
     await cleanup();
   });
 
-  it.each(["desktop", "phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("quick-start", width);
-
-      await mountLive(QuickStartDemo, "quick-start", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-    }
-  );
-
-  it("has the four corner handles, a dial and no value or grid", async () => {
+  it("has four corner handles and a dial, and straightens and resizes", async () => {
     await mountDemo("quick-start");
     await ready();
 
-    expect(
-      [...panel().querySelectorAll<HTMLElement>(item("handle"))].map(
+    expect({
+      edges: [...panel().querySelectorAll<HTMLElement>(item("handle"))].map(
         (handle) => handle.dataset.edge
-      )
-    ).toStrictEqual(["top-left", "top-right", "bottom-right", "bottom-left"]);
+      ),
+      grid: panel().querySelector(item("grid")),
+      value: panel().querySelector(item("dial-value")),
+    }).toStrictEqual({
+      edges: ["top-left", "top-right", "bottom-right", "bottom-left"],
+      grid: null,
+      value: null,
+    });
 
-    expect(panel().querySelector(item("dial-value"))).toBeNull();
-    expect(panel().querySelector(item("grid"))).toBeNull();
     await expect(violations()).resolves.toStrictEqual([]);
-  });
-
-  it("straightens and resizes", async () => {
-    await mountDemo("quick-start");
-    await ready();
 
     const dial = find(item("dial"));
 

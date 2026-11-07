@@ -61,7 +61,7 @@ describe(warnViewports, () => {
     vi.restoreAllMocks();
   });
 
-  it("stays quiet for one viewport, a hidden copy and one that left", () => {
+  it("warns once, only when a second sized viewport joins one cropper", () => {
     const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
     const cropper = {};
     const leave = warnViewports(cropper, box(640));
@@ -70,16 +70,12 @@ describe(warnViewports, () => {
     leave();
     warnViewports(cropper, box(640));
     expect(warn).not.toHaveBeenCalled();
-  });
-
-  it("warns once when a second viewport with a size joins one cropper", () => {
-    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
-    const cropper = {};
+    const other = {};
 
     warnViewports({}, box(640));
-    warnViewports(cropper, box(640));
-    warnViewports(cropper, box(160));
-    warnViewports(cropper, box(80));
+    warnViewports(other, box(640));
+    warnViewports(other, box(160));
+    warnViewports(other, box(80));
     expect(warn).toHaveBeenCalledOnce();
   });
 

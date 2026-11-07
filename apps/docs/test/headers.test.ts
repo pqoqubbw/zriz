@@ -41,10 +41,6 @@ describe("security headers", () => {
     const policy = headers.get("Content-Security-Policy") ?? "";
 
     expect(directivesOf(policy)).toStrictEqual(POLICY);
-  });
-
-  it("keeps the other headers", async () => {
-    const headers = await headersFor("/:path*");
 
     expect(Object.fromEntries(headers)).toMatchObject({
       "Referrer-Policy": "strict-origin-when-cross-origin",

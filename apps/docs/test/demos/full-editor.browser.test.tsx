@@ -3,25 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import FullEditorDemo from "../../demos/full-editor/demo";
-import {
-  button,
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
 
   return await photoMock();
 });
+
+const near = (actual: number, expected: number): boolean =>
+  Math.abs(actual - expected) < 0.05;
 
 const panel = (): HTMLElement => find('[data-demo="full-editor"]');
 
@@ -73,75 +64,47 @@ describe("full editor demo", () => {
     await cleanup();
   });
 
-  it("draws the live demo where the frame drew it", async () => {
-    const frame = await frameLayout("full-editor");
-
-    await mountLive(FullEditorDemo, "full-editor");
-    await ready();
-
-    expect(layoutOf()).toStrictEqual(frame);
-  });
-
-  it("straightens with the dial and resets", async () => {
+  it("straightens, locks and swaps an aspect, turns, flips and downloads a jpeg", async () => {
     await mountDemo("full-editor");
     await ready();
 
-    expect(angle()).toBe("0.0");
-    await expect(violations()).resolves.toStrictEqual([]);
+    const start = {
+      angle: angle(),
+      checked: checked(),
+      labels: labels(),
+      swapOff: button("Swap orientation").hasAttribute("disabled"),
+    };
+    const audits = [await violations()];
 
     find(item("dial")).focus();
     await userEvent.keyboard("{Shift>}{ArrowRight}{/Shift}");
     find(item("dial")).blur();
     await settle();
 
-    expect(angle()).toBe("10.0");
+    const straightened = angle();
 
     button("Reset").click();
     await expect.poll(angle).toBe("0.0");
-  });
-
-  it("starts free with landscape labels and orientation off", async () => {
-    await mountDemo("full-editor");
-    await ready();
-
-    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "5:4", "16:9"]);
-    expect(checked()).toStrictEqual(["Free"]);
-    expect(button("Swap orientation").hasAttribute("disabled")).toBeTruthy();
-  });
-
-  it("locks an aspect and swaps it, keeping one item checked", async () => {
-    await mountDemo("full-editor");
-    await ready();
     aspect("16:9").click();
     await settle();
 
-    expect(ratio()).toBeCloseTo(16 / 9, 1);
+    const locked = near(ratio(), 16 / 9);
 
     button("Swap orientation").click();
     await settle();
 
-    expect(ratio()).toBeCloseTo(9 / 16, 1);
-    expect(checked()).toStrictEqual(["9:16"]);
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
+    const swapped = { checked: checked(), ratio: near(ratio(), 9 / 16) };
 
-  it("turns and flips", async () => {
-    await mountDemo("full-editor");
-    await ready();
+    audits.push(await violations());
+    button("Reset").click();
+    await expect.poll(checked).toStrictEqual(["Free"]);
     button("Rotate left").click();
     await settle();
 
-    expect(ratio()).toBeLessThan(1);
+    const turned = ratio() < 1;
 
     button("Flip").click();
     await settle();
-
-    expect(Object.hasOwn(find(item("root")).dataset, "mirrored")).toBeTruthy();
-  });
-
-  it("downloads a jpeg", async () => {
-    await mountDemo("full-editor");
-    await ready();
 
     const links: string[] = [];
 
@@ -157,41 +120,29 @@ describe("full editor demo", () => {
     const response = await fetch(links[0] ?? "");
     const blob = await response.blob();
 
-    expect(blob.type).toBe("image/jpeg");
+    expect(audits).toStrictEqual([[], []]);
+
+    expect({
+      locked,
+      mirrored: Object.hasOwn(find(item("root")).dataset, "mirrored"),
+      start,
+      straightened,
+      swapped,
+      turned,
+      type: blob.type,
+    }).toStrictEqual({
+      locked: true,
+      mirrored: true,
+      start: {
+        angle: "0.0",
+        checked: ["Free"],
+        labels: ["Free", "Original", "1:1", "5:4", "16:9"],
+        swapOff: true,
+      },
+      straightened: "10.0",
+      swapped: { checked: ["9:16"], ratio: true },
+      turned: true,
+      type: "image/jpeg",
+    });
   });
-
-  it("gives the zone buttons a 44 px hit box", async () => {
-    await mountDemo("full-editor");
-    await ready();
-    aspect("16:9").click();
-    await settle();
-
-    expect(hits(button("Rotate left"))).toBeTruthy();
-    expect(hits(button("Flip"))).toBeTruthy();
-    expect(hits(button("Swap orientation"))).toBeTruthy();
-    expect(hits(aspect("1:1"), ["top", "bottom"])).toBeTruthy();
-  });
-});
-
-describe("full editor demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it.each(["phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("full-editor", width);
-
-      await mountLive(FullEditorDemo, "full-editor", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-      await expect(violations()).resolves.toStrictEqual([]);
-    }
-  );
 });

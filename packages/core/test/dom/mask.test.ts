@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-type Supports = (property: string, value: string) => boolean;
+import type { Clock } from "../../src";
+import { LAYOUT } from "../cropper-fixture";
+import { fakeClock } from "../fake-clock";
 
-const BOX = { height: 200, width: 200, x: 100, y: 50 };
-const CIRCLE =
-  "shape(evenodd from 0 0, hline to 100%, vline to 100%, hline to 0, close, move to 200px 50px, arc by 0 200px of 100px 100px, arc by 0 -200px of 100px 100px, close)";
-const GRADIENT =
-  "radial-gradient(100px 100px at 200px 150px, transparent calc(100% - 0.25px), #000 calc(100% + 0.25px))";
+type Supports = (property: string, value: string) => boolean;
 
 const isElement = (_value: object): _value is HTMLElement => true;
 
@@ -30,29 +28,21 @@ const fakeElement = () => {
   return { element, style, written };
 };
 
-const load = async (supports?: Supports) => {
+const load = async (supports: Supports, clock?: Clock) => {
   vi.resetModules();
-
-  if (supports) {
-    vi.stubGlobal("CSS", { supports });
-  }
+  vi.stubGlobal("CSS", { supports });
 
   const { createCropper } = await import("../../src");
-  const { bindMask, viewOf } = await import("../../src/dom");
-  const { maskClip, maskGradient } = await import("../../src/dom/parts");
+  const { bindMask, setCropShape, viewOf } = await import("../../src/dom");
   const cropper = createCropper({
+    clock,
     defaultValue: { aspect: 1 },
     image: { height: 300, width: 400 },
   });
 
-  viewOf(cropper).setLayout({
-    dpr: 2,
-    height: 300,
-    inset: { bottom: 0, left: 0, right: 0, top: 0 },
-    width: 400,
-  });
+  viewOf(cropper).setLayout({ ...LAYOUT, dpr: 2 });
 
-  return { bindMask, cropper, maskClip, maskGradient };
+  return { bindMask, cropper, setCropShape };
 };
 
 describe("round mask", () => {
@@ -60,80 +50,80 @@ describe("round mask", () => {
     vi.unstubAllGlobals();
   });
 
-  it("cuts the turning crop out of the mask when a frame has a clip", async () => {
-    const { maskClip } = await load();
+  it.each([
+    [true, ["shape", undefined]],
+    [false, ["", "radial-gradient"]],
+  ])(
+    "picks clip-path or the gradient fallback when the probe gives %s, and clears it on unbind",
+    async (passes, picked) => {
+      const supports = vi.fn<Supports>(() => passes);
+      const { bindMask, cropper } = await load(supports);
+      const { element, style, written } = fakeElement();
+      const unbind = bindMask(cropper, element, "circle");
 
-    expect(
-      maskClip(BOX, "rect", [
-        { x: 10, y: 0 },
-        { x: 20, y: 10 },
-        { x: 10, y: 20 },
-        { x: 0, y: 10 },
-      ])
-    ).toBe(
-      "polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 10px 0px, 20px 10px, 10px 20px, 0px 10px, 10px 0px)"
+      expect(supports.mock.lastCall?.slice(0, 1)).toStrictEqual(["clip-path"]);
+      expect(supports.mock.lastCall?.[1]).not.toContain("var(");
+
+      expect([
+        style.clipPath.split("(")[0],
+        written.get("mask-image")?.split("(")[0],
+      ]).toStrictEqual(picked);
+
+      expect(written.get("-webkit-mask-image")).toBe(written.get("mask-image"));
+      unbind();
+      expect(written.size).toBe(0);
+    }
+  );
+
+  it("keeps the gradient fallback in step with a live bind as the photo leaves and the shape changes", async () => {
+    const time = fakeClock();
+    const { bindMask, cropper, setCropShape } = await load(
+      () => false,
+      time.clock
     );
-  });
-
-  it("cuts an even-odd hole with two half-circle arcs", async () => {
-    const { maskClip } = await load();
-
-    expect(maskClip(BOX, "circle")).toBe(CIRCLE);
-  });
-
-  it("ramps the fallback edge over one device pixel", async () => {
-    const { maskGradient } = await load();
-
-    expect(maskGradient(BOX, 2)).toBe(GRADIENT);
-  });
-
-  it("clips with shape() where the probe passes", async () => {
-    const { bindMask, cropper } = await load(() => true);
     const { element, style, written } = fakeElement();
     const unbind = bindMask(cropper, element, "circle");
 
-    expect(style.clipPath.startsWith("shape(evenodd from 0 0,")).toBeTruthy();
-    expect(written.has("mask-image")).toBeFalsy();
+    time.frames(2);
+    const drawn = written.get("mask-image");
+
+    cropper.setImage(null);
+    time.frames(2);
+    const cleared = [...written.keys()];
+
+    cropper.setImage({ height: 300, width: 400 });
+    time.frames(2);
+
+    expect({
+      cleared,
+      drawn: drawn?.includes("radial-gradient"),
+      redrawn: written.get("mask-image")?.includes("radial-gradient"),
+    }).toStrictEqual({ cleared: [], drawn: true, redrawn: true });
+
     unbind();
-  });
+    setCropShape(cropper, "rect");
+    const off = bindMask(cropper, element);
 
-  it("falls back to a gradient mask where the probe fails", async () => {
-    const { bindMask, cropper } = await load(() => false);
-    const { element, style, written } = fakeElement();
-    const unbind = bindMask(cropper, element, "circle");
+    time.frames(2);
+    expect(style.clipPath).not.toBe("");
+    setCropShape(cropper, "circle");
+    cropper.invalidate();
+    time.frames(2);
 
-    expect(style.clipPath).toBe("");
+    expect([
+      written.get("mask-image")?.includes("radial-gradient"),
+      style.clipPath,
+    ]).toStrictEqual([true, ""]);
 
-    expect(
-      written.get("mask-image")?.startsWith("radial-gradient(")
-    ).toBeTruthy();
+    setCropShape(cropper, "rect");
+    cropper.invalidate();
+    time.frames(2);
 
-    expect(written.get("-webkit-mask-image")).toBe(written.get("mask-image"));
-    unbind();
-    expect(written.size).toBe(0);
-  });
+    expect([written.has("mask-image"), style.clipPath === ""]).toStrictEqual([
+      false,
+      false,
+    ]);
 
-  it("falls back when there is no CSS global", async () => {
-    const { bindMask, cropper } = await load();
-    const { element, style, written } = fakeElement();
-    const unbind = bindMask(cropper, element, "circle");
-
-    expect(style.clipPath).toBe("");
-    expect(written.has("mask-image")).toBeTruthy();
-    unbind();
-  });
-
-  it("probes a literal shape() once and never for a rect", async () => {
-    const supports = vi.fn<Supports>(() => true);
-    const { bindMask, cropper } = await load(supports);
-
-    bindMask(cropper, fakeElement().element, "rect")();
-    expect(supports).not.toHaveBeenCalled();
-    bindMask(cropper, fakeElement().element, "circle")();
-    bindMask(cropper, fakeElement().element, "circle")();
-    expect(supports).toHaveBeenCalledOnce();
-    expect(supports.mock.lastCall?.[0]).toBe("clip-path");
-    expect(supports.mock.lastCall?.[1]).toContain("arc by");
-    expect(supports.mock.lastCall?.[1]).not.toContain("var(");
+    off();
   });
 });

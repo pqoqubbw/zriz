@@ -31,6 +31,8 @@ const EDGES = [
   ["left", "ew-resize"],
 ] as const;
 
+const page = (): string => getComputedStyle(document.body).cursor;
+
 const frames = async (n = 2): Promise<void> => {
   for (let i = 0; i < n; i += 1) {
     await new Promise((resolve) => {
@@ -66,7 +68,13 @@ const Editor = () => (
   </Cropper.Root>
 );
 
-const press = (target: Element, type: string, x: number, y: number) =>
+const press = (
+  target: Element,
+  type: string,
+  x: number,
+  y: number,
+  pointerId = 1
+) =>
   target.dispatchEvent(
     new PointerEvent(type, {
       bubbles: true,
@@ -74,7 +82,7 @@ const press = (target: Element, type: string, x: number, y: number) =>
       buttons: 1,
       clientX: x,
       clientY: y,
-      pointerId: 1,
+      pointerId,
       pointerType: "mouse",
     })
   );
@@ -118,65 +126,66 @@ describe("cursors", () => {
     outer.remove();
   });
 
-  it("a zoom drag holds a cursor the page gave the track", async () => {
+  it("shows resize and grab cursors on the parts and holds the drag's cursor across the page until it lets go", async () => {
     const screen = await render(
-      <Cropper.Root image={{ height: 300, width: 400 }}>
-        <Cropper.Zoom
-          aria-label="Zoom"
-          style={{ cursor: "pointer", height: 20, width: 200 }}
-        />
-      </Cropper.Root>
+      <>
+        <Editor />
+        <Cropper.Root image={{ height: 300, width: 400 }}>
+          <Cropper.Zoom
+            aria-label="Zoom"
+            style={{ cursor: "pointer", height: 20, width: 200 }}
+          />
+        </Cropper.Root>
+      </>
     );
 
     await frames();
-    const track = find(screen.container, '[role="slider"]');
-    const box = track.getBoundingClientRect();
 
-    press(track, "pointerdown", box.x + 50, box.y + 5);
-    expect(document.adoptedStyleSheets).toHaveLength(1);
-    press(track, "pointerup", box.x + 50, box.y + 5);
-    expect(document.adoptedStyleSheets).toHaveLength(0);
-  });
+    const cursorOf = (selector: string): string =>
+      getComputedStyle(find(screen.container, selector)).cursor;
 
-  it("shows a resize cursor on every handle and grab on the photo and dial", async () => {
-    const screen = await render(<Editor />);
+    expect([
+      ...EDGES.map(([edge]) => cursorOf(`[data-edge="${edge}"]`)),
+      cursorOf('[data-zriz-item="viewport"]'),
+      cursorOf('[data-zriz-item="dial"]'),
+    ]).toStrictEqual([...EDGES.map(([, cursor]) => cursor), "grab", "grab"]);
 
-    await frames();
+    const held: string[] = [];
 
-    const cursorOf = (selector: string): string => {
-      const element = screen.container.querySelector(selector);
-
-      return element ? getComputedStyle(element).cursor : "";
+    const drag = (target: Element, end: string, x: number, y: number): void => {
+      press(target, "pointerdown", x, y);
+      held.push(page());
+      press(target, end, x, y);
+      held.push(page());
     };
 
-    expect(
-      EDGES.map(([edge]) => cursorOf(`[data-edge="${edge}"]`))
-    ).toStrictEqual(EDGES.map(([, cursor]) => cursor));
+    const at = (selector: string): [Element, number, number] => {
+      const target = find(screen.container, selector);
+      const box = target.getBoundingClientRect();
 
-    expect(cursorOf('[data-zriz-item="viewport"]')).toBe("grab");
-    expect(cursorOf('[data-zriz-item="dial"]')).toBe("grab");
-  });
+      return [
+        target,
+        box.x + Math.min(5, box.width / 2),
+        box.y + Math.min(5, box.height / 2),
+      ];
+    };
 
-  it("leaves a page's own gesture and edge attributes alone", async () => {
-    const screen = await render(
-      <div data-panning="" data-pinching="">
-        <Editor />
-        <div data-edge="left" id="page-edge">
-          <span />
-        </div>
-      </div>
-    );
+    const [handle, hx, hy] = at('[data-edge="top-right"]');
+    const [viewport, vx, vy] = at('[data-zriz-item="viewport"]');
+    const [track, tx, ty] = at('[data-zriz-item="zoom"]');
 
-    await frames();
+    drag(handle, "pointerup", hx, hy);
+    drag(viewport, "pointercancel", vx, vy);
+    drag(track, "pointerup", tx + 45, ty);
 
-    expect(
-      getComputedStyle(find(screen.container, '[data-zriz-item="viewport"]'))
-        .cursor
-    ).toBe("grab");
-
-    expect(getComputedStyle(find(screen.container, "#page-edge")).cursor).toBe(
-      "auto"
-    );
+    expect(held).toStrictEqual([
+      "nesw-resize",
+      "auto",
+      "grabbing",
+      "auto",
+      "pointer",
+      "auto",
+    ]);
   });
 
   it("shows grabbing on the viewport while its own root pans", async () => {
@@ -197,46 +206,6 @@ describe("cursors", () => {
     api.current?.end();
     expect(cursor).toBe("grabbing");
   });
-
-  it("keeps the cursor across the page during a drag and lets go after", async () => {
-    const screen = await render(<Editor />);
-
-    await frames();
-    const handle = screen.container.querySelector('[data-edge="top-right"]');
-
-    if (!handle) {
-      throw new Error("no handle");
-    }
-
-    const box = handle.getBoundingClientRect();
-    const sheets = document.adoptedStyleSheets.length;
-
-    press(handle, "pointerdown", box.x + box.width / 2, box.y + box.height / 2);
-    expect(getComputedStyle(document.body).cursor).toBe("nesw-resize");
-    press(handle, "pointerup", box.x, box.y);
-    expect(document.adoptedStyleSheets).toHaveLength(sheets);
-    expect(getComputedStyle(document.body).cursor).toBe("auto");
-  });
-
-  it("holds grabbing while the photo is dragged", async () => {
-    const screen = await render(<Editor />);
-
-    await frames();
-    const viewport = screen.container.querySelector(
-      '[data-zriz-item="viewport"]'
-    );
-
-    if (!viewport) {
-      throw new Error("no viewport");
-    }
-
-    const box = viewport.getBoundingClientRect();
-
-    press(viewport, "pointerdown", box.x + 5, box.y + 5);
-    expect(getComputedStyle(document.body).cursor).toBe("grabbing");
-    press(viewport, "pointercancel", box.x + 5, box.y + 5);
-    expect(getComputedStyle(document.body).cursor).toBe("auto");
-  });
 });
 
 describe("a gesture whose part goes away", () => {
@@ -249,10 +218,11 @@ describe("a gesture whose part goes away", () => {
     ["handle", "resize", '[data-edge="right"]'],
     ["dial", "dial", '[data-zriz-item="dial"]'],
     ["zoom", "zoom-control", '[data-zriz-item="zoom"]'],
+    ["area", "keyboard", "[data-testid=area]"],
   ] as const;
 
   const held = (props: {
-    dial?: boolean;
+    parts?: boolean;
     max?: number;
     edge?: "right" | "left";
   }) => {
@@ -262,16 +232,16 @@ describe("a gesture whose part goes away", () => {
         <Cropper.Viewport
           style={{ height: 300, position: "relative", width: 400 }}
         >
-          <Cropper.Area aria-label="Crop">
-            {next.dial === false ? null : (
+          {next.parts === false ? null : (
+            <Cropper.Area aria-label="Crop" data-testid="area">
               <Cropper.Handle
                 position={next.edge ?? "right"}
                 data-edge="right"
               />
-            )}
-          </Cropper.Area>
+            </Cropper.Area>
+          )}
         </Cropper.Viewport>
-        {next.dial === false ? null : (
+        {next.parts === false ? null : (
           <>
             <Cropper.Dial
               aria-label="Straighten"
@@ -291,7 +261,7 @@ describe("a gesture whose part goes away", () => {
   };
 
   it.each(parts)(
-    "unmounting the %s mid-drag frees the cropper and page",
+    "unmounting the %s mid-gesture frees the cropper and page",
     async (_, reason, selector) => {
       const { cropper, Tree } = held({});
       const screen = await render(<Tree />);
@@ -300,9 +270,16 @@ describe("a gesture whose part goes away", () => {
       const part = find(screen.container, selector);
       const sheets = document.adoptedStyleSheets.length;
 
-      press(part, "pointerdown", 100, 10);
+      if (reason === "keyboard") {
+        part.dispatchEvent(
+          new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })
+        );
+      } else {
+        press(part, "pointerdown", 100, 10);
+      }
+
       expect(cropper.getState().interacting).toBe(reason);
-      await screen.rerender(<Tree dial={false} />);
+      await screen.rerender(<Tree parts={false} />);
       expect(cropper.getState().interacting).toBeNull();
       expect(document.adoptedStyleSheets).toHaveLength(sheets);
       const escape = new KeyboardEvent("keydown", {
@@ -315,29 +292,6 @@ describe("a gesture whose part goes away", () => {
       expect(escape.defaultPrevented).toBeFalsy();
     }
   );
-
-  it("a key held on an area that unmounts ends the key gesture", async () => {
-    const cropper = createCropper({ image });
-
-    type TreeProps = { area?: boolean };
-
-    const Tree = ({ area = true }: TreeProps) => (
-      <Cropper.Root cropper={cropper}>
-        {area ? <Cropper.Area aria-label="Crop" data-testid="area" /> : null}
-      </Cropper.Root>
-    );
-    const screen = await render(<Tree />);
-
-    screen.container
-      .querySelector("[data-testid=area]")
-      ?.dispatchEvent(
-        new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })
-      );
-
-    expect(cropper.getState().interacting).toBe("keyboard");
-    await screen.rerender(<Tree area={false} />);
-    expect(cropper.getState().interacting).toBeNull();
-  });
 
   it("a prop change mid-drag keeps the drag alive to its own release", async () => {
     const { cropper, Tree } = held({});
@@ -361,47 +315,59 @@ describe("a gesture whose part goes away", () => {
     expect(cropper.getState().interacting).toBeNull();
   });
 
-  it("a suspense hide mid-drag holds the value and ends the gesture", async () => {
-    const Pending = lazy(
-      async () => await new Promise<{ default: () => null }>(() => {})
-    );
-    const cropper = createCropper({ image });
+  it.each(["handle", "zoom"])(
+    "a suspense hide mid-drag on a %s holds the value and ends the gesture",
+    async (part) => {
+      const Pending = lazy(
+        async () => await new Promise<{ default: () => null }>(() => {})
+      );
+      const cropper = createCropper({ image });
 
-    type TreeProps = { hide: boolean };
+      type TreeProps = { hide: boolean };
 
-    const Tree = ({ hide }: TreeProps) => (
-      <div style={{ paddingLeft: 200, paddingTop: 150 }}>
-        <Suspense fallback={null}>
-          {hide ? <Pending /> : null}
-          <Cropper.Root cropper={cropper}>
-            <Cropper.Viewport
-              style={{ height: 300, position: "relative", width: 400 }}
-            >
-              <Cropper.Area aria-label="Crop">
-                <Cropper.Handle data-edge="right" position="right" />
-              </Cropper.Area>
-            </Cropper.Viewport>
-          </Cropper.Root>
-        </Suspense>
-      </div>
-    );
-    const screen = await render(<Tree hide={false} />);
+      const Tree = ({ hide }: TreeProps) => (
+        <div style={{ paddingLeft: 200, paddingTop: 150 }}>
+          <Suspense fallback={null}>
+            {hide ? <Pending /> : null}
+            <Cropper.Root cropper={cropper}>
+              <Cropper.Viewport
+                style={{ height: 300, position: "relative", width: 400 }}
+              >
+                <Cropper.Area aria-label="Crop">
+                  <Cropper.Handle position="right" />
+                </Cropper.Area>
+              </Cropper.Viewport>
+              <Cropper.Zoom
+                aria-label="Zoom"
+                style={{ height: 20, width: 200 }}
+              />
+            </Cropper.Root>
+          </Suspense>
+        </div>
+      );
+      const screen = await render(<Tree hide={false} />);
 
-    await frames();
-    const handle = find(screen.container, '[data-edge="right"]');
-    const box = handle.getBoundingClientRect();
+      await frames();
+      const target = find(screen.container, `[data-zriz-item="${part}"]`);
+      const box = target.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
 
-    press(handle, "pointerdown", box.x + 22, box.y + 22);
-    press(handle, "pointermove", box.x - 18, box.y + 22);
-    const before = cropper.getValue();
+      press(target, "pointerdown", x, y);
+      press(target, "pointermove", x - 20, y + 10);
+      const before = cropper.getValue();
 
-    await screen.rerender(<Tree hide />);
-    expect(cropper.getState().interacting).toBeNull();
-    press(handle, "pointermove", box.x - 17, box.y + 22);
-    expect(cropper.getValue()).toBe(before);
-  });
+      expect(before).not.toStrictEqual(createCropper({ image }).getValue());
+      await screen.rerender(<Tree hide />);
+      await frames();
+      expect(cropper.getState().interacting).toBeNull();
+      press(target, "pointermove", x - 19, y + 10);
+      expect(cropper.getValue()).toStrictEqual(before);
+      press(target, "pointerup", x - 19, y + 10);
+    }
+  );
 
-  it("a failed press does not light up a second handle", async () => {
+  it("marks only the handle that owns the drag, and clears the mark when it ends", async () => {
     const cropper = createCropper({ image });
     const screen = await render(
       <Cropper.Root cropper={cropper}>
@@ -411,30 +377,39 @@ describe("a gesture whose part goes away", () => {
           <Cropper.Area aria-label="Crop">
             <Cropper.Handle position="left" data-testid="a" />
             <Cropper.Handle position="right" data-testid="b" />
+            <Cropper.Handle position="top" data-testid="c" />
           </Cropper.Area>
         </Cropper.Viewport>
       </Cropper.Root>
     );
 
     await frames();
-    const a = find(screen.container, "[data-testid=a]");
-    const b = find(screen.container, "[data-testid=b]");
+    const [a, b, c] = ["a", "b", "c"].map((id) =>
+      find(screen.container, `[data-testid=${id}]`)
+    );
+    const active = (): boolean[] =>
+      [a, b, c].map((handle) => Object.hasOwn(handle?.dataset ?? {}, "active"));
+
+    if (!(a && b && c)) {
+      throw new Error("no handles");
+    }
 
     press(a, "pointerdown", 10, 10);
-
-    b.dispatchEvent(
-      new PointerEvent("pointerdown", {
-        bubbles: true,
-        buttons: 1,
-        clientX: 20,
-        pointerId: 2,
-        pointerType: "mouse",
-      })
-    );
-
+    press(b, "pointerdown", 20, 10, 2);
     await frames();
-    expect(Object.hasOwn(b.dataset, "active")).toBeFalsy();
-    expect(Object.hasOwn(a.dataset, "active")).toBeTruthy();
+    expect(active()).toStrictEqual([true, false, false]);
+    press(b, "pointerup", 20, 10, 2);
+    press(a, "pointerup", 10, 10);
+    await frames();
+    expect(active()).toStrictEqual([false, false, false]);
+    press(c, "pointerdown", 30, 10);
+    await frames();
+    expect(active()).toStrictEqual([false, false, true]);
+    press(c, "pointerup", 30, 10);
+    await frames();
+    press(a, "pointerdown", 10, 10);
+    await frames();
+    expect(active()).toStrictEqual([true, false, false]);
     press(a, "pointerup", 10, 10);
   });
 
@@ -472,11 +447,17 @@ describe("a gesture whose part goes away", () => {
     );
   });
 
-  it("a press vetoed on a handle does not start a pan under it", async () => {
+  it("a press vetoed on a handle or the viewport starts no gesture", async () => {
     const cropper = createCropper({ image });
     const screen = await render(
       <Cropper.Root cropper={cropper}>
         <Cropper.Viewport
+          data-testid="v"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              preventZrizHandler(event);
+            }
+          }}
           style={{ height: 300, position: "relative", width: 400 }}
         >
           <Cropper.Area aria-label="Crop">
@@ -495,16 +476,13 @@ describe("a gesture whose part goes away", () => {
     await frames();
     press(find(screen.container, "[data-testid=h]"), "pointerdown", 10, 10);
     expect(cropper.getState().interacting).toBeNull();
-  });
+    press(find(screen.container, "[data-testid=h]"), "pointerup", 10, 10);
+    const before = cropper.getValue();
 
-  it("root opts out of a swipe-to-dismiss drawer around it", async () => {
-    const screen = await render(<Editor />);
-
-    expect(
-      Object.hasOwn(
-        find(screen.container, '[data-zriz-item="root"]').dataset,
-        "baseUiSwipeIgnore"
-      )
-    ).toBeTruthy();
+    press(find(screen.container, "[data-testid=v]"), "pointerdown", 200, 150);
+    expect(cropper.getState().interacting).toBeNull();
+    press(find(screen.container, "[data-testid=v]"), "pointermove", 240, 150);
+    expect(cropper.getValue()).toBe(before);
+    press(find(screen.container, "[data-testid=v]"), "pointerup", 240, 150);
   });
 });

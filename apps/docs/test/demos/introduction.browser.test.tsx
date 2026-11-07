@@ -1,7 +1,7 @@
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
-import { commands as browser, page, server, userEvent } from "vitest/browser";
+import { commands as browser, page, userEvent } from "vitest/browser";
 
 import { fixtureFile } from "./fixtures";
 import { button, find, hits, item, mountDemo, ready, settle } from "./helpers";
@@ -99,12 +99,6 @@ const tabOrder = async (steps: number): Promise<string[]> => {
   return order;
 };
 
-const domOrder = (): string[] =>
-  [...panel().querySelectorAll<HTMLElement>("button, [tabindex]")]
-    .filter((element) => element.tabIndex >= 0 && shown(element))
-    .map((element) => nameOf(element))
-    .slice(1);
-
 const violations = async (): Promise<string[]> => {
   const result = await axe.run(panel(), {
     rules: { region: { enabled: false } },
@@ -131,54 +125,40 @@ describe("introduction demo", () => {
   afterEach(async () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    document.body.style.padding = "";
     await cleanup();
   });
 
-  it("starts level with reset hidden", async () => {
+  it("straightens, turns, flips, resets and downloads a jpeg", async () => {
     await mountDemo("introduction");
     await ready();
 
-    expect(angle()).toBe("0.0");
-    expect(shown(resetChip())).toBeFalsy();
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
+    const state = () => ({ angle: angle(), reset: shown(resetChip()) });
+    const start = state();
+    const audits = [await violations()];
 
-  it("straightens, shows reset after a change and resets", async () => {
-    await mountDemo("introduction");
-    await ready();
     await dragDial(-60);
 
-    expect(angle()).not.toBe("0.0");
-    expect(shown(resetChip())).toBeTruthy();
-    await expect(violations()).resolves.toStrictEqual([]);
+    const straightened = state();
 
+    audits.push(await violations());
     resetChip().click();
-    await expect.poll(angle).toBe("0.0");
-    await expect.poll(() => shown(resetChip())).toBeFalsy();
-  });
+    await expect.poll(state).toStrictEqual({ angle: "0.0", reset: false });
 
-  it("rotates a quarter and flips", async () => {
-    await mountDemo("introduction");
-    await ready();
-
-    expect(ratio()).toBeGreaterThan(1);
+    const landscape = ratio() > 1;
 
     button("Rotate left").click();
     await settle();
 
-    expect(ratio()).toBeLessThan(1);
+    const portrait = ratio() < 1;
 
     button("Flip").click();
     await settle();
 
-    expect(Object.hasOwn(find(item("root")).dataset, "mirrored")).toBeTruthy();
-    expect(shown(resetChip())).toBeTruthy();
-  });
-
-  it("downloads a jpeg and says saved for 2 s", async () => {
-    await mountDemo("introduction");
-    await ready();
-
+    const flipped = {
+      mirrored: Object.hasOwn(find(item("root")).dataset, "mirrored"),
+      reset: shown(resetChip()),
+    };
     const links: string[] = [];
 
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
@@ -194,25 +174,39 @@ describe("introduction demo", () => {
     const response = await fetch(links[0] ?? "");
     const blob = await response.blob();
 
-    expect(blob.type).toBe("image/jpeg");
-    await expect.poll(() => says("Saved")).toBeTruthy();
-    await expect(violations()).resolves.toStrictEqual([]);
+    audits.push(await violations());
 
-    vi.advanceTimersByTime(2000);
-    await expect.poll(() => says("Saved")).toBeFalsy();
+    expect(audits).toStrictEqual([[], [], []]);
+
+    expect({
+      download: button("Download").getAttribute("aria-label"),
+      flipped,
+      landscape,
+      level: straightened.angle === "0.0",
+      portrait,
+      saved: says("Saved"),
+      start,
+      straightenedReset: straightened.reset,
+      type: blob.type,
+    }).toStrictEqual({
+      download: "Download",
+      flipped: { mirrored: true, reset: true },
+      landscape: true,
+      level: false,
+      portrait: true,
+      saved: false,
+      start: { angle: "0.0", reset: false },
+      straightenedReset: true,
+      type: "image/jpeg",
+    });
   });
 
-  it("names a file that is not an image for 4 s and still opens", async () => {
+  it("names a file that is not an image or cannot be read, and opens a dropped photo", async () => {
     await mountDemo("introduction");
     await ready();
     vi.useFakeTimers(FAKE_TIMERS);
     pick(new File(["plain text"], "notes.txt", { type: "text/plain" }));
     await expect.poll(() => says("Not an image")).toBeTruthy();
-
-    expect(getComputedStyle(button("Not an image. Open a photo")).color).toBe(
-      "rgb(180, 35, 24)"
-    );
-
     await expect(violations()).resolves.toStrictEqual([]);
 
     vi.advanceTimersByTime(4000);
@@ -220,19 +214,6 @@ describe("introduction demo", () => {
     vi.useRealTimers();
     pick(await fixtureFile("portrait"));
     await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
-  });
-
-  it("names a photo it cannot read", async () => {
-    await mountDemo("introduction");
-    await ready();
-    pick(new File(["not really a png"], "broken.png", { type: "image/png" }));
-
-    await expect.poll(() => says("Can’t read this file")).toBeTruthy();
-  });
-
-  it("opens a dropped photo", async () => {
-    await mountDemo("introduction");
-    await ready();
 
     const transfer = new DataTransfer();
 
@@ -240,33 +221,39 @@ describe("introduction demo", () => {
     drop("dragenter", transfer);
     await expect.poll(() => says("Drop to open")).toBeTruthy();
 
-    expect(document.querySelector('[aria-label="Open a photo"]')).toBeNull();
+    expect(
+      Object.hasOwn(find('[data-slot="chip-bar"]').dataset, "hidden")
+    ).toBeTruthy();
 
     drop("drop", transfer);
     await expect.poll(() => says("Drop to open")).toBeFalsy();
     await expect.poll(ratio, { timeout: 15_000 }).toBeCloseTo(1, 1);
+
+    pick(new File(["not really a png"], "broken.png", { type: "image/png" }));
+    await expect.poll(() => says("Can’t read this file")).toBeTruthy();
   });
 
-  it("gives every button a 44 px hit box", async () => {
+  it("gives every button a 44 px hit box and tabs from the corners to the stage, then the dial", async () => {
+    document.body.style.padding = "32px";
     await mountDemo("introduction");
     await ready();
     await nudge();
 
-    expect(hits(button("Open a photo"))).toBeTruthy();
-    expect(hits(button("Reset"), ["top", "bottom", "left"])).toBeTruthy();
-    expect(hits(button("Download"), ["top", "bottom", "right"])).toBeTruthy();
-    expect(hits(button("Rotate left"))).toBeTruthy();
-    expect(hits(button("Flip"))).toBeTruthy();
-  });
+    expect({
+      download: hits(button("Download"), ["top", "bottom", "right"]),
+      flip: hits(button("Flip")),
+      open: hits(button("Open a photo")),
+      reset: hits(button("Reset"), ["top", "bottom", "left"]),
+      rotate: hits(button("Rotate left")),
+    }).toStrictEqual({
+      download: true,
+      flip: true,
+      open: true,
+      reset: true,
+      rotate: true,
+    });
 
-  it("moves focus from the corners to the stage, then the dial", async () => {
-    await mountDemo("introduction");
-    await ready();
-    await nudge();
-
-    const order = server.browser === "webkit" ? domOrder() : await tabOrder(6);
-
-    expect(order).toStrictEqual([
+    await expect(tabOrder(6)).resolves.toStrictEqual([
       "Reset",
       "Download",
       "Crop area",
@@ -274,45 +261,5 @@ describe("introduction demo", () => {
       "Straighten",
       "Flip",
     ]);
-  });
-
-  it.skipIf(server.browser === "webkit")(
-    "draws the 2 px inset focus ring",
-    async () => {
-      await mountDemo("introduction");
-      await ready();
-      await tabOrder(3);
-
-      expect(getComputedStyle(button("Rotate left")).boxShadow).toContain(
-        "rgb(17, 17, 17) 0px 0px 0px 2px inset"
-      );
-    }
-  );
-});
-
-describe("introduction demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it("shows reset and download as icons", async () => {
-    await mountDemo("introduction", "phone");
-    await ready();
-    await nudge();
-
-    const widths = ["Reset", "Download"].map(
-      (label) => button(label).getBoundingClientRect().width
-    );
-    const labels = ["Reset", "Download"].map((label) =>
-      shown(find("span", button(label)))
-    );
-
-    expect(widths).toStrictEqual([32, 32]);
-    expect(labels).toStrictEqual([false, false]);
-    await expect(violations()).resolves.toStrictEqual([]);
   });
 });

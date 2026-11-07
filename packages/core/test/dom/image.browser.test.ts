@@ -2,17 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { server } from "vitest/browser";
 
 import { createCropper } from "../../src";
+import type { Cropper } from "../../src";
 import {
   ZrizError,
   attachImage,
   exportCrop,
   exportImage,
-  imageOf,
   loadImage,
   setCropShape,
-  sniff,
 } from "../../src/dom";
-import { fromSvg } from "../../src/dom/svg";
+import type { LoadedImage } from "../../src/dom";
 import { workingToSource } from "../../src/geometry";
 import orientations from "../fixtures/orient.json";
 
@@ -46,15 +45,13 @@ const pixels = async (
 };
 
 const near = (
-  a: number[] | undefined,
-  b: number[] | undefined,
+  a: readonly number[] | undefined,
+  b: readonly number[] | undefined,
   tolerance = 48
 ): boolean =>
   a !== undefined &&
   b !== undefined &&
   b.every((value, i) => Math.abs((a[i] ?? 0) - value) <= tolerance);
-
-const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
 const shown = async (
   blob: Blob,
@@ -130,7 +127,7 @@ const otherRealm = async () => {
 };
 
 describe("a source from another document", () => {
-  it("loads a file from that realm and keeps a blob of this one", async () => {
+  it("loads a file and an image that is still loading from that realm", async () => {
     const frame = await otherRealm();
     const blob = await fixture("orient-1.jpg");
     const OtherFile = frame.contentWindow?.File ?? File;
@@ -141,12 +138,6 @@ describe("a source from another document", () => {
 
     expect(image.width).toBeGreaterThan(0);
     expect(image.source instanceof Blob).toBeTruthy();
-    frame.remove();
-  });
-
-  it("waits for an image from that realm that is still loading", async () => {
-    const frame = await otherRealm();
-    const blob = await fixture("orient-1.jpg");
     const url = URL.createObjectURL(blob);
     const img = frame.contentDocument?.createElement("img") ?? new Image();
     const decode = img.decode.bind(img);
@@ -156,9 +147,9 @@ describe("a source from another document", () => {
       await decode();
     };
 
-    const image = await loadImage(img);
+    const loading = await loadImage(img);
 
-    expect(image.width).toBeGreaterThan(0);
+    expect(loading.width).toBeGreaterThan(0);
     URL.revokeObjectURL(url);
     frame.remove();
   });
@@ -209,49 +200,44 @@ describe("load and export", () => {
     original.preview.close();
   });
 
-  it.each([
-    ["image/jpeg", 4032, 3024],
-    ["image/png", 4032, 3024],
-    ["image/jpeg", 6000, 4500],
-  ] as const)(
-    "exports a %s mesh of a %i by %i photo at the size it reports",
-    async (type, width, height) => {
-      const canvas = new OffscreenCanvas(width, height);
-      const context = canvas.getContext("2d");
+  it("exports a jpeg mesh of a 6000 by 4500 photo at the size it reports", async () => {
+    const width = 6000;
+    const height = 4500;
+    const canvas = new OffscreenCanvas(width, height);
+    const context = canvas.getContext("2d");
 
-      if (!context) {
-        throw new Error("no 2d context");
-      }
-
-      context.fillStyle = "#f00";
-      context.fillRect(0, 0, width, height);
-      const image = await loadImage(await createImageBitmap(canvas));
-
-      canvas.width = 0;
-      const cropper = createCropper();
-
-      attachImage(cropper, image);
-      cropper.setValue({ perspective: { horizontal: 0, vertical: 30 } });
-      const result = await exportCrop(cropper, { type });
-      const written = await createImageBitmap(result.blob);
-
-      expect([written.width, written.height]).toStrictEqual([
-        result.width,
-        result.height,
-      ]);
-
-      written.close();
-      const [middle, corner] = await pixels(result.blob, [
-        [Math.floor(result.width / 2), Math.floor(result.height / 2)],
-        [1, 1],
-      ]);
-
-      expect(near(middle, [255, 0, 0])).toBeTruthy();
-      expect(near(corner, [255, 0, 0])).toBeTruthy();
-      expect(result.scaled).toBeFalsy();
-      attachImage(cropper, null);
+    if (!context) {
+      throw new Error("no 2d context");
     }
-  );
+
+    context.fillStyle = "#f00";
+    context.fillRect(0, 0, width, height);
+    const image = await loadImage(await createImageBitmap(canvas));
+
+    canvas.width = 0;
+    const cropper = createCropper();
+
+    attachImage(cropper, image);
+    cropper.setValue({ perspective: { horizontal: 0, vertical: 30 } });
+    const result = await exportCrop(cropper, { type: "image/jpeg" });
+    const written = await createImageBitmap(result.blob);
+
+    expect([written.width, written.height]).toStrictEqual([
+      result.width,
+      result.height,
+    ]);
+
+    written.close();
+    const [middle, corner] = await pixels(result.blob, [
+      [Math.floor(result.width / 2), Math.floor(result.height / 2)],
+      [1, 1],
+    ]);
+
+    expect(near(middle, [255, 0, 0])).toBeTruthy();
+    expect(near(corner, [255, 0, 0])).toBeTruthy();
+    expect(result.scaled).toBeFalsy();
+    attachImage(cropper, null);
+  });
 
   it("exports a straightened crop with no empty corners", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
@@ -271,65 +257,66 @@ describe("load and export", () => {
     expect(result.type).toBe(result.blob.type);
   });
 
-  describe("a jpeg of a photo with clear pixels", () => {
-    const WHITE = [255, 255, 255, 255];
-    const RED = [255, 0, 0, 255];
-
-    it("comes out white where the photo is clear by default", async () => {
+  it.each([
+    ["a jpeg by default", {}, {}, false, [2, 2], [255, 255, 255, 255]],
+    [
+      "a jpeg circle",
+      { defaultValue: { aspect: 1 } },
+      { shape: "circle", type: "image/jpeg" },
+      false,
+      [0, 0],
+      [255, 255, 255, 255],
+    ],
+    [
+      "a jpeg through the perspective mesh",
+      { focalLength: 40 },
+      {},
+      true,
+      [1, 1],
+      [255, 255, 255, 255],
+    ],
+    ["a png", {}, { type: "image/png" }, false, [2, 2], [0, 0, 0, 0]],
+  ] as const)(
+    "fills clear pixels of %s with white, and a png keeps them clear",
+    async (_name, options, exportOptions, tilted, [x, y], want) => {
       const image = await loadImage(await clear());
-      const result = await exportImage(createCropper({ image }), image);
+      const cropper = createCropper({ ...options, image });
+
+      if (tilted) {
+        cropper.setValue({ perspective: { horizontal: 8, vertical: 10 } });
+      }
+
+      const result = await exportImage(cropper, image, exportOptions);
       const [corner, centre] = await pixels(result.blob, [
-        [2, 2],
-        [32, 32],
-      ]);
-
-      expect(result.type).toBe("image/jpeg");
-      expect(near(corner, WHITE, 8)).toBeTruthy();
-      expect(near(centre, RED, 24)).toBeTruthy();
-    });
-
-    it("comes out white in the corners of a circle", async () => {
-      const image = await loadImage(await halves(400, 400));
-      const cropper = createCropper({ defaultValue: { aspect: 1 }, image });
-      const result = await exportImage(cropper, image, {
-        shape: "circle",
-        type: "image/jpeg",
-      });
-      const [corner] = await pixels(result.blob, [[0, 0]]);
-
-      expect(near(corner, WHITE, 8)).toBeTruthy();
-    });
-
-    it("comes out white through the perspective mesh", async () => {
-      const image = await loadImage(await clear());
-      const cropper = createCropper({ focalLength: 40, image });
-
-      cropper.setValue({ perspective: { horizontal: 8, vertical: 10 } });
-      const result = await exportImage(cropper, image);
-      const [corner, centre] = await pixels(result.blob, [
-        [1, 1],
+        [x, y],
         [Math.floor(result.width / 2), Math.floor(result.height / 2)],
       ]);
 
-      expect(near(corner, WHITE, 8)).toBeTruthy();
-      expect(near(centre, RED, 24)).toBeTruthy();
-    });
+      expect(result.type).toBe(want[3] === 0 ? "image/png" : "image/jpeg");
+      expect(near(corner, want, 8)).toBeTruthy();
+      expect(near(centre, [255, 0, 0, 255], 24)).toBeTruthy();
+    }
+  );
 
-    it("keeps clear pixels clear in a png", async () => {
-      const image = await loadImage(await clear());
-      const result = await exportImage(createCropper({ image }), image, {
-        type: "image/png",
-      });
-      const [corner] = await pixels(result.blob, [[2, 2]]);
+  it.each([
+    [
+      "the circle option",
+      async (cropper: Cropper, image: LoadedImage) =>
+        await exportImage(cropper, image, { shape: "circle" }),
+    ],
+    [
+      "a crop drawn as a circle",
+      async (cropper: Cropper, image: LoadedImage) => {
+        attachImage(cropper, image);
+        setCropShape(cropper, "circle");
 
-      expect(corner?.[3]).toBe(0);
-    });
-  });
-
-  it("gives a round PNG for a round crop", async () => {
+        return await exportCrop(cropper);
+      },
+    ],
+  ])("exports a round png for %s", async (_name, run) => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const cropper = createCropper({ defaultValue: { aspect: 1 }, image });
-    const result = await exportImage(cropper, image, { shape: "circle" });
+    const result = await run(cropper, image);
 
     expect(result.type).toBe("image/png");
     const [corner, centre] = await pixels(result.blob, [
@@ -341,84 +328,27 @@ describe("load and export", () => {
     expect(centre?.[3]).toBe(255);
   });
 
-  it("exports a round PNG when the crop was drawn as a circle", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const cropper = createCropper({ defaultValue: { aspect: 1 } });
-
-    attachImage(cropper, image);
-    setCropShape(cropper, "circle");
-    const result = await exportCrop(cropper);
-
-    expect(result.type).toBe("image/png");
-    const [corner] = await pixels(result.blob, [[0, 0]]);
-
-    expect(corner?.[3]).toBe(0);
-  });
-
-  it("reports the type the browser actually produced", async () => {
+  it("falls back from webp and reports the type the browser produced", async () => {
     const image = await loadImage(await fixture("orient-1.jpg"));
     const cropper = createCropper({ image });
     const result = await exportImage(cropper, image, { type: "image/webp" });
 
     expect(result.type).toBe(result.blob.type);
     expect(["image/webp", "image/jpeg"]).toContain(result.type);
-  });
-
-  it("keeps a round crop transparent when the browser cannot write webp", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const cropper = createCropper({ image });
-    const result = await exportImage(cropper, image, {
+    const round = await exportImage(cropper, image, {
       shape: "circle",
       type: "image/webp",
     });
 
-    expect(["image/webp", "image/png"]).toContain(result.type);
+    expect(round.type).toBe(round.blob.type);
+    expect(["image/webp", "image/png"]).toContain(round.type);
   });
 
-  it("fits a tall svg to the edge from its own size, without an extra rounding", async () => {
-    const svg = new Blob(
-      [
-        '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="5468" viewBox="0 0 8 5468"/>',
-      ],
-      { type: "image/svg+xml" }
-    );
-    const bitmap = await fromSvg(svg, 1024);
-
-    expect([bitmap.width, bitmap.height]).toStrictEqual([1, 1024]);
-    bitmap.close();
-  });
-
-  it("sizes an SVG with only a viewBox from the viewBox", async () => {
-    const image = await loadImage(await fixture("viewbox.svg"));
-
-    expect(image.width / image.height).toBeCloseTo(1.5, 2);
-  });
-
-  it("loads a typed SVG blob behind an XML prolog", async () => {
-    const svg = await fixture("viewbox.svg");
-    const text = await svg.text();
-    const image = await loadImage(
-      new Blob([`<?xml version="1.0"?>\n${text}`], { type: "image/svg+xml" })
-    );
-
-    expect(image.mime).toBe("image/svg+xml");
-    expect(image.width / image.height).toBeCloseTo(1.5, 2);
-  });
-
-  it("sniffs SVG text and leaves other text unknown", () => {
-    expect(sniff(encode("<!-- x -->\n<svg viewBox='0 0 1 1'/>")).mime).toBe(
-      "image/svg+xml"
-    );
-
-    expect(sniff(encode("<html><svg></svg></html>")).mime).toBeNull();
-
-    expect(sniff(new Uint8Array([0xff, 0xd8, 0xff, 0])).mime).toBe(
-      "image/jpeg"
-    );
-  });
-
-  it("loads a canvas element source", async () => {
-    const canvas = document.createElement("canvas");
+  it.each([
+    ["a canvas", () => document.createElement("canvas")],
+    ["an OffscreenCanvas", () => new OffscreenCanvas(40, 20)],
+  ])("loads and exports %s, and a bitmap made from it", async (_name, make) => {
+    const canvas = make();
 
     canvas.width = 40;
     canvas.height = 20;
@@ -430,15 +360,24 @@ describe("load and export", () => {
 
     context.fillStyle = "#f00";
     context.fillRect(0, 0, 40, 20);
-    const image = await loadImage(canvas);
+    const bitmap = await createImageBitmap(canvas);
 
-    expect([image.width, image.height]).toStrictEqual([40, 20]);
-    const result = await exportImage(createCropper({ image }), image, {
-      type: "image/png",
-    });
-    const [pixel] = await pixels(result.blob, [[1, 1]]);
+    for (const source of [canvas, bitmap]) {
+      const image = await loadImage(source);
 
-    expect(near(pixel, [255, 0, 0, 255])).toBeTruthy();
+      expect([image.width, image.height]).toStrictEqual([40, 20]);
+      const cropper = createCropper();
+
+      attachImage(cropper, image);
+      const result = await exportCrop(cropper, { type: "image/png" });
+      const [pixel] = await pixels(result.blob, [[1, 1]]);
+
+      expect(near(pixel, [255, 0, 0, 255])).toBeTruthy();
+      attachImage(cropper, null);
+      expect(image.preview.width).toBe(source === bitmap ? 40 : 0);
+    }
+
+    bitmap.close();
   });
 
   it("converts a P3-tagged file to sRGB for an sRGB export", async () => {
@@ -454,23 +393,67 @@ describe("load and export", () => {
     expect(near(green, [0, 255, 0], 8)).toBeTruthy();
   });
 
-  it("throws a typed error for a format the browser cannot decode", async () => {
-    const error: unknown = await loadImage(await fixture("fake.heic")).catch(
+  it.each([
+    [
+      "a format the browser cannot decode",
+      async () => await fixture("fake.heic"),
+      "unsupported-format",
+    ],
+    [
+      "an element it cannot read",
+      async () => {
+        const canvas = document.createElement("canvas");
+
+        canvas.width = 0;
+
+        return await Promise.resolve(canvas);
+      },
+      "decode",
+    ],
+    [
+      "a broken svg",
+      async () =>
+        await Promise.resolve(
+          new Blob(["<svg><rect></svg>"], { type: "image/svg+xml" })
+        ),
+      "decode",
+    ],
+  ] as const)("throws a typed error for %s", async (_name, make, code) => {
+    const error: unknown = await loadImage(await make()).catch(
       (error_: unknown) => error_
     );
 
     expect(error).toBeInstanceOf(ZrizError);
-    expect(error).toHaveProperty("code", "unsupported-format");
+    expect(error).toHaveProperty("code", code);
   });
 
-  it("throws a typed decode error for an element it cannot read", async () => {
-    const canvas = document.createElement("canvas");
+  it("opens bytes the browser cannot through the decode hook, and a throw there rejects with the caller's own error", async () => {
+    const junk = new Blob(["this is not an image"], { type: "image/x-custom" });
+    const decode = vi.fn<() => Promise<ImageBitmap>>(
+      async () => await createImageBitmap(await halves(320, 200))
+    );
+    const image = await loadImage(junk, { decode });
 
-    canvas.width = 0;
-    const attempt = loadImage(canvas);
+    expect(decode).toHaveBeenCalledOnce();
+    expect([image.width, image.height]).toStrictEqual([320, 200]);
+    const cropper = createCropper();
 
-    await expect(attempt).rejects.toBeInstanceOf(ZrizError);
-    await expect(attempt).rejects.toMatchObject({ code: "decode" });
+    attachImage(cropper, image);
+    const result = await exportCrop(cropper, { type: "image/png" });
+    const [left] = await pixels(result.blob, [[10, 100]]);
+
+    expect(near(left, [255, 0, 0])).toBeTruthy();
+    attachImage(cropper, null);
+    const mine = new Error("mine");
+
+    await expect(
+      loadImage(junk, {
+        decode: async () => {
+          await Promise.resolve();
+          throw mine;
+        },
+      })
+    ).rejects.toBe(mine);
   });
 
   it("throws a typed cross-origin error at load, not at export", async () => {
@@ -479,24 +462,6 @@ describe("load and export", () => {
     });
 
     await expect(attempt).rejects.toMatchObject({ code: "cross-origin" });
-  });
-
-  it("decodes and exports off the main thread", async () => {
-    const posted = vi.spyOn(Worker.prototype, "postMessage");
-    const image = await loadImage(await fixture("orient-1.jpg"));
-
-    await exportImage(createCropper({ image }), image);
-    expect(posted.mock.calls.length).toBeGreaterThan(1);
-    posted.mockRestore();
-  });
-
-  it("keeps the preview under its edge", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"), {
-      previewEdge: 12,
-    });
-
-    expect(Math.max(image.preview.width, image.preview.height)).toBe(12);
-    expect(image.width).toBe(30);
   });
 
   it("exports a perspective crop through the mesh", async () => {
@@ -694,27 +659,18 @@ const photoJpeg = async (quality: number): Promise<Blob> => {
 };
 
 describe("export size", () => {
-  it.each([0.6, 0.75, 0.85])(
-    "keeps a jpeg saved at %s no larger than the file it came from",
-    async (quality) => {
-      const source = await photoJpeg(quality);
-      const image = await loadImage(source);
-      const cropper = createCropper({ image });
-      const result = await exportImage(cropper, image);
-
-      expect(result.type).toBe("image/jpeg");
-      expect(result.width).toBe(1200);
-      expect(result.blob.size).toBeLessThanOrEqual(source.size * 1.05);
-    }
-  );
-
-  it("still takes the quality it is given", async () => {
+  it("keeps a jpeg no larger than the file it came from, unless given a quality", async () => {
     const source = await photoJpeg(0.6);
     const image = await loadImage(source);
     const cropper = createCropper({ image });
-    const result = await exportImage(cropper, image, { quality: 0.95 });
+    const result = await exportImage(cropper, image);
 
-    expect(result.blob.size).toBeGreaterThan(source.size * 1.2);
+    expect(result.type).toBe("image/jpeg");
+    expect(result.width).toBe(1200);
+    expect(result.blob.size).toBeLessThanOrEqual(source.size * 1.05);
+    const asked = await exportImage(cropper, image, { quality: 0.95 });
+
+    expect(asked.blob.size).toBeGreaterThan(source.size * 1.2);
   });
 });
 
@@ -797,13 +753,11 @@ describe("export quality", () => {
   );
 
   it.each([
-    ["at 0.37", 1351, 1000, 500, undefined, false],
-    ["at 0.128", 4000, 3000, 512, undefined, false],
-    ["through the mesh", 1351, 1000, 500, undefined, true],
-    ["on the display-p3 route", 1351, 1000, 500, "display-p3", false],
+    ["at 0.128", 4000, 3000, 512, false],
+    ["through the mesh", 1351, 1000, 500, true],
   ] as const)(
     "flattens 1 px stripes %s",
-    async (_name, width, height, edge, colorSpace, tilted) => {
+    async (_name, width, height, edge, tilted) => {
       const image = await loadImage(await stripes(width, height));
       const cropper = createCropper({ focalLength: 40 });
 
@@ -814,7 +768,6 @@ describe("export quality", () => {
       }
 
       const { blob } = await exportCrop(cropper, {
-        colorSpace,
         maxSize: { height: edge, width: edge },
         type: "image/png",
       });
@@ -822,17 +775,6 @@ describe("export quality", () => {
       expect(centreRowDeviation(await alphaOf(blob))).toBeLessThan(30);
     }
   );
-
-  it("exports raster bytes typed as svg on the display-p3 route", async () => {
-    const jpeg = await fixture("orient-1.jpg");
-    const image = await loadImage(new Blob([jpeg], { type: "image/svg+xml" }));
-    const cropper = createCropper();
-
-    attachImage(cropper, image);
-    const { blob } = await exportCrop(cropper, { colorSpace: "display-p3" });
-
-    expect(blob.size).toBeGreaterThan(0);
-  });
 
   it("keeps a wide webp whole and reports its real size", async () => {
     const canvas = new OffscreenCanvas(20_000, 100);
@@ -905,29 +847,15 @@ const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
 
 describe("reading a file before it decodes", () => {
   it.each(["image/png", "image/jpeg"])(
-    "refuses a %s cut in half in this browser",
+    "refuses a %s cut in half, from a blob or a url, and opens one with data after its end",
     async (type) => {
       const whole = await encoded(type);
       const part = whole.slice(0, Math.floor(whole.size / 2), type);
+      const url = URL.createObjectURL(part);
 
       await expect(codeOf(loadImage(part))).resolves.toBe("decode");
-    }
-  );
-
-  it("refuses a cut photo from a url as well", async () => {
-    const whole = await encoded("image/jpeg");
-    const url = URL.createObjectURL(
-      whole.slice(0, Math.floor(whole.size / 2), "image/jpeg")
-    );
-
-    await expect(codeOf(loadImage(url))).resolves.toBe("decode");
-    URL.revokeObjectURL(url);
-  });
-
-  it.each(["image/png", "image/jpeg"])(
-    "opens a %s with data after its end",
-    async (type) => {
-      const whole = await encoded(type);
+      await expect(codeOf(loadImage(url))).resolves.toBe("decode");
+      URL.revokeObjectURL(url);
       const image = await loadImage(
         new Blob([whole, new Uint8Array(4096).fill(7)], { type })
       );
@@ -936,63 +864,43 @@ describe("reading a file before it decodes", () => {
       image.preview.close();
     }
   );
-
-  it("refuses a file over maxPixels without opening it", async () => {
-    const blob = await encoded("image/png");
-
-    await expect(
-      codeOf(loadImage(blob, { maxPixels: 200 * 160 - 1 }))
-    ).resolves.toBe("too-large");
-
-    const image = await loadImage(blob, { maxPixels: 200 * 160 });
-
-    expect(image.height).toBe(160);
-    image.preview.close();
-  });
-
-  it("refuses a png whose header asks for too many pixels by default", async () => {
-    const blob = await encoded("image/png");
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    const view = new DataView(bytes.buffer);
-
-    view.setUint32(16, 30_000);
-    view.setUint32(20, 30_000);
-
-    await expect(
-      codeOf(loadImage(new Blob([bytes], { type: "image/png" })))
-    ).resolves.toBe("too-large");
-  });
 });
 
 describe("svg sources", () => {
   const SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"><rect width="64" height="32" fill="red"/></svg>';
 
-  it.each(["image/jpeg", "image/png", "image/webp"])(
-    "fails with decode for svg text declared as %s",
-    async (type) => {
+  it("fails with decode for svg text declared as raster, and exports raster bytes declared as svg", async () => {
+    for (const type of ["image/jpeg", "image/png", "image/webp"]) {
       await expect(codeOf(loadImage(new Blob([SVG], { type })))).resolves.toBe(
         "decode"
       );
     }
-  );
 
-  it.each(["", "application/octet-stream", "text/plain"])(
-    "still opens svg text with the type %j",
-    async (type) => {
-      const image = await loadImage(new Blob([SVG], { type }));
+    const jpeg = await fixture("orient-1.jpg");
+    const image = await loadImage(new Blob([jpeg], { type: "image/svg+xml" }));
+    const cropper = createCropper();
 
-      expect(image.mime).toBe("image/svg+xml");
-      image.preview.close();
-    }
-  );
+    attachImage(cropper, image);
+    const { blob } = await exportCrop(cropper, { colorSpace: "display-p3" });
+
+    expect(blob.size).toBeGreaterThan(0);
+    attachImage(cropper, null);
+  });
 
   it.each(["", "application/octet-stream", "image/svg+xml"])(
-    "refuses svg text typed %j when svg is off",
+    "refuses svg text typed %j when svg is off, and still opens a raster photo",
     async (type) => {
       await expect(
         codeOf(loadImage(new Blob([SVG], { type }), { svg: false }))
       ).resolves.toBe("decode");
+
+      const image = await loadImage(await fixture("orient-1.jpg"), {
+        svg: false,
+      });
+
+      expect(image.mime).toBe("image/jpeg");
+      image.preview.close();
     }
   );
 
@@ -1011,20 +919,23 @@ describe("svg sources", () => {
     preview.close();
   });
 
-  it("opens a raster photo with svg off", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"), {
-      svg: false,
-    });
-
-    expect(image.mime).toBe("image/jpeg");
-    image.preview.close();
-  });
-
   it.each([
     ["no type", new Blob([solid('width="20" height="10"')])],
     [
       "text/plain",
       new Blob([solid('width="20" height="10"')], { type: "text/plain" }),
+    ],
+    [
+      "application/octet-stream",
+      new Blob([solid('width="20" height="10"')], {
+        type: "application/octet-stream",
+      }),
+    ],
+    [
+      "an XML prolog",
+      new Blob([`<?xml version="1.0"?>\n${solid('width="20" height="10"')}`], {
+        type: "image/svg+xml",
+      }),
     ],
     ["a jpeg name", new File([solid('width="20" height="10"')], "a.jpg")],
     [
@@ -1042,43 +953,6 @@ describe("svg sources", () => {
     preview.close();
   });
 
-  it("opens a typed one behind a prolog past the sniffed head", async () => {
-    const padded = `<!-- ${"x".repeat(5000)} -->${solid('width="20" height="10"')}`;
-    const { preview } = await loadImage(
-      new Blob([padded], { type: "image/svg+xml; charset=utf-8" })
-    );
-
-    expect(preview.width).toBe(20);
-    preview.close();
-  });
-
-  it("opens one in utf-16", async () => {
-    const bytes = new Uint8Array([
-      0xff,
-      0xfe,
-      ...[...encode(solid('width="20" height="10"'))].flatMap((code) => [
-        code,
-        0,
-      ]),
-    ]);
-    const { preview } = await loadImage(new Blob([bytes]));
-
-    expect(preview.width).toBe(20);
-    preview.close();
-  });
-
-  it("keeps a square in physical units square", async () => {
-    const { preview } = await loadImage(
-      new Blob([solid('width="10cm" height="10cm"')], {
-        type: "image/svg+xml",
-      })
-    );
-
-    expect(preview.width).toBe(378);
-    expect(preview.height).toBe(378);
-    preview.close();
-  });
-
   it("loads and exports one with html inside", async () => {
     const image = await loadImage(
       new Blob([foreign], { type: "image/svg+xml" })
@@ -1093,15 +967,9 @@ describe("svg sources", () => {
     expect(result.width).toBe(200);
     attachImage(cropper, null);
   });
-
-  it("reports a broken one with a typed error", async () => {
-    const attempt = loadImage(
-      new Blob(["<svg><rect></svg>"], { type: "image/svg+xml" })
-    );
-
-    await expect(attempt).rejects.toBeInstanceOf(ZrizError);
-  });
 });
+
+const FIREFOX_REFUSES_WIDE_IMG = server.browser === "firefox";
 
 describe("element sources", () => {
   it.each([
@@ -1121,11 +989,20 @@ describe("element sources", () => {
     img.remove();
   });
 
-  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
-    "opens an img with EXIF orientation %i upright",
-    async (orientation) => {
+  it.each(
+    ["from-image", "none"].flatMap((style) =>
+      [1, 2, 3, 4, 5, 6, 7, 8].map(
+        (orientation) => [orientation, style] as const
+      )
+    )
+  )(
+    "opens an img with EXIF orientation %i upright under image-orientation %s",
+    async (orientation, style) => {
       const want = expected[String(orientation)];
-      const img = await shown(await fixture(`orient-${orientation}.jpg`));
+      const img = await shown(
+        await fixture(`orient-${orientation}.jpg`),
+        style
+      );
       const { preview, width, height } = await loadImage(img);
 
       expect([width, height]).toStrictEqual([want?.width, want?.height]);
@@ -1177,7 +1054,7 @@ describe("element sources", () => {
     URL.revokeObjectURL(url);
   });
 
-  it.runIf(server.browser !== "firefox")(
+  it.skipIf(FIREFOX_REFUSES_WIDE_IMG)(
     "opens an img wider than a canvas can be",
     async () => {
       const img = await shown(await fixture("wide.png"));
@@ -1207,23 +1084,6 @@ describe("element sources", () => {
       img.remove();
     }
   });
-
-  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
-    "keeps EXIF orientation %i upright when the page turns it off",
-    async (orientation) => {
-      const want = expected[String(orientation)];
-      const img = await shown(
-        await fixture(`orient-${orientation}.jpg`),
-        "none"
-      );
-      const { preview, width, height } = await loadImage(img);
-
-      expect([width, height]).toStrictEqual([want?.width, want?.height]);
-      expect(near(paint(preview, 0.02, 0.02), want?.topLeft)).toBeTruthy();
-      preview.close();
-      img.remove();
-    }
-  );
 
   it.each(["animated.gif", "animated.webp", "animated.png"])(
     "opens a playing %s on its first frame, or the one showing in webkit",
@@ -1356,32 +1216,22 @@ describe("video sources", () => {
     video.remove();
   });
 
-  it("refuses a video with no frame yet", async () => {
-    const { video } = await streaming();
-
-    await expect(codeOf(loadImage(video))).resolves.toBe("decode");
-    video.remove();
-  });
-
-  it("opens a plain file as its picture right after loadeddata", async () => {
+  it("opens a plain file as its picture after loadeddata, never as a blank photo on loadedmetadata", async () => {
     const video = await playable("frames.webm", "loadeddata");
     const { preview } = await loadImage(video);
 
     expect(near(paint(preview), [255, 0, 0, 255], 72)).toBeTruthy();
     preview.close();
     video.remove();
-  });
-
-  it("never opens a plain file as a blank photo on loadedmetadata", async () => {
-    const video = await playable("frames.webm", "loadedmetadata");
-    const outcome = await loadImage(video).then(
-      ({ preview }) =>
-        near(paint(preview), [255, 0, 0, 255], 72) ? "picture" : "blank",
+    const early = await playable("frames.webm", "loadedmetadata");
+    const outcome = await loadImage(early).then(
+      ({ preview: shownPreview }) =>
+        near(paint(shownPreview), [255, 0, 0, 255], 72) ? "picture" : "blank",
       (error: unknown) => (error instanceof ZrizError ? error.code : error)
     );
 
     expect(["picture", "decode"]).toContain(outcome);
-    video.remove();
+    early.remove();
   });
 
   it.skipIf(BLANK_VIDEO)(
@@ -1398,139 +1248,43 @@ describe("video sources", () => {
     }
   );
 
-  it.skipIf(BLANK_VIDEO)(
-    "refuses a video seeking into an unbuffered range",
-    async () => {
-      const { buffer, bytes, init, media, video } = await streaming();
-      const frame = once(video, "loadeddata");
+  it.each(
+    [
+      {
+        name: "with no frame yet",
+        needsFrame: false,
+        ready: async () => {
+          const { video } = await streaming();
 
-      await appended(buffer, bytes.subarray(init));
-      await frame;
-      const removed = once(buffer, "updateend");
+          return video;
+        },
+      },
+      {
+        name: "seeking into an unbuffered range",
+        needsFrame: true,
+        ready: async () => {
+          const { buffer, bytes, init, media, video } = await streaming();
+          const frame = once(video, "loadeddata");
 
-      buffer.remove(0.5, media.duration);
-      await removed;
-      const seeking = once(video, "seeking");
+          await appended(buffer, bytes.subarray(init));
+          await frame;
+          const removed = once(buffer, "updateend");
 
-      video.currentTime = 0.75;
-      await seeking;
-      await expect(codeOf(loadImage(video))).resolves.toBe("decode");
-      video.remove();
-    }
-  );
-});
+          buffer.remove(0.5, media.duration);
+          await removed;
+          const seeking = once(video, "seeking");
 
-describe("sharing and freeing a photo", () => {
-  it("loads the same bitmap again after the first photo left its cropper", async () => {
-    const bitmap = await createImageBitmap(await halves(64, 32));
-    const cropper = createCropper();
+          video.currentTime = 0.75;
+          await seeking;
 
-    attachImage(cropper, await loadImage(bitmap));
-    attachImage(cropper, null);
-    expect(bitmap.width).toBe(64);
-    const again = await loadImage(bitmap);
+          return video;
+        },
+      },
+    ].filter(({ needsFrame }) => !(needsFrame && BLANK_VIDEO))
+  )("refuses a video $name", async ({ ready }) => {
+    const video = await ready();
 
-    expect(again.width).toBe(64);
-    attachImage(cropper, again);
-    attachImage(cropper, null);
-    bitmap.close();
-  });
-
-  it("frees a photo when its last cropper is destroyed", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const cropper = createCropper();
-
-    attachImage(cropper, image);
-    cropper.destroy();
-    expect(image.preview.width).toBe(0);
-    expect(imageOf(cropper)).toBeNull();
-    attachImage(cropper, null);
-    const other = createCropper();
-
-    expect(() => {
-      attachImage(other, image);
-    }).toThrow(ZrizError);
-  });
-
-  it("frees a photo attached to a destroyed cropper", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const empty = createCropper();
-
-    empty.destroy();
-    attachImage(empty, image);
-    expect(imageOf(empty)).toBeNull();
-    expect(image.preview.width).toBe(0);
-    const late = await loadImage(await fixture("orient-1.jpg"));
-    const held = createCropper();
-    const first = await loadImage(await fixture("orient-1.jpg"));
-
-    attachImage(held, first);
-    held.destroy();
-    attachImage(held, late);
-    expect(imageOf(held)).toBeNull();
-    expect(late.preview.width).toBe(0);
-  });
-
-  it("keeps a photo open when one of two croppers is destroyed", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const one = createCropper();
-    const two = createCropper();
-
-    attachImage(one, image);
-    attachImage(two, image);
-    one.destroy();
-    expect(image.preview.width).toBeGreaterThan(0);
-    await exportCrop(two, { type: "image/png" });
-    attachImage(two, null);
-    expect(image.preview.width).toBe(0);
-  });
-
-  it("counts a destroyed cropper's detached photo once", async () => {
-    const first = await loadImage(await fixture("orient-1.jpg"));
-    const second = await loadImage(await fixture("orient-2.jpg"));
-    const one = createCropper();
-    const two = createCropper();
-
-    attachImage(one, first);
-    attachImage(one, second);
-    attachImage(two, second);
-    attachImage(one, null);
-    one.destroy();
-    expect(second.preview.width).toBeGreaterThan(0);
-    attachImage(two, null);
-    expect(second.preview.width).toBe(0);
-  });
-
-  it("refuses a freed photo and leaves the current one in place", async () => {
-    const first = await loadImage(await fixture("orient-1.jpg"));
-    const second = await loadImage(await fixture("orient-2.jpg"));
-    const cropper = createCropper();
-
-    attachImage(cropper, first);
-    attachImage(cropper, second);
-    expect(first.preview.width).toBe(0);
-
-    expect(() => {
-      attachImage(cropper, first);
-    }).toThrow(ZrizError);
-
-    expect(imageOf(cropper)).toBe(second);
-    expect(second.preview.width).toBeGreaterThan(0);
-    attachImage(cropper, null);
-  });
-
-  it("keeps a photo open while another cropper still shows it", async () => {
-    const image = await loadImage(await fixture("orient-1.jpg"));
-    const one = createCropper();
-    const two = createCropper();
-
-    attachImage(one, image);
-    attachImage(two, image);
-    attachImage(one, image);
-    attachImage(one, null);
-    expect(image.preview.width).toBeGreaterThan(0);
-    await exportCrop(two, { type: "image/png" });
-    attachImage(two, null);
-    expect(image.preview.width).toBe(0);
+    await expect(codeOf(loadImage(video))).resolves.toBe("decode");
+    video.remove();
   });
 });

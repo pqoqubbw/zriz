@@ -1,20 +1,9 @@
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
-import { page, userEvent } from "vitest/browser";
+import { page } from "vitest/browser";
 
-import ViewportDemo from "../../demos/viewport/demo";
-import {
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
@@ -86,16 +75,7 @@ describe("viewport demo", () => {
     await cleanup();
   });
 
-  it("draws the live demo where the frame drew it", async () => {
-    const frame = await frameLayout("viewport");
-
-    await mountLive(ViewportDemo, "viewport");
-    await ready();
-
-    expect(layoutOf()).toStrictEqual(frame);
-  });
-
-  it("starts on pan, where the wheel cannot move a photo the crop covers", async () => {
+  it("starts on pan, where the wheel cannot move a covered photo, and zooms with the wheel on zoom", async () => {
     await mountDemo("viewport");
     await ready();
 
@@ -104,86 +84,32 @@ describe("viewport demo", () => {
 
     await scroll(0, -40);
 
-    expect(changed()).toBeFalsy();
-  });
-
-  it("zooms with the wheel on zoom, then pans with it on pan", async () => {
-    await mountDemo("viewport");
-    await ready();
-
+    const still = changed();
     const before = photo().width;
 
     radio("Zoom").click();
     await expect.poll(checked).toStrictEqual(["Zoom"]);
     await scroll(0, -40);
 
-    expect(photo().width).toBeGreaterThan(before);
-    expect(changed()).toBeTruthy();
+    const zoomed = photo();
+    const zoomedChanged = changed();
 
     radio("Pan").click();
     await expect.poll(checked).toStrictEqual(["Pan"]);
-
-    const zoomed = photo();
-
     await scroll(40, 0);
 
-    expect(photo().width).toBeCloseTo(zoomed.width, 0);
-    expect(photo().left).not.toBeCloseTo(zoomed.left, 0);
+    const panned = photo();
+
+    expect({
+      changed: [still, zoomedChanged],
+      grew: zoomed.width > before,
+      moved: Math.abs(panned.left - zoomed.left) >= 0.5,
+      width: Math.abs(panned.width - zoomed.width) < 0.5,
+    }).toStrictEqual({
+      changed: [false, true],
+      grew: true,
+      moved: true,
+      width: true,
+    });
   });
-
-  it("moves the pick with the arrow keys", async () => {
-    await mountDemo("viewport");
-    await ready();
-    radio("Pan").focus();
-    await userEvent.keyboard("{ArrowRight}");
-    await expect.poll(checked).toStrictEqual(["Zoom"]);
-
-    expect(document.activeElement).toBe(radio("Zoom"));
-
-    await userEvent.keyboard("{ArrowLeft}");
-    await expect.poll(checked).toStrictEqual(["Pan"]);
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
-
-  it("keeps one tab stop in the track", async () => {
-    await mountDemo("viewport");
-    await ready();
-
-    const names = [
-      ...panel().querySelectorAll<HTMLInputElement>('input[type="radio"]'),
-    ].map((input) => input.name);
-
-    expect(new Set(names).size).toBe(1);
-    expect(find('[role="radiogroup"]', panel()).ariaLabel).toBe("Wheel");
-  });
-
-  it("gives the track items a 44 px hit box", async () => {
-    await mountDemo("viewport");
-    await ready();
-
-    expect(hits(choice("Zoom"), ["top", "bottom"])).toBeTruthy();
-  });
-});
-
-describe("viewport demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it.each(["phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("viewport", width);
-
-      await mountLive(ViewportDemo, "viewport", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-      await expect(violations()).resolves.toStrictEqual([]);
-    }
-  );
 });

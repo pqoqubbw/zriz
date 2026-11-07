@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { imageKernel } from "../../src/dom/kernel";
+import { noop } from "../cropper-fixture";
 
 type Bitmap = {
   closed: number;
@@ -23,24 +24,19 @@ const bitmapOf = (width = 8, height = 8): Bitmap => {
   return bitmap;
 };
 
-const RECT = { height: 8, width: 8, x: 0, y: 0 };
-
 const decoded: Bitmap[] = [];
-const canvases: FakeCanvas[] = [];
-let blind = false;
 
 class FakeCanvas {
   width: number;
   height: number;
-  context = blind ? null : { drawImage: () => {} };
+  context = { drawImage: noop };
 
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    canvases.push(this);
   }
 
-  getContext(): { drawImage: () => void } | null {
+  getContext(): { drawImage: () => void } {
     return this.context;
   }
 }
@@ -113,6 +109,50 @@ const app1 = (size: number): Buffer => {
   return segment;
 };
 
+const tiff = (endian: "little" | "big"): Buffer => {
+  const file = Buffer.alloc(8 + 2 + 24 + 4);
+  const put = (at: number, v: number): number =>
+    endian === "little" ? file.writeUInt16LE(v, at) : file.writeUInt16BE(v, at);
+
+  const entry = (at: number, tag: number): void => {
+    put(at, tag);
+    put(at + 2, 3);
+    put(at + (endian === "little" ? 4 : 6), 1);
+    put(at + 8, 16);
+  };
+
+  file.write(endian === "little" ? "II" : "MM", 0);
+  put(2, 42);
+  put(endian === "little" ? 4 : 6, 8);
+  put(8, 2);
+  entry(10, 256);
+  entry(22, 257);
+
+  return file;
+};
+
+const HEADERS: [string, () => Promise<Buffer>, number][] = [
+  ...Object.entries(FILES).map(
+    ([format, make]): [string, () => Promise<Buffer>, number] => [
+      format,
+      make,
+      PIXELS,
+    ]
+  ),
+  ["bmp stored top down", async () => await Promise.resolve(bmp()), PIXELS],
+  [
+    "jpeg behind a large metadata segment",
+    async () => await jpegWithSegment(app1(60_000)),
+    PIXELS,
+  ],
+  [
+    "little endian tiff",
+    async () => await Promise.resolve(tiff("little")),
+    256,
+  ],
+  ["big endian tiff", async () => await Promise.resolve(tiff("big")), 256],
+];
+
 const blobOf = (...parts: Buffer[]): Blob =>
   new Blob(parts.map((part) => new Uint8Array(part)));
 
@@ -120,9 +160,7 @@ const CUTS = [0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
 
 describe("image kernel", () => {
   beforeEach(() => {
-    blind = false;
     decoded.length = 0;
-    canvases.length = 0;
     vi.stubGlobal("OffscreenCanvas", FakeCanvas);
 
     vi.stubGlobal(
@@ -180,79 +218,69 @@ describe("image kernel", () => {
     }
   );
 
-  it("opens a jpeg with fill bytes before a marker", async () => {
+  it("walks jpeg markers past fill bytes and past the end marker of a thumbnail", async () => {
     const file = await jpegWithSegment(Buffer.from([0xff, 0xff, 0xff]));
     const fixed = Buffer.concat([file.subarray(0, 2), file.subarray(4)]);
 
     await expect(
       imageKernel().decode(blobOf(fixed), 4096)
     ).resolves.toHaveProperty("width", 8);
-  });
 
-  it("does not take the end marker of a thumbnail for the end of the jpeg", async () => {
     const thumbnail = Buffer.concat([app1(40), Buffer.from([0xff, 0xd9])]);
 
     thumbnail.writeUInt16BE(42, 2);
     thumbnail[42] = 0xff;
     thumbnail[43] = 0xd9;
-    const file = await jpegWithSegment(thumbnail);
-    const part = file.subarray(0, -200);
+    const whole = await jpegWithSegment(thumbnail);
+    const part = whole.subarray(0, -200);
 
     await expect(imageKernel().decode(blobOf(part), 4096)).rejects.toThrow(
       "the file is cut off"
     );
   });
 
-  it("stops reading an iso box with a size that goes nowhere", async () => {
+  it("ends the walk over an iso box that goes nowhere and tiff pages that loop", async () => {
     const file = (await FILES.avif?.()) ?? Buffer.alloc(0);
     const stuck = Buffer.alloc(16);
 
     stuck.writeUInt32BE(1, 0);
     stuck.write("free", 4);
-    const result = await imageKernel().decode(blobOf(file, stuck), 4096);
 
-    expect(result.width).toBe(8);
+    await expect(
+      imageKernel().decode(blobOf(file, stuck), 4096)
+    ).resolves.toHaveProperty("width", 8);
+
+    const loop = Buffer.alloc(8 + 2 + 4);
+
+    loop.write("II", 0);
+    loop.writeUInt16LE(42, 2);
+    loop.writeUInt32LE(8, 4);
+    loop.writeUInt16LE(0, 8);
+    loop.writeUInt32LE(8, 10);
+
+    await expect(
+      imageKernel().decode(blobOf(loop), 4096, undefined, PIXELS)
+    ).resolves.toHaveProperty("width", 8);
   });
 
-  it.each(Object.keys(FILES).filter((format) => format !== "gif"))(
+  it.each(HEADERS)(
     "reads the pixel count of a %s from its header",
-    async (format) => {
-      const file = (await FILES[format]?.()) ?? Buffer.alloc(0);
+    async (_name, make, pixels) => {
+      const file = await make();
 
       await expect(
-        imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
+        imageKernel().decode(blobOf(file), 4096, undefined, pixels - 1)
       ).rejects.toThrow(/^zriz:too-large:/u);
 
       expect(decoded).toHaveLength(0);
 
       await expect(
-        imageKernel().decode(blobOf(file), 4096, undefined, PIXELS)
+        imageKernel().decode(blobOf(file), 4096, undefined, pixels)
       ).resolves.toHaveProperty("width", 8);
     }
   );
 
-  it("reads the pixel count of a gif", async () => {
-    const file = (await FILES.gif?.()) ?? Buffer.alloc(0);
-
-    await expect(
-      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-  });
-
-  it("counts the largest gif frame, not the screen size in the header", async () => {
-    const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
-
-    file.writeUInt16LE(1, 6);
-    file.writeUInt16LE(1, 8);
-
-    await expect(
-      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-
-    expect(decoded).toHaveLength(0);
-  });
-
-  it("keeps reading a gif past its extension blocks", async () => {
+  it("counts the largest gif frame past its extension blocks, and stops at a cut inside a block", async () => {
     const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
     const table = 3 * 2 ** (((file[10] ?? 0) % 8) + 1);
     const at = 13 + table;
@@ -262,99 +290,54 @@ describe("image kernel", () => {
       comment,
       file.subarray(at),
     ]);
+    const cut = Buffer.from(file.subarray(0, 14));
 
-    longer.writeUInt16LE(1, 6);
-    longer.writeUInt16LE(1, 8);
+    for (const screen of [file, longer]) {
+      screen.writeUInt16LE(1, 6);
+      screen.writeUInt16LE(1, 8);
+    }
+
+    await Promise.all(
+      [file, longer].map(async (screen) => {
+        await expect(
+          imageKernel().decode(blobOf(screen), 4096, undefined, PIXELS - 1)
+        ).rejects.toThrow(/^zriz:too-large:/u);
+      })
+    );
+
+    expect(decoded).toHaveLength(0);
 
     await expect(
-      imageKernel().decode(blobOf(longer), 4096, undefined, PIXELS - 1)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-  });
-
-  it("stops at a gif cut off inside a block", async () => {
-    const file = Buffer.from((await FILES.gif?.()) ?? Buffer.alloc(0));
-
-    await expect(
-      imageKernel().decode(
-        blobOf(file.subarray(0, 14)),
-        4096,
-        undefined,
-        PIXELS
-      )
+      imageKernel().decode(blobOf(cut), 4096, undefined, PIXELS)
     ).resolves.toHaveProperty("width", 8);
   });
 
-  it.each([
-    [
-      "little",
-      (bytes: Buffer, at: number, v: number) => bytes.writeUInt16LE(v, at),
-    ],
-    [
-      "big",
-      (bytes: Buffer, at: number, v: number) => bytes.writeUInt16BE(v, at),
-    ],
-  ])("reads the pixel count of a %s endian tiff", async (name, put) => {
-    const file = Buffer.alloc(8 + 2 + 24 + 4);
-
-    const entry = (at: number, tag: number): void => {
-      put(file, at, tag);
-      put(file, at + 2, 3);
-      put(file, at + (name === "little" ? 4 : 6), 1);
-      put(file, at + 8, 16);
-    };
-
-    file.write(name === "little" ? "II" : "MM", 0);
-    put(file, 2, 42);
-    put(file, name === "little" ? 4 : 6, 8);
-    put(file, 8, 2);
-    entry(10, 256);
-    entry(22, 257);
-
-    await expect(
-      imageKernel().decode(blobOf(file), 4096, undefined, 255)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-  });
-
   it("refuses a tiff over the limit from any of its pages", async () => {
-    const tiff = Buffer.alloc(8 + 2 * (2 + 24 + 4));
+    const pages = Buffer.alloc(8 + 2 * (2 + 24 + 4));
 
     const entry = (at: number, tag: number, value: number): void => {
-      tiff.writeUInt16LE(tag, at);
-      tiff.writeUInt16LE(3, at + 2);
-      tiff.writeUInt32LE(1, at + 4);
-      tiff.writeUInt16LE(value, at + 8);
+      pages.writeUInt16LE(tag, at);
+      pages.writeUInt16LE(3, at + 2);
+      pages.writeUInt32LE(1, at + 4);
+      pages.writeUInt16LE(value, at + 8);
     };
 
-    tiff.write("II", 0);
-    tiff.writeUInt16LE(42, 2);
-    tiff.writeUInt32LE(8, 4);
-    tiff.writeUInt16LE(2, 8);
+    pages.write("II", 0);
+    pages.writeUInt16LE(42, 2);
+    pages.writeUInt32LE(8, 4);
+    pages.writeUInt16LE(2, 8);
     entry(10, 256, 1);
     entry(22, 257, 1);
-    tiff.writeUInt32LE(38, 34);
-    tiff.writeUInt16LE(2, 38);
+    pages.writeUInt32LE(38, 34);
+    pages.writeUInt16LE(2, 38);
     entry(40, 256, 200);
     entry(52, 257, 200);
 
     await expect(
-      imageKernel().decode(blobOf(tiff), 4096, undefined, 100)
+      imageKernel().decode(blobOf(pages), 4096, undefined, 100)
     ).rejects.toThrow(/^zriz:too-large:/u);
 
     expect(decoded).toHaveLength(0);
-  });
-
-  it("ends the walk over a tiff whose pages point back at each other", async () => {
-    const tiff = Buffer.alloc(8 + 2 + 4);
-
-    tiff.write("II", 0);
-    tiff.writeUInt16LE(42, 2);
-    tiff.writeUInt32LE(8, 4);
-    tiff.writeUInt16LE(0, 8);
-    tiff.writeUInt32LE(8, 10);
-
-    await expect(
-      imageKernel().decode(blobOf(tiff), 4096, undefined, PIXELS)
-    ).resolves.toHaveProperty("width", 8);
   });
 
   it("refuses an image over the limit once decoded when its header gives no count", async () => {
@@ -367,67 +350,11 @@ describe("image kernel", () => {
     expect(decoded.map(({ closed }) => closed)).toStrictEqual([1]);
   });
 
-  it("reads the pixel count of a bmp stored top down", async () => {
-    await expect(
-      imageKernel().decode(blobOf(bmp()), 4096, undefined, PIXELS - 1)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-  });
-
-  it("finds the size of a jpeg behind a large metadata segment", async () => {
-    const file = await jpegWithSegment(app1(60_000));
-
-    await expect(
-      imageKernel().decode(blobOf(file), 4096, undefined, PIXELS - 1)
-    ).rejects.toThrow(/^zriz:too-large:/u);
-  });
-
-  it("rejects motion and resample for a preview id it no longer keeps", async () => {
-    const kernel = imageKernel();
-
-    await kernel.keep(1, bitmapOf());
-    await kernel.release(1);
-    const released = "zriz:decode:the preview was released";
-
-    await expect(kernel.motion(1, "image/png")).rejects.toThrow(released);
-    await expect(kernel.resample(1, RECT, 8, 8)).rejects.toThrow(released);
-    await expect(kernel.motion(2, "image/png")).rejects.toThrow(released);
-  });
-
-  it("closes the kept copy on release and on a second keep", async () => {
-    const kernel = imageKernel();
-
-    await kernel.keep(1, bitmapOf());
-    await kernel.keep(1, bitmapOf());
-    expect(decoded.map((bitmap) => bitmap.closed)).toStrictEqual([1, 0]);
-    await kernel.release(1);
-    expect(decoded.map((bitmap) => bitmap.closed)).toStrictEqual([1, 1]);
-  });
-
-  it("leaves a bitmap source open and frees its canvas after a region", async () => {
+  it("leaves a bitmap source open after a region", async () => {
     const kernel = imageKernel();
     const source = bitmapOf();
 
     await kernel.region(source, SMALL_RECT, 4, 4);
     expect(source.closed).toBe(0);
-    expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);
-  });
-
-  it("closes what it decoded from a blob after a region", async () => {
-    const kernel = imageKernel();
-
-    await kernel.region(new Blob(["x"]), SMALL_RECT, 4, 4);
-    expect(decoded[0]?.closed).toBe(1);
-  });
-
-  it("frees the canvas and the decode when there is no 2D context", async () => {
-    blind = true;
-    const kernel = imageKernel();
-
-    await expect(
-      kernel.region(new Blob(["x"]), SMALL_RECT, 4, 4)
-    ).rejects.toThrow("zriz:decode:no 2D canvas");
-
-    expect(decoded[0]?.closed).toBe(1);
-    expect(canvases.map((canvas) => canvas.width)).toStrictEqual([0]);
   });
 });

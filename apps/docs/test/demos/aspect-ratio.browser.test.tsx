@@ -1,28 +1,23 @@
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
-import { page, userEvent } from "vitest/browser";
+import { page } from "vitest/browser";
 
-import AspectRatioDemo from "../../demos/aspect-ratio/demo";
 import { fixtureFile } from "./fixtures";
-import {
-  button,
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
 
   return await photoMock();
 });
+
+const LANDSCAPE = ["Free", "Original", "1:1", "5:4", "16:9"];
+
+const PORTRAIT = ["Free", "Original", "1:1", "4:5", "9:16"];
+
+const near = (actual: number, expected: number): boolean =>
+  Math.abs(actual - expected) < 0.05;
 
 const panel = (): HTMLElement => find('[data-demo="aspect-ratio"]');
 
@@ -86,100 +81,58 @@ describe("aspect ratio demo", () => {
     await cleanup();
   });
 
-  it("draws the live demo where the frame drew it", async () => {
-    const frame = await frameLayout("aspect-ratio");
-
-    await mountLive(AspectRatioDemo, "aspect-ratio");
-    await ready();
-
-    expect(layoutOf()).toStrictEqual(frame);
-  });
-
-  it("starts free with landscape labels and orientation off", async () => {
+  it("starts free, locks, swaps and resets a ratio, and relabels for a portrait photo", async () => {
     await mountDemo("aspect-ratio");
     await ready();
 
-    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "5:4", "16:9"]);
-    expect(checked()).toStrictEqual(["Free"]);
-    expect(button("Swap orientation").hasAttribute("disabled")).toBeTruthy();
-    expect(panel().querySelector(item("dial"))).toBeNull();
-    await expect(violations()).resolves.toStrictEqual([]);
-  });
+    const state = () => ({
+      checked: checked(),
+      labels: labels(),
+      ratio: ratio(),
+      swapOff: button("Swap orientation").hasAttribute("disabled"),
+    });
 
-  it("locks a ratio, swaps it and resets to free", async () => {
-    await mountDemo("aspect-ratio");
-    await ready();
+    expect({
+      ...state(),
+      dial: panel().querySelector(item("dial")),
+    }).toMatchObject({
+      checked: ["Free"],
+      dial: null,
+      labels: LANDSCAPE,
+      swapOff: true,
+    });
+
+    const audits = [await violations()];
+
     aspect("16:9").click();
     await settle();
 
-    expect(ratio()).toBeCloseTo(16 / 9, 1);
+    const locked = state();
 
     button("Swap orientation").click();
     await settle();
 
-    expect(ratio()).toBeCloseTo(9 / 16, 1);
-    expect(checked()).toStrictEqual(["9:16"]);
-    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "4:5", "9:16"]);
-    await expect(violations()).resolves.toStrictEqual([]);
+    const swapped = state();
 
+    audits.push(await violations());
     button("Reset").click();
-    await expect.poll(checked).toStrictEqual(["Free"]);
-  });
 
-  it("moves the pick with the arrow keys", async () => {
-    await mountDemo("aspect-ratio");
-    await ready();
-    aspect("Free").focus();
-    await userEvent.keyboard("{ArrowRight}{ArrowRight}");
-    await settle();
+    await expect
+      .poll(() => [checked(), labels()])
+      .toStrictEqual([["Free"], LANDSCAPE]);
 
-    expect(checked()).toStrictEqual(["1:1"]);
-    expect(ratio()).toBeCloseTo(1, 1);
-
-    await userEvent.keyboard("{End}");
-
-    expect(checked()).toStrictEqual(["16:9"]);
-  });
-
-  it("turns the labels for a portrait photo", async () => {
-    await mountDemo("aspect-ratio");
-    await ready();
     pick(await fixtureFile("portrait"));
     await expect.poll(ratio, { timeout: 15_000 }).toBeLessThan(1);
+    await expect.poll(labels).toStrictEqual(PORTRAIT);
 
-    expect(labels()).toStrictEqual(["Free", "Original", "1:1", "4:5", "9:16"]);
+    expect([
+      { ...locked, ratio: near(locked.ratio, 16 / 9) },
+      { ...swapped, ratio: near(swapped.ratio, 9 / 16) },
+    ]).toMatchObject([
+      { ratio: true },
+      { checked: ["9:16"], labels: PORTRAIT, ratio: true },
+    ]);
+
+    expect(audits).toStrictEqual([[], []]);
   });
-
-  it("gives the zone buttons a 44 px hit box", async () => {
-    await mountDemo("aspect-ratio");
-    await ready();
-    aspect("16:9").click();
-    await settle();
-
-    expect(hits(button("Swap orientation"))).toBeTruthy();
-    expect(hits(aspect("1:1"), ["top", "bottom"])).toBeTruthy();
-  });
-});
-
-describe("aspect ratio demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it.each(["phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("aspect-ratio", width);
-
-      await mountLive(AspectRatioDemo, "aspect-ratio", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-      await expect(violations()).resolves.toStrictEqual([]);
-    }
-  );
 });

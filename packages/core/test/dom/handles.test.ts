@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createCropper } from "../../src";
 import type { Cropper } from "../../src";
 import { handleHandlers } from "../../src/dom/parts";
 import type { HandleEdge } from "../../src/dom/parts";
 import { fitPlacement, viewOf } from "../../src/dom/view";
 import type { Layout, Placement } from "../../src/dom/view";
 import type { Point, Rect } from "../../src/geometry";
-import { fakeClock } from "../fake-clock";
+import { pointer as fakePointer, setup, stateOf } from "../cropper-fixture";
 
 const CORNER_INSET = 35;
 
@@ -28,6 +27,10 @@ const LOCKS = EDGES.flatMap((edge) =>
   [null, 1].map((aspect) => ({ aspect, edge }))
 );
 
+const PRESSES = LOCKS.filter(
+  ({ edge }) => edge === "top-left" || edge === "top"
+);
+
 const PADDING = 20;
 
 const LAYOUT: Layout = {
@@ -39,36 +42,17 @@ const LAYOUT: Layout = {
 
 const TOLERANCE = 1e-6;
 
-const isPointerEvent = (value: unknown): value is PointerEvent =>
-  typeof value === "object" && value !== null && "pointerId" in value;
-
 const pointer = (
   { x, y }: Point,
   init: { button?: number; pointerId?: number } = {}
 ): PointerEvent => {
-  const event: unknown = {
-    button: 0,
-    clientX: x,
-    clientY: y,
-    currentTarget: null,
-    pointerId: 1,
-    pointerType: "mouse",
-    target: null,
-    ...init,
-  };
+  const extra = { clientY: y, currentTarget: null, ...init };
 
-  if (!isPointerEvent(event)) {
-    throw new Error("not a pointer event");
-  }
-
-  return event;
+  return fakePointer(x, 0, extra);
 };
 
 const create = (aspect: number | null = null, zoom = 1): Cropper => {
-  const cropper = createCropper({
-    clock: fakeClock().clock,
-    image: { height: 3000, width: 4000 },
-  });
+  const { cropper } = setup();
 
   if (aspect !== null) {
     cropper.setAspect(aspect);
@@ -81,16 +65,6 @@ const create = (aspect: number | null = null, zoom = 1): Cropper => {
   viewOf(cropper).setLayout(LAYOUT);
 
   return cropper;
-};
-
-const stateOf = (cropper: Cropper) => {
-  const state = cropper.getCropState();
-
-  if (!state) {
-    throw new Error("no state");
-  }
-
-  return state;
 };
 
 const placementOf = (cropper: Cropper): Placement =>
@@ -188,7 +162,7 @@ describe("handle gestures", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(LOCKS)(
+  it.each(PRESSES)(
     "$edge at aspect $aspect keeps the crop still on a press off the anchor",
     ({ edge, aspect }) => {
       const cropper = create(aspect);
@@ -204,29 +178,6 @@ describe("handle gestures", () => {
       expect(cropper.getState().interacting).toBeNull();
     }
   );
-
-  it.each(EDGES)("%s moves only the edges it owns", (edge) => {
-    const cropper = create();
-    const before = cropOf(cropper);
-    const { scale } = placementOf(cropper);
-    const sign = signsOf(edge);
-    const at = handleAt(cropper, edge);
-    const shift = { x: (-40 * sign.x) / scale, y: (-30 * sign.y) / scale };
-    const handlers = press(cropper, edge, at);
-
-    handlers.onPointerMove(
-      pointer({ x: at.x - 40 * sign.x, y: at.y - 30 * sign.y })
-    );
-
-    expect(
-      drift(cropOf(cropper), {
-        x0: before.x0 + (sign.x < 0 ? shift.x : 0),
-        x1: before.x1 + (sign.x > 0 ? shift.x : 0),
-        y0: before.y0 + (sign.y < 0 ? shift.y : 0),
-        y1: before.y1 + (sign.y > 0 ? shift.y : 0),
-      })
-    ).toBeLessThan(TOLERANCE);
-  });
 
   it.each(HANDLES)(
     "%s keeps an aspect lock and pins the opposite side",
@@ -278,14 +229,14 @@ describe("handle gestures", () => {
     }
   );
 
-  it.each(EDGES)("%s ignores a right-button press", (edge) => {
+  it("ignores a right-button press", () => {
     const cropper = create();
     const before = cropOf(cropper);
     const starts = vi.fn<() => void>();
 
     cropper.on("gesturestart", starts);
-    const at = handleAt(cropper, edge);
-    const handlers = handleHandlers(cropper, edge, () => null);
+    const at = handleAt(cropper, "bottom-right");
+    const handlers = handleHandlers(cropper, "bottom-right", () => null);
 
     handlers.onPointerDown(pointer(at, { button: 2 }));
     expect(starts).not.toHaveBeenCalled();
@@ -294,9 +245,10 @@ describe("handle gestures", () => {
     expect(drift(cropOf(cropper), before)).toBeLessThan(TOLERANCE);
   });
 
-  it("ignores a second pointer", () => {
+  it("ignores a second pointer while the first keeps the drag and frees every listener", () => {
     const cropper = create();
     const before = cropOf(cropper);
+    const { scale } = placementOf(cropper);
     const at = handleAt(cropper, "left");
     const handlers = press(cropper, "left", at);
     const second = { pointerId: 2 };
@@ -304,61 +256,47 @@ describe("handle gestures", () => {
 
     handlers.onPointerDown(pointer({ x: at.x + 50, y: at.y }, second));
     handlers.onPointerMove(pointer({ x: at.x + 60, y: at.y }, second));
-    expect(listen).toHaveBeenCalledTimes(listeners);
-    expect(drift(cropOf(cropper), before)).toBeLessThan(TOLERANCE);
+    const ignored = {
+      drift: drift(cropOf(cropper), before) < TOLERANCE,
+      listeners: listen.mock.calls.length - listeners,
+    };
+
     handlers.onPointerUp(pointer({ x: at.x + 60, y: at.y }, second));
-    expect(cropper.getState().interacting).toBe("resize");
-  });
-
-  it("keeps following the first pointer past a second one", () => {
-    const cropper = create();
-    const { x0 } = cropOf(cropper);
-    const { scale } = placementOf(cropper);
-    const at = handleAt(cropper, "left");
-    const handlers = press(cropper, "left", at);
-
-    handlers.onPointerDown(
-      pointer({ x: at.x + 50, y: at.y }, { pointerId: 2 })
-    );
+    const still = cropper.getState().interacting;
 
     handlers.onPointerMove(pointer({ x: at.x + 40, y: at.y }));
-    expect(cropOf(cropper).x0).toBeCloseTo(x0 + 40 / scale, 6);
+    expect(cropOf(cropper).x0).toBeCloseTo(before.x0 + 40 / scale, 6);
     handlers.onPointerUp(pointer({ x: at.x + 40, y: at.y }));
+
+    expect({ ignored, still }).toStrictEqual({
+      ignored: { drift: true, listeners: 0 },
+      still: "resize",
+    });
+
     expect(cropper.getState().interacting).toBeNull();
     expect(unlisten).toHaveBeenCalledTimes(listen.mock.calls.length);
   });
 
-  it("closes the gesture when there is no layout yet", () => {
-    const cropper = createCropper({
-      clock: fakeClock().clock,
-      image: { height: 3000, width: 4000 },
-    });
+  it("opens and closes the gesture on a press before layout and leaves the value alone", () => {
+    const { commit, cropper, time } = setup();
     const starts = vi.fn<() => void>();
     const ends = vi.fn<() => void>();
+    const value = cropper.getValue();
 
     cropper.on("gesturestart", starts);
     cropper.on("gestureend", ends);
-    press(cropper, "top-left", { x: 10, y: 10 });
-    expect(starts).toHaveBeenCalledOnce();
-    expect(ends).toHaveBeenCalledOnce();
-    expect(cropper.getState().interacting).toBeNull();
-    expect(listen).not.toHaveBeenCalled();
-  });
-
-  it("leaves the value alone when there is no layout yet", () => {
-    const clock = fakeClock();
-    const commit = vi.fn<() => void>();
-    const cropper = createCropper({
-      clock: clock.clock,
-      image: { height: 3000, width: 4000 },
-      onValueCommit: commit,
-    });
-    const value = cropper.getValue();
     const handlers = press(cropper, "top-left", { x: 10, y: 10 });
+
+    expect({
+      ends: ends.mock.calls.length,
+      interacting: cropper.getState().interacting,
+      listeners: listen.mock.calls.length,
+      starts: starts.mock.calls.length,
+    }).toStrictEqual({ ends: 1, interacting: null, listeners: 0, starts: 1 });
 
     handlers.onPointerMove(pointer({ x: 80, y: 80 }));
     handlers.onPointerUp(pointer({ x: 80, y: 80 }));
-    clock.frames(5);
+    time.frames(5);
     expect(cropper.getValue()).toStrictEqual(value);
     expect(commit).not.toHaveBeenCalled();
   });

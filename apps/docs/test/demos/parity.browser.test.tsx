@@ -190,10 +190,6 @@ describe("demo parity with the page code", () => {
     await cleanup();
   });
 
-  it("checks at least the introduction", () => {
-    expect(CHECKED).toContain("introduction");
-  });
-
   it.each(CHECKED)("%s keeps the snippet's parts and props", async (name) => {
     const { snippet } = DEMO_SPECS[name];
 
@@ -208,6 +204,8 @@ describe("demo parity with the page code", () => {
     await render(createElement(Live));
 
     const demo = record();
+
+    expect(CHECKED).toContain("introduction");
 
     expect(differencesOf(shown, demo)).toStrictEqual(
       snippet.differences.toSorted()

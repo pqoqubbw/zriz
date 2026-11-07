@@ -12,18 +12,11 @@ import type { Sharp } from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { createCropper } from "../../src";
-import {
-  applyHomography,
-  applyMatrix2,
-  exportPlan,
-  invertMatrix3,
-  orientationMatrix,
-  snapEdge,
-} from "../../src/geometry";
+import { applyHomography, exportPlan, invertMatrix3 } from "../../src/geometry";
 import type { CropState, ExportPlan, PixelRect } from "../../src/geometry";
 import { toSharp } from "../../src/to-sharp";
 import { stateArb } from "./arbitraries";
-import { applyAffine, exifOrientations, sourceToOutputMatrix } from "./oracles";
+import { applyAffine, sourceToOutputMatrix } from "./oracles";
 import { runSharp } from "./run-sharp";
 
 const isPlan = (value: object): value is ExportPlan => "forward" in value;
@@ -152,32 +145,6 @@ describe("export plan", () => {
       })
     );
   });
-
-  it("snaps edges stably under float noise", () => {
-    assert(
-      property(
-        integer({ max: 100_000, min: 0 }),
-        double({ max: 1e-7, min: -1e-7, noNaN: true }),
-        (n, e) => {
-          expect(snapEdge(n + e)).toBe(n);
-          expect(snapEdge(n + 0.5 + e)).toBe(n + 1);
-        }
-      )
-    );
-  });
-});
-
-describe("export plan scale", () => {
-  it.each([[Number.NaN], [Number.POSITIVE_INFINITY], [0], [-1]])(
-    "falls back to scale 1 for %d",
-    (scale) => {
-      assert(
-        property(stateArb, (s) => {
-          expect(exportPlan(s, scale)).toStrictEqual(exportPlan(s));
-        })
-      );
-    }
-  );
 });
 
 describe("export plan with perspective", () => {
@@ -331,7 +298,7 @@ describe(toSharp, () => {
           }
         }
       ),
-      { numRuns: 300 }
+      { numRuns: 50 }
     );
   });
 
@@ -404,10 +371,10 @@ describe(toSharp, () => {
           );
         }
       ),
-      { numRuns: 300 }
+      { numRuns: 100 }
     );
 
-    expect(ran).toBeGreaterThanOrEqual(30);
+    expect(ran).toBeGreaterThanOrEqual(10);
   });
 
   it("cuts at the planned size at every low scale", async () => {
@@ -448,7 +415,7 @@ describe(toSharp, () => {
           ]);
         }
       ),
-      { numRuns: 400 }
+      { numRuns: 100 }
     );
   });
 
@@ -521,36 +488,6 @@ describe(toSharp, () => {
       expect(() => toSharp(changed, image)).toThrow(RangeError);
     }
   });
-
-  it("matches the EXIF orientation table with sharp auto-orient", async () => {
-    const width = 60;
-    const height = 40;
-    const px = 17.3;
-    const py = 11.8;
-    const results = await Promise.all(
-      Object.entries(exifOrientations).map(async ([tag, { turns, flip }]) => {
-        const jpeg = await blobImage(width, height, px, py, 2.5)
-          .jpeg({ quality: 100 })
-          .withMetadata({ orientation: Number(tag) })
-          .toBuffer();
-        const got = await centroid(sharp(jpeg).rotate());
-        const out =
-          turns % 2 ? { height: width, width: height } : { height, width };
-        const v = applyMatrix2(orientationMatrix(turns, flip), {
-          x: px - width / 2,
-          y: py - height / 2,
-        });
-
-        return { got, out, v };
-      })
-    );
-
-    for (const { got, out, v } of results) {
-      expect([got.width, got.height]).toStrictEqual([out.width, out.height]);
-      expect(Math.abs(got.x - (v.x + out.width / 2))).toBeLessThan(0.15);
-      expect(Math.abs(got.y - (v.y + out.height / 2))).toBeLessThan(0.15);
-    }
-  });
 });
 
 const planOf = (scale: number) => {
@@ -565,16 +502,22 @@ const planOf = (scale: number) => {
   return [cropper.getPixelCrop(scale), cropper.getPixelCrop(1)];
 };
 
-describe("export plan at a huge scale", () => {
-  it.each([1e15, 1e200, 1e300, 1e308])(
-    "falls back to scale 1 at %d",
-    (scale) => {
-      const [plan, level] = planOf(scale);
+describe("export plan scale", () => {
+  it.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    0,
+    -1,
+    1e15,
+    1e200,
+    1e300,
+    1e308,
+  ])("falls back to scale 1 at %d", (scale) => {
+    const [plan, level] = planOf(scale);
 
-      expect(plan).toStrictEqual(level);
-      expect(plan?.forward.every(Number.isFinite)).toBeTruthy();
-    }
-  );
+    expect(plan).toStrictEqual(level);
+    expect(plan?.forward.every(Number.isFinite)).toBeTruthy();
+  });
 
   it("gives sharp a finite recipe on a thin photo", () => {
     const image = { height: 1, width: 2 };

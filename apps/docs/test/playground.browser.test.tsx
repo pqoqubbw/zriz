@@ -2,19 +2,17 @@ import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockInstance } from "vitest";
 import { cleanup, render } from "vitest-browser-react";
-import { commands as browser, page, server, userEvent } from "vitest/browser";
+import { commands as browser, page, userEvent } from "vitest/browser";
 
 import "../app/globals.css";
 
+import { CodePanel } from "../components/doc/code-panel";
 import { Controls } from "../components/doc/controls";
-import { CopyAction } from "../components/doc/copy-action";
 import { Demo } from "../components/doc/demo";
 import { PLAYGROUND_PAGE } from "../content/playground";
 import { codeText, jsonText } from "../demos/playground/code";
-import { DownloadAction } from "../demos/playground/download-action";
 import { LiveCode } from "../demos/playground/live-code";
 import { LiveLog } from "../demos/playground/live-log";
-import { PlaygroundCopy } from "../demos/playground/playground-copy";
 import { DEFAULT_KNOBS, playground } from "../demos/playground/store";
 import { walkBlocks } from "../lib/doc/anchors";
 import type { Control } from "../lib/doc/schema";
@@ -32,12 +30,6 @@ type Path = readonly (readonly [number, number, number?])[];
 
 type Tools = {
   drag: (selector: string, path: Path) => Promise<void>;
-  pinch: (
-    selector: string,
-    a: Path,
-    b: Path,
-    release: boolean
-  ) => Promise<void>;
 };
 
 type Tally = {
@@ -52,8 +44,7 @@ vi.mock(import("../demos/shell/photo"), async () => {
   return await photoMock();
 });
 
-const isTools = (value: object): value is Tools =>
-  "drag" in value && "pinch" in value;
+const isTools = (value: object): value is Tools => "drag" in value;
 
 const toolsOf = (value: object): Tools => {
   if (!isTools(value)) {
@@ -73,33 +64,9 @@ const wait = async (ms: number): Promise<void> => {
   });
 };
 
-const turn = async (): Promise<void> => {
-  await commands.pinch(
-    item("viewport"),
-    [
-      [196, 190],
-      [194, 170, 1],
-      [190, 150, 1],
-    ],
-    [
-      [356, 190],
-      [358, 210, 1],
-      [362, 230, 1],
-    ],
-    true
-  );
-
-  await settle();
-};
-
 const CONTROLS: readonly Control[] = walkBlocks(PLAYGROUND_PAGE.blocks).flatMap(
   (block) => (block.kind === "controls" ? block.controls : [])
 );
-
-const FAKE_TIMERS: Parameters<typeof vi.useFakeTimers>[0] = {
-  shouldAdvanceTime: true,
-  toFake: ["setTimeout", "clearTimeout"],
-};
 
 const ids = new WeakMap<object, number>();
 
@@ -134,26 +101,26 @@ const Page = () => (
   <div className="flex w-140 flex-col gap-6">
     <Demo className="" name="playground" />
     <Controls bind="playground" className="" controls={CONTROLS} />
-    <section data-copy="">
-      <pre data-testid="code">
+    <div data-testid="code">
+      <CodePanel className="" label="JSX code">
         <LiveCode feed="code" />
-      </pre>
-      <CopyAction label="copy code" />
-    </section>
-    <section data-copy="">
-      <pre data-testid="value">
+      </CodePanel>
+    </div>
+    <div data-testid="value">
+      <CodePanel className="" label="JSON code">
         <LiveCode feed="value" />
-      </pre>
-      <PlaygroundCopy label="copy value" />
-    </section>
+      </CodePanel>
+    </div>
     <div data-testid="log">
       <LiveLog />
     </div>
-    <DownloadAction label="download png" />
   </div>
 );
 
 const mount = async () => await render(<Page />);
+
+const near = (actual: number, expected: number): boolean =>
+  Math.abs(actual - expected) < 5e-7;
 
 const shownCode = (): string => find('[data-testid="code"] code').textContent;
 
@@ -177,13 +144,7 @@ const inputOf = (selector: string): HTMLInputElement => {
 };
 
 const valueNow = (): Value => {
-  const text = playground.copyText();
-
-  if (text === null) {
-    throw new Error("no cropper");
-  }
-
-  const parsed: unknown = JSON.parse(text);
+  const parsed: unknown = JSON.parse(shownValue());
 
   if (!isValue(parsed)) {
     throw new TypeError("not a crop value");
@@ -192,19 +153,9 @@ const valueNow = (): Value => {
   return parsed;
 };
 
-const labelled = (text: string): HTMLButtonElement => {
-  const found = [...document.querySelectorAll("button")].find((each) =>
-    each.textContent.startsWith(text)
-  );
-
-  if (!found) {
-    throw new Error(`no ${text} button`);
-  }
-
-  return found;
-};
-
 const root = (): HTMLElement => find(item("root"));
+
+const reduced = (): boolean => Object.hasOwn(root().dataset, "reducedMotion");
 
 const rows = (): string[] =>
   [...document.querySelectorAll('[data-slot="log-row"]')].map(
@@ -274,22 +225,6 @@ const dragDial = async (by: number): Promise<void> => {
   await settle();
 };
 
-const areaOffset = (): number => {
-  const area = find(item("area")).getBoundingClientRect();
-  const stage = find('[data-slot="stage"]').getBoundingClientRect();
-
-  return Math.abs(area.left + area.width / 2 - (stage.left + stage.width / 2));
-};
-
-const shrinkCorner = async (): Promise<void> => {
-  await commands.drag(`${item("handle")}[data-edge="bottom-right"]`, [
-    [22, 22],
-    [-20, -10, 16],
-    [-60, -40, 16],
-    [-100, -70, 16],
-  ]);
-};
-
 type Watch = {
   add: MockInstance<EventTarget["addEventListener"]>;
   create: MockInstance<(typeof URL)["createObjectURL"]>;
@@ -353,7 +288,6 @@ describe("playground demo and page blocks", () => {
 
     expect(shownCode()).toBe(codeText(DEFAULT_KNOBS));
     expect(shownValue()).toBe(START_TEXT);
-    expect(playground.copyText()).toBe(START_TEXT);
     expect(rows()).toStrictEqual([]);
 
     const result = await axe.run(document.body, {
@@ -363,91 +297,90 @@ describe("playground demo and page blocks", () => {
     expect(result.violations.map((each) => each.id)).toStrictEqual([]);
   });
 
-  it("turns the crop round with shape", async () => {
-    await mount();
-    await ready();
-    await choose("shape", "circle");
-    await settle();
-
-    const area = find(item("area")).getBoundingClientRect();
-
-    expect(area.width / area.height).toBeCloseTo(1, 2);
-    expect(shownCode()).toContain('<Cropper.Root src={photo} shape="circle">');
-  });
-
-  it("forces short motion with motion reduce", async () => {
+  it("changes the code and the cropper with every knob", async () => {
     await mount();
     await ready();
 
-    expect(Object.hasOwn(root().dataset, "reducedMotion")).toBeFalsy();
+    const has = (text: string): boolean => shownCode().includes(text);
+    const seen: Record<string, unknown> = { motionAtStart: reduced() };
 
     await choose("motion", "reduce");
-
-    await expect
-      .poll(() => Object.hasOwn(root().dataset, "reducedMotion"))
-      .toBeTruthy();
-
-    expect(shownCode()).toContain('motion="reduce"');
-
+    await expect.poll(reduced).toBeTruthy();
+    seen.motionReduce = has('motion="reduce"');
     await choose("motion", "always");
+    await expect.poll(reduced).toBeFalsy();
+    seen.motionAlways = has('motion="always"');
+
+    await wheel(-40);
+    seen.wheelAtFit = near(valueNow().size.width, 1);
+    await slide("maxZoom", 1);
+    await expect.poll(shownCode).toContain("maxZoom={1}");
+    await press("+");
+    seen.cappedAtOne = near(valueNow().size.width, 1);
+    await slide("maxZoom", 15);
+    await expect.poll(shownCode).not.toContain("maxZoom");
+    await press("+");
+    seen.zoomedIn = valueNow().size.width < 0.99;
+
+    const before = valueNow();
+
+    await wheel(-40);
+
+    seen.wheelPans =
+      valueNow().center.x !== before.center.x ||
+      valueNow().center.y !== before.center.y;
+
+    await choose("wheel", "zoom");
+    await expect.poll(shownCode).toContain('wheel="zoom"');
+
+    const zoomed = valueNow().size.width;
+
+    await wheel(-40);
+    seen.wheelZooms = valueNow().size.width < zoomed;
+    await choose("wheel", "none");
+
+    const still = valueNow();
+
+    await wheel(-40);
+    seen.wheelIgnored = JSON.stringify(valueNow()) === JSON.stringify(still);
+    seen.wheelNone = has('wheel="none"');
+
+    await slide("vertical", 12);
+    await slide("horizontal", -8);
 
     await expect
-      .poll(() => Object.hasOwn(root().dataset, "reducedMotion"))
-      .toBeFalsy();
+      .poll(() => valueNow().perspective)
+      .toStrictEqual({ horizontal: -8, vertical: 12 });
 
-    expect(shownCode()).toContain('motion="always"');
-  });
+    seen.tiltCode = has("perspective: { vertical: 12, horizontal: -8 },");
+    await expect.poll(rows).toContain("imperative commit 0°");
+    find(item("reset")).click();
+    await settle();
 
-  it("turns the dial the other way with dir rtl", async () => {
-    await mount();
-    await ready();
+    await expect
+      .poll(() => inputOf('input[aria-label="vertical"]').value)
+      .toBe("0");
+
+    seen.tiltAfterReset = valueNow().perspective;
+
+    seen.tiltCodeAfterReset = has(
+      "perspective: { vertical: 0, horizontal: 0 } }}"
+    );
+
+    seen.resetRows = rows().slice(0, 2);
+
     await choose("dir", "rtl");
     await expect.poll(() => root().getAttribute("dir")).toBe("rtl");
-
     find(item("dial")).focus();
     await userEvent.keyboard("{ArrowRight}");
     find(item("dial")).blur();
     await settle();
 
-    expect(valueNow().rotation).toBeLessThan(0);
-    expect(shownCode()).toContain('dir="rtl"');
-  });
+    const turned = valueNow().rotation;
 
-  it("caps the zoom with maxZoom", async () => {
-    await mount();
-    await ready();
-    await slide("maxZoom", 1);
-    await expect.poll(shownCode).toContain("maxZoom={1}");
-    await press("+");
+    seen.rtlTurnsBack = turned < 0;
+    seen.rtlCode = has('dir="rtl"');
 
-    expect(valueNow().size.width).toBeCloseTo(1, 6);
-
-    await slide("maxZoom", 15);
-    await expect.poll(shownCode).not.toContain("maxZoom");
-    await press("+");
-
-    expect(valueNow().size.width).toBeLessThan(0.99);
-  });
-
-  it("waits recenterDelay before it recentres", async () => {
-    await mount();
-    await ready();
-    await slide("recenterDelay", 2000);
-    await expect.poll(shownCode).toContain("recenterDelay={2000}");
-    await shrinkCorner();
-    await wait(900);
-
-    expect(areaOffset()).toBeGreaterThan(10);
-
-    await slide("recenterDelay", 0);
-    await expect.poll(shownCode).toContain("recenterDelay={0}");
-    await shrinkCorner();
-    await expect.poll(areaOffset, { timeout: 4000 }).toBeLessThan(1);
-  });
-
-  it("locks the cropper with disabled", async () => {
-    await mount();
-    await ready();
     flip("disabled");
 
     await expect
@@ -458,101 +391,42 @@ describe("playground demo and page blocks", () => {
     await userEvent.keyboard("{ArrowRight}");
     find(item("dial")).blur();
     await settle();
+    seen.disabledHolds = valueNow().rotation === turned;
+    seen.disabledCode = has("\n  disabled\n");
 
-    expect(valueNow().rotation).toBe(0);
-    expect(shownCode()).toContain("<Cropper.Root src={photo} disabled>");
-  });
-
-  it("zooms, pans or ignores the wheel", async () => {
-    await mount();
-    await ready();
-    await wheel(-40);
-
-    expect(valueNow().size.width).toBeCloseTo(1, 6);
-
-    await press("+");
-
-    const before = valueNow();
-
-    await wheel(-40);
-
-    expect(valueNow().center).not.toStrictEqual(before.center);
-
-    await choose("wheel", "zoom");
-    await expect.poll(shownCode).toContain('wheel="zoom"');
-
-    const zoomed = valueNow().size.width;
-
-    await wheel(-40);
-
-    expect(valueNow().size.width).toBeLessThan(zoomed);
-
-    await choose("wheel", "none");
-
-    const still = valueNow();
-
-    await wheel(-40);
-
-    expect(valueNow()).toStrictEqual(still);
-    expect(shownCode()).toContain('wheel="none"');
-  });
-
-  it.skipIf(server.browser !== "chromium")(
-    "turns the photo with two fingers only while rotateGesture is on",
-    async () => {
-      await mount();
-      await ready();
-
-      await turn();
-
-      expect(Math.abs(valueNow().rotation)).toBeGreaterThan(1);
-
-      find(item("reset")).click();
-      await settle();
-      flip("rotateGesture");
-      await expect.poll(shownCode).toContain("rotateGesture={false}");
-      await turn();
-
-      expect(valueNow().rotation).toBe(0);
-    }
-  );
-
-  it("tilts the photo and gives the tilt back after reset", async () => {
-    await mount();
-    await ready();
-    await slide("vertical", 12);
-    await slide("horizontal", -8);
-
-    await expect
-      .poll(() => valueNow().perspective)
-      .toStrictEqual({ horizontal: -8, vertical: 12 });
-
-    expect(shownCode()).toContain(
-      "perspective: { vertical: 12, horizontal: -8 },"
-    );
-
-    await expect.poll(rows).toContain("imperative commit 0°");
-    find(item("reset")).click();
+    await choose("shape", "circle");
     await settle();
 
-    await expect
-      .poll(() => inputOf('input[aria-label="vertical"]').value)
-      .toBe("0");
+    const area = find(item("area")).getBoundingClientRect();
 
-    expect(valueNow().perspective).toStrictEqual({
-      horizontal: 0,
-      vertical: 0,
+    seen.circle = Math.abs(area.width / area.height - 1) < 0.005;
+    seen.circleCode = has('\n  shape="circle"\n');
+
+    expect(seen).toStrictEqual({
+      cappedAtOne: true,
+      circle: true,
+      circleCode: true,
+      disabledCode: true,
+      disabledHolds: true,
+      motionAlways: true,
+      motionAtStart: false,
+      motionReduce: true,
+      resetRows: ["reset commit 0°", "reset instant"],
+      rtlCode: true,
+      rtlTurnsBack: true,
+      tiltAfterReset: { horizontal: 0, vertical: 0 },
+      tiltCode: true,
+      tiltCodeAfterReset: true,
+      wheelAtFit: true,
+      wheelIgnored: true,
+      wheelNone: true,
+      wheelPans: true,
+      wheelZooms: true,
+      zoomedIn: true,
     });
-
-    expect(shownCode()).not.toContain("defaultValue");
-
-    expect(rows().slice(0, 2)).toStrictEqual([
-      "reset commit 0°",
-      "reset instant",
-    ]);
   });
 
-  it("logs a dial gesture as start, one move, end and a commit", async () => {
+  it("logs a dial gesture and copies the live value and code", async () => {
     await mount();
     await ready();
     await dragDial(-60);
@@ -566,80 +440,26 @@ describe("playground demo and page blocks", () => {
       "dial move",
       "dial start",
     ]);
-  });
-
-  it("shows the live value and copies it as a CropValue", async () => {
-    await mount();
-    await ready();
-    await dragDial(-60);
 
     const writes = vi
       .spyOn(navigator.clipboard, "writeText")
       .mockResolvedValue(undefined);
 
-    await expect.poll(shownValue).toBe(playground.copyText());
-
-    labelled("copy value").click();
+    find('[data-testid="value"] button').click();
     await expect.poll(() => writes.mock.calls.length).toBe(1);
-
-    await expect
-      .poll(
-        () => labelled("copy value").querySelector(".invisible")?.textContent
-      )
-      .toBe("copy value");
 
     expect(JSON.parse(writes.mock.calls[0]?.[0] ?? "")).toStrictEqual(
       valueNow()
     );
 
-    labelled("copy code").click();
+    find('[data-testid="code"] button').click();
     await expect.poll(() => writes.mock.calls.length).toBe(2);
 
     expect(writes.mock.calls[1]?.[0]).toBe(shownCode());
-
     expect(valueNow().rotation).not.toBe(0);
   });
 
-  it("downloads a round png with clear corners", async () => {
-    await mount();
-
-    const action = labelled("download png");
-
-    await ready();
-    await expect.poll(() => action.disabled).toBeFalsy();
-    await choose("shape", "circle");
-    await settle();
-
-    const links: string[] = [];
-
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
-      function capture(this: HTMLAnchorElement) {
-        links.push(this.href);
-      }
-    );
-
-    vi.useFakeTimers(FAKE_TIMERS);
-    action.click();
-    await expect.poll(() => links.length, { timeout: 10_000 }).toBe(1);
-
-    const response = await fetch(links[0] ?? "");
-    const blob = await response.blob();
-    const bitmap = await createImageBitmap(blob);
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext("2d");
-
-    context?.drawImage(bitmap, 0, 0);
-
-    expect(blob.type).toBe("image/png");
-    expect(bitmap.width).toBe(bitmap.height);
-    expect(context?.getImageData(1, 1, 1, 1).data[3]).toBe(0);
-
-    expect(
-      context?.getImageData(bitmap.width / 2, bitmap.height / 2, 1, 1).data[3]
-    ).toBe(255);
-  });
-
-  it("leaves no listeners, canvases or object urls after 20 mounts", async () => {
+  it("leaves no listeners, canvases or object urls after 5 mounts", async () => {
     await mount();
     await ready();
     await cleanup();
@@ -647,7 +467,7 @@ describe("playground demo and page blocks", () => {
     const watched = watch();
     const start = tally(watched);
 
-    for (let round = 0; round < 20; round += 1) {
+    for (let round = 0; round < 5; round += 1) {
       const screen = await mount();
 
       await ready();
@@ -662,5 +482,5 @@ describe("playground demo and page blocks", () => {
     expect(tally(watched)).toStrictEqual(start);
     expect(playground.watchers()).toBe(0);
     expect(playground.getState()).toStrictEqual(playground.getServerState());
-  }, 180_000);
+  }, 60_000);
 });

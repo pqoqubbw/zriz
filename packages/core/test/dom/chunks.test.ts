@@ -4,7 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
-import type { LoadedImage } from "../../src/dom/image";
+import { cast, isObject, loadedImage } from "../cropper-fixture";
 import { deferred } from "./deferred";
 
 const failed = (): never => {
@@ -16,15 +16,7 @@ const pending = async (): Promise<never> => {
   throw new Error("unreachable");
 };
 
-const loaded: LoadedImage = {
-  animated: false,
-  height: 1,
-  id: 1,
-  mime: "image/png",
-  preview: { close: () => {}, height: 1, width: 1 },
-  source: new Blob(),
-  width: 1,
-};
+const loaded = loadedImage();
 
 const zrizError = async (): Promise<unknown> => {
   const errors = await import("../../src/dom/error");
@@ -32,8 +24,20 @@ const zrizError = async (): Promise<unknown> => {
   return errors.ZrizError;
 };
 
-const isElement = (value: unknown): value is HTMLImageElement =>
-  typeof value === "object" && value !== null;
+const isImage = (value: unknown): value is HTMLImageElement => isObject(value);
+
+const heldRender = () => {
+  const render = vi.fn<() => Promise<never>>();
+  const chunk = deferred<undefined>();
+
+  vi.doMock(import("../../src/dom/render"), async () => {
+    await chunk.promise;
+
+    return { exportImage: render };
+  });
+
+  return { chunk, render };
+};
 
 describe("lazy chunk failures", () => {
   afterEach(() => {
@@ -44,44 +48,78 @@ describe("lazy chunk failures", () => {
     vi.resetModules();
   });
 
-  it("rejects export with a ZrizError when the render chunk fails to load", async () => {
+  it.each([
+    [
+      "export when the render chunk",
+      "../../src/dom/render",
+      async () => {
+        const { exportImage } = await import("../../src/dom/export");
+
+        return await exportImage(createCropper(), loaded);
+      },
+    ],
+    [
+      "an svg load when the svg chunk",
+      "../../src/dom/svg",
+      async () => {
+        const { loadImage } = await import("../../src/dom/image");
+
+        return await loadImage(
+          new Blob(['<svg xmlns="http://www.w3.org/2000/svg"/>'], {
+            type: "image/svg+xml",
+          })
+        );
+      },
+    ],
+    [
+      "an element load when the source chunk",
+      "../../src/dom/source",
+      async () => {
+        vi.stubGlobal("ImageBitmap", Map);
+        const { loadImage } = await import("../../src/dom/image");
+
+        return await loadImage(cast({}, isImage));
+      },
+    ],
+  ])("rejects %s fails to load as decode", async (_name, chunk, run) => {
     vi.resetModules();
-    vi.doMock(import("../../src/dom/render"), failed);
-    const { exportImage } = await import("../../src/dom/export");
-    const error: unknown = await exportImage(createCropper(), loaded).catch(
-      (error_: unknown) => error_
-    );
+    vi.doMock(chunk, failed);
+    const error: unknown = await run().catch((error_: unknown) => error_);
 
     expect(error).toBeInstanceOf(await zrizError());
+    expect(error).toHaveProperty("code", "decode");
   });
 
-  it("rejects export as aborted before it loads the render chunk", async () => {
-    vi.resetModules();
-    vi.doMock(import("../../src/dom/render"), pending);
-    const { exportImage } = await import("../../src/dom/export");
-    const controller = new AbortController();
+  it.each(["before the call", "in the same tick", "during the download"])(
+    "rejects an export aborted %s of the render chunk and starts no render",
+    async (when) => {
+      vi.resetModules();
+      const { chunk, render } = heldRender();
+      const { exportImage } = await import("../../src/dom/export");
+      const controller = new AbortController();
 
-    controller.abort();
-    const error: unknown = await exportImage(createCropper(), loaded, {
-      signal: controller.signal,
-    }).catch((error_: unknown) => error_);
+      if (when === "before the call") {
+        controller.abort();
+      }
 
-    expect(error).toBeInstanceOf(await zrizError());
-    expect(error).toHaveProperty("code", "aborted");
-  });
+      const work = exportImage(createCropper(), loaded, {
+        signal: controller.signal,
+      });
 
-  it("rejects on abort during a stalled render chunk", async () => {
-    vi.resetModules();
-    vi.doMock(import("../../src/dom/render"), pending);
-    const { exportImage } = await import("../../src/dom/export");
-    const controller = new AbortController();
-    const work = exportImage(createCropper(), loaded, {
-      signal: controller.signal,
-    });
+      if (when === "during the download") {
+        await delay(1);
+      }
 
-    controller.abort();
-    await expect(work).rejects.toHaveProperty("code", "aborted");
-  });
+      controller.abort();
+      const error: unknown = await work.catch((error_: unknown) => error_);
+
+      expect(error).toBeInstanceOf(await zrizError());
+      expect(error).toHaveProperty("code", "aborted");
+      chunk.resolve(undefined);
+      await delay(10);
+      expect(render).not.toHaveBeenCalled();
+    }
+  );
 
   it("times out when the render chunk stalls", async () => {
     vi.resetModules();
@@ -98,43 +136,10 @@ describe("lazy chunk failures", () => {
     await expect(work).resolves.toHaveProperty("code", "timeout");
   });
 
-  it("starts no render when the abort comes during the chunk download", async () => {
-    vi.resetModules();
-    const render = vi.fn<() => Promise<never>>();
-    const { promise, resolve } = deferred<undefined>();
-
-    vi.doMock(import("../../src/dom/render"), async () => {
-      await promise;
-
-      return { exportImage: render };
-    });
-
-    const { exportImage } = await import("../../src/dom/export");
-    const controller = new AbortController();
-    const work = exportImage(createCropper(), loaded, {
-      signal: controller.signal,
-    });
-
-    await delay(1);
-    controller.abort();
-    await expect(work).rejects.toHaveProperty("code", "aborted");
-    resolve(undefined);
-    await delay(10);
-    expect(render).not.toHaveBeenCalled();
-  });
-
   it("rejects as aborted when a new photo arrives during the chunk download", async () => {
     vi.resetModules();
     vi.stubGlobal("ImageBitmap", Map);
-    const render = vi.fn<() => Promise<never>>();
-    const { promise, resolve } = deferred<undefined>();
-
-    vi.doMock(import("../../src/dom/render"), async () => {
-      await promise;
-
-      return { exportImage: render };
-    });
-
+    const { chunk, render } = heldRender();
     const { exportCrop } = await import("../../src/dom/export");
     const { attachImage } = await import("../../src/dom/image-store");
     const cropper = createCropper();
@@ -144,35 +149,8 @@ describe("lazy chunk failures", () => {
 
     await delay(1);
     attachImage(cropper, { ...loaded, height: 3, id: 2 });
-    resolve(undefined);
+    chunk.resolve(undefined);
     await expect(work).rejects.toHaveProperty("code", "aborted");
     expect(render).not.toHaveBeenCalled();
-  });
-
-  it("rejects an svg load with a ZrizError when the svg chunk fails to load", async () => {
-    vi.resetModules();
-    vi.doMock(import("../../src/dom/svg"), failed);
-    const { loadImage } = await import("../../src/dom/image");
-    const svg = new Blob(['<svg xmlns="http://www.w3.org/2000/svg"/>'], {
-      type: "image/svg+xml",
-    });
-    const error: unknown = await loadImage(svg).catch(
-      (error_: unknown) => error_
-    );
-
-    expect(error).toBeInstanceOf(await zrizError());
-  });
-
-  it("rejects an element load with a ZrizError when the source chunk fails to load", async () => {
-    vi.resetModules();
-    vi.doMock(import("../../src/dom/source"), failed);
-    vi.stubGlobal("ImageBitmap", Map);
-    const { loadImage } = await import("../../src/dom/image");
-    const element: unknown = {};
-    const error: unknown = isElement(element)
-      ? await loadImage(element).catch((error_: unknown) => error_)
-      : null;
-
-    expect(error).toBeInstanceOf(await zrizError());
   });
 });

@@ -68,82 +68,77 @@ const chunksOf = (bytes: Buffer): string[] => {
 };
 
 describe("demo photos", () => {
-  it("records every file in public/demo", () => {
-    expect(readdirSync("public/demo").toSorted()).toStrictEqual(
-      PHOTOS.map((photo) => photo.url.replace("/demo/", "")).toSorted()
-    );
-  });
+  it.each(PHOTOS)(
+    "$name ships as its recorded, light, clean file",
+    async (photo) => {
+      const bytes = fileOf(photo.url);
+      const meta = await sharp(bytes).metadata();
 
-  it.each(PHOTOS)("$name matches its record", async (photo) => {
-    const bytes = fileOf(photo.url);
-    const meta = await sharp(bytes).metadata();
+      expect(readdirSync("public/demo").toSorted()).toStrictEqual(
+        PHOTOS.map((entry) => entry.url.replace("/demo/", "")).toSorted()
+      );
 
-    expect(photo.url).toBe(`/demo/${photo.name}.webp`);
-    expect(bytes).toHaveLength(photo.bytes);
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe(photo.sha256);
-    expect(meta.format).toBe("webp");
+      expect({
+        blocks: [
+          bytes.toString("latin1", 0, 4),
+          bytes.toString("latin1", 8, 12),
+          ...chunksOf(bytes),
+        ],
+        bytes: bytes.length,
+        format: meta.format,
+        longEdge: Math.max(photo.width, photo.height),
+        metadata: [meta.exif, meta.icc, meta.xmp],
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        size: [meta.width, meta.height],
+        url: photo.url,
+      }).toStrictEqual({
+        blocks: ["RIFF", "WEBP", "VP8 "],
+        bytes: photo.bytes,
+        format: "webp",
+        longEdge: DEMO_PHOTO_LONG_EDGE,
+        metadata: [undefined, undefined, undefined],
+        sha256: photo.sha256,
+        size: [photo.width, photo.height],
+        url: `/demo/${photo.name}.webp`,
+      });
 
-    expect([meta.width, meta.height]).toStrictEqual([
-      photo.width,
-      photo.height,
-    ]);
-  });
+      expect(bytes.length).toBeLessThanOrEqual(DEMO_PHOTO_BUDGET);
+    }
+  );
 
-  it.each(PHOTOS)("$name stays within the weight budget", (photo) => {
-    expect(fileOf(photo.url).length).toBeLessThanOrEqual(DEMO_PHOTO_BUDGET);
-    expect(Math.max(photo.width, photo.height)).toBe(DEMO_PHOTO_LONG_EDGE);
-  });
-
-  it.each(PHOTOS)("$name carries no metadata", async (photo) => {
-    const bytes = fileOf(photo.url);
-    const meta = await sharp(bytes).metadata();
-
-    expect([
-      bytes.toString("latin1", 0, 4),
-      bytes.toString("latin1", 8, 12),
-      ...chunksOf(bytes),
-    ]).toStrictEqual(["RIFF", "WEBP", "VP8 "]);
-
-    expect(meta.exif).toBeUndefined();
-    expect(meta.icc).toBeUndefined();
-    expect(meta.xmp).toBeUndefined();
-  });
-
-  it.each(PHOTOS)("$name quotes the rights line of its page", (photo) => {
-    expect(photo.source.rights).toBe(rightsOf(photo.source.page));
-  });
-
-  it.each(PHOTOS)("$name names the original file of its page", (photo) => {
-    expect(photo.source.file).toMatch(originalOf(photo.source.page));
-  });
-
-  it.each(PHOTOS)("$name records who made it and when", (photo) => {
+  it.each(PHOTOS)("$name records where it came from", (photo) => {
     const { source } = photo;
+    const { crop, height, width } = source;
 
-    expect(source.author.length).toBeGreaterThan(0);
-    expect(source.title.length).toBeGreaterThan(0);
-    expect(source.sha256).toMatch(SHA256);
-    expect(source.fetched).toMatch(ISO_DATE);
-    expect(source.created).toMatch(ISO_DATE);
-  });
+    expect({
+      author: /\S/u.test(source.author),
+      created: ISO_DATE.test(source.created),
+      fetched: ISO_DATE.test(source.fetched),
+      file: originalOf(source.page).test(source.file),
+      rights: source.rights,
+      sha256: SHA256.test(source.sha256),
+      title: /\S/u.test(source.title),
+    }).toStrictEqual({
+      author: true,
+      created: true,
+      fetched: true,
+      file: true,
+      rights: rightsOf(source.page),
+      sha256: true,
+      title: true,
+    });
 
-  it.each(PHOTOS)("$name is cut from inside its source", (photo) => {
-    const { crop, height, width } = photo.source;
-
-    expect(crop.left).toBeGreaterThanOrEqual(0);
-    expect(crop.top).toBeGreaterThanOrEqual(0);
-    expect(crop.left + crop.width).toBeLessThanOrEqual(width);
-    expect(crop.top + crop.height).toBeLessThanOrEqual(height);
-    expect(crop.width * photo.height).toBe(crop.height * photo.width);
-  });
-
-  it("ships a 3:2 landscape and a 2:3 portrait", () => {
-    expect(DEMO_PHOTOS.landscape.width * 2).toBe(
-      DEMO_PHOTOS.landscape.height * 3
-    );
-
-    expect(DEMO_PHOTOS.portrait.width * 3).toBe(
-      DEMO_PHOTOS.portrait.height * 2
-    );
+    expect({
+      inside: [
+        crop.left >= 0,
+        crop.top >= 0,
+        crop.left + crop.width <= width,
+        crop.top + crop.height <= height,
+      ],
+      ratio: crop.width * photo.height,
+    }).toStrictEqual({
+      inside: [true, true, true, true],
+      ratio: crop.height * photo.width,
+    });
   });
 });

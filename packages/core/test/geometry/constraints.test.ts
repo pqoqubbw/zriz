@@ -7,10 +7,9 @@ import {
   property,
   tuple,
 } from "fast-check";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  aspectHeightRange,
   dragHandle,
   imagePlanes,
   insidePlanes,
@@ -25,11 +24,8 @@ import type {
   Rect,
   Size,
 } from "../../src/geometry";
-import * as planesModule from "../../src/geometry/planes";
 import { stateArb } from "./arbitraries";
 import { largestCropAt } from "./oracles";
-
-vi.mock(import("../../src/geometry/planes"), { spy: true });
 
 const handleArb = constantFrom<CropHandle>(
   "n",
@@ -205,6 +201,22 @@ describe("handle drag constraints", () => {
           };
 
           expect(anchors[h].every(Boolean)).toBeTruthy();
+          const far = dragHandle(
+            start,
+            h,
+            {
+              x: start.x0 + (h.includes("w") ? -1e9 : 1e9),
+              y: start.y0 + (h.includes("n") ? -1e9 : 1e9),
+            },
+            { ...limits, minHeight: 0, minWidth: 0 }
+          );
+          const slack = Math.min(
+            ...rectPoints(far).flatMap((p) =>
+              planes.map((plane) => plane.d - (plane.nx * p.x + plane.ny * p.y))
+            )
+          );
+
+          expect(slack).toBeLessThanOrEqual(tolerance * 10);
         }
       )
     );
@@ -287,37 +299,9 @@ describe("handle drag constraints", () => {
     );
   });
 
-  it("touches the image at the top of the aspect range", () => {
-    assert(
-      property(stateArb, handleArb, (s, h) => {
-        const { planes, tolerance } = limitsFor(s, 0);
-        const aspect = s.crop.width / s.crop.height;
-        const start = toRect(s);
-        const limits = { aspect, minHeight: 0, minWidth: 0, planes };
-        const { max } = aspectHeightRange(start, h, limits);
-        const far = {
-          x: start.x0 + (h.includes("w") ? -1e9 : 1e9),
-          y: start.y0 + (h.includes("n") ? -1e9 : 1e9),
-        };
-        const r = dragHandle(start, h, far, limits);
-
-        expect(r.y1 - r.y0).toBeCloseTo(max, 6);
-        const slack = Math.min(
-          ...rectPoints(r).flatMap((p) =>
-            planes.map((plane) => plane.d - (plane.nx * p.x + plane.ny * p.y))
-          )
-        );
-
-        expect(slack).toBeLessThanOrEqual(tolerance * 10);
-      })
-    );
-  });
-
   it("stays monotone in the pointer", () => {
     assert(
       property(stateArb, (s) => {
-        vi.mocked(planesModule.projectOntoPlanes).mockClear();
-
         const { planes } = limitsFor(s, 0);
         const start = toRect(s);
         const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
@@ -336,54 +320,53 @@ describe("handle drag constraints", () => {
     );
   });
 
-  it("ignores planes that a near-zero angle leaves almost parallel to the drag", () => {
-    const s = {
-      angle: 3.749924182617662e-11,
-      aspect: null,
-      crop: { height: 1194, width: 119.4, x: 0, y: 0 },
-      flip: false,
-      image: { height: 6232, width: 1194 },
-      perspective: { focal: 1, horizontal: 0, vertical: 0 },
-      turns: 3 as const,
-    };
-    const { planes } = limitsFor(s, 0);
-    const start = toRect(s);
-    const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
-
-    expect(dragHandle(start, "e", { x: 3000, y: 0 }, limits).x1).toBeCloseTo(
+  it.each([
+    [
+      "passes a plane",
+      {
+        angle: 3.749924182617662e-11,
+        crop: { height: 1194, width: 119.4, x: 0, y: 0 },
+        image: { height: 6232, width: 1194 },
+      },
+      [3000],
       3000,
-      6
-    );
-  });
-
-  it("stops at a plane a near-zero angle leaves almost parallel, without a jump back", () => {
-    const s = {
-      angle: -5.729577951308234e-8,
-      aspect: null,
-      crop: { height: 0.9999999979, width: 0.09999999979, x: 0, y: 0 },
-      flip: false,
-      image: { height: 7, width: 1 },
-      perspective: { focal: 1, horizontal: 0, vertical: 0 },
-      turns: 3 as const,
-    };
-    const { planes } = limitsFor(s, 0);
-    const start = toRect(s);
-    const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
-    const edges = [1.05, 1.5, 2.01, 2.05].map(
-      (x) => dragHandle(start, "e", { x, y: 0 }, limits).x1
-    );
-
-    for (const [i, edge] of edges.entries()) {
-      expect(edge).toBeGreaterThanOrEqual(
-        edges[i - 1] ?? Number.NEGATIVE_INFINITY
-      );
-    }
-
-    expect(dragHandle(start, "e", { x: 2.05, y: 0 }, limits).x1).toBeCloseTo(
+    ],
+    [
+      "stops at a plane without a jump back",
+      {
+        angle: -5.729577951308234e-8,
+        crop: { height: 0.9999999979, width: 0.09999999979, x: 0, y: 0 },
+        image: { height: 7, width: 1 },
+      },
+      [1.05, 1.5, 2.01, 2.05],
       1.05,
-      6
-    );
-  });
+    ],
+  ])(
+    "%s that a near-zero angle leaves almost parallel to the drag",
+    (_name, shape, pointers, last) => {
+      const s = {
+        ...shape,
+        aspect: null,
+        flip: false,
+        perspective: { focal: 1, horizontal: 0, vertical: 0 },
+        turns: 3 as const,
+      };
+      const { planes } = limitsFor(s, 0);
+      const start = toRect(s);
+      const limits = { aspect: null, minHeight: 0, minWidth: 0, planes };
+      const edges = pointers.map(
+        (x) => dragHandle(start, "e", { x, y: 0 }, limits).x1
+      );
+
+      for (const [i, edge] of edges.entries()) {
+        expect(edge).toBeGreaterThanOrEqual(
+          edges[i - 1] ?? Number.NEGATIVE_INFINITY
+        );
+      }
+
+      expect(edges.at(-1)).toBeCloseTo(last, 6);
+    }
+  );
 
   it("keeps the minimum size when the planes leave no strictly feasible corner", () => {
     const s = {
@@ -443,46 +426,5 @@ describe("handle drag constraints", () => {
 
     expect(straightenLimit({ height: 10_000, width: 1 }, 1, 1)).toBe(0);
     expect(straightenLimit({ height: 3000, width: 4000 }, 1, 1)).toBe(45);
-  });
-});
-
-describe("handle limits", () => {
-  it("hands the solver each limit once", () => {
-    const image = imagePlanes({
-      angle: 9,
-      aspect: null,
-      crop: { height: 1000, width: 1000, x: 0, y: 0 },
-      flip: false,
-      image: { height: 3000, width: 4000 },
-      perspective: { focal: 2889, horizontal: 0, vertical: 0 },
-      turns: 0,
-    });
-    const project = vi.mocked(planesModule.projectOntoPlanes);
-
-    project.mockClear();
-
-    dragHandle(
-      { x0: -500, x1: 500, y0: -500, y1: 500 },
-      "se",
-      { x: 99_999, y: 99_999 },
-      {
-        aspect: null,
-        minHeight: 10,
-        minWidth: 10,
-        planes: [
-          ...image,
-          { d: 2000, nx: 1, ny: 0 },
-          { d: 2000, nx: -1, ny: 0 },
-          { d: 2000, nx: 0, ny: 1 },
-          { d: 2000, nx: 0, ny: -1 },
-        ],
-      }
-    );
-
-    const planes = project.mock.calls[0]?.[0] ?? [];
-    const keys = planes.map(({ d, nx, ny }) => `${d} ${nx} ${ny}`);
-
-    expect(new Set(keys).size).toBe(keys.length);
-    expect(keys.length).toBeLessThan(22);
   });
 });

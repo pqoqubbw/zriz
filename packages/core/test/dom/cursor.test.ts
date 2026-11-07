@@ -41,48 +41,39 @@ describe("cursor hold", () => {
     vi.unstubAllGlobals();
   });
 
-  it("holds nothing without an element or adopted sheets", () => {
-    page({ value: "grab" });
-    expect(holdCursor(null)).toBeNull();
-    vi.stubGlobal("document", {});
-    expect(holdCursor(element())).toBeNull();
-    vi.stubGlobal("document", { adoptedStyleSheets: [] });
-    vi.stubGlobal("CSSStyleSheet", undefined);
-    expect(holdCursor(element())).toBeNull();
-  });
-
-  it("keeps a sheet for each gesture on a cursor until the last lets go", () => {
-    const doc = page({ value: "grab" });
-    const first = holdCursor(element());
-    const second = holdCursor(element());
-
-    expect(doc.adoptedStyleSheets.map((sheet) => sheet.rule)).toStrictEqual([
-      "*{cursor:grabbing!important}",
-      "*{cursor:grabbing!important}",
-    ]);
-
-    first?.();
-    expect(doc.adoptedStyleSheets).toHaveLength(1);
-    second?.();
-    expect(doc.adoptedStyleSheets).toHaveLength(0);
-  });
-
-  it("drops only its own sheet when two cursors are held", () => {
+  it("keeps a sheet per hold and drops only its own on release", () => {
     const cursor = { value: "grab" };
     const doc = page(cursor);
+    const rules = (): string[] =>
+      doc.adoptedStyleSheets.map((sheet) => sheet.rule);
+    const first = holdCursor(element());
+    const second = holdCursor(element());
+    const same = rules();
+
+    first?.();
+    const afterFirst = rules().length;
+
+    second?.();
+    const afterSecond = rules().length;
     const photo = holdCursor(element());
 
     cursor.value = "nwse-resize";
     const handle = holdCursor(element());
+    const both = rules().length;
 
-    expect(doc.adoptedStyleSheets).toHaveLength(2);
     photo?.();
-
-    expect(doc.adoptedStyleSheets.map((sheet) => sheet.rule)).toStrictEqual([
-      "*{cursor:nwse-resize!important}",
-    ]);
+    const left = rules();
 
     handle?.();
-    expect(doc.adoptedStyleSheets).toHaveLength(0);
+
+    expect({ afterFirst, afterSecond, both, left, same }).toStrictEqual({
+      afterFirst: 1,
+      afterSecond: 0,
+      both: 2,
+      left: ["*{cursor:nwse-resize!important}"],
+      same: ["*{cursor:grabbing!important}", "*{cursor:grabbing!important}"],
+    });
+
+    expect(rules()).toStrictEqual([]);
   });
 });

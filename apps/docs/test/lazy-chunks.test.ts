@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  AVATAR_TOTAL,
-  LAZY_CHUNKS,
-} from "../../../apps/docs/content/bundle-size-chunks.ts";
 import { LIMITS, measure } from "../../../scripts/lazy-chunks.ts";
+import { AVATAR_TOTAL, LAZY_CHUNKS } from "../content/bundle-size-chunks.ts";
 
 describe("lazy chunks of the avatar set", () => {
   it("match the bundle size page, which node scripts/lazy-chunks.ts writes", async () => {

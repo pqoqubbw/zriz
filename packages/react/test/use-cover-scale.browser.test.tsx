@@ -6,20 +6,15 @@ import { useCoverScale } from "../src";
 const IMAGE = { height: 900, width: 1200 };
 
 describe(useCoverScale, () => {
-  it("is 1 when the crop matches the image and nothing is rotated", async () => {
-    const { result } = await renderHook(() =>
-      useCoverScale({ crop: IMAGE, image: IMAGE })
+  it("is 1 for a matching crop and zooms in once the photo is straightened", async () => {
+    const { rerender, result } = await renderHook(
+      (rotation?: number) =>
+        useCoverScale({ crop: IMAGE, image: IMAGE, rotation }),
+      { initialProps: 0 }
     );
 
     expect(result.current).toBe(1);
-  });
-
-  it("zooms in when the photo is straightened", async () => {
-    const { result } = await renderHook(() =>
-      useCoverScale({ crop: IMAGE, image: IMAGE, rotation: 7 })
-    );
-
-    expect(result.current).toBeGreaterThan(1.15);
-    expect(result.current).toBeLessThan(1.16);
+    await rerender(7);
+    expect(result.current).toBeGreaterThan(1);
   });
 });

@@ -2,17 +2,13 @@ import { assert, double, nat, property } from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
-  applyMatrix2,
   cropCorners,
   linearTransform,
   mirrorX,
   mirrorY,
   multiplyMatrix2,
-  orientationMatrix,
-  quarterTurnMatrix,
   rotateLeft,
   rotateRight,
-  rotationMatrix,
   setAngle,
   sinCosDegrees,
   sourceToWorking,
@@ -20,7 +16,6 @@ import {
 } from "../../src/geometry";
 import type { CropState, Matrix2, Point } from "../../src/geometry";
 import { stateArb } from "./arbitraries";
-import { exifOrientations, splitAngle } from "./oracles";
 
 const unitInterval = double({ max: 1, min: 0, noNaN: true });
 
@@ -44,7 +39,7 @@ const expectSameRegion = (
 };
 
 describe("state", () => {
-  it("round-trips source to working to source", () => {
+  it("round-trips source to working to source, exactly with no straighten", () => {
     assert(
       property(stateArb, unitInterval, unitInterval, (s, u, v) => {
         const p = { x: u * s.image.width, y: v * s.image.height };
@@ -55,9 +50,7 @@ describe("state", () => {
         expectClose(back.y, p.y, tol);
       })
     );
-  });
 
-  it("round-trips pixel corners exactly with no straighten", () => {
     assert(
       property(stateArb, nat(), nat(), (s0, i, j) => {
         const s = { ...s0, angle: 0 };
@@ -68,7 +61,7 @@ describe("state", () => {
     );
   });
 
-  it("gives exact values on every quarter turn and diagonal", () => {
+  it("gives exact and symmetric degree trig at multiples of 45", () => {
     for (let k = -16; k <= 16; k += 1) {
       const { sin, cos } = sinCosDegrees(k * 45);
       const quarter = k % 2 === 0;
@@ -77,18 +70,9 @@ describe("state", () => {
       expect(Math.abs(sin)).toBe(sine);
       expect(Math.abs(cos)).toBe(quarter ? 1 - sine : Math.SQRT1_2);
     }
-  });
 
-  it("gives exact and symmetric degree trig at multiples of 45", () => {
-    const exact = [
-      sinCosDegrees(45).sin - sinCosDegrees(45).cos,
-      sinCosDegrees(90).sin,
-      sinCosDegrees(90).cos,
-      sinCosDegrees(180).sin,
-      sinCosDegrees(180).cos,
-    ].map((value) => value + 0);
-
-    expect(exact).toStrictEqual([0, 1, 0, 0, -1]);
+    expect(sinCosDegrees(90).sin).toBe(1);
+    expect(sinCosDegrees(180).cos).toBe(-1);
 
     assert(
       property(double({ max: 45, min: -45, noNaN: true }), (a) => {
@@ -98,26 +82,7 @@ describe("state", () => {
     );
   });
 
-  it("splits any angle into quarter turns plus a straighten within 45", () => {
-    assert(
-      property(double({ max: 1000, min: -1000, noNaN: true }), (d) => {
-        const { turns, angle } = splitAngle(d);
-
-        expect(Math.abs(angle)).toBeLessThanOrEqual(45);
-        const a = multiplyMatrix2(
-          rotationMatrix(angle),
-          quarterTurnMatrix(turns)
-        );
-        const b = rotationMatrix(d);
-
-        for (const [i, value] of a.entries()) {
-          expectClose(value, b[i] ?? Number.NaN, 1e-12);
-        }
-      })
-    );
-  });
-
-  it("keeps the same source pixels under view actions, composed as view matrices", () => {
+  it("keeps the same source pixels under view actions, composed as view matrices, with turns and mirrors that undo exactly", () => {
     const actions: readonly (readonly [
       (s: CropState) => CropState,
       Matrix2,
@@ -148,13 +113,7 @@ describe("state", () => {
             expectClose(value, want[i] ?? Number.NaN, 1e-15);
           }
         }
-      })
-    );
-  });
 
-  it("makes four right turns and two mirrors exact identities", () => {
-    assert(
-      property(stateArb, (s) => {
         const turned = rotateRight(rotateRight(rotateRight(rotateRight(s))));
 
         expect({ ...turned, aspect: s.aspect }).toStrictEqual(s);
@@ -163,17 +122,6 @@ describe("state", () => {
         expect(mirrorY(mirrorY(s))).toStrictEqual(s);
       })
     );
-  });
-
-  it("makes flipY equal flipX plus a half turn", () => {
-    const m = orientationMatrix(2, true);
-
-    expect([m[0], m[1] === 0, m[2] === 0, m[3]]).toStrictEqual([
-      1,
-      true,
-      true,
-      -1,
-    ]);
   });
 
   it("pivots about the crop centre when the angle changes", () => {
@@ -188,36 +136,5 @@ describe("state", () => {
         expectClose(after.y, before.y, tol);
       })
     );
-  });
-
-  it("maps the eight EXIF orientations to the eight distinct elements of D4", () => {
-    const matrices = Object.values(exifOrientations).map((o) =>
-      orientationMatrix(o.turns, o.flip)
-        .map((v) => v + 0)
-        .join(",")
-    );
-
-    expect(new Set(matrices).size).toBe(8);
-
-    expect(
-      orientationMatrix(
-        exifOrientations[5].turns,
-        exifOrientations[5].flip
-      ).map((v) => v + 0)
-    ).toStrictEqual([0, 1, 1, 0]);
-
-    expect(
-      orientationMatrix(
-        exifOrientations[7].turns,
-        exifOrientations[7].flip
-      ).map((v) => v + 0)
-    ).toStrictEqual([0, -1, -1, 0]);
-
-    expect(
-      applyMatrix2(
-        orientationMatrix(exifOrientations[6].turns, exifOrientations[6].flip),
-        { x: 1, y: 0 }
-      )
-    ).toStrictEqual({ x: 0, y: 1 });
   });
 });

@@ -12,6 +12,9 @@ import { applyMatrix2, rotationMatrix, turnedSize } from "../../src/geometry";
 import type { CropState, QuarterTurns, Size } from "../../src/geometry";
 import { largestCropAt, panBox } from "./oracles";
 
+const num = (min: number, max: number): Arbitrary<number> =>
+  double({ max, min, noNaN: true });
+
 const sizeArb: Arbitrary<Size> = record({
   height: integer({ max: 8000, min: 1 }),
   width: integer({ max: 8000, min: 1 }),
@@ -64,4 +67,4 @@ const stateArb: Arbitrary<CropState> = record({
   }
 );
 
-export { angleArb, sizeArb, stateArb, turnsArb };
+export { angleArb, num, sizeArb, stateArb, turnsArb };

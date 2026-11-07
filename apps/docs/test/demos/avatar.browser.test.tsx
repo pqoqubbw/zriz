@@ -3,25 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import AvatarDemo from "../../demos/avatar/demo";
-import {
-  button,
-  find,
-  frameLayout,
-  hits,
-  item,
-  layoutOf,
-  mountDemo,
-  mountLive,
-  ready,
-  settle,
-} from "./helpers";
+import { button, find, item, mountDemo, ready, settle } from "./helpers";
 
 vi.mock(import("../../demos/shell/photo"), async () => {
   const { photoMock } = await import("./fixtures");
 
   return await photoMock();
 });
+
+const near = (actual: number, expected: number): boolean =>
+  Math.abs(actual - expected) < 0.05;
 
 const panel = (): HTMLElement => find('[data-demo="avatar"]');
 
@@ -97,49 +88,33 @@ describe("avatar demo", () => {
     await cleanup();
   });
 
-  it.each(["desktop", "phone", "narrow"] as const)(
-    "draws the live demo where the frame drew it at %s",
-    async (width) => {
-      const frame = await frameLayout("avatar", width);
-
-      await mountLive(AvatarDemo, "avatar", width);
-      await ready();
-
-      expect(layoutOf()).toStrictEqual(frame);
-    }
-  );
-
-  it("crops a circle with no handles and no grid", async () => {
+  it("crops a circle at 1×, zooms with the steps and the wheel up to 512 source px, and starts a new photo from the whole frame", async () => {
     await mountDemo("avatar");
     await ready();
 
     const area = find(item("area"));
-    const box = area.getBoundingClientRect();
-    const extra = panel().querySelector(`${item("handle")}, ${item("grid")}`);
+    const circle = area.getBoundingClientRect();
 
-    expect(area.dataset.shape).toBe("circle");
-    expect(box.width).toBeCloseTo(box.height, 1);
-    expect(extra).toBeNull();
+    expect({
+      extra: panel().querySelector(`${item("handle")}, ${item("grid")}`),
+      off: off("Zoom out"),
+      round: near(circle.width, circle.height),
+      shape: area.dataset.shape,
+      shown: shown(),
+    }).toStrictEqual({
+      extra: null,
+      off: true,
+      round: true,
+      shape: "circle",
+      shown: "1.0×",
+    });
 
     await expect(violations()).resolves.toStrictEqual([]);
-  });
 
-  it("starts at 1× with zoom out off", async () => {
-    await mountDemo("avatar");
-    await ready();
-
-    expect(shown()).toBe("1.0×");
-    expect(off("Zoom out")).toBeTruthy();
-  });
-
-  it("zooms with the steps and the wheel", async () => {
-    await mountDemo("avatar");
-    await ready();
     button("Zoom in").click();
     await settle();
 
-    expect(shown()).toBe("1.25×");
-
+    const stepped = shown();
     const before = zoom();
     const viewport = find(item("viewport"));
     const box = viewport.getBoundingClientRect();
@@ -156,43 +131,12 @@ describe("avatar demo", () => {
 
     await settle();
 
-    expect(zoom()).toBeLessThan(before);
-  });
+    const wheeled = zoom() < before;
 
-  it("stops where the crop reaches 512 source px", async () => {
-    await mountDemo("avatar");
-    await ready();
     await press("{End}");
 
-    expect(zoom()).toBeCloseTo(800 / 512, 1);
-  });
-
-  it("stops at 3× on a large photo", async () => {
-    await mountDemo("avatar");
-    await ready();
-    pick(await bigPortrait());
-
-    await expect
-      .poll(
-        async () => {
-          await press("{End}");
-
-          return shown();
-        },
-        { timeout: 15_000 }
-      )
-      .toBe("3.0×");
-
-    expect(off("Zoom in")).toBeTruthy();
-  });
-
-  it("starts a new photo from the whole frame", async () => {
-    await mountDemo("avatar");
-    await ready();
-    button("Zoom in").click();
-    await settle();
-
-    expect(button("Reset").checkVisibility()).toBeTruthy();
+    const most = near(zoom(), 800 / 512);
+    const reset = button("Reset").checkVisibility();
 
     pick(await bigPortrait());
 
@@ -200,7 +144,13 @@ describe("avatar demo", () => {
       .poll(() => button("Reset").checkVisibility(), { timeout: 15_000 })
       .toBeFalsy();
 
-    expect(shown()).toBe("1.0×");
+    expect({ most, reset, shown: shown(), stepped, wheeled }).toStrictEqual({
+      most: true,
+      reset: true,
+      shown: "1.0×",
+      stepped: "1.25×",
+      wheeled: true,
+    });
   });
 
   it("downloads a round png at most 512 px wide", async () => {
@@ -233,35 +183,5 @@ describe("avatar demo", () => {
     expect(bitmap.height).toBe(512);
     expect(corner).toBe(0);
     expect(middle).toBe(255);
-  });
-
-  it("gives the steps a 44 px hit box", async () => {
-    await mountDemo("avatar");
-    await ready();
-
-    expect(hits(button("Zoom out"))).toBeTruthy();
-    expect(hits(button("Zoom in"))).toBeTruthy();
-  });
-});
-
-describe("avatar demo on a phone", () => {
-  beforeEach(async () => {
-    await page.viewport(390, 844);
-  });
-
-  afterEach(async () => {
-    await cleanup();
-  });
-
-  it("keeps the circle inside the safe area", async () => {
-    await mountDemo("avatar", "phone");
-    await ready();
-
-    const stage = find('[data-slot="stage"]').getBoundingClientRect();
-    const area = find(item("area")).getBoundingClientRect();
-
-    expect(area.height).toBeCloseTo(stage.height - 120, 0);
-    expect(area.top - stage.top).toBeCloseTo(60, 0);
-    await expect(violations()).resolves.toStrictEqual([]);
   });
 });

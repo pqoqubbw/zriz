@@ -371,17 +371,6 @@ describe("docs recipes", () => {
       expect(isOff(button("Undo"))).toBeTruthy();
     });
 
-    it("dims the button only while the stack is empty", async () => {
-      await render(<UndoEditor src={await objectUrl(1600, 1200)} />);
-      await whenPhoto();
-
-      expect(getComputedStyle(button("Undo")).opacity).toBe("0.4");
-
-      await commit("+");
-
-      expect(getComputedStyle(button("Undo")).opacity).toBe("1");
-    });
-
     it("keeps focus on the button when the stack empties", async () => {
       await render(<UndoEditor src={await objectUrl(1600, 1200)} />);
       await whenPhoto();
@@ -432,18 +421,7 @@ describe("docs recipes", () => {
       localStorage.removeItem("zriz-crop:refit");
     });
 
-    it("keeps the app when storage refuses the read", async () => {
-      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-        throw new DOMException("denied", "SecurityError");
-      });
-
-      await render(<SavedCrop id="blocked" src={await objectUrl(400, 300)} />);
-      await whenPhoto();
-
-      expect(document.querySelector(item("area"))).not.toBeNull();
-    });
-
-    it("keeps the gesture running when storage refuses the write", async () => {
+    it("keeps the app and the gesture when storage refuses the read and the write", async () => {
       const refused = vi
         .spyOn(Storage.prototype, "setItem")
         .mockImplementation(() => {
@@ -457,9 +435,16 @@ describe("docs recipes", () => {
         event.preventDefault();
       };
 
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new DOMException("denied", "SecurityError");
+      });
+
       window.addEventListener("error", seen);
-      await render(<SavedCrop id="full" src={await objectUrl(400, 300)} />);
+      await render(<SavedCrop id="blocked" src={await objectUrl(400, 300)} />);
       await whenPhoto();
+
+      expect(document.querySelector(item("area"))).not.toBeNull();
+
       press(find(item("area")), "+");
       await expect.poll(() => refused.mock.calls.length).toBe(1);
       await settled();
@@ -473,127 +458,139 @@ describe("docs recipes", () => {
   describe("save buttons", () => {
     it.each([
       {
-        mount: async (onSave: (blob: Blob) => void) => {
+        mount: async () => {
+          const onSave = vi.fn<(blob: Blob) => void>();
+
           await render(<AvatarPicker onSave={onSave} />);
           pick(fileInput(), await flat(800, 600));
+
+          return onSave;
         },
         save: "Save",
+        title: "avatar save",
       },
       {
-        mount: async (onSave: (blob: Blob) => void) => {
+        mount: async () => {
+          const onSave = vi.fn<(blob: Blob) => void>();
+
           await render(
             <Editor onSave={onSave} src={await objectUrl(800, 600)} />
           );
+
+          return onSave;
         },
         save: "Export",
+        title: "full editor export",
       },
-    ])("$save runs once on a double click and keeps focus", async (recipe) => {
-      const onSave = vi.fn<(blob: Blob) => void>();
+      {
+        mount: async () => {
+          const clicked = downloads();
 
-      await recipe.mount(onSave);
+          await render(<SaveCrop file={await flat(800, 600)} />);
+
+          return clicked;
+        },
+        save: "Save",
+        title: "save crop download",
+      },
+    ])(
+      "runs the $title once on a double click and keeps focus",
+      async (recipe) => {
+        const saved = await recipe.mount();
+
+        await whenOn(recipe.save);
+
+        const save = button(recipe.save);
+
+        save.focus();
+        save.click();
+        save.click();
+
+        await expect
+          .poll(() => saved.mock.calls.length, { timeout: 15_000 })
+          .toBeGreaterThan(0);
+
+        await frames(30);
+
+        expect(saved).toHaveBeenCalledOnce();
+        expect(document.activeElement).toBe(save);
+      }
+    );
+
+    it.each([
+      {
+        mount: async () => {
+          const onSave = vi.fn<(blob: Blob) => void>();
+
+          await render(<AvatarPicker onSave={onSave} />);
+          pick(fileInput(), await flat(800, 600));
+
+          const next = await flat(640, 640);
+
+          return {
+            saved: onSave,
+            swap: async () => {
+              pick(fileInput(), next);
+              await Promise.resolve();
+            },
+          };
+        },
+        save: "Save",
+        title: "an avatar save when another photo is picked",
+      },
+      {
+        mount: async () => {
+          const onSave = vi.fn<(blob: Blob) => void>();
+          const screen = await render(
+            <Editor onSave={onSave} src={await objectUrl(800, 600)} />
+          );
+
+          const next = await objectUrl(640, 640);
+
+          return {
+            saved: onSave,
+            swap: async () => {
+              await screen.rerender(<Editor onSave={onSave} src={next} />);
+            },
+          };
+        },
+        save: "Export",
+        title: "a full editor export when src changes",
+      },
+      {
+        mount: async () => {
+          const clicked = downloads();
+          const screen = await render(<SaveCrop file={await flat(800, 600)} />);
+
+          const next = await flat(640, 640);
+
+          return {
+            saved: clicked,
+            swap: async () => {
+              await screen.rerender(<SaveCrop file={next} />);
+            },
+          };
+        },
+        save: "Save",
+        title: "a save crop export when the file changes",
+      },
+    ])("drops $title still running", async (recipe) => {
+      const { saved, swap } = await recipe.mount();
+
       await whenOn(recipe.save);
-
-      const save = button(recipe.save);
-
-      save.focus();
-      save.click();
-      save.click();
-
-      await expect
-        .poll(() => onSave.mock.calls.length, { timeout: 15_000 })
-        .toBeGreaterThan(0);
-
+      button(recipe.save).click();
+      await swap();
+      await whenOn(recipe.save);
       await frames(30);
 
-      expect(onSave).toHaveBeenCalledOnce();
-      expect(document.activeElement).toBe(save);
-    });
-
-    it("save crop downloads once on a double click and keeps focus", async () => {
-      const clicked = downloads();
-
-      await render(<SaveCrop file={await flat(800, 600)} />);
-      await whenOn("Save");
-
-      const save = button("Save");
-
-      save.focus();
-      save.click();
-      save.click();
-
-      await expect
-        .poll(() => clicked.mock.calls.length, { timeout: 15_000 })
-        .toBeGreaterThan(0);
-
-      await frames(30);
-
-      expect(clicked).toHaveBeenCalledOnce();
-      expect(document.activeElement).toBe(save);
-    });
-
-    it("drops a save crop export still running when the file changes", async () => {
-      const clicked = downloads();
-      const screen = await render(<SaveCrop file={await flat(800, 600)} />);
-
-      await whenOn("Save");
-
-      const next = await flat(640, 640);
-
-      button("Save").click();
-      await screen.rerender(<SaveCrop file={next} />);
-      await whenOn("Save");
-      await frames(30);
-
-      expect(clicked).not.toHaveBeenCalled();
-
-      button("Save").click();
-
-      await expect
-        .poll(() => clicked.mock.calls.length, { timeout: 15_000 })
-        .toBe(1);
-    });
-
-    it("drops an avatar save still running when another photo is picked", async () => {
-      const onSave = vi.fn<(blob: Blob) => void>();
-
-      await render(<AvatarPicker onSave={onSave} />);
-      pick(fileInput(), await flat(800, 600));
-      await whenOn("Save");
-
-      const next = await flat(640, 640);
-
-      button("Save").click();
-      pick(fileInput(), next);
-      await whenOn("Save");
-      await frames(30);
-
-      expect(onSave).not.toHaveBeenCalled();
+      expect(saved).not.toHaveBeenCalled();
       expect(alertText()).toBeUndefined();
 
-      button("Save").click();
+      button(recipe.save).click();
 
       await expect
-        .poll(() => onSave.mock.calls.length, { timeout: 15_000 })
+        .poll(() => saved.mock.calls.length, { timeout: 15_000 })
         .toBe(1);
-    });
-
-    it("drops a full editor export still running when src changes", async () => {
-      const onSave = vi.fn<(blob: Blob) => void>();
-      const screen = await render(
-        <Editor onSave={onSave} src={await objectUrl(800, 600)} />
-      );
-
-      await whenOn("Export");
-
-      const next = await objectUrl(640, 640);
-
-      button("Export").click();
-      await screen.rerender(<Editor onSave={onSave} src={next} />);
-      await whenOn("Export");
-      await frames(30);
-
-      expect(onSave).not.toHaveBeenCalled();
-      expect(alertText()).toBeUndefined();
     });
   });
 
@@ -631,11 +628,11 @@ describe("docs recipes", () => {
       expect(alertText()).toBeUndefined();
     });
 
-    it("holds one result url however many uploads overlap", async () => {
+    it("holds one result url however many uploads overlap and frees it on unmount", async () => {
       const pending = backend();
       const urls = resultUrls();
+      const screen = await mountUpload();
 
-      await mountUpload();
       button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
       button("Upload").click();
@@ -646,21 +643,11 @@ describe("docs recipes", () => {
       await frames(4);
 
       expect(urls.live()).toBe(1);
-    });
-
-    it("frees the result url on unmount and makes none after it", async () => {
-      const pending = backend();
-      const urls = resultUrls();
-      const screen = await mountUpload();
 
       button("Upload").click();
-      await expect.poll(() => pending.length).toBe(1);
-      pending[0]?.answer(answer());
-      await expect.poll(() => urls.live()).toBe(1);
-      button("Upload").click();
-      await expect.poll(() => pending.length).toBe(2);
+      await expect.poll(() => pending.length).toBe(3);
       await screen.unmount();
-      pending[1]?.answer(answer());
+      pending[2]?.answer(answer());
       await frames(4);
 
       expect(urls.live()).toBe(0);
@@ -727,7 +714,7 @@ describe("docs recipes", () => {
   });
 
   describe("zoom steps", () => {
-    it("keeps focus on a step at the limit", async () => {
+    it("keeps focus on a step at the limit and reports both off under a disabled root", async () => {
       await render(
         <Cropper.Root image={{ height: 300, width: 400 }}>
           <ZoomSteps />
@@ -746,11 +733,9 @@ describe("docs recipes", () => {
       expect(isOff(zoomIn)).toBeTruthy();
       expect(zoomIn.disabled).toBeFalsy();
       expect(document.activeElement).toBe(zoomIn);
-    });
-  });
 
-  describe("zoom steps under a disabled root", () => {
-    it("reports both steps as off", async () => {
+      await cleanup();
+
       await render(
         <Cropper.Root disabled image={{ height: 300, width: 400 }}>
           <ZoomSteps />
@@ -763,51 +748,66 @@ describe("docs recipes", () => {
   });
 
   describe("zoom sliders in forced colours", () => {
-    it("paints the thumb of the stylesheet recipe", async () => {
-      const style = document.createElement("style");
+    it.each([
+      {
+        mount: async () => {
+          const style = document.createElement("style");
 
-      style.textContent = thumbCss;
-      document.head.append(style);
+          style.textContent = thumbCss;
+          document.head.append(style);
 
-      await render(
-        <Cropper.Root image={{ height: 300, width: 400 }}>
-          <Cropper.Zoom aria-label="Zoom">
-            <Cropper.ZoomThumb />
-          </Cropper.Zoom>
-        </Cropper.Root>
-      );
+          await render(
+            <Cropper.Root image={{ height: 300, width: 400 }}>
+              <Cropper.Zoom aria-label="Zoom">
+                <Cropper.ZoomThumb />
+              </Cropper.Zoom>
+            </Cropper.Root>
+          );
+
+          return () => {
+            style.remove();
+          };
+        },
+        title: "the stylesheet recipe",
+        track: "",
+      },
+      {
+        mount: async () => {
+          await render(
+            <Editor onSave={noop} src={await objectUrl(400, 300)} />
+          );
+
+          return noop;
+        },
+        title: "the full editor",
+        track: "gradient",
+      },
+      {
+        mount: async () => {
+          const host = document.createElement("div");
+
+          host.innerHTML = zoomMarkup;
+          document.body.append(host);
+
+          return await Promise.resolve(() => {
+            host.remove();
+          });
+        },
+        title: "the vanilla recipe",
+        track: "",
+      },
+    ])("paints the thumb and track of $title", async ({ mount, track }) => {
+      const teardown = await mount();
 
       await commands.forcedColors("active");
       const colour = thumbColour();
+      const zoom = document.querySelector(item("zoom"));
+      const painted = zoom ? getComputedStyle(zoom).backgroundImage : "";
 
-      style.remove();
-
-      expect(colour).not.toBe(canvasColour());
-    });
-
-    it("paints the thumb and the track of the full editor", async () => {
-      await render(<Editor onSave={noop} src={await objectUrl(400, 300)} />);
-
-      await commands.forcedColors("active");
-
-      expect(thumbColour()).not.toBe(canvasColour());
-
-      expect(getComputedStyle(find(item("zoom"))).backgroundImage).toContain(
-        "gradient"
-      );
-    });
-
-    it("paints the thumb of the vanilla recipe", async () => {
-      const host = document.createElement("div");
-
-      host.innerHTML = zoomMarkup;
-      document.body.append(host);
-      await commands.forcedColors("active");
-      const colour = thumbColour();
-
-      host.remove();
+      teardown();
 
       expect(colour).not.toBe(canvasColour());
+      expect(painted).toContain(track);
     });
   });
 

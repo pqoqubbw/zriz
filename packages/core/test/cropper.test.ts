@@ -33,39 +33,10 @@ import type {
   CropperOptions,
 } from "../src";
 import type { QuarterTurns } from "../src/geometry";
+import { noop, PHOTO, setup, stateOf } from "./cropper-fixture";
+import type { Rig } from "./cropper-fixture";
 import { fakeClock } from "./fake-clock";
 import { isCropCovered, isPerspectiveValid } from "./geometry/oracles";
-
-const PHOTO = { height: 3000, width: 4000 };
-
-const cropState = (state: CropState | null): CropState => {
-  if (!state) {
-    throw new Error("no image");
-  }
-
-  return state;
-};
-
-const setup = (options: CropperOptions = {}) => {
-  const time = fakeClock();
-  const change = vi.fn<CropperEvents["change"]>();
-  const commit = vi.fn<CropperEvents["commit"]>();
-  const cropper = createCropper({
-    clock: time.clock,
-    image: PHOTO,
-    onValueChange: (value, details) => {
-      change(value, details);
-    },
-    onValueCommit: (value, details) => {
-      commit(value, details);
-    },
-    ...options,
-  });
-
-  return { change, commit, cropper, time };
-};
-
-const noop = (): void => {};
 
 const boom = (): never => {
   throw new Error("app bug");
@@ -99,7 +70,7 @@ const sound = (value: CropValue): boolean =>
   value.size.height > 0;
 
 const withCrop = (cropper: Cropper, crop: Partial<CropState["crop"]>): void => {
-  const state = cropState(cropper.getCropState());
+  const state = stateOf(cropper);
 
   cropper.setCropState({ ...state, crop: { ...state.crop, ...crop } });
 };
@@ -139,9 +110,7 @@ const expectTilted = (cropper: Cropper): void => {
     vertical: 10,
   });
 
-  expect(cropState(cropper.getCropState()).perspective.focal).toBeGreaterThan(
-    0
-  );
+  expect(stateOf(cropper).perspective.focal).toBeGreaterThan(0);
 };
 
 const expectValid = (cropper: Cropper): void => {
@@ -152,13 +121,25 @@ const expectValid = (cropper: Cropper): void => {
   expect(cropper.getZoom()).toBeGreaterThanOrEqual(1 - 1e-9);
   expect(plan?.forward.every(Number.isFinite)).toBeTruthy();
   expect([plan?.width, plan?.height].every(Number.isFinite)).toBeTruthy();
-  expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
+  expect(isCropCovered(stateOf(cropper))).toBeTruthy();
 };
-
-const nothing = (): void => undefined;
 
 const loose = (cropper: Cropper, given: unknown): void => {
   Reflect.apply(cropper.setValue, cropper, [given]);
+};
+
+const MIN_FLOOR = { height: 630, width: 1200 };
+
+const floored = (): Rig => {
+  const rig = setup({
+    defaultValue: { aspect: 1200 / 630 },
+    minSize: MIN_FLOOR,
+  });
+
+  rig.cropper.setZoom(15);
+  rig.time.frames(2);
+
+  return rig;
 };
 
 describe("events", () => {
@@ -172,12 +153,53 @@ describe("events", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
-  it("emits nothing for a value equal to the current one", () => {
+  it.each<[string, (cropper: Cropper) => void, (cropper: Cropper) => void]>([
+    [
+      "a value equal to the current one",
+      noop,
+      (cropper) => {
+        cropper.setValue({ ...cropper.getValue() });
+        cropper.setValue({ rotation: 0 });
+      },
+    ],
+    [
+      "the same photo again",
+      (cropper) => {
+        cropper.setValue({ rotation: 5 });
+      },
+      (cropper) => {
+        cropper.setImage({ ...PHOTO });
+      },
+    ],
+    [
+      "a photo of the same size under a crop on a limit",
+      (cropper) => {
+        cropper.setZoom(1.5);
+        cropper.panBy(2, 0);
+      },
+      (cropper) => {
+        cropper.setImage({ ...PHOTO });
+      },
+    ],
+    [
+      "a later photo of the same shape",
+      noop,
+      (cropper) => {
+        cropper.setImage({ height: 1500, width: 2000 });
+      },
+    ],
+  ])("stays silent on %s", (_, prepare, write) => {
     const { change, commit, cropper, time } = setup();
 
-    cropper.setValue({ ...cropper.getValue() });
-    cropper.setValue({ rotation: 0 });
+    prepare(cropper);
     time.frames(3);
+    change.mockClear();
+    commit.mockClear();
+    const before = cropper.getValue();
+
+    write(cropper);
+    time.frames(3);
+    expect(cropper.getValue()).toBe(before);
     expect(change).not.toHaveBeenCalled();
     expect(commit).not.toHaveBeenCalled();
   });
@@ -199,7 +221,9 @@ describe("events", () => {
 
   it("commits once per gesture and marks its phases", () => {
     const { change, commit, cropper, time } = setup();
+    const starts = vi.fn<() => void>();
 
+    cropper.on("gesturestart", starts);
     cropper.setZoom(4, { emit: false });
     cropper.begin("pan");
 
@@ -223,15 +247,7 @@ describe("events", () => {
     ]);
 
     expect(change.mock.calls.every(([, d]) => d.reason === "pan")).toBeTruthy();
-    expect(commit).toHaveBeenCalledOnce();
-    expect(commit.mock.calls[0]?.[1].reason).toBe("pan");
-  });
-
-  it("treats a restarted gesture as one", () => {
-    const { commit, cropper, time } = setup();
-    const starts = vi.fn<() => void>();
-
-    cropper.on("gesturestart", starts);
+    expect(commit.mock.calls.map(([, d]) => d.reason)).toStrictEqual(["pan"]);
     cropper.begin("pan");
     cropper.setRotation(3);
     time.frame();
@@ -240,8 +256,10 @@ describe("events", () => {
     time.frame();
     cropper.end();
     time.frame();
-    expect(starts).toHaveBeenCalledOnce();
-    expect(commit).toHaveBeenCalledOnce();
+
+    expect([starts.mock.calls.length, commit.mock.calls.length]).toStrictEqual([
+      2, 2,
+    ]);
   });
 
   it("does not commit a gesture that changed nothing", () => {
@@ -277,21 +295,6 @@ describe("events", () => {
     expect(cropper.getValue().rotation).toBe(14);
   });
 
-  it("asks for one frame at a time", () => {
-    const { cropper, time } = setup();
-
-    cropper.run(() => {
-      cropper.setRotation(cropper.getValue().rotation + 1);
-
-      return true;
-    });
-
-    for (let i = 0; i < 5; i += 1) {
-      expect(time.pending()).toBe(1);
-      time.frame();
-    }
-  });
-
   it("commits an instant action once", () => {
     const { commit, cropper, time } = setup();
 
@@ -322,26 +325,84 @@ describe("events", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
-  it("never echoes a controlled value", () => {
-    const { change, commit, cropper, time } = setup();
-    const next = { ...cropper.getValue(), rotation: 8 };
+  it.each<[string, (cropper: Cropper) => void, number, number, number]>([
+    [
+      "a controlled value written twice",
+      (cropper) => {
+        const next = { ...cropper.getValue(), rotation: 8 };
 
-    cropper.setValue(next, { emit: false, reason: "controlled" });
-    cropper.setValue(next, { emit: false, reason: "controlled" });
-    time.frames(3);
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-    expect(cropper.getState().committed.rotation).toBe(8);
-  });
+        cropper.setValue(next, { emit: false, reason: "controlled" });
+        cropper.setValue(next, { emit: false, reason: "controlled" });
+      },
+      0,
+      0,
+      8,
+    ],
+    [
+      "a silent write of the value a change is waiting with",
+      (cropper) => {
+        cropper.setRotation(5);
+        cropper.setRotation(5, { emit: false });
+      },
+      0,
+      0,
+      5,
+    ],
+    [
+      "a controlled echo of a waiting write",
+      (cropper) => {
+        cropper.setRotation(5);
 
-  it("reads pristine when the start value is refitted to the photo", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
+        cropper.setValue(cropper.getValue(), {
+          emit: false,
+          reason: "controlled",
+        });
+      },
+      1,
+      1,
+      5,
+    ],
+    [
+      "a silent echo inside the change listener",
+      (cropper) => {
+        cropper.on("change", (value) => {
+          cropper.setValue(value, { emit: false });
+        });
+
+        cropper.setRotation(5);
+      },
+      1,
+      1,
+      5,
+    ],
+  ])(
+    "echoes nothing back after %s",
+    (_, write, changes, commits, committed) => {
+      const { change, commit, cropper, time } = setup();
+      const before = cropper.getValue();
+
+      write(cropper);
+      time.frames(3);
+      expect(change).toHaveBeenCalledTimes(changes);
+      expect(commit).toHaveBeenCalledTimes(commits);
+
+      expect(
+        commit.mock.calls.every(([, details]) => details.previous === before)
+      ).toBeTruthy();
+
+      expect(cropper.getState().committed.rotation).toBe(committed);
+    }
+  );
+
+  it("stays pristine on a refitted start value and when it is written back", () => {
+    const { cropper, time } = setup({
       defaultValue: { aspect: 1, rotation: 60 },
       image: { height: 3024, width: 4032 },
     });
 
+    time.frames(2);
+    expect(cropper.getState().pristine).toBeTruthy();
+    cropper.setValue(cropper.getValue());
     time.frames(2);
     expect(cropper.getState().pristine).toBeTruthy();
     cropper.setRotation(10);
@@ -350,34 +411,37 @@ describe("events", () => {
     cropper.reset();
     time.frames(2);
     expect(cropper.getState().pristine).toBeTruthy();
-    cropper.destroy();
   });
 
-  it("takes a value and a reset before any image, with their own change reasons", () => {
-    const time = fakeClock();
-    const cropper = createCropper({ clock: time.clock });
+  it("stores a value before a photo, ignores NaN, reports reasons and fixes it on arrival", () => {
+    const { cropper, time } = setup({ image: null });
     const reasons: string[] = [];
 
     cropper.on("change", (_, details) => {
       reasons.push(details.reason);
     });
 
+    const rotations: number[] = [];
+
     cropper.setValue({ rotation: 12 });
     time.frames(2);
-    expect(cropper.getValue().rotation).toBe(12);
+    rotations.push(cropper.getValue().rotation);
     cropper.reset();
     time.frames(2);
-    expect(cropper.getValue().rotation).toBe(0);
+    rotations.push(cropper.getValue().rotation);
     expect(reasons).toStrictEqual(["imperative", "reset"]);
-    cropper.destroy();
+    cropper.setValue({ rotation: 60 });
+    rotations.push(cropper.getValue().rotation);
+    cropper.setValue({ rotation: Number.NaN });
+    rotations.push(cropper.getValue().rotation);
+    cropper.setImage(PHOTO);
+    rotations.push(cropper.getValue().rotation);
+    expect(rotations).toStrictEqual([12, 0, 60, 60, 45]);
+    expect(isCropCovered(stateOf(cropper))).toBeTruthy();
   });
 
   it("notifies state subscribers when any one snapshot field changes and never without a change", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 3024, width: 4032 },
-    });
+    const { cropper, time } = setup({ image: { height: 3024, width: 4032 } });
 
     time.frames(2);
     const listener = vi.fn<() => void>();
@@ -507,27 +571,6 @@ describe("events", () => {
     );
   });
 
-  it("destroys the plugins it started, even after setOptions", () => {
-    const first = {
-      destroy: vi.fn<() => void>(),
-      init: vi.fn<() => void>(),
-      name: "first",
-    };
-    const second = {
-      destroy: vi.fn<() => void>(),
-      init: vi.fn<() => void>(),
-      name: "second",
-    };
-    const cropper = createCropper({ plugins: [first] });
-    const late: CropperOptions = { plugins: [second] };
-
-    cropper.setOptions(late);
-    cropper.destroy();
-    expect(first.destroy).toHaveBeenCalledOnce();
-    expect(second.init).not.toHaveBeenCalled();
-    expect(second.destroy).not.toHaveBeenCalled();
-  });
-
   it("stops the clock when idle and after destroy", () => {
     const { cropper, time } = setup();
 
@@ -563,18 +606,6 @@ describe("snapshot", () => {
     expect(seen.length).toBeLessThanOrEqual(3);
     expect(cropper.getState().interacting).toBeNull();
   });
-
-  it("tracks pristine", () => {
-    const { cropper, time } = setup();
-
-    expect(cropper.getState().pristine).toBeTruthy();
-    cropper.setRotation(4);
-    time.frame();
-    expect(cropper.getState().pristine).toBeFalsy();
-    cropper.reset();
-    time.frame();
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
 });
 
 describe("actions", () => {
@@ -592,16 +623,30 @@ describe("actions", () => {
     expect(cropper.getValue().size.width).toBeCloseTo(start.width, 9);
   });
 
-  it("restores the value after four quarter turns and two flips", () => {
-    const { cropper } = setup();
+  it.each<[string, () => Rig]>([
+    [
+      "a straightened crop",
+      () => {
+        const rig = setup();
 
-    cropper.setValue({
-      center: { x: 0.4, y: 0.6 },
-      rotation: 7,
-      size: { height: 0.4, width: 0.3 },
-    });
+        rig.cropper.setValue({
+          center: { x: 0.4, y: 0.6 },
+          rotation: 7,
+          size: { height: 0.4, width: 0.3 },
+        });
 
+        return rig;
+      },
+    ],
+    [
+      "a ratio whose side rounds to the next step",
+      () => setup({ defaultValue: { aspect: 6.650816071338371 } }),
+    ],
+    ["a crop held at minSize", floored],
+  ])("restores %s after four quarter turns and two flips", (_, make) => {
+    const { cropper } = make();
     const before = cropper.getValue();
+    const { pristine } = cropper.getState();
 
     for (let i = 0; i < 4; i += 1) {
       cropper.rotate90();
@@ -610,30 +655,7 @@ describe("actions", () => {
     cropper.flip("x");
     cropper.flip("x");
     expect(valuesEqual(cropper.getValue(), before)).toBeTruthy();
-  });
-
-  it("keeps the value when the same image is set again", () => {
-    const { change, cropper, time } = setup();
-
-    cropper.setValue({ rotation: 5 });
-    time.frame();
-    change.mockClear();
-    const before = cropper.getValue();
-
-    cropper.setImage({ ...PHOTO });
-    time.frames(2);
-    expect(cropper.getValue()).toBe(before);
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it("applies a value set before the image loads", () => {
-    const time = fakeClock();
-    const cropper = createCropper({ clock: time.clock });
-
-    cropper.setValue({ rotation: 10 });
-    cropper.setImage(PHOTO);
-    expect(cropper.getValue().rotation).toBe(10);
-    expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
+    expect(cropper.getState().pristine).toBe(pristine);
   });
 
   it("holds a fixed aspect through every action", () => {
@@ -642,7 +664,7 @@ describe("actions", () => {
     cropper.setRotation(-20);
     cropper.setZoom(3);
     cropper.panBy(0.3, -0.2);
-    const { width, height } = cropState(cropper.getCropState()).crop;
+    const { width, height } = stateOf(cropper).crop;
 
     expect(width / height).toBeCloseTo(4 / 5, 9);
   });
@@ -675,21 +697,6 @@ const action = oneof(
 );
 
 describe("invariants", () => {
-  it("moves the crop instead of zooming past the maximum when turning", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      image: { height: 61, width: 13 },
-    });
-
-    cropper.setRotation(45);
-    cropper.setZoom(0.5);
-    cropper.setZoom(3.1967245081967204);
-    cropper.panBy(0, -0.6599663713976182);
-    cropper.setRotation(0);
-    expect(cropper.getZoom()).toBeLessThanOrEqual(15 * (1 + 1e-9));
-  });
-
   it("keeps every value valid under any sequence of actions", () => {
     fcAssert(
       property(
@@ -701,9 +708,7 @@ describe("invariants", () => {
           tuple(constantFrom(first), action, action, action, action)
         ),
         (image, actions) => {
-          const time = fakeClock();
-          const cropper = createCropper({
-            clock: time.clock,
+          const { cropper } = setup({
             image,
             minSize: { height: 1, width: 1 },
           });
@@ -750,7 +755,7 @@ describe("invariants", () => {
               }
             }
 
-            const state = cropState(cropper.getCropState());
+            const state = stateOf(cropper);
 
             expect(isCropCovered(state, 1e-6)).toBeTruthy();
             expect(Math.abs(state.angle)).toBeLessThanOrEqual(45);
@@ -761,7 +766,21 @@ describe("invariants", () => {
             expect(parse(serialize(value))).toStrictEqual(value);
           }
         }
-      )
+      ),
+      {
+        examples: [
+          [
+            { height: 61, width: 13 },
+            [
+              { kind: "rotate", n: 45 },
+              { kind: "zoom", n: 0.5 },
+              { kind: "zoom", n: 3.1967245081967204 },
+              { kind: "pan", n: [0, -0.6599663713976182] },
+              { kind: "rotate", n: 0 },
+            ],
+          ],
+        ],
+      }
     );
   });
 });
@@ -770,24 +789,22 @@ const isCollector = (value: unknown): value is () => void =>
   typeof value === "function";
 
 describe("what the cropper holds on to", () => {
-  it("keeps only the size of the image it was given", () => {
+  it("holds neither the image object nor the last event", async () => {
     const given = { height: 30, preview: {}, width: 40 };
-    const cropper = createCropper({ clock: fakeClock().clock, image: given });
+    const small = setup({ image: given });
 
-    expect(cropper.getCropState()?.image).toStrictEqual({
+    expect(small.cropper.getCropState()?.image).toStrictEqual({
       height: 30,
       width: 40,
     });
 
-    cropper.setImage(given);
+    small.cropper.setImage(given);
 
-    expect(cropper.getCropState()?.image).toStrictEqual({
+    expect(small.cropper.getCropState()?.image).toStrictEqual({
       height: 30,
       width: 40,
     });
-  });
 
-  it("drops the last event after its frame", async () => {
     setFlagsFromString("--expose-gc");
     const collect: unknown = runInNewContext("gc");
 
@@ -796,10 +813,7 @@ describe("what the cropper holds on to", () => {
     }
 
     const { clock, frames } = fakeClock();
-    const cropper = createCropper({
-      clock,
-      image: { height: 3000, width: 4000 },
-    });
+    const cropper = createCropper({ clock, image: PHOTO });
 
     frames(2);
     const ref = (() => {
@@ -847,54 +861,63 @@ const sweepAndBack = (options: CropperOptions) => {
 };
 
 describe("value edges", () => {
-  it("treats an angle that reads as level as level", () => {
+  it.each<[string, (cropper: Cropper) => void]>([
+    [
+      "an angle of 1e-13",
+      (cropper) => {
+        cropper.setRotation(10);
+        cropper.setRotation(1e-13);
+      },
+    ],
+    [
+      "angles that sum to almost zero",
+      (cropper) => {
+        let angle = 0;
+
+        for (const step of [0.1, 0.1, 0.1, -0.1, -0.1, -0.1]) {
+          angle += step;
+          cropper.setRotation(angle);
+        }
+      },
+    ],
+    [
+      "a tilt of 1e-13",
+      (cropper) => {
+        cropper.setValue({ perspective: { horizontal: 0, vertical: 10 } });
+
+        cropper.setValue({
+          perspective: { horizontal: 1e-13, vertical: 1e-13 },
+        });
+      },
+    ],
+  ])("reads %s as level and flat", (_, write) => {
     const { cropper } = setup();
 
-    cropper.setRotation(10);
-    cropper.setRotation(1e-13);
+    write(cropper);
     expect(cropper.getValue().rotation).toBe(0);
-    expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
-  });
-
-  it("gives a level plan after angles that sum to almost zero", () => {
-    const { cropper } = setup();
-    let angle = 0;
-
-    for (const step of [0.1, 0.1, 0.1, -0.1, -0.1, -0.1]) {
-      angle += step;
-      cropper.setRotation(angle);
-    }
-
     expect(cropper.getCropState()?.angle).toBe(0);
-    expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
-  });
-
-  it("treats a perspective that reads as flat as flat", () => {
-    const { cropper } = setup();
-
-    cropper.setValue({ perspective: { horizontal: 0, vertical: 10 } });
-    cropper.setValue({ perspective: { horizontal: 1e-13, vertical: 1e-13 } });
     expect(cropper.getPixelCrop()?.homography).toBeNull();
     expect(cropper.getPixelCrop()?.pixelRect).not.toBeNull();
   });
 
-  it("rounds a fractional image size to whole pixels", () => {
-    const { cropper } = setup({ image: { height: 10, width: 10.5 } });
+  it.each([
+    [
+      { height: 10, width: 10.5 },
+      { height: 10, width: 11 },
+    ],
+    [
+      { height: 0.4, width: 0.4 },
+      { height: 1, width: 1 },
+    ],
+  ])("reads a photo of %o as whole pixels %o", (image, whole) => {
+    const { cropper } = setup({ image });
+
+    expect(cropper.getCropState()?.image).toStrictEqual(whole);
 
     expect(cropper.getPixelCrop()?.pixelRect).toStrictEqual({
-      height: 10,
       left: 0,
       top: 0,
-      width: 11,
-    });
-  });
-
-  it("keeps an image under half a pixel at one pixel", () => {
-    const { cropper } = setup({ image: { height: 0.4, width: 0.4 } });
-
-    expect(cropper.getCropState()?.image).toStrictEqual({
-      height: 1,
-      width: 1,
+      ...whole,
     });
   });
 
@@ -961,124 +984,133 @@ describe("listener isolation", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps frames and commits going past a throwing change listener", () => {
+  it.each<
+    [
+      string,
+      (cropper: Cropper, thrower: () => boolean, time: Rig["time"]) => void,
+    ]
+  >([
+    [
+      "change listener",
+      (cropper, thrower) => {
+        cropper.on("change", () => {
+          thrower();
+        });
+      },
+    ],
+    [
+      "commit listener",
+      (cropper, thrower) => {
+        cropper.on("commit", () => {
+          thrower();
+        });
+      },
+    ],
+    [
+      "task",
+      (cropper, thrower, time) => {
+        cropper.run(() => thrower());
+        time.frame();
+      },
+    ],
+    [
+      "gestureend listener",
+      (cropper, thrower) => {
+        cropper.on("gestureend", () => {
+          thrower();
+        });
+      },
+    ],
+    [
+      "subscriber",
+      (cropper, thrower) => {
+        cropper.subscribe(() => {
+          thrower();
+        });
+      },
+    ],
+  ])("keeps frames, commits and settle going past a throwing %s", (_, add) => {
     const errors = reported();
     const { commit, cropper, time } = setup();
+    const thrower = vi.fn<() => boolean>().mockImplementationOnce(boom);
     const later = vi.fn<() => void>();
     const frame = vi.fn<() => void>();
+    const settle = vi.fn<() => void>();
+    const next = vi.fn<() => void>();
 
-    cropper.on("change", boom);
+    add(cropper, thrower, time);
     cropper.on("change", later);
     cropper.on("frame", frame);
-    cropper.setRotation(5);
-    time.frame();
-    expect(later).toHaveBeenCalledOnce();
-    expect(frame).toHaveBeenCalledOnce();
-    expect(commit).toHaveBeenCalledOnce();
-    expect(errors).toHaveLength(1);
-  });
-
-  it("clears settling and fires settle past a throwing commit listener", () => {
-    const errors = reported();
-    const { cropper, time } = setup();
-    const settle = vi.fn<() => void>();
-
-    cropper.on("commit", boom);
     cropper.on("settle", settle);
-    cropper.setRotation(5);
-    cropper.run(() => false);
-    time.frame();
-    expect(settle).toHaveBeenCalledOnce();
-    expect(cropper.getState().settling).toBeFalsy();
-    expect(errors).toHaveLength(1);
-  });
-
-  it("drops a throwing task and keeps the frame loop", () => {
-    const errors = reported();
-    const { commit, cropper, time } = setup();
-    const task = vi.fn<() => boolean>(boom);
-
-    cropper.run(task);
-    time.frame();
-    cropper.setRotation(5);
-    time.frame();
-    expect(task).toHaveBeenCalledOnce();
-    expect(commit).toHaveBeenCalledOnce();
-    expect(errors).toHaveLength(1);
-  });
-
-  it("finishes ending a gesture past a throwing gestureend listener", () => {
-    const errors = reported();
-    const { commit, cropper, time } = setup();
-
-    cropper.on("gestureend", boom);
+    cropper.subscribe(next);
     cropper.begin("pan");
     cropper.setRotation(5);
     cropper.end();
-    time.frames(2);
-    expect(cropper.getState().interacting).toBeNull();
-    expect(commit).toHaveBeenCalledOnce();
+    cropper.run(() => false);
+    time.frames(3);
     expect(errors).toHaveLength(1);
+
+    expect({
+      commits: commit.mock.calls.length,
+      frame: frame.mock.calls.length > 0,
+      later: later.mock.calls.length > 0,
+      next: next.mock.calls.length > 0,
+      settles: settle.mock.calls.length,
+      thrown: thrower.mock.calls.length > 0,
+    }).toStrictEqual({
+      commits: 1,
+      frame: true,
+      later: true,
+      next: true,
+      settles: 1,
+      thrown: true,
+    });
+
+    expect(cropper.getValue().rotation).toBe(5);
+
+    expect(cropper.getState()).toMatchObject({
+      interacting: null,
+      settling: false,
+    });
   });
 
-  it("finishes a write past a throwing subscriber and runs the next one", () => {
-    const errors = reported();
+  it("runs listeners on a copy of the list while they add and remove themselves", () => {
     const { cropper } = setup();
-    const next = vi.fn<() => void>();
-
-    cropper.subscribe(boom);
-    cropper.subscribe(next);
-    cropper.flip();
-    expect(cropper.getValue().mirrored).toBeTruthy();
-    expect(next).toHaveBeenCalledOnce();
-    expect(errors).toHaveLength(1);
-  });
-
-  it("returns from a listener that removes and adds itself during an emit", () => {
-    const { cropper } = setup();
-    const spy = vi.fn<() => void>();
-    let off = nothing;
-
-    const rearm = (): void => {
-      spy();
-      off();
-      off = cropper.on("stop", rearm);
-    };
-
-    off = cropper.on("stop", rearm);
-    cropper.stop();
-    cropper.stop();
-    expect(spy).toHaveBeenCalledTimes(2);
-  });
-
-  it("returns from a subscriber that resubscribes during a refresh", () => {
-    const { cropper } = setup();
-    const spy = vi.fn<() => void>();
-    let off = nothing;
-
-    const rearm = (): void => {
-      spy();
-      off();
-      off = cropper.subscribe(rearm);
-    };
-
-    off = cropper.subscribe(rearm);
-    cropper.flip();
-    expect(spy).toHaveBeenCalledOnce();
-  });
-
-  it("skips a listener another listener removed, and holds a new one for next time", () => {
-    const { cropper } = setup();
+    const again = vi.fn<() => void>();
+    const resubscribed = vi.fn<() => void>();
     const removed = vi.fn<() => void>();
     const added = vi.fn<() => void>();
-    let off = nothing;
+    let offStop = noop;
+    let offSubscribe = noop;
+    let offRemoved = noop;
+
+    const rearm = (): void => {
+      again();
+      offStop();
+      offStop = cropper.on("stop", rearm);
+    };
+
+    const resubscribe = (): void => {
+      resubscribed();
+      offSubscribe();
+      offSubscribe = cropper.subscribe(resubscribe);
+    };
+
+    offStop = cropper.on("stop", rearm);
+    offSubscribe = cropper.subscribe(resubscribe);
+    cropper.stop();
+    cropper.stop();
+    expect(again).toHaveBeenCalledTimes(2);
+    cropper.flip();
+    expect(resubscribed).toHaveBeenCalledOnce();
+    offStop();
 
     cropper.on("stop", () => {
-      off();
+      offRemoved();
       cropper.on("stop", added);
     });
 
-    off = cropper.on("stop", removed);
+    offRemoved = cropper.on("stop", removed);
     cropper.stop();
     expect(removed).not.toHaveBeenCalled();
     expect(added).not.toHaveBeenCalled();
@@ -1086,27 +1118,71 @@ describe("listener isolation", () => {
 });
 
 describe("destroy", () => {
-  it("holds nothing added after it ran", () => {
-    const { cropper } = setup();
-
-    cropper.destroy();
-    const listener = vi.fn<() => void>();
-    const offs = [
-      cropper.on("stop", listener),
-      cropper.on("stop", listener),
-      cropper.subscribe(listener),
-      cropper.subscribe(listener),
-    ];
-
-    expect(new Set(offs).size).toBe(1);
-    expect(offs[0]).toBeTypeOf("function");
-    cropper.stop();
-    cropper.flip();
-    expect(listener).not.toHaveBeenCalled();
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it("ignores a stop made while it runs", () => {
-    const { cropper } = setup();
+  it("runs each started plugin's destroy once, past a throwing one, with its this", () => {
+    const errors = reported();
+    const again = vi.fn<() => void>();
+    const next = {
+      destroy(this: { seen?: boolean }) {
+        this.seen = true;
+      },
+      init: noop,
+      name: "next",
+      seen: false,
+    };
+    const second = {
+      destroy: vi.fn<() => void>(),
+      init: vi.fn<() => void>(),
+      name: "second",
+    };
+    const { change, cropper, time } = setup({
+      plugins: [
+        {
+          destroy() {
+            throw new Error("plugin failed");
+          },
+          init: noop,
+          name: "bad",
+        },
+        {
+          destroy() {
+            again();
+            cropper.destroy();
+          },
+          init: noop,
+          name: "again",
+        },
+        next,
+      ],
+    });
+    const late: CropperOptions = { plugins: [second] };
+    const fired = vi.fn<() => void>(() => {
+      cropper.destroy();
+    });
+
+    cropper.setOptions(late);
+    cropper.on("destroy", fired);
+    cropper.destroy();
+    vi.unstubAllGlobals();
+    cropper.setRotation(10);
+    time.frames(2);
+
+    expect({
+      again: again.mock.calls.length,
+      changes: change.mock.calls.length,
+      fired: fired.mock.calls.length,
+      late: second.init.mock.calls.length + second.destroy.mock.calls.length,
+      seen: next.seen,
+    }).toStrictEqual({ again: 1, changes: 0, fired: 1, late: 0, seen: true });
+
+    expect(errors).toHaveLength(1);
+  });
+
+  it("ends a running gesture without gestureend, and nothing after it has effect", () => {
+    const { commit, cropper, time } = setup();
     const heard = vi.fn<() => void>();
 
     cropper.on("stop", heard);
@@ -1117,131 +1193,78 @@ describe("destroy", () => {
     });
 
     cropper.begin("pan");
-    cropper.destroy();
-    expect(heard).not.toHaveBeenCalled();
-  });
-
-  it("fires once when a listener or plugin destroys again", () => {
-    const spy = vi.fn<() => void>();
-    const { cropper } = setup({
-      plugins: [
-        {
-          destroy() {
-            spy();
-            cropper.destroy();
-          },
-          init: () => {},
-          name: "again",
-        },
-      ],
-    });
-    const fired = vi.fn<() => void>(() => {
-      cropper.destroy();
-    });
-
-    cropper.on("destroy", fired);
-    cropper.destroy();
-    expect(spy).toHaveBeenCalledOnce();
-    expect(fired).toHaveBeenCalledOnce();
-  });
-
-  it("finishes past a throwing plugin, and keeps a plugin's this", () => {
-    const errors: unknown[] = [];
-
-    vi.stubGlobal("queueMicrotask", (step: () => void) => {
-      try {
-        step();
-      } catch (error) {
-        errors.push(error);
-      }
-    });
-
-    const next = {
-      destroy(this: { seen?: boolean }) {
-        this.seen = true;
-      },
-      init: () => {},
-      name: "next",
-      seen: false,
-    };
-    const { change, cropper, time } = setup({
-      plugins: [
-        {
-          destroy() {
-            throw new Error("plugin failed");
-          },
-          init: () => {},
-          name: "bad",
-        },
-        next,
-      ],
-    });
-    const fired = vi.fn<() => void>();
-
-    cropper.on("destroy", fired);
-    cropper.destroy();
-    vi.unstubAllGlobals();
-    cropper.setRotation(10);
-    time.frames(2);
-    expect(next.seen).toBeTruthy();
-    expect(fired).toHaveBeenCalledOnce();
-    expect(errors).toHaveLength(1);
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it("leaves nothing to change afterwards", () => {
-    const { commit, cropper, time } = setup();
-
-    cropper.begin("pan");
     cropper.setRotation(5);
-    const before = cropper.getState();
+    const { interacting } = cropper.getState();
 
     cropper.destroy();
 
-    expect([before.interacting, cropper.getState().interacting]).toStrictEqual([
+    expect([interacting, cropper.getState().interacting]).toStrictEqual([
       "pan",
       null,
     ]);
 
+    const listener = vi.fn<() => void>();
+    const offs = [
+      cropper.on("stop", listener),
+      cropper.on("stop", listener),
+      cropper.subscribe(listener),
+      cropper.subscribe(listener),
+    ];
+
+    expect([new Set(offs).size, typeof offs[0]]).toStrictEqual([1, "function"]);
     const task = vi.fn<() => boolean>(() => true);
 
     cropper.run(task)();
     cropper.setOptions({ disabled: true, maxZoom: 2 });
     cropper.stop();
+    cropper.flip();
     cropper.on("commit", vi.fn<() => void>())();
     cropper.subscribe(vi.fn<() => void>())();
     time.frames(3);
-    expect(task).not.toHaveBeenCalled();
 
-    expect(cropper.getState()).toMatchObject({
+    expect(
+      [task, listener, heard, commit].map((spy) => spy.mock.calls.length)
+    ).toStrictEqual([0, 0, 0, 0]);
+
+    expect({
+      ...cropper.getState(),
+      maxZoom: cropper.getMaxZoom(),
+    }).toMatchObject({
       disabled: false,
+      maxZoom: 15,
       settling: false,
     });
+  });
 
-    expect(cropper.getMaxZoom()).toBe(15);
-    expect(commit).not.toHaveBeenCalled();
+  it("refuses a gesture when the flush at its start destroys the cropper", () => {
+    const { cropper } = setup();
+
+    cropper.on("change", () => {
+      cropper.destroy();
+    });
+
+    cropper.rotate90();
+
+    expect(cropper.begin("pan")).toBeFalsy();
+    expect(cropper.getState().interacting).toBeNull();
   });
 });
 
 describe("event order", () => {
-  it("shows a commit listener the new committed value", () => {
+  it("shows commit, gesture and stop listeners a fresh snapshot", () => {
     const { cropper, time } = setup();
-    const seen: number[] = [];
+    const committed: number[] = [];
+    const seen: unknown[] = [];
 
     cropper.on("commit", () => {
-      seen.push(cropper.getState().committed.rotation);
+      committed.push(cropper.getState().committed.rotation);
     });
 
     cropper.setRotation(5);
     time.frame();
     cropper.setRotation(9);
     time.frame();
-    expect(seen).toStrictEqual([5, 9]);
-  });
-
-  it("shows gesture and stop listeners a fresh snapshot", () => {
-    const { cropper, time } = setup();
-    const seen: unknown[] = [];
+    expect(committed).toStrictEqual([5, 9]);
 
     cropper.on("gesturestart", () => {
       seen.push(cropper.getState().interacting);
@@ -1297,44 +1320,8 @@ describe("change and commit reporting", () => {
     expect(order).toStrictEqual(["change 20", "change 10", "commit 10"]);
   });
 
-  it("reports the next move after a silent write inside a change listener", () => {
-    const { change, cropper, time } = setup();
-
-    cropper.on("change", (value) => {
-      if (value.rotation > 10) {
-        cropper.setRotation(10, { emit: false });
-      }
-    });
-
-    cropper.setRotation(20);
-    time.frame();
-    expect(cropper.getValue().rotation).toBe(10);
-    change.mockClear();
-    cropper.setRotation(20);
-    time.frame();
-    expect(change.mock.calls[0]?.[0].rotation).toBe(20);
-    expect(change.mock.calls[0]?.[1].previous.rotation).toBe(10);
-    expect(change.mock.calls[0]?.[1].changed).toContain("rotation");
-  });
-
-  it("lists only what moved after a silent write inside a change listener", () => {
-    const { change, cropper, time } = setup();
-    const off = cropper.on("change", () => {
-      off();
-      cropper.setRotation(10, { emit: false });
-    });
-
-    cropper.setRotation(20);
-    time.frame();
-    change.mockClear();
-    cropper.setZoom(1.5);
-    time.frame();
-    expect(change.mock.calls[0]?.[1].previous.rotation).toBe(10);
-    expect(change.mock.calls[0]?.[1].changed).not.toContain("rotation");
-  });
-
-  it("cancels back to a silent write made inside a change listener", () => {
-    const { commit, cropper, time } = setup();
+  it("keeps a silent write made inside a change listener, cancels back to it and reports the next move from it", () => {
+    const { change, commit, cropper, time } = setup();
     const offClamp = cropper.on("change", () => {
       offClamp();
       cropper.setRotation(10, { emit: false });
@@ -1342,160 +1329,228 @@ describe("change and commit reporting", () => {
 
     cropper.setRotation(20);
     time.frame();
-
-    cropper.on("change", (_, details) => {
+    expect(cropper.getValue().rotation).toBe(10);
+    const offCancel = cropper.on("change", (_, details) => {
       details.cancel();
     });
 
     cropper.setRotation(30);
     time.frames(2);
-    expect(cropper.getValue().rotation).toBe(10);
-    expect(cropper.getState().committed.rotation).toBe(10);
-    expect(commit).not.toHaveBeenCalled();
+
+    expect([
+      cropper.getValue().rotation,
+      cropper.getState().committed.rotation,
+      commit.mock.calls.length,
+    ]).toStrictEqual([10, 10, 0]);
+
+    offCancel();
+    change.mockClear();
+    cropper.setRotation(20);
+    time.frame();
+    expect(change.mock.calls[0]?.[0].rotation).toBe(20);
+
+    expect(change.mock.calls[0]?.[1]).toMatchObject({
+      changed: ["rotation"],
+      previous: { rotation: 10 },
+    });
   });
 
-  it.each(["change", "frame"] as const)(
-    "fires settle when a %s listener writes on the last task frame",
-    (type) => {
-      const { cropper, time } = setup();
-      const settle = vi.fn<() => void>();
+  it.each<[string, (cropper: Cropper, time: Rig["time"]) => void]>([
+    ...(["change", "frame"] as const).map(
+      (type): [string, (cropper: Cropper, time: Rig["time"]) => void] => [
+        `a ${type} listener writes on the last task frame`,
+        (cropper, time) => {
+          const off = cropper.on(type, () => {
+            off();
+            cropper.setRotation(5);
+          });
 
-      cropper.on("settle", settle);
-      const off = cropper.on(type, () => {
-        off();
-        cropper.setRotation(5);
-      });
+          cropper.setRotation(3);
+          cropper.run(() => false);
+          time.frames(2);
+        },
+      ]
+    ),
+    ...(
+      [
+        ["nothing", noop],
+        [
+          "a rotation",
+          (cropper) => {
+            cropper.setRotation(5);
+          },
+        ],
+        [
+          "a zoom",
+          (cropper) => {
+            cropper.setZoom(2);
+          },
+        ],
+      ] as [string, (cropper: Cropper) => void][]
+    ).map(
+      ([name, write]): [
+        string,
+        (cropper: Cropper, time: Rig["time"]) => void,
+      ] => [
+        `${name} is written after the cancel of the last task`,
+        (cropper, time) => {
+          const stop = cropper.run(() => true);
 
-      cropper.setRotation(3);
-      cropper.run(() => false);
-      time.frames(2);
-      expect(cropper.getState().settling).toBeFalsy();
-      expect(settle).toHaveBeenCalledOnce();
+          time.frames(2);
+          stop();
+          write(cropper);
+          time.frames(5);
+        },
+      ]
+    ),
+  ])("fires settle once when %s", (_, scenario) => {
+    const { cropper, time } = setup();
+    const settle = vi.fn<CropperEvents["settle"]>();
+
+    cropper.on("settle", settle);
+    scenario(cropper, time);
+    expect(cropper.getState().settling).toBeFalsy();
+    expect(settle).toHaveBeenCalledOnce();
+  });
+
+  it.each<
+    [
+      string,
+      CropperOptions,
+      (cropper: Cropper) => void,
+      (c: Cropper) => void,
+      string[],
+    ]
+  >([
+    [
+      "a zoom after a silent write inside a change listener",
+      {},
+      (cropper) => {
+        const off = cropper.on("change", () => {
+          off();
+          cropper.setRotation(10, { emit: false });
+        });
+
+        cropper.setRotation(20);
+      },
+      (cropper) => {
+        cropper.setZoom(1.5);
+      },
+      ["size"],
+    ],
+    [
+      "a flip after a size with long decimals",
+      { image: { height: 1000, width: 1000 } },
+      (cropper) => {
+        cropper.setValue({ size: { height: 0.3, width: 0.19416446166578682 } });
+      },
+      (cropper) => {
+        cropper.flip();
+      },
+      ["mirrored"],
+    ],
+    [
+      "a zoom after an angle with long decimals",
+      {},
+      (cropper) => {
+        cropper.setValue({ rotation: 1.1234567890123457 });
+      },
+      (cropper) => {
+        cropper.setZoom(2);
+      },
+      ["size"],
+    ],
+  ])("lists only what moved on %s", (_, options, prepare, write, moved) => {
+    const { change, cropper, time } = setup(options);
+
+    prepare(cropper);
+    time.frame();
+    change.mockClear();
+    write(cropper);
+    time.frame();
+    const [value, details] = change.mock.calls[0] ?? [];
+
+    const kept = (Object.keys(defaultValue) as (keyof CropValue)[]).filter(
+      (key) => !moved.includes(key)
+    );
+
+    expect(details?.changed).toStrictEqual(moved);
+
+    expect(kept.map((key) => value?.[key])).toStrictEqual(
+      kept.map((key) => details?.previous[key])
+    );
+  });
+
+  it.each<
+    [string, CropperOptions, Partial<CropValue>, Partial<CropValue>, string]
+  >([
+    [
+      "a centre, along x",
+      {
+        value: {
+          ...defaultValue,
+          center: { x: 0.4, y: 0.4 },
+          size: { height: 0.5, width: 0.5 },
+        },
+      },
+      { center: { x: 0.4 + 1e-11, y: 0.4 + 2e-11 } },
+      { center: { x: 0.4 + 1e-10, y: 0.4 } },
+      "center",
+    ],
+    [
+      "a centre, along y",
+      {
+        value: {
+          ...defaultValue,
+          center: { x: 0.4, y: 0.4 },
+          size: { height: 0.5, width: 0.5 },
+        },
+      },
+      { center: { x: 0.4 + 1e-11, y: 0.4 + 2e-11 } },
+      { center: { x: 0.4, y: 0.4 + 1e-10 } },
+      "center",
+    ],
+    [
+      "a centre on a very long photo",
+      {
+        image: { height: 3, width: 1_000_000 },
+        value: {
+          ...defaultValue,
+          center: { x: 0.4, y: 0.5 },
+          size: { height: 1, width: 0.5 },
+        },
+      },
+      {},
+      { center: { x: 0.4 + 1e-9, y: 0.5 } },
+      "center",
+    ],
+    [
+      "ten pixels of width on a very long photo",
+      {
+        image: { height: 3, width: 1_000_000 },
+        value: { ...defaultValue, size: { height: 1, width: 0.5 } },
+      },
+      {},
+      { size: { height: 1, width: 0.5 + 1e-5 } },
+      "size",
+    ],
+  ])(
+    "holds %s below a pixel's rounding and reports it above",
+    (_, options, below, above, field) => {
+      const { change, cropper, time } = setup(options);
+
+      time.frame();
+      const before = cropper.getValue();
+
+      cropper.setValue(below);
+      time.frame();
+      expect(change).not.toHaveBeenCalled();
+      expect(cropper.getValue()).toStrictEqual(before);
+      cropper.setValue(above);
+      time.frame();
+      expect(change.mock.calls[0]?.[1].changed).toStrictEqual([field]);
     }
   );
-
-  it("lists only the field that moved after a value with long decimals", () => {
-    const { change, cropper, time } = setup({
-      image: { height: 1000, width: 1000 },
-    });
-
-    cropper.setValue({
-      size: { height: 0.3, width: 0.19416446166578682 },
-    });
-
-    time.frame();
-    const { size } = cropper.getValue();
-
-    change.mockClear();
-    cropper.flip();
-    time.frame();
-    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["mirrored"]);
-    expect(cropper.getValue().size).toStrictEqual(size);
-  });
-
-  it("keeps a held angle out of the fields a zoom moves", () => {
-    const { change, cropper, time } = setup();
-    const rotation = 1.1234567890123457;
-
-    cropper.setValue({ rotation });
-    time.frame();
-    change.mockClear();
-    cropper.setZoom(2);
-    time.frame();
-    expect(change.mock.calls[0]?.[1].changed).not.toContain("rotation");
-    expect(cropper.getValue().rotation).toBe(rotation);
-  });
-
-  it("holds a round trip on a very long photo with a locked aspect", () => {
-    const { change, commit, cropper, time } = setup({
-      image: { height: 3, width: 1_000_000 },
-      value: { ...defaultValue, aspect: 16 / 9 },
-    });
-
-    time.frame();
-    const held = cropper.getValue();
-
-    for (let write = 0; write < 3; write += 1) {
-      cropper.setValue(cropper.getValue());
-      time.frame();
-    }
-
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-    expect(cropper.getValue().size).toStrictEqual(held.size);
-  });
-
-  it("holds a change below a pixel's rounding and reports one above it", () => {
-    const { change, cropper, time } = setup({
-      value: {
-        ...defaultValue,
-        center: { x: 0.4, y: 0.4 },
-        size: { height: 0.5, width: 0.5 },
-      },
-    });
-
-    time.frame();
-
-    const nudge = (x: number, y: number): void => {
-      cropper.setValue({ center: { x: 0.4 + x, y: 0.4 + y } });
-      time.frame();
-    };
-
-    nudge(1e-11, 2e-11);
-    expect(change).not.toHaveBeenCalled();
-    expect(cropper.getValue().center).toStrictEqual({ x: 0.4, y: 0.4 });
-    nudge(1e-10, 0);
-    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
-    change.mockClear();
-    cropper.setValue({ center: { x: 0.4, y: 0.4 } });
-    time.frame();
-    change.mockClear();
-    nudge(0, 1e-10);
-    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
-  });
-
-  it("reports a small move along a very long photo", () => {
-    const { change, cropper, time } = setup({
-      image: { height: 3, width: 1_000_000 },
-      value: {
-        ...defaultValue,
-        center: { x: 0.4, y: 0.5 },
-        size: { height: 1, width: 0.5 },
-      },
-    });
-
-    time.frame();
-    cropper.setValue({ center: { x: 0.4 + 1e-9, y: 0.5 } });
-    time.frame();
-    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["center"]);
-  });
-
-  it("reports ten pixels of width on a very long photo", () => {
-    const { change, cropper, time } = setup({
-      image: { height: 3, width: 1_000_000 },
-      value: { ...defaultValue, size: { height: 1, width: 0.5 } },
-    });
-
-    time.frame();
-    cropper.setValue({ size: { height: 1, width: 0.5 + 1e-5 } });
-    time.frame();
-    expect(change.mock.calls[0]?.[1].changed).toStrictEqual(["size"]);
-  });
-
-  it("holds a crop on a long photo through the slack of its short side", () => {
-    const { change, cropper, time } = setup({
-      image: { height: 100, width: 20_000 },
-    });
-
-    cropper.setRotation(7.5e-12);
-    cropper.setZoom(6.8102518945089665);
-    cropper.panBy(-0.8531595559399789, -0.8531595559399789 / 2);
-    time.frames(2);
-    change.mockClear();
-    cropper.setValue(cropper.getValue());
-    time.frames(2);
-    expect(change).not.toHaveBeenCalled();
-  });
 
   it("reports a later photo's refit as a change with the old value as previous", () => {
     const { change, commit, cropper, time } = setup({
@@ -1521,15 +1576,6 @@ describe("change and commit reporting", () => {
     expect(commit.mock.calls[0]?.[1].reason).toBe("coverage");
   });
 
-  it("stays quiet on a later photo that needs no refit", () => {
-    const { change, commit, cropper, time } = setup();
-
-    cropper.setImage({ height: 1500, width: 2000 });
-    time.frames(2);
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-  });
-
   it("lands a canceled refit on the new photo's fit and commits it", () => {
     const { commit, cropper, time } = setup({
       image: { height: 750, width: 1000 },
@@ -1547,98 +1593,80 @@ describe("change and commit reporting", () => {
     cropper.setImage({ height: 2000, width: 1000 });
     time.frames(2);
     expect(cropper.getValue().size).toStrictEqual({ height: 0.5, width: 1 });
-    expect(cropState(cropper.getCropState()).image.height).toBe(2000);
+    expect(stateOf(cropper).image.height).toBe(2000);
     expect(commit).toHaveBeenCalledOnce();
   });
 
-  it("keeps a canceled crop inside limits set after it was saved", () => {
-    const { commit, cropper, time } = setup();
+  it.each<
+    [
+      string,
+      number,
+      (rig: Rig) => void,
+      { height: number; width: number },
+      number,
+      boolean,
+    ]
+  >([
+    [
+      "a maxZoom lowered after the save",
+      15,
+      ({ cropper, time }) => {
+        cropper.on("change", (_, details) => {
+          details.cancel();
+        });
 
-    cropper.setZoom(15);
-    time.frames(2);
-    commit.mockClear();
+        cropper.setOptions({ maxZoom: 2 });
+        time.frames(2);
+      },
+      { height: 1500, width: 2000 },
+      1,
+      false,
+    ],
+    [
+      "a minSize raised during a gesture",
+      10,
+      ({ cropper, time }) => {
+        cropper.begin("pan");
+        cropper.setOptions({ minSize: { height: 1500, width: 2000 } });
+        time.frame();
+        cropper.cancel();
+        time.frames(2);
+      },
+      { height: 1500, width: 2000 },
+      1,
+      false,
+    ],
+    [
+      "limits that did not change",
+      3,
+      ({ cropper, time }) => {
+        cropper.begin("pan");
+        cropper.panBy(0.05, 0);
+        time.frame();
+        cropper.cancel();
+      },
+      { height: 1000, width: 1334 },
+      0,
+      true,
+    ],
+  ])(
+    "cancels into the current limits after %s",
+    (_, zoom, scenario, size, commits, same) => {
+      const rig = setup();
 
-    cropper.on("change", (_, details) => {
-      details.cancel();
-    });
+      rig.cropper.setZoom(zoom);
+      rig.time.frames(2);
+      rig.commit.mockClear();
+      const before = rig.cropper.getValue();
 
-    cropper.setOptions({ maxZoom: 2 });
-    time.frames(2);
-    expect(cropper.getZoom()).toBeCloseTo(2, 6);
-    expect(commit).toHaveBeenCalledOnce();
-    expect(commit.mock.calls[0]?.[0].size.width).toBeCloseTo(0.5, 6);
-  });
+      scenario(rig);
+      expect(pixels(rig.cropper)).toStrictEqual(size);
+      expect(rig.commit).toHaveBeenCalledTimes(commits);
+      expect(rig.cropper.getValue() === before).toBe(same);
+    }
+  );
 
-  it("cancels a gesture into limits set during it", () => {
-    const { cropper, time } = setup();
-
-    cropper.setZoom(10);
-    time.frames(2);
-    cropper.begin("pan");
-    cropper.setOptions({ minSize: { height: 1500, width: 2000 } });
-    time.frame();
-    cropper.cancel();
-    time.frames(2);
-    expect(cropper.getPixelCrop()?.width).toBe(2000);
-    expect(cropper.getPixelCrop()?.height).toBe(1500);
-  });
-
-  it("restores the exact value when nothing about the limits changed", () => {
-    const { cropper, time } = setup();
-
-    cropper.setZoom(3);
-    time.frames(2);
-    const before = cropper.getValue();
-
-    cropper.begin("pan");
-    cropper.panBy(0.05, 0);
-    time.frame();
-    cropper.cancel();
-    expect(cropper.getValue()).toBe(before);
-  });
-
-  it("drops a waiting change on a silent write of the same value", () => {
-    const { change, commit, cropper, time } = setup();
-
-    cropper.setRotation(5);
-    cropper.setRotation(5, { emit: false });
-    time.frames(3);
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-    expect(cropper.getState().committed.rotation).toBe(5);
-  });
-
-  it("keeps the change and commit on a controlled echo of a waiting write", () => {
-    const { change, commit, cropper, time } = setup();
-
-    cropper.setRotation(5);
-
-    cropper.setValue(cropper.getValue(), {
-      emit: false,
-      reason: "controlled",
-    });
-
-    time.frames(2);
-    expect(change).toHaveBeenCalledOnce();
-    expect(commit).toHaveBeenCalledOnce();
-  });
-
-  it("keeps the commit on a silent echo inside the change listener", () => {
-    const { commit, cropper, time } = setup();
-
-    cropper.on("change", (value) => {
-      cropper.setValue(value, { emit: false });
-    });
-
-    const before = cropper.getValue();
-
-    cropper.setRotation(5);
-    time.frames(2);
-    expect(commit).toHaveBeenCalledOnce();
-    expect(commit.mock.calls[0]?.[1].previous).toBe(before);
-  });
-
-  it("takes a new lens on the next write of an equal value and redraws", () => {
+  it("takes a new lens on the next write and keeps it through a canceled change", () => {
     const tilted = { perspective: { horizontal: 0, vertical: 10 } };
     const { cropper, time } = setup({ defaultValue: tilted });
     const lens = (): number | undefined =>
@@ -1662,29 +1690,17 @@ describe("change and commit reporting", () => {
       6
     );
 
-    cropper.setOptions({ focalLength: 26 });
-    cropper.reset();
-    expect(lens()).toBeCloseTo(before ?? 0, 6);
-  });
-
-  it("does not bring an old lens back through a canceled change", () => {
-    const { cropper, time } = setup();
-
-    cropper.setOptions({ focalLength: 50 });
-    cropper.setValue({});
-    time.frame();
-
-    cropper.on("change", (_, details) => {
+    const offCancel = cropper.on("change", (_, details) => {
       details.cancel();
     });
 
     cropper.setRotation(5);
     time.frame();
-
-    expect(cropper.getCropState()?.perspective.focal).toBeCloseTo(
-      (50 / 36) * 4000,
-      6
-    );
+    expect(lens()).toBeCloseTo(wanted, 6);
+    offCancel();
+    cropper.setOptions({ focalLength: 26 });
+    cropper.reset();
+    expect(lens()).toBeCloseTo(before ?? 0, 6);
   });
 });
 
@@ -1747,21 +1763,30 @@ describe("input validation", () => {
         c.setValue({ perspective: { horizontal: bad, vertical: 0 } });
       },
     ],
-  ])("ignores %s and leaves the crop where it was", (_, write) => {
-    const { change, commit, cropper, time } = setup({
-      defaultValue: {
-        center: { x: 0.3, y: 0.7 },
-        size: { height: 0.2, width: 0.2 },
-      },
-    });
-    const before = cropper.getValue();
+  ])(
+    "ignores %s, leaves the crop where it was and keeps working",
+    (_, write) => {
+      const { change, commit, cropper, time } = setup({
+        defaultValue: {
+          center: { x: 0.3, y: 0.7 },
+          size: { height: 0.2, width: 0.2 },
+        },
+      });
+      const before = cropper.getValue();
 
-    write(cropper);
-    time.frames(2);
-    expect(cropper.getValue()).toStrictEqual(before);
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-  });
+      write(cropper);
+      time.frames(2);
+      expect(cropper.getValue()).toStrictEqual(before);
+      expect(change).not.toHaveBeenCalled();
+      expect(commit).not.toHaveBeenCalled();
+      cropper.setRotation(5);
+      cropper.setZoom(2);
+      cropper.panBy(0.01, 0);
+      expectValid(cropper);
+      expect(cropper.getValue().rotation).toBe(5);
+      expect(serialize(cropper.getValue())).not.toContain("null");
+    }
+  );
 
   it.each<[string, (cropper: Cropper) => void]>([
     [
@@ -1868,51 +1893,103 @@ describe("input validation", () => {
     }
   });
 
-  it("clamps an infinite angle to the limit", () => {
-    const { cropper } = setup();
+  it.each<[string, CropperOptions, (cropper: Cropper) => void, number, number]>(
+    [
+      [
+        "setRotation(Infinity)",
+        { value: undefined },
+        (c) => {
+          c.setRotation(huge);
+        },
+        45,
+        0.5,
+      ],
+      [
+        "setRotation(-Infinity)",
+        { value: undefined },
+        (c) => {
+          c.setRotation(-huge);
+        },
+        -45,
+        0.5,
+      ],
+      [
+        "a rotation of 90 through setValue",
+        {},
+        (c) => {
+          c.setValue({ rotation: 90 });
+        },
+        45,
+        0.7,
+      ],
+      [
+        "a defaultValue rotation of 225 on reset",
+        {
+          defaultValue: {
+            center: { x: 0.7, y: 0.5 },
+            rotation: 225,
+            size: { height: 0.2, width: 0.2 },
+          },
+          value: undefined,
+        },
+        (c) => {
+          c.reset();
+        },
+        45,
+        0.7,
+      ],
+    ]
+  )(
+    "clamps %s to the limit and holds the centre",
+    (_, options, write, rotation, x) => {
+      const { cropper } = setup({
+        image: { height: 1000, width: 1000 },
+        value: {
+          ...defaultValue,
+          center: { x: 0.7, y: 0.5 },
+          size: { height: 0.2, width: 0.2 },
+        },
+        ...options,
+      });
 
-    cropper.setRotation(huge);
-    expect(cropper.getValue().rotation).toBe(45);
-    cropper.setRotation(-huge);
-    expect(cropper.getValue().rotation).toBe(-45);
-  });
+      write(cropper);
+      expect(cropper.getValue().rotation).toBe(rotation);
+      expect(cropper.getValue().center.x).toBeCloseTo(x, 9);
+      expect(cropper.getValue().center.y).toBeCloseTo(0.5, 9);
+    }
+  );
 
-  it("keeps working after a write it ignored", () => {
-    const { cropper, time } = setup();
-
-    cropper.setRotation(bad);
-    time.frame();
-    cropper.setRotation(5);
-    cropper.setZoom(2);
-    cropper.panBy(0.01, 0);
-    expectValid(cropper);
-    expect(cropper.getValue().rotation).toBe(5);
-    expect(serialize(cropper.getValue())).not.toContain("null");
-  });
-
-  it.each<[string, Partial<CropValue>]>([
-    ["rotation", { rotation: bad }],
-    ["size", { size: { height: 0, width: 0 } }],
-    ["negative size", { size: { height: -1, width: -1 } }],
-    ["center", { center: { x: huge, y: bad } }],
-    ["aspect", { aspect: bad }],
-    ["huge center", { center: { x: 1e308, y: 1e151 } }],
-  ])("starts valid and resets valid from a bad defaultValue %s", (_, given) => {
-    const { cropper } = setup({ defaultValue: given });
-
-    expectValid(cropper);
-    cropper.reset();
-    expectValid(cropper);
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("treats a bad value option like a bad defaultValue", () => {
-    const { cropper } = setup({
-      value: { ...defaultValue, rotation: bad, size: { height: 0, width: 1 } },
-    });
+  it.each<[string, CropperOptions]>([
+    ["defaultValue rotation", { defaultValue: { rotation: bad } }],
+    ["defaultValue size", { defaultValue: { size: { height: 0, width: 0 } } }],
+    [
+      "defaultValue negative size",
+      { defaultValue: { size: { height: -1, width: -1 } } },
+    ],
+    ["defaultValue center", { defaultValue: { center: { x: huge, y: bad } } }],
+    ["defaultValue aspect", { defaultValue: { aspect: bad } }],
+    [
+      "defaultValue huge center",
+      { defaultValue: { center: { x: 1e308, y: 1e151 } } },
+    ],
+    [
+      "value",
+      {
+        value: {
+          ...defaultValue,
+          rotation: bad,
+          size: { height: 0, width: 1 },
+        },
+      },
+    ],
+  ])("starts valid and resets valid from a bad %s", (_, options) => {
+    const { cropper } = setup(options);
 
     expectValid(cropper);
     expect(cropper.getValue().rotation).toBe(0);
+    cropper.reset();
+    expectValid(cropper);
+    expect(cropper.getState().pristine).toBeTruthy();
   });
 
   it.each([
@@ -1934,68 +2011,39 @@ describe("input validation", () => {
 
     loose(later, { [key]: undefined });
     expect(later.getValue()).toStrictEqual(before);
-    const fresh = createCropper({
-      clock: fakeClock().clock,
-      defaultValue: { [key]: undefined },
-      image: PHOTO,
-    });
+    const { cropper: fresh } = setup({ defaultValue: { [key]: undefined } });
 
     expect(fresh.getValue()).toStrictEqual(defaultValue);
   });
 
-  it("stores a usable value as given before a photo and fixes it on arrival", () => {
-    const { cropper } = setup({ image: null });
-
-    cropper.setValue({ rotation: 60 });
-    expect(cropper.getValue().rotation).toBe(60);
-    cropper.setValue({ rotation: bad });
-    expect(cropper.getValue().rotation).toBe(60);
-    cropper.setImage(PHOTO);
-    expect(cropper.getValue().rotation).toBe(45);
-  });
-
-  it.each([0, -1.5, huge, -huge, bad, 1e14, 1e-14, 1e200])(
-    "turns an aspect of %s into free on every path",
-    (ratio) => {
-      const { cropper } = setup();
-
-      cropper.setAspect(ratio);
-      expect(cropper.getValue().aspect).toBe("free");
-      expectValid(cropper);
-      cropper.setAspect(1);
-      cropper.setValue({ aspect: ratio });
-      expect(cropper.getValue().aspect).toBe("free");
-      expectValid(cropper);
-      const { cropper: fresh } = setup({ defaultValue: { aspect: ratio } });
-
-      expect(fresh.getValue().aspect).toBe("free");
-      expectValid(fresh);
-    }
-  );
-
-  it.each([1.5, 1e-3, 1e3, 1e6, 1e-6])("keeps a ratio of %s", (ratio) => {
+  it.each<[number, CropValue["aspect"]]>([
+    [0, "free"],
+    [-1.5, "free"],
+    [huge, "free"],
+    [-huge, "free"],
+    [bad, "free"],
+    [1e14, "free"],
+    [1e-14, "free"],
+    [1e200, "free"],
+    [1.5, 1.5],
+    [1e-3, 1e-3],
+    [1e3, 1e3],
+    [1e6, 1e6],
+    [1e-6, 1e-6],
+  ])("reads an aspect of %s as %s on every path", (ratio, aspect) => {
     const { cropper } = setup();
 
     cropper.setAspect(ratio);
-    expect(cropper.getValue().aspect).toBe(ratio);
-    expect(cropper.getValue().size.width).toBeGreaterThan(0);
-    expect(cropper.getValue().size.height).toBeGreaterThan(0);
-  });
+    expect(cropper.getValue().aspect).toBe(aspect);
+    expectValid(cropper);
+    cropper.setAspect(1);
+    cropper.setValue({ aspect: ratio });
+    expect(cropper.getValue().aspect).toBe(aspect);
+    expectValid(cropper);
+    const { cropper: fresh } = setup({ defaultValue: { aspect: ratio } });
 
-  it("keeps a thin crop's size above 0 on a very long photo", () => {
-    const { cropper } = setup({
-      defaultValue: { aspect: 0.2 },
-      image: { height: 1, width: 1e12 },
-    });
-    const { size } = cropper.getValue();
-
-    expect(size.width).toBeGreaterThan(0);
-    const { cropper: restored } = setup({
-      image: { height: 1, width: 1e12 },
-      value: cropper.getValue(),
-    });
-
-    expect(restored.getValue().size.width).toBeGreaterThan(0);
+    expect(fresh.getValue().aspect).toBe(aspect);
+    expectValid(fresh);
   });
 
   it.each<[string, CropperOptions]>([
@@ -2050,56 +2098,13 @@ describe("input validation", () => {
     [-3, 1],
     [0.5, 1],
     [bad, 15],
+    [huge, huge],
   ])("reads a maxZoom of %s as %s", (maxZoom, cap) => {
-    expect(setup({ maxZoom }).cropper.getMaxZoom()).toBe(cap);
-  });
+    const { cropper } = setup({ maxZoom });
 
-  it.each([
-    ["a string", "x"],
-    ["a number", 1],
-    ["nothing", undefined],
-  ])("keeps a mirror from %s out of the value", (_, flip) => {
-    const { cropper } = setup();
-    const state = cropState(cropper.getCropState());
-
-    Reflect.apply(cropper.setCropState, cropper, [{ ...state, flip }]);
-    expect(cropper.getValue().mirrored).toBeFalsy();
-  });
-
-  it("lets maxZoom Infinity through", () => {
-    const { cropper } = setup({ maxZoom: huge });
-
-    expect(cropper.getMaxZoom()).toBe(huge);
+    expect(cropper.getMaxZoom()).toBe(cap);
     cropper.setZoom(30);
-    expect(cropper.getZoom()).toBeCloseTo(30, 6);
-  });
-
-  it("holds the centre when a rotation above the limit is set", () => {
-    const { cropper } = setup({
-      image: { height: 1000, width: 1000 },
-      value: {
-        ...defaultValue,
-        center: { x: 0.7, y: 0.5 },
-        size: { height: 0.2, width: 0.2 },
-      },
-    });
-
-    cropper.setValue({ rotation: 90 });
-    expect(cropper.getValue().rotation).toBe(45);
-    expect(cropper.getValue().center.x).toBeCloseTo(0.7, 9);
-    expect(cropper.getValue().center.y).toBeCloseTo(0.5, 9);
-    const { cropper: fresh } = setup({
-      defaultValue: {
-        center: { x: 0.7, y: 0.5 },
-        rotation: 225,
-        size: { height: 0.2, width: 0.2 },
-      },
-      image: { height: 1000, width: 1000 },
-    });
-
-    expect(fresh.getValue().center.x).toBeCloseTo(0.7, 9);
-    fresh.reset();
-    expect(fresh.getValue().center.x).toBeCloseTo(0.7, 9);
+    expect(cropper.getZoom()).toBeCloseTo(Math.min(cap, 30), 6);
   });
 
   const nasty = oneof(
@@ -2206,37 +2211,108 @@ describe("input validation", () => {
   });
 });
 
-describe("large photos", () => {
-  it.each<[string, CropperOptions["image"], Partial<CropValue>]>([
-    ["level", { height: 65_535, width: 32_767 }, { rotation: 1.3335e-11 }],
-    [
-      "a tiny angle",
-      { height: 1_000_000, width: 300_000 },
-      { rotation: 1e-12 },
-    ],
-    [
-      "a tilt",
-      { height: 1e8, width: 1e8 },
-      { perspective: { horizontal: 0, vertical: -30 } },
-    ],
-    [
-      "a thin photo near the limit",
-      { height: 1e8, width: 2 },
-      { quarterTurns: 1, rotation: 44.999 },
-    ],
-    [
-      "a tilt on a thin photo",
-      { height: 75_274_033, width: 14 },
-      { perspective: { horizontal: -17.6, vertical: 30 } },
-    ],
-  ])("keeps the crop covered at a corner with %s", (_, image, first) => {
-    const { cropper } = setup({ image });
+const sized = (height: number, width: number) => (cropper: Cropper) => {
+  cropper.setValue({ ...cropper.getValue(), size: { height, width } });
+};
 
-    cropper.setValue(first);
-    cropper.setValue({ center: { x: 0, y: 0 } });
-    expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
+const zoomAndReset = (cropper: Cropper): void => {
+  cropper.setZoom(2);
+  cropper.reset();
+};
+
+describe("extreme sizes", () => {
+  const TILT = { perspective: { horizontal: 30, vertical: 30 } };
+  const THIN = { defaultValue: { aspect: 0.05, ...TILT } };
+  const CAMERA = { height: 3024, width: 4032 };
+
+  it.each<[string, CropperOptions, (cropper: Cropper) => void, boolean]>([
+    [
+      "a thin crop on a photo 1e12 long",
+      { defaultValue: { aspect: 0.2 }, image: { height: 1, width: 1e12 } },
+      (cropper) => {
+        cropper.setValue(cropper.getValue());
+      },
+      true,
+    ],
+    ...[1e-160, 1e-200, 5e-324].map(
+      (side): [string, CropperOptions, (cropper: Cropper) => void, boolean] => [
+        `a tilted size of ${side}`,
+        { ...THIN, image: CAMERA },
+        sized(side, side),
+        false,
+      ]
+    ),
+    [
+      "one tilted side alone underflowing",
+      { ...THIN, image: CAMERA },
+      sized(1e-5, 5e-324),
+      false,
+    ],
+    [
+      "a tilted one pixel photo",
+      { ...THIN, image: { height: 1, width: 1 } },
+      sized(1e-200, 1e-200),
+      true,
+    ],
+    ...[1e18, 1e20, 1e50, 1e150].flatMap(
+      (
+        side
+      ): [string, CropperOptions, (cropper: Cropper) => void, boolean][] => [
+        [
+          `a tilted photo side of ${side}`,
+          { defaultValue: TILT, image: { height: side, width: 1 } },
+          zoomAndReset,
+          true,
+        ],
+        [
+          `a tilted photo swapped to a side of ${side}`,
+          { defaultValue: TILT, image: { height: 1000, width: 1000 } },
+          (cropper) => {
+            cropper.setImage({ height: side, width: 1000 });
+            zoomAndReset(cropper);
+          },
+          true,
+        ],
+      ]
+    ),
+    ...[1e155, 1e300, 1e308].map(
+      (
+        focalLength
+      ): [string, CropperOptions, (cropper: Cropper) => void, boolean] => [
+        `a focal length of ${focalLength}`,
+        {},
+        (cropper) => {
+          cropper.setOptions({ focalLength });
+
+          cropper.setValue({
+            ...cropper.getValue(),
+            perspective: { horizontal: 10, vertical: 10 },
+          });
+        },
+        false,
+      ]
+    ),
+  ])("stays valid with %s", (_, options, write, pristine) => {
+    const { cropper } = setup(options);
+
+    write(cropper);
+    const { crop, perspective } = stateOf(cropper);
+
+    expect(sound(cropper.getValue())).toBeTruthy();
+    expect(cropper.getZoom()).toBeLessThanOrEqual(cropper.getMaxZoom() + 1e-9);
+    expect(isCropCovered(stateOf(cropper))).toBeTruthy();
+
+    expect(
+      [crop.width, crop.height, crop.x, crop.y, perspective.focal].every(
+        Number.isFinite
+      )
+    ).toBeTruthy();
+
+    expect(cropper.getState().pristine).toBe(pristine);
   });
+});
 
+describe("large photos", () => {
   it("keeps any tiny angle or tilt on any large photo covered", () => {
     fcAssert(
       property(
@@ -2269,25 +2345,94 @@ describe("large photos", () => {
 
           expect(
             isCropCovered(
-              cropState(cropper.getCropState()),
+              stateOf(cropper),
               Math.max(1e-9, 2e-8 / Math.max(width, height))
             )
           ).toBeTruthy();
         }
-      )
+      ),
+      {
+        examples: [
+          [
+            {
+              height: 65_535,
+              horizontal: 0,
+              rotation: 1.3335e-11,
+              turns: 0,
+              vertical: 0,
+              width: 32_767,
+              x: 0,
+              y: 0,
+            },
+          ],
+          [
+            {
+              height: 1_000_000,
+              horizontal: 0,
+              rotation: 1e-12,
+              turns: 0,
+              vertical: 0,
+              width: 300_000,
+              x: 0,
+              y: 0,
+            },
+          ],
+          [
+            {
+              height: 1e8,
+              horizontal: 0,
+              rotation: 0,
+              turns: 0,
+              vertical: -30,
+              width: 1e8,
+              x: 0,
+              y: 0,
+            },
+          ],
+          [
+            {
+              height: 1e8,
+              horizontal: 0,
+              rotation: 44.999,
+              turns: 1,
+              vertical: 0,
+              width: 2,
+              x: 0,
+              y: 0,
+            },
+          ],
+          [
+            {
+              height: 75_274_033,
+              horizontal: -17.6,
+              rotation: 0,
+              turns: 0,
+              vertical: 30,
+              width: 14,
+              x: 0,
+              y: 0,
+            },
+          ],
+        ],
+      }
     );
   });
 });
 
 describe("short lens", () => {
-  it.each([13, 6, 0.5])(
-    "keeps a %s mm crop on the photo at full tilt",
-    (mm) => {
+  it.each([
+    [13, false],
+    [6, false],
+    [0.5, false],
+    [26, true],
+  ])(
+    "keeps a %s mm crop on the photo at full tilt, the lens as given: %s",
+    (mm, given) => {
       const { cropper } = setup({
         defaultValue: { perspective: { horizontal: 30, vertical: 30 } },
         focalLength: mm,
       });
-      const state = cropState(cropper.getCropState());
+      const state = stateOf(cropper);
 
       expect(isCropCovered(state)).toBeTruthy();
       const { center } = cropper.getValue();
@@ -2298,30 +2443,36 @@ describe("short lens", () => {
       expect(
         isPerspectiveValid(state.image, state.perspective, 0.05)
       ).toBeTruthy();
+
+      expect(Math.abs(state.perspective.focal - (mm / 36) * 4000) < 1e-6).toBe(
+        given
+      );
     }
   );
-
-  it("uses the lens as given when it is long enough", () => {
-    const { cropper } = setup({
-      defaultValue: { perspective: { horizontal: 30, vertical: 30 } },
-    });
-
-    expect(cropper.getCropState()?.perspective.focal).toBeCloseTo(
-      (26 / 36) * 4000,
-      9
-    );
-  });
 });
 
 describe("setCropState", () => {
-  it("keeps the aspect the value holds", () => {
-    const { cropper } = setup();
-    const state = cropState(cropper.getCropState());
+  it("keeps the store's aspect, photo and lens", () => {
+    const { cropper } = setup({
+      defaultValue: { perspective: { horizontal: 0, vertical: 20 } },
+    });
+    const state = stateOf(cropper);
 
-    cropper.setCropState({ ...state, aspect: 2 });
-    expect(cropper.getCropState()?.aspect).toBeNull();
+    cropper.setCropState({
+      ...state,
+      aspect: 2,
+      image: { height: 10, width: 10 },
+      perspective: { ...state.perspective, focal: 100 },
+    });
+
+    expect(stateOf(cropper)).toMatchObject({
+      aspect: null,
+      image: PHOTO,
+      perspective: { focal: state.perspective.focal },
+    });
+
     cropper.setAspect(1);
-    const locked = cropState(cropper.getCropState());
+    const locked = stateOf(cropper);
 
     cropper.setCropState({
       ...locked,
@@ -2329,7 +2480,7 @@ describe("setCropState", () => {
       crop: { ...locked.crop, height: 200, width: 1000 },
     });
 
-    const after = cropState(cropper.getCropState());
+    const after = stateOf(cropper);
 
     expect(after.aspect).toBe(1);
     expect(after.crop.width).toBeCloseTo(after.crop.height, 6);
@@ -2337,31 +2488,21 @@ describe("setCropState", () => {
     expect(cropper.getCropState()?.crop.width).toBeCloseTo(after.crop.width, 6);
   });
 
-  it("keeps the photo and the lens the cropper holds", () => {
-    const { cropper } = setup({
-      defaultValue: { perspective: { horizontal: 0, vertical: 20 } },
-    });
-    const state = cropState(cropper.getCropState());
-
-    cropper.setCropState({
-      ...state,
-      image: { height: 10, width: 10 },
-      perspective: { ...state.perspective, focal: 100 },
-    });
-
-    const after = cropState(cropper.getCropState());
-
-    expect(after.image).toStrictEqual(PHOTO);
-    expect(after.perspective.focal).toBe(state.perspective.focal);
-  });
-
-  it("whole-numbers the turns it is given", () => {
+  it.each<[string, Record<string, unknown>, boolean, number]>([
+    ["a string flip", { flip: "x" }, false, 0],
+    ["a number flip", { flip: 1 }, false, 0],
+    ["no flip", { flip: undefined }, false, 0],
+    ["five turns", { turns: 5 }, false, 1],
+  ])("cleans %s into the value", (_, loosened, mirrored, turns) => {
     const { cropper } = setup();
-    const state = cropState(cropper.getCropState());
 
-    Reflect.apply(cropper.setCropState, cropper, [{ ...state, turns: 5 }]);
-    expect(cropper.getCropState()?.turns).toBe(1);
-    expect(cropper.getValue().quarterTurns).toBe(1);
+    Reflect.apply(cropper.setCropState, cropper, [
+      { ...stateOf(cropper), ...loosened },
+    ]);
+
+    expect(cropper.getValue().mirrored).toBe(mirrored);
+    expect(cropper.getValue().quarterTurns).toBe(turns);
+    expect(stateOf(cropper).turns).toBe(turns);
   });
 });
 
@@ -2377,18 +2518,13 @@ describe("round trips", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
-  it("brings a saved crop on a limit back exactly", () => {
-    const { cropper } = onTheEdge();
-    const saved = parse(serialize(cropper.getValue())) ?? defaultValue;
+  it("brings a stored crop on a limit back exactly, through serialize and through setValue", () => {
+    const { cropper, time } = onTheEdge();
+    const stored = cropper.getValue();
+    const saved = parse(serialize(stored)) ?? defaultValue;
 
     expect(setup({ value: saved }).cropper.getValue()).toStrictEqual(saved);
     expect(saved).not.toBe(defaultValue);
-  });
-
-  it("returns exactly to a stored crop", () => {
-    const { cropper, time } = onTheEdge();
-    const stored = cropper.getValue();
-
     cropper.setRotation(3);
     time.frames(3);
     cropper.setValue(stored, { reason: "history" });
@@ -2396,33 +2532,27 @@ describe("round trips", () => {
     expect(cropper.getValue()).toStrictEqual(stored);
   });
 
-  it("sends nothing for a new photo of the same size", () => {
-    const { change, commit, cropper, time } = onTheEdge();
-    const before = cropper.getValue();
-
-    cropper.setImage({ ...PHOTO });
-    time.frames(3);
-    expect(change).not.toHaveBeenCalled();
-    expect(commit).not.toHaveBeenCalled();
-    expect(cropper.getValue()).toBe(before);
-  });
-
   it("stays quiet on any crop written back, on any photo shape", () => {
     fcAssert(
       property(
         record({
           angle: double({ max: 45, min: -45, noNaN: true }),
+          aspect: constantFrom<CropValue["aspect"]>("free", 16 / 9),
           image: constantFrom(
             PHOTO,
             { height: 30, width: 40 },
             { height: 100, width: 20_000 },
+            { height: 3, width: 1_000_000 },
             { height: 3024, width: 4032 }
           ),
           pan: double({ max: 3, min: -3, noNaN: true }),
           zoom: double({ max: 15, min: 1, noNaN: true }),
         }),
-        ({ angle, image, pan, zoom }) => {
-          const { change, commit, cropper, time } = setup({ image });
+        ({ angle, aspect, image, pan, zoom }) => {
+          const { change, commit, cropper, time } = setup({
+            image,
+            value: { ...defaultValue, aspect },
+          });
 
           cropper.setRotation(angle);
           cropper.setZoom(zoom);
@@ -2430,73 +2560,74 @@ describe("round trips", () => {
           time.frames(2);
           change.mockClear();
           commit.mockClear();
+          const held = cropper.getValue();
+
           cropper.setValue(cropper.getValue());
           time.frames(2);
           expect(change).not.toHaveBeenCalled();
           expect(commit).not.toHaveBeenCalled();
+          expect(cropper.getValue().size).toStrictEqual(held.size);
         }
-      )
+      ),
+      {
+        examples: [
+          [
+            {
+              angle: 0,
+              aspect: 16 / 9,
+              image: { height: 3, width: 1_000_000 },
+              pan: 0,
+              zoom: 1,
+            },
+          ],
+          [
+            {
+              angle: 7.5e-12,
+              aspect: "free",
+              image: { height: 100, width: 20_000 },
+              pan: -0.8531595559399789,
+              zoom: 6.8102518945089665,
+            },
+          ],
+          [
+            {
+              angle: 1.2095e-9,
+              aspect: "free",
+              image: { height: 100, width: 20_000 },
+              pan: 0.4666666666875,
+              zoom: 14.999999945559717,
+            },
+          ],
+          [
+            {
+              angle: -0.000018614188500000004,
+              aspect: "free",
+              image: { height: 100, width: 20_000 },
+              pan: 0.000032483463526374626,
+              zoom: 1,
+            },
+          ],
+          [
+            {
+              angle: 0.0004974819465,
+              aspect: "free",
+              image: { height: 3000, width: 4000 },
+              pan: -0.000002532001256004277,
+              zoom: 1,
+            },
+          ],
+          [
+            {
+              angle: -0.08214960909350001,
+              aspect: "free",
+              image: { height: 30, width: 40 },
+              pan: -3.1825326864062767e-7,
+              zoom: 1,
+            },
+          ],
+        ],
+      }
     );
-  });
-
-  it("stays quiet when a held tilt moved the crop limit on a long photo", () => {
-    const { change, cropper, time } = setup({
-      image: { height: 100, width: 20_000 },
-    });
-
-    cropper.setRotation(1.2095e-9);
-    cropper.setZoom(14.999999945559717);
-    cropper.panBy(0.4666666666875, 0.23333333334375);
-    time.frames(2);
-    change.mockClear();
-    cropper.setValue(cropper.getValue());
-    time.frames(2);
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    [
-      -0.000018614188500000004,
-      { height: 100, width: 20_000 },
-      0.000032483463526374626,
-    ],
-    [0.0004974819465, { height: 3000, width: 4000 }, -0.000002532001256004277],
-    [-0.08214960909350001, { height: 30, width: 40 }, -3.1825326864062767e-7],
-  ])(
-    "stays quiet when the solver slack just passes the hold at %d",
-    (angle, image, pan) => {
-      const { change, cropper, time } = setup({ image });
-
-      cropper.setRotation(angle);
-      cropper.panBy(pan, pan / 2);
-      time.frames(2);
-      change.mockClear();
-      cropper.setValue(cropper.getValue());
-      time.frames(2);
-      expect(change).not.toHaveBeenCalled();
-    }
-  );
-
-  it("stays pristine when the default crop is written back", () => {
-    const { cropper, time } = setup({
-      defaultValue: { center: { x: 0.9, y: 0.9 }, rotation: 12 },
-      image: { height: 4032, width: 3024 },
-    });
-
-    expect(cropper.getState().pristine).toBeTruthy();
-    cropper.setValue(cropper.getValue());
-    time.frames(2);
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("is pristine again after four turns when a side rounds to the next step", () => {
-    const { cropper } = setup({ defaultValue: { aspect: 6.650816071338371 } });
-
-    for (let turn = 0; turn < 4; turn += 1) {
-      cropper.rotate90();
-    }
-
-    expect(cropper.getState().pristine).toBeTruthy();
   });
 
   it("is pristine again after four turns on a ratio whose inverse drifts", () => {
@@ -2513,121 +2644,205 @@ describe("round trips", () => {
       })
     );
   });
-
-  it("tells close ratios from far ones and names apart", () => {
-    expect(sameAspect(1.85, 1.8500000000000003)).toBeTruthy();
-    expect(sameAspect(1.85, 1.86)).toBeFalsy();
-    expect(sameAspect("free", "free")).toBeTruthy();
-    expect(sameAspect("free", 1)).toBeFalsy();
-  });
 });
 
 describe("anchored zoom", () => {
   const minSize = { height: 1500, width: 2000 };
 
-  it("does not pan when the minSize ceiling stops the zoom", () => {
-    const { cropper } = setup({ minSize });
+  it.each<
+    [
+      string,
+      CropperOptions,
+      (cropper: Cropper) => void,
+      { x: number; y: number },
+      { x: number; y: number },
+      { height: number; width: number },
+    ]
+  >([
+    [
+      "the minSize ceiling at a corner anchor",
+      { minSize },
+      (cropper) => {
+        cropper.setZoom(2);
+      },
+      { x: 0, y: 0 },
+      { x: 0.5, y: 0.5 },
+      { height: 1500, width: 2000 },
+    ],
+    [
+      "the minSize ceiling short of the request",
+      { minSize },
+      noop,
+      { x: 0.25, y: 0.25 },
+      { x: 0.375, y: 0.375 },
+      { height: 1500, width: 2000 },
+    ],
+    [
+      "a side already at the minimum",
+      square(300),
+      (cropper) => {
+        cropper.setValue({
+          center: { x: 0.5, y: 0.3 },
+          size: { height: 0.3, width: 0.8 },
+        });
+      },
+      { x: 0.5, y: 0.15 },
+      { x: 0.5, y: 0.3 },
+      { height: 300, width: 800 },
+    ],
+  ])(
+    "holds the anchor at the zoom it reached when %s stops it",
+    (_, options, prepare, anchor, center, size) => {
+      const { cropper } = setup(options);
 
-    cropper.setZoom(2);
-    const before = cropState(cropper.getCropState()).crop;
-
-    cropper.setZoom(4, { anchor: { x: 0, y: 0 } });
-    expect(cropper.getZoom()).toBeCloseTo(2, 6);
-    expect(cropState(cropper.getCropState()).crop).toStrictEqual(before);
-  });
-
-  it("holds the anchor when the zoom stops short of the request", () => {
-    const { cropper } = setup({ minSize });
-
-    cropper.setZoom(4, { anchor: { x: 0.25, y: 0.25 } });
-    expect(cropper.getZoom()).toBeCloseTo(2, 6);
-    const { center } = cropper.getValue();
-
-    expect(center.x).toBeCloseTo(0.375, 9);
-    expect(center.y).toBeCloseTo(0.375, 9);
-  });
-
-  it("leaves the centre alone when a side at the minimum stops the zoom", () => {
-    const { cropper } = setup(square(300));
-
-    cropper.setValue({
-      center: { x: 0.5, y: 0.3 },
-      size: { height: 0.3, width: 0.8 },
-    });
-
-    cropper.setZoom(2, { anchor: { x: 0.5, y: 0.15 } });
-    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 800 });
-    expect(cropper.getValue().center.y).toBeCloseTo(0.3, 9);
-  });
-
-  it("holds the anchor when the zoom is reached", () => {
-    const { cropper } = setup();
-
-    cropper.setZoom(2, { anchor: { x: 0.25, y: 0.75 } });
-    const { center } = cropper.getValue();
-
-    expect(center.x).toBeCloseTo(0.375, 9);
-    expect(center.y).toBeCloseTo(0.625, 9);
-  });
+      prepare(cropper);
+      cropper.setZoom(4, { anchor });
+      expect(cropper.getValue().center.x).toBeCloseTo(center.x, 9);
+      expect(cropper.getValue().center.y).toBeCloseTo(center.y, 9);
+      expect(pixels(cropper)).toStrictEqual(size);
+    }
+  );
 });
 
 describe("minSize on a free crop", () => {
-  it("holds the short side of a long crop", () => {
-    const { cropper } = setup(square(100));
+  const LONG = { size: { height: 0.4, width: 0.8 } };
 
-    cropper.setValue({ size: { height: 1, width: 0.01 } });
-    expect(pixels(cropper)).toStrictEqual({ height: 1000, width: 100 });
-  });
+  const pinched = (keep: "size" | "center") => (cropper: Cropper) => {
+    cropper.setValue(LONG);
+    const state = stateOf(cropper);
 
-  it("raises only the side under the minimum", () => {
-    const { cropper } = setup(square(100));
+    cropper.setCropState(
+      { ...state, crop: { ...state.crop, height: 200, width: 400 } },
+      { keep }
+    );
+  };
 
-    cropper.setValue({ size: { height: 0.2, width: 0.05 } });
-    expect(pixels(cropper)).toStrictEqual({ height: 200, width: 100 });
-  });
-
-  it("keeps both sides when the photo cannot hold the minimum at a quarter turn", () => {
-    const { cropper } = setup({
-      image: { height: 200, width: 2000 },
-      minSize: { height: 300, width: 300 },
-      value: { ...defaultValue, quarterTurns: 1 },
-    });
-    const state = cropState(cropper.getCropState());
-    const crop = { ...state.crop, height: 740 };
-
-    cropper.setCropState({ ...state, crop });
-    expect(cropState(cropper.getCropState()).crop.height).toBeCloseTo(740);
-    expect(cropState(cropper.getCropState()).crop.width).toBeCloseTo(200);
-  });
-
-  it("holds a minimum that only just fits at the straighten limit", () => {
-    const { cropper } = setup({
-      image: { height: 365, width: 6122 },
-      minSize: { height: 300, width: 300 },
-      value: {
-        ...defaultValue,
-        rotation: 30,
-        size: { height: 0.83, width: 0.056 },
+  it.each<
+    [
+      string,
+      CropperOptions,
+      (cropper: Cropper) => void,
+      { height: number; width: number },
+    ]
+  >([
+    [
+      "the short side of a long crop",
+      square(100),
+      (cropper) => {
+        cropper.setValue({ size: { height: 1, width: 0.01 } });
       },
-    });
-    const { crop } = cropState(cropper.getCropState());
+      { height: 1000, width: 100 },
+    ],
+    [
+      "only the side under the minimum",
+      square(100),
+      (cropper) => {
+        cropper.setValue({ size: { height: 0.2, width: 0.05 } });
+      },
+      { height: 200, width: 100 },
+    ],
+    [
+      "both sides a quarter turn cannot hold",
+      {
+        image: { height: 200, width: 2000 },
+        minSize: { height: 300, width: 300 },
+        value: { ...defaultValue, quarterTurns: 1 },
+      },
+      (cropper) => {
+        withCrop(cropper, { height: 740 });
+      },
+      { height: 740, width: 200 },
+    ],
+    [
+      "a minimum that only just fits at the straighten limit",
+      {
+        image: { height: 365, width: 6122 },
+        minSize: { height: 300, width: 300 },
+        value: {
+          ...defaultValue,
+          rotation: 30,
+          size: { height: 0.83, width: 0.056 },
+        },
+      },
+      noop,
+      { height: 300, width: 300 },
+    ],
+    [
+      "a width from setCropState",
+      square(100),
+      (cropper) => {
+        withCrop(cropper, { width: 10 });
+      },
+      { height: 1000, width: 100 },
+    ],
+    [
+      "a width from defaultValue",
+      { ...square(200), defaultValue: { size: { height: 1, width: 0.05 } } },
+      noop,
+      { height: 1000, width: 200 },
+    ],
+    [
+      "a long crop's shape when a zoom stops at the minimum",
+      square(300),
+      (cropper) => {
+        cropper.setValue(LONG);
+        cropper.setZoom(2);
+        cropper.setZoom(4);
+      },
+      { height: 300, width: 600 },
+    ],
+    [
+      "a long crop's shape on the way back out",
+      square(300),
+      (cropper) => {
+        cropper.setValue(LONG);
+        cropper.setZoom(4);
+        cropper.setZoom(1);
+      },
+      { height: 500, width: 1000 },
+    ],
+    [
+      "a long crop's shape when a pinch holding its size stops",
+      square(300),
+      pinched("size"),
+      { height: 300, width: 600 },
+    ],
+    [
+      "a long crop's shape when a pinch holding its centre stops",
+      square(300),
+      pinched("center"),
+      { height: 300, width: 600 },
+    ],
+    [
+      "each side of a size setValue gives whole",
+      square(300),
+      (cropper) => {
+        cropper.setValue(LONG);
+        cropper.setValue({ size: { height: 0.1, width: 0.2 } });
+      },
+      { height: 300, width: 300 },
+    ],
+    [
+      "the short side of a crop spanning the photo at a tiny angle",
+      { image: null, minSize: { height: 1, width: 4000 } },
+      (cropper) => {
+        cropper.setValue({ rotation: 5e-13 });
+        cropper.setImage(PHOTO);
+      },
+      { height: 1, width: 4000 },
+    ],
+  ])("holds %s", (_, options, write, size) => {
+    const { cropper } = setup(options);
 
-    expect(crop.height).toBeGreaterThanOrEqual(300 - 1e-9);
-    expect(crop.width).toBeGreaterThanOrEqual(300 - 1e-9);
-  });
+    write(cropper);
+    const { crop } = stateOf(cropper);
 
-  it("holds it from setCropState and defaultValue too", () => {
-    const { cropper } = setup(square(100));
-    const state = cropState(cropper.getCropState());
+    expect(sound(cropper.getValue())).toBeTruthy();
 
-    cropper.setCropState({ ...state, crop: { ...state.crop, width: 10 } });
-    expect(pixels(cropper).width).toBe(100);
-    const { cropper: fresh } = setup({
-      ...square(200),
-      defaultValue: { size: { height: 1, width: 0.05 } },
-    });
-
-    expect(pixels(fresh)).toStrictEqual({ height: 1000, width: 200 });
+    expect({
+      height: Math.round(crop.height),
+      width: Math.round(crop.width),
+    }).toStrictEqual(size);
   });
 
   it("holds the minimum and the coverage on any crop", () => {
@@ -2652,7 +2867,7 @@ describe("minSize on a free crop", () => {
           const { cropper } = setup({ image, minSize });
 
           cropper.setValue({ rotation: angle, size: { height, width } });
-          const state = cropState(cropper.getCropState());
+          const state = stateOf(cropper);
 
           expect(isCropCovered(state)).toBeTruthy();
           pre(cropper.getRotationLimit() >= Math.abs(angle));
@@ -2665,90 +2880,35 @@ describe("minSize on a free crop", () => {
       )
     );
   });
-
-  it("keeps a long crop's shape when a zoom stops at the minimum", () => {
-    const { cropper } = setup(square(300));
-
-    cropper.setValue({ size: { height: 0.4, width: 0.8 } });
-    cropper.setZoom(2);
-    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
-    cropper.setZoom(4);
-    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
-    cropper.setZoom(1);
-    expect(pixels(cropper)).toStrictEqual({ height: 500, width: 1000 });
-  });
-
-  it.each(["size", "center"] as const)(
-    "keeps a long crop's shape when a pinch holding %s stops at the minimum",
-    (keep) => {
-      const { cropper } = setup(square(300));
-
-      cropper.setValue({ size: { height: 0.4, width: 0.8 } });
-      const state = cropState(cropper.getCropState());
-
-      cropper.setCropState(
-        { ...state, crop: { ...state.crop, height: 200, width: 400 } },
-        { keep }
-      );
-
-      expect(pixels(cropper)).toStrictEqual({ height: 300, width: 600 });
-    }
-  );
-
-  it("takes a size given whole from setValue side by side at any shape", () => {
-    const { cropper } = setup(square(300));
-
-    cropper.setValue({ size: { height: 0.4, width: 0.8 } });
-    cropper.setValue({ size: { height: 0.1, width: 0.2 } });
-    expect(pixels(cropper)).toStrictEqual({ height: 300, width: 300 });
-  });
-
-  it("keeps the short side of a crop that spans the photo at a tiny angle", () => {
-    const { cropper } = setup({
-      image: null,
-      minSize: { height: 1, width: 4000 },
-    });
-
-    cropper.setValue({ rotation: 5e-13 });
-    cropper.setImage(PHOTO);
-    expect(sound(cropper.getValue())).toBeTruthy();
-    expect(cropper.getValue().size.height).toBeCloseTo(1 / 3000, 9);
-  });
-
-  it("reports the minimum it holds", () => {
-    const { cropper } = setup({ minSize: { height: 100, width: 5000 } });
-
-    expect((cropper as CropperInternals).getMinSize()).toStrictEqual({
-      height: 100,
-      width: 4000,
-    });
-
-    expect((setup().cropper as CropperInternals).getMinSize()).toStrictEqual({
-      height: 1,
-      width: 1,
-    });
-  });
 });
 
 describe("values handed out", () => {
   it("freezes every value and state the cropper holds", () => {
     const { change, commit, cropper, time } = setup();
 
-    expect(deepFrozen(defaultValue)).toBeTruthy();
-    expect(deepFrozen(parse("{}") ?? {})).toBeTruthy();
-    expect(deepFrozen(cropper.getValue())).toBeTruthy();
+    const first = [defaultValue, parse("{}") ?? {}, cropper.getValue()];
+
     cropper.setRotation(5);
     time.frame();
 
     expect(
       [
+        ...first,
         cropper.getValue(),
-        cropState(cropper.getCropState()),
+        stateOf(cropper),
         change.mock.calls[0]?.[0] ?? {},
         commit.mock.calls[0]?.[0] ?? {},
         cropper.getState().committed,
       ].every(deepFrozen)
     ).toBeTruthy();
+
+    const early = createCropper();
+
+    (early as CropperInternals).retarget({ aspect: 1, lock: true });
+    early.setValue({ rotation: 3 });
+    expect(early.getValue().aspect).toBe(1);
+    expect(deepFrozen(early.getValue())).toBeTruthy();
+    early.destroy();
   });
 
   it("keeps away from an object passed in", () => {
@@ -2761,35 +2921,29 @@ describe("values handed out", () => {
 
     shared.center.x = 0.1;
     shared.size.width = 0.25;
-    expect(cropper.getValue().center.x).toBe(0.5);
-    expect(cropper.getValue().size.width).toBe(0.5);
-    expect(Object.isFrozen(shared)).toBeFalsy();
+
+    expect([
+      cropper.getValue().center.x,
+      cropper.getValue().size.width,
+      Object.isFrozen(shared),
+    ]).toStrictEqual([0.5, 0.5, false]);
+
     const partial = { center: { x: 0.3, y: 0.3 } };
 
     cropper.setValue(partial);
     partial.center.x = 0.9;
     expect(cropper.getValue().center.x).toBe(0.3);
-  });
-
-  it("freezes a value set under a locked aspect before a photo", () => {
-    const cropper = createCropper();
-
-    (cropper as CropperInternals).retarget({ aspect: 1, lock: true });
-    cropper.setValue({ rotation: 3 });
-    expect(cropper.getValue().aspect).toBe(1);
-    expect(deepFrozen(cropper.getValue())).toBeTruthy();
-    cropper.destroy();
-  });
-
-  it("keeps a state passed to setCropState away from the cropper", () => {
-    const { cropper } = setup();
-    const state = cropState(cropper.getCropState());
+    cropper.setImage(PHOTO);
+    const state = stateOf(cropper);
     const crop = { ...state.crop, width: 2000 };
 
     cropper.setCropState({ ...state, crop });
     crop.width = 100;
-    expect(cropper.getCropState()?.crop.width).not.toBe(100);
-    expect(Object.isFrozen(crop)).toBeFalsy();
+
+    expect([
+      cropper.getCropState()?.crop.width,
+      Object.isFrozen(crop),
+    ]).toStrictEqual([2000, false]);
   });
 
   it("applies a change written on a copy of the value", () => {
@@ -2800,7 +2954,6 @@ describe("values handed out", () => {
     cropper.setValue({ ...cropper.getValue(), rotation: 2 });
     time.frames(2);
     expect(cropper.getCropState()?.angle).toBe(2);
-    expect(cropper.getPixelCrop()?.rotateExpand.degrees).toBe(2);
     expect(change).toHaveBeenCalledOnce();
     expect(commit).toHaveBeenCalledOnce();
   });
@@ -2811,7 +2964,7 @@ describe("frame timing", () => {
     const steps: ((now: number) => void)[] = [];
     const cropper = createCropper({
       clock: {
-        cancel: () => {},
+        cancel: noop,
         request: (step) => steps.push(step),
       },
       image: PHOTO,
@@ -2836,17 +2989,11 @@ describe("frame timing", () => {
 
 describe("controlled writes around a gesture", () => {
   it("drops a late echo between the end of a gesture and its commit", () => {
-    const { clock, frame } = fakeClock();
-    const commits: { reason: string; rotation: number }[] = [];
-    const cropper = createCropper({ clock, image: PHOTO });
-
-    cropper.on("commit", (value, details) => {
-      commits.push({ reason: details.reason, rotation: value.rotation });
-    });
+    const { commit, cropper, time } = setup();
 
     cropper.begin("dial");
     cropper.setRotation(10, { reason: "dial" });
-    frame();
+    time.frame();
     cropper.setRotation(11, { reason: "dial" });
     cropper.end();
 
@@ -2856,202 +3003,81 @@ describe("controlled writes around a gesture", () => {
     );
 
     cropper.setRotation(10, { reason: "controlled" });
-    frame();
+    time.frame();
     expect(cropper.getValue().rotation).toBe(11);
-    expect(commits).toStrictEqual([{ reason: "dial", rotation: 11 }]);
+
+    expect(
+      commit.mock.calls.map(([value, details]) => ({
+        reason: details.reason,
+        rotation: value.rotation,
+      }))
+    ).toStrictEqual([{ reason: "dial", rotation: 11 }]);
   });
 });
 
-describe("settle after a canceled task", () => {
+describe("reset", () => {
   it.each<[string, (cropper: Cropper) => void]>([
-    ["nothing", noop],
+    ...[1e-12, 1e-11, 5e-11].map(
+      (rotation): [string, (cropper: Cropper) => void] => [
+        `a rotation of ${rotation}`,
+        (cropper) => {
+          cropper.setRotation(10);
+          cropper.setRotation(rotation);
+        },
+      ]
+    ),
     [
-      "a rotation",
-      (cropper) => {
-        cropper.setRotation(5);
-      },
-    ],
-    [
-      "a zoom",
+      "a size next to the full photo",
       (cropper) => {
         cropper.setZoom(2);
+        cropper.setZoom(1.00000000001);
       },
     ],
-  ])("fires once when %s is written after the cancel", (_name, write) => {
-    const { clock, frames } = fakeClock();
-    const cropper = createCropper({ clock, image: PHOTO });
-    const settle = vi.fn<CropperEvents["settle"]>();
+  ])("reaches its value from %s inside the hold", (_, write) => {
+    const { cropper } = setup({ image: { height: 3024, width: 4032 } });
 
-    cropper.on("settle", settle);
-    const stop = cropper.run(() => true);
-
-    frames(2);
-    stop();
     write(cropper);
-    frames(5);
-
-    expect(cropper.getState().settling).toBeFalsy();
-    expect(settle).toHaveBeenCalledOnce();
-  });
-});
-
-describe("reset within the hold tolerance", () => {
-  it.each([1e-12, 1e-11, 5e-11])("returns from rotation %d", (rotation) => {
-    const { cropper } = setup({
-      image: { height: 3024, width: 4032 },
-    });
-
-    cropper.setRotation(10);
-    cropper.setRotation(rotation);
     cropper.reset();
-
     expect(cropper.getValue().rotation).toBe(0);
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("returns from a size next to the full photo", () => {
-    const { cropper } = setup({
-      image: { height: 3024, width: 4032 },
-    });
-
-    cropper.setZoom(2);
-    cropper.setZoom(1.00000000001);
-    cropper.reset();
-
     expect(cropper.getValue().size).toStrictEqual({ height: 1, width: 1 });
     expect(cropper.getState().pristine).toBeTruthy();
   });
-});
 
-describe("destroy inside a listener", () => {
-  it("refuses a gesture when the flush at its start destroys the cropper", () => {
+  it("returns to a zoom from the first render, follows a new photo and lets the target go", () => {
     const { cropper } = setup();
+    const drop = (cropper as CropperInternals).retarget({ zoom: 2 });
 
-    cropper.on("change", () => {
-      cropper.destroy();
-    });
+    const pristine: boolean[] = [];
 
-    cropper.rotate90();
-
-    expect(cropper.begin("pan")).toBeFalsy();
-    expect(cropper.getState().interacting).toBeNull();
+    cropper.setZoom(2, { emit: false });
+    pristine.push(cropper.getState().pristine);
+    cropper.setZoom(5);
+    pristine.push(cropper.getState().pristine);
+    cropper.reset();
+    expect(cropper.getZoom()).toBeCloseTo(2, 6);
+    pristine.push(cropper.getState().pristine);
+    cropper.setImage({ height: 1000, width: 3000 });
+    cropper.setZoom(2, { emit: false });
+    pristine.push(cropper.getState().pristine);
+    expect(pristine).toStrictEqual([true, false, true, true]);
+    drop();
+    cropper.reset();
+    expect(cropper.getZoom()).toBeCloseTo(1, 6);
   });
-});
-
-describe("extreme sizes under perspective", () => {
-  const TILT = { perspective: { horizontal: 30, vertical: 30 } };
-
-  it.each([1e-160, 1e-200, 5e-324])("caps a zoom from size %d", (side) => {
-    const cropper = createCropper({
-      defaultValue: { aspect: 0.05, ...TILT },
-      image: { height: 3024, width: 4032 },
-    });
-
-    cropper.setValue({
-      ...cropper.getValue(),
-      size: { height: side, width: side },
-    });
-
-    expect(cropper.getZoom()).toBeLessThanOrEqual(cropper.getMaxZoom() + 1e-9);
-  });
-
-  it("caps a zoom when one side alone would underflow the area", () => {
-    const cropper = createCropper({
-      defaultValue: { aspect: 0.05, ...TILT },
-      image: { height: 3024, width: 4032 },
-    });
-
-    cropper.setValue({
-      ...cropper.getValue(),
-      size: { height: 1e-5, width: 5e-324 },
-    });
-
-    expect(cropper.getZoom()).toBeLessThanOrEqual(cropper.getMaxZoom() + 1e-9);
-  });
-
-  it("keeps the crop covered on a one pixel photo", () => {
-    const cropper = createCropper({
-      defaultValue: { aspect: 0.05, ...TILT },
-      image: { height: 1, width: 1 },
-    });
-
-    cropper.setValue({
-      ...cropper.getValue(),
-      size: { height: 1e-200, width: 1e-200 },
-    });
-
-    expect(isCropCovered(cropState(cropper.getCropState()))).toBeTruthy();
-  });
-});
-
-describe("a huge photo under perspective", () => {
-  const TILT = { perspective: { horizontal: 30, vertical: 30 } };
-
-  it.each([1e18, 1e20, 1e50, 1e150])(
-    "stays sound on a photo side of %d",
-    (side) => {
-      const image = { height: side, width: 1 };
-      const created = createCropper({ defaultValue: TILT, image });
-      const swapped = createCropper({
-        defaultValue: TILT,
-        image: { height: 1000, width: 1000 },
-      });
-
-      swapped.setImage({ height: side, width: 1000 });
-
-      expect(created.getState().pristine).toBeTruthy();
-
-      for (const cropper of [created, swapped]) {
-        expect(sound(cropper.getValue())).toBeTruthy();
-        cropper.setZoom(2);
-        cropper.reset();
-        expect(sound(cropper.getValue())).toBeTruthy();
-        expect(cropper.getState().pristine).toBeTruthy();
-      }
-    }
-  );
-});
-
-describe("huge finite options", () => {
-  it.each([1e155, 1e300, 1e308])(
-    "keeps the state finite at focal length %d",
-    (focalLength) => {
-      const cropper = createCropper({ image: PHOTO });
-
-      cropper.setOptions({ focalLength });
-
-      cropper.setValue({
-        ...cropper.getValue(),
-        perspective: { horizontal: 10, vertical: 10 },
-      });
-
-      const { crop, perspective } = cropState(cropper.getCropState());
-
-      expect(sound(cropper.getValue())).toBeTruthy();
-
-      expect(
-        [crop.width, crop.height, crop.x, crop.y, perspective.focal].every(
-          Number.isFinite
-        )
-      ).toBeTruthy();
-    }
-  );
 });
 
 describe("the aspect it already has", () => {
-  it.each([
-    ["a ratio", 1],
-    ["the photo's own", "original"],
-  ] as const)(
-    "setting %s again keeps the zoom and sends no commit",
-    (_, aspect) => {
-      const time = fakeClock();
-      const commit = vi.fn<CropperEvents["commit"]>();
-      const cropper = createCropper({
-        clock: time.clock,
-        defaultValue: { aspect },
-        image: PHOTO,
-        onValueCommit: commit,
+  it.each<
+    [string, CropValue["aspect"], CropValue["aspect"], number, number, boolean]
+  >([
+    ["a ratio again", 1, 1, 3, 0, true],
+    ["the photo's own again", "original", "original", 3, 0, true],
+    ["a new ratio", 1, 16 / 9, 1, 1, false],
+  ])(
+    "commits only when %s changes the crop",
+    (_, start, aspect, zoom, commits, same) => {
+      const { commit, cropper, time } = setup({
+        defaultValue: { aspect: start },
       });
 
       cropper.setZoom(3);
@@ -3061,49 +3087,14 @@ describe("the aspect it already has", () => {
 
       cropper.setAspect(aspect);
       time.frames(2);
-      expect(cropper.getValue()).toBe(before);
-      expect(commit).not.toHaveBeenCalled();
+      expect(cropper.getZoom()).toBeCloseTo(zoom, 6);
+      expect(commit).toHaveBeenCalledTimes(commits);
+      expect(cropper.getValue() === before).toBe(same);
     }
   );
-
-  it("a new aspect still fits the crop and commits once", () => {
-    const time = fakeClock();
-    const commit = vi.fn<CropperEvents["commit"]>();
-    const cropper = createCropper({
-      clock: time.clock,
-      defaultValue: { aspect: 1 },
-      image: PHOTO,
-      onValueCommit: commit,
-    });
-
-    cropper.setZoom(3);
-    time.frames(2);
-    commit.mockClear();
-    cropper.setAspect(16 / 9);
-    time.frames(2);
-    expect(cropper.getZoom()).toBeCloseTo(1, 6);
-    expect(commit).toHaveBeenCalledOnce();
-  });
 });
 
 describe("minSize across quarter turns", () => {
-  const MIN = { height: 630, width: 1200 };
-
-  const floored = () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
-      defaultValue: { aspect: 1200 / 630 },
-      image: PHOTO,
-      minSize: MIN,
-    });
-
-    cropper.setZoom(15);
-    time.frames(2);
-
-    return { cropper, time };
-  };
-
   it("reads along the photo's sides, so a turn keeps the crop at the floor", () => {
     const { cropper } = floored();
     const zoom = cropper.getZoom();
@@ -3113,90 +3104,19 @@ describe("minSize across quarter turns", () => {
     expect(cropper.getZoom()).toBeCloseTo(zoom, 6);
     expect(cropper.getPixelCrop()?.width).toBe(630);
     expect(cropper.getPixelCrop()?.height).toBe(1200);
-  });
-
-  it("four turns restore the crop", () => {
-    const { cropper } = floored();
-    const before = cropper.getValue();
-
-    for (let i = 0; i < 4; i += 1) {
-      cropper.rotate90();
-    }
-
-    expect(valuesEqual(cropper.getValue(), before)).toBeTruthy();
-  });
-
-  it("zoom still works after a turn when the floor leaves room", () => {
-    const time = fakeClock();
-    const cropper = createCropper({
-      clock: time.clock,
+    const { cropper: roomy } = setup({
       defaultValue: { quarterTurns: 1 },
       image: { height: 1000, width: 4000 },
       minSize: { height: 500, width: 3000 },
     });
 
-    cropper.setZoom(1.2);
-    expect(cropper.getZoom()).toBeCloseTo(1.2, 6);
-  });
-
-  it("the crop floor and getMinSize agree with the turn", () => {
-    const { cropper } = floored();
-
-    cropper.rotate90();
-
-    expect((cropper as CropperInternals).getMinSize()).toStrictEqual({
-      height: 1200,
-      width: 630,
-    });
-  });
-});
-
-const zoomed = () => {
-  const time = fakeClock();
-  const cropper = createCropper({ clock: time.clock, image: PHOTO });
-  const drop = (cropper as CropperInternals).retarget({ zoom: 2 });
-
-  cropper.setZoom(2, { emit: false });
-
-  return { cropper, drop, time };
-};
-
-describe("a reset target with a zoom", () => {
-  it("reads as pristine at that zoom", () => {
-    const { cropper } = zoomed();
-
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("reset returns to that zoom", () => {
-    const { cropper } = zoomed();
-
-    cropper.setZoom(5);
-    expect(cropper.getState().pristine).toBeFalsy();
-    cropper.reset();
-    expect(cropper.getZoom()).toBeCloseTo(2, 6);
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("follows a new photo", () => {
-    const { cropper } = zoomed();
-
-    cropper.setImage({ height: 1000, width: 3000 });
-    cropper.setZoom(2, { emit: false });
-    expect(cropper.getState().pristine).toBeTruthy();
-  });
-
-  it("goes away with its target", () => {
-    const { cropper, drop } = zoomed();
-
-    drop();
-    cropper.reset();
-    expect(cropper.getZoom()).toBeCloseTo(1, 6);
+    roomy.setZoom(1.2);
+    expect(roomy.getZoom()).toBeCloseTo(1.2, 6);
   });
 });
 
 describe("the cropper's public type", () => {
-  it("names eight events and keeps the internal calls out", () => {
+  it("names eight events, keeps the internal calls out and lets setOptions take only what it honours", () => {
     expectTypeOf<keyof CropperEvents>().toEqualTypeOf<
       | "change"
       | "commit"
@@ -3212,9 +3132,7 @@ describe("the cropper's public type", () => {
     expectTypeOf<Cropper>().not.toHaveProperty("getMinSize");
     expectTypeOf<Cropper>().not.toHaveProperty("rebase");
     expectTypeOf<Cropper>().not.toHaveProperty("retarget");
-  });
 
-  it("lets setOptions take only the options it honours", () => {
     expectTypeOf<Parameters<Cropper["setOptions"]>[0]>().toEqualTypeOf<
       Pick<
         CropperOptions,

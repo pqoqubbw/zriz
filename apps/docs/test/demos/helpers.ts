@@ -12,7 +12,13 @@ import type { DemoName } from "../../demos/registry";
 import { Frame } from "../../demos/shell/frame";
 import { DEMO_SIZES } from "../../demos/shell/sizes";
 import type { DemoWidth } from "../../demos/shell/sizes";
-import type { Box } from "./board";
+
+type Box = {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+};
 
 type ColumnProps = {
   children?: ReactNode;
@@ -189,7 +195,6 @@ const hits = (target: Element, sides: readonly Side[] = ALL_SIDES): boolean => {
 
 export type { Side };
 export {
-  boxIn,
   button,
   find,
   frameLayout,
@@ -197,7 +202,6 @@ export {
   item,
   layoutOf,
   mountDemo,
-  mountFrame,
   mountLive,
   ready,
   settle,

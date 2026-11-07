@@ -1,30 +1,19 @@
-import {
-  array,
-  assert,
-  double,
-  pre,
-  property,
-  record,
-  tuple,
-} from "fast-check";
+import { array, assert, pre, property, record, tuple } from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
-  applyHomography,
   imagePlanes,
   imageQuad,
   insidePlanes,
   largestFit,
   minScaleAt,
-  perspectiveHomography,
   sourceToWorking,
   workingToSource,
 } from "../../src/geometry";
 import type { CropState, Point } from "../../src/geometry";
-import { stateArb } from "./arbitraries";
+import { num, stateArb } from "./arbitraries";
 import { isCropCovered, isPerspectiveValid } from "./oracles";
 
-const num = (min: number, max: number) => double({ max, min, noNaN: true });
 const perspectiveArb = record({
   f35: num(13, 120),
   horizontal: num(-30, 30),
@@ -50,19 +39,6 @@ const spanOf = (quad: readonly Point[]): number =>
   );
 
 describe("perspective", () => {
-  it("fixes the centre with the homography", () => {
-    assert(
-      property(perspectiveArb, (p) => {
-        const h = perspectiveHomography({ ...p, focal: 1000 });
-
-        expect(applyHomography(h, { x: 0, y: 0 })).toStrictEqual({
-          x: 0,
-          y: 0,
-        });
-      })
-    );
-  });
-
   it("round-trips source to working with perspective", () => {
     assert(
       property(
