@@ -48,14 +48,14 @@ export const Editor = ({ src }: { src: string }) => {
           <Cropper.Area aria-label="Crop area" />
         </Cropper.Viewport>
       </Cropper.Root>
-      <button onClick={() => turn(-1)}>straighten left</button>
-      <button onClick={() => turn(1)}>straighten right</button>
-      <button onClick={() => move(-0.01, 0)}>move left</button>
-      <button onClick={() => move(0.01, 0)}>move right</button>
-      <button onClick={() => move(0, -0.01)}>move up</button>
-      <button onClick={() => move(0, 0.01)}>move down</button>
-      <button onClick={() => resize(0.9)}>smaller crop</button>
-      <button onClick={() => resize(1.1)}>larger crop</button>
+      <button onClick={() => turn(-1)}>Straighten left</button>
+      <button onClick={() => turn(1)}>Straighten right</button>
+      <button onClick={() => move(-0.01, 0)}>Move left</button>
+      <button onClick={() => move(0.01, 0)}>Move right</button>
+      <button onClick={() => move(0, -0.01)}>Move up</button>
+      <button onClick={() => move(0, 0.01)}>Move down</button>
+      <button onClick={() => resize(0.9)}>Smaller crop</button>
+      <button onClick={() => resize(1.1)}>Larger crop</button>
     </>
   );
 };

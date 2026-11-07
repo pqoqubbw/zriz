@@ -58,7 +58,7 @@ const Editor = ({ src }: { src: string }) => {
         aria-disabled={history.length === 0}
         onClick={undo}
       >
-        undo
+        Undo
       </button>
     </Cropper.Root>
   );

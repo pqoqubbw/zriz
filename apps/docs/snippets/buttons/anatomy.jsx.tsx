@@ -32,6 +32,6 @@ export const example = (
         />
       </svg>
     </Cropper.Flip>
-    <Cropper.Reset>reset</Cropper.Reset>
+    <Cropper.Reset>Reset</Cropper.Reset>
   </>
 );

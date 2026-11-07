@@ -22,7 +22,7 @@ export const Editor = ({ src }: { src: string }) => {
           <Cropper.Area aria-label="Crop area" />
         </Cropper.Viewport>
       </Cropper.Root>
-      <button onClick={save}>save</button>
+      <button onClick={save}>Save</button>
     </>
   );
 };

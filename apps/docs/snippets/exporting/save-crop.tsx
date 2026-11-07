@@ -64,7 +64,7 @@ export const SaveCrop = ({ file }: { file: File }) => {
         aria-disabled={saving}
         onClick={save}
       >
-        save
+        Save
       </button>
     </>
   );

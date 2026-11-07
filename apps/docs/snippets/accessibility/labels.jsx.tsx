@@ -6,7 +6,7 @@ export const example = (
     <Cropper.Dial aria-label="Straighten" />
     <Cropper.Zoom aria-label="Zoom" />
     <Cropper.AspectGroup aria-label="Aspect ratio">
-      <Cropper.AspectItem value={1}>square</Cropper.AspectItem>
+      <Cropper.AspectItem value={1}>Square</Cropper.AspectItem>
     </Cropper.AspectGroup>
     <Cropper.Rotate aria-label="Rotate left">
       rotate

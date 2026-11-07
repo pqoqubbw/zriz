@@ -110,7 +110,7 @@ const readForm = async (request: Request) => {
 const answer = async (request: Request) => {
   const { form, over } = await readForm(request);
 
-  if (over) return refuse("this upload is too large.", 413);
+  if (over) return refuse("This upload is too large.", 413);
   const file = form?.get("file");
   const value = form?.get("value");
 
@@ -119,11 +119,11 @@ const answer = async (request: Request) => {
     file.size === 0 ||
     typeof value !== "string"
   ) {
-    return refuse("send a file and a crop value.", 400);
+    return refuse("Send a file and a crop value.", 400);
   }
 
   if (value.length > MAX_VALUE) {
-    return refuse("this crop does not fit this photo.", 422);
+    return refuse("This crop does not fit this photo.", 422);
   }
 
   const input = Buffer.from(await file.arrayBuffer());
@@ -131,14 +131,15 @@ const answer = async (request: Request) => {
     .metadata()
     .catch(() => null);
 
-  if (!meta) return refuse("sharp cannot open this file.", 400);
+  if (!meta)
+    return refuse("The server cannot open this file.", 400);
 
   if (meta.format === "heif" && meta.compression !== "av1") {
-    return refuse("send a jpeg, png, webp or avif.", 415);
+    return refuse("Send a JPEG, PNG, WebP or AVIF.", 415);
   }
 
   if (meta.width * meta.height > MAX_PIXELS) {
-    return refuse("this photo has too many pixels.", 413);
+    return refuse("This photo has too many pixels.", 413);
   }
 
   if (meta.format === "webp" && (meta.orientation ?? 1) > 1) {
@@ -160,23 +161,23 @@ const answer = async (request: Request) => {
       headers: { ...HEADERS, "content-type": "image/jpeg" },
     });
   } catch {
-    return refuse("this crop does not fit this photo.", 422);
+    return refuse("This crop does not fit this photo.", 422);
   }
 };
 
 export const POST = async (request: Request) => {
   if (!(await canCrop(request))) {
-    return refuse("sign in to crop a photo.", 401);
+    return refuse("Sign in to crop a photo.", 401);
   }
 
   const length = Number(request.headers.get("content-length"));
 
   if (!(length > 0) || length > MAX_BODY) {
-    return refuse("this upload is too large.", 413);
+    return refuse("This upload is too large.", 413);
   }
 
   if (running >= MAX_RUNNING) {
-    return refuse("the server is busy. try again.", 503);
+    return refuse("The server is busy. Try again.", 503);
   }
 
   running += 1;

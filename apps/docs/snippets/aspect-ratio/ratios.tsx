@@ -15,7 +15,7 @@ export const Ratios = () => {
 
   return (
     <Cropper.AspectGroup aria-label="Aspect ratio">
-      <Cropper.AspectItem value="free">free</Cropper.AspectItem>
+      <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
       <Cropper.AspectItem value={1}>1:1</Cropper.AspectItem>
       {RATIOS.map(([w, h]) => (
         <Cropper.AspectItem

@@ -185,7 +185,7 @@ const objectUrl = async (width: number, height: number): Promise<string> =>
   URL.createObjectURL(await flat(width, height));
 
 const undoSteps = async (): Promise<number> => {
-  const undo = button("undo");
+  const undo = button("Undo");
   let steps = 0;
 
   while (!isOff(undo) && steps < 10) {
@@ -260,7 +260,7 @@ const mountUpload = async () => {
   const screen = await render(<CropUpload />);
 
   pick(fileInput(), await flat(400, 300));
-  await whenOn("upload");
+  await whenOn("Upload");
 
   return screen;
 };
@@ -313,7 +313,7 @@ describe("docs recipes", () => {
         .poll(() => document.querySelector(`${item("area")}[data-interacting]`))
         .not.toBeNull();
 
-      button("undo").click();
+      button("Undo").click();
       await frames();
 
       area.dispatchEvent(
@@ -368,18 +368,18 @@ describe("docs recipes", () => {
         })
         .toStrictEqual(full);
 
-      expect(isOff(button("undo"))).toBeTruthy();
+      expect(isOff(button("Undo"))).toBeTruthy();
     });
 
     it("dims the button only while the stack is empty", async () => {
       await render(<UndoEditor src={await objectUrl(1600, 1200)} />);
       await whenPhoto();
 
-      expect(getComputedStyle(button("undo")).opacity).toBe("0.4");
+      expect(getComputedStyle(button("Undo")).opacity).toBe("0.4");
 
       await commit("+");
 
-      expect(getComputedStyle(button("undo")).opacity).toBe("1");
+      expect(getComputedStyle(button("Undo")).opacity).toBe("1");
     });
 
     it("keeps focus on the button when the stack empties", async () => {
@@ -387,7 +387,7 @@ describe("docs recipes", () => {
       await whenPhoto();
       await commit("+");
 
-      const undo = button("undo");
+      const undo = button("Undo");
 
       undo.focus();
       undo.click();
@@ -477,7 +477,7 @@ describe("docs recipes", () => {
           await render(<AvatarPicker onSave={onSave} />);
           pick(fileInput(), await flat(800, 600));
         },
-        save: "save",
+        save: "Save",
       },
       {
         mount: async (onSave: (blob: Blob) => void) => {
@@ -485,7 +485,7 @@ describe("docs recipes", () => {
             <Editor onSave={onSave} src={await objectUrl(800, 600)} />
           );
         },
-        save: "export",
+        save: "Export",
       },
     ])("$save runs once on a double click and keeps focus", async (recipe) => {
       const onSave = vi.fn<(blob: Blob) => void>();
@@ -513,9 +513,9 @@ describe("docs recipes", () => {
       const clicked = downloads();
 
       await render(<SaveCrop file={await flat(800, 600)} />);
-      await whenOn("save");
+      await whenOn("Save");
 
-      const save = button("save");
+      const save = button("Save");
 
       save.focus();
       save.click();
@@ -535,18 +535,18 @@ describe("docs recipes", () => {
       const clicked = downloads();
       const screen = await render(<SaveCrop file={await flat(800, 600)} />);
 
-      await whenOn("save");
+      await whenOn("Save");
 
       const next = await flat(640, 640);
 
-      button("save").click();
+      button("Save").click();
       await screen.rerender(<SaveCrop file={next} />);
-      await whenOn("save");
+      await whenOn("Save");
       await frames(30);
 
       expect(clicked).not.toHaveBeenCalled();
 
-      button("save").click();
+      button("Save").click();
 
       await expect
         .poll(() => clicked.mock.calls.length, { timeout: 15_000 })
@@ -558,19 +558,19 @@ describe("docs recipes", () => {
 
       await render(<AvatarPicker onSave={onSave} />);
       pick(fileInput(), await flat(800, 600));
-      await whenOn("save");
+      await whenOn("Save");
 
       const next = await flat(640, 640);
 
-      button("save").click();
+      button("Save").click();
       pick(fileInput(), next);
-      await whenOn("save");
+      await whenOn("Save");
       await frames(30);
 
       expect(onSave).not.toHaveBeenCalled();
       expect(alertText()).toBeUndefined();
 
-      button("save").click();
+      button("Save").click();
 
       await expect
         .poll(() => onSave.mock.calls.length, { timeout: 15_000 })
@@ -583,13 +583,13 @@ describe("docs recipes", () => {
         <Editor onSave={onSave} src={await objectUrl(800, 600)} />
       );
 
-      await whenOn("export");
+      await whenOn("Export");
 
       const next = await objectUrl(640, 640);
 
-      button("export").click();
+      button("Export").click();
       await screen.rerender(<Editor onSave={onSave} src={next} />);
-      await whenOn("export");
+      await whenOn("Export");
       await frames(30);
 
       expect(onSave).not.toHaveBeenCalled();
@@ -620,10 +620,10 @@ describe("docs recipes", () => {
       const pending = backend();
 
       await mountUpload();
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
       pick(fileInput(), await flat(200, 400));
-      await whenOn("upload");
+      await whenOn("Upload");
       pending[0]?.answer(answer());
       await frames(4);
 
@@ -636,9 +636,9 @@ describe("docs recipes", () => {
       const urls = resultUrls();
 
       await mountUpload();
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(2);
       pending[0]?.answer(answer());
       pending[1]?.answer(answer());
@@ -653,11 +653,11 @@ describe("docs recipes", () => {
       const urls = resultUrls();
       const screen = await mountUpload();
 
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
       pending[0]?.answer(answer());
       await expect.poll(() => urls.live()).toBe(1);
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(2);
       await screen.unmount();
       pending[1]?.answer(answer());
@@ -670,11 +670,11 @@ describe("docs recipes", () => {
       const pending = backend();
 
       await mountUpload();
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
       pending[0]?.answer(answer());
       await expect.poll(shownResult).not.toBeNull();
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(2);
       await frames();
 
@@ -682,7 +682,7 @@ describe("docs recipes", () => {
 
       pending[1]?.answer(new Response("refused", { status: 422 }));
       await expect.poll(alertText).toBe("refused");
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(3);
       await frames();
 
@@ -693,7 +693,7 @@ describe("docs recipes", () => {
       const pending = backend();
 
       await mountUpload();
-      button("upload").click();
+      button("Upload").click();
       await expect.poll(() => pending.length).toBe(1);
 
       pending[0]?.answer(
@@ -706,7 +706,7 @@ describe("docs recipes", () => {
         )
       );
 
-      await expect.poll(alertText).toBe("the upload did not reach the server.");
+      await expect.poll(alertText).toBe("The upload did not reach the server.");
     });
   });
 

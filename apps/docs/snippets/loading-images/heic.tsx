@@ -56,10 +56,10 @@ export const Heic = ({ onSave }: Props) => {
           cropper.current && onSave(cropper.current)
         }
       >
-        save
+        Save
       </button>
       {failed && (
-        <p role="alert">this photo does not open here.</p>
+        <p role="alert">This photo does not open here.</p>
       )}
     </>
   );

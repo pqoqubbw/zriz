@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { MAX_ZOOM, MIN_SIZE } from "./crop-limits";
 
 const unreadable =
-  "this photo does not open. pick a jpeg, png, webp or avif.";
+  "This photo does not open. Pick a JPEG, PNG, WebP or AVIF.";
 
 export const CropUpload = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -64,7 +64,7 @@ export const CropUpload = () => {
       }
     } catch {
       if (!signal.aborted) {
-        setError("the upload did not reach the server.");
+        setError("The upload did not reach the server.");
       }
     }
   };
@@ -112,7 +112,7 @@ export const CropUpload = () => {
         </Cropper.Dial>
       </Cropper.Root>
       <button type="button" disabled={!ready} onClick={upload}>
-        upload
+        Upload
       </button>
       {error && <p role="alert">{error}</p>}
       {result && (

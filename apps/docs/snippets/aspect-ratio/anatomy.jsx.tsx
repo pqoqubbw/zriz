@@ -3,7 +3,7 @@ import * as Cropper from "@zriz/react/cropper";
 export const example = (
   <>
     <Cropper.AspectGroup aria-label="Aspect ratio">
-      <Cropper.AspectItem value="free">free</Cropper.AspectItem>
+      <Cropper.AspectItem value="free">Free</Cropper.AspectItem>
       <Cropper.AspectItem value={1}>1:1</Cropper.AspectItem>
       <Cropper.AspectItem value={4 / 5}>4:5</Cropper.AspectItem>
       <Cropper.AspectItem value={16 / 9}>16:9</Cropper.AspectItem>

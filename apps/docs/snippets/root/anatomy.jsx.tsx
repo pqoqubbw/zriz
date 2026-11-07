@@ -16,9 +16,9 @@ export const example = (
       <Cropper.DialTicks />
     </Cropper.Dial>
     <div className="toolbar">
-      <Cropper.Rotate>rotate</Cropper.Rotate>
-      <Cropper.Flip>flip</Cropper.Flip>
-      <Cropper.Reset>reset</Cropper.Reset>
+      <Cropper.Rotate>Rotate</Cropper.Rotate>
+      <Cropper.Flip>Flip</Cropper.Flip>
+      <Cropper.Reset>Reset</Cropper.Reset>
     </div>
   </Cropper.Root>
 );

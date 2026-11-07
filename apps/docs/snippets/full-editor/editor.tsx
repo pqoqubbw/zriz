@@ -43,9 +43,9 @@ const thumb = {
 };
 
 const aspects = [
-  { label: "free", value: "free" },
-  { label: "original", value: "original" },
-  { label: "square", value: 1 },
+  { label: "Free", value: "free" },
+  { label: "Original", value: "original" },
+  { label: "Square", value: 1 },
   { label: "4:5", value: 4 / 5 },
   { label: "16:9", value: 16 / 9 },
 ] as const;
@@ -155,10 +155,10 @@ export const Editor = ({ src, onSave }: Props) => {
           </Cropper.AspectItem>
         ))}
       </Cropper.AspectGroup>
-      <Cropper.Orientation>orientation</Cropper.Orientation>
-      <Cropper.Rotate>rotate</Cropper.Rotate>
-      <Cropper.Flip>flip</Cropper.Flip>
-      <Cropper.Reset>reset</Cropper.Reset>
+      <Cropper.Orientation>Orientation</Cropper.Orientation>
+      <Cropper.Rotate>Rotate</Cropper.Rotate>
+      <Cropper.Flip>Flip</Cropper.Flip>
+      <Cropper.Reset>Reset</Cropper.Reset>
       <Cropper.Instructions>
         {instructions}
       </Cropper.Instructions>
@@ -169,11 +169,11 @@ export const Editor = ({ src, onSave }: Props) => {
         aria-disabled={saving}
         onClick={save}
       >
-        export
+        Export
       </button>
-      {failed && <p role="alert">this photo does not open.</p>}
+      {failed && <p role="alert">This photo does not open.</p>}
       {exportFailed && (
-        <p role="alert">this crop did not save. try again.</p>
+        <p role="alert">This crop did not save. Try again.</p>
       )}
     </Cropper.Root>
   );

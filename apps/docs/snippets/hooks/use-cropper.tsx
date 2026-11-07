@@ -12,7 +12,7 @@ export const Editor = ({ src }: { src: string }) => {
 
   return (
     <>
-      <button onClick={() => cropper.reset()}>reset</button>
+      <button onClick={() => cropper.reset()}>Reset</button>
       <Cropper.Root cropper={cropper} src={src}>
         <Cropper.Viewport
           style={{ maxWidth: 480, height: 360 }}

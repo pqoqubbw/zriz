@@ -60,7 +60,7 @@ const onFile = async () => {
     attachImage(cropper, await loadImage(file, { signal }));
   } catch {
     if (signal.aborted) return;
-    byId("status").textContent = "this photo does not open.";
+    byId("status").textContent = "This photo does not open.";
   }
 };
 

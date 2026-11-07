@@ -10,8 +10,8 @@ type Props = { onSave: (png: Blob) => void };
 type Status = "empty" | "ready" | "failed";
 
 const unreadable =
-  "this photo does not open. pick a jpeg, png or webp.";
-const unsaved = "this crop did not save. try again.";
+  "This photo does not open. Pick a JPEG, PNG or WebP.";
+const unsaved = "This crop did not save. Try again.";
 
 export const AvatarPicker = ({ onSave }: Props) => {
   const [file, setFile] = useState<File | null>(null);
@@ -90,7 +90,7 @@ export const AvatarPicker = ({ onSave }: Props) => {
         aria-disabled={saving}
         onClick={save}
       >
-        save
+        Save
       </button>
     </>
   );
