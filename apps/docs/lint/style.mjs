@@ -3,6 +3,7 @@ const CONSTANT_CASE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/u;
 const UTILITY =
   /^(?:(?:\[[^\]]+\]|[\w*-]+(?:-\[[^\]]+\])?):)*!?-?(?:\[[^\]]+:[^\]]+\]|(?:flex|grid|block|inline|hidden|contents|sr-only|absolute|relative|sticky|p[xytrbl]?|m[xytrbl]?|gap|size|w|h|min|max|text|font|bg|rounded|shadow|inset|col|row|items|justify|self|overflow|overscroll|cursor|opacity|z|top|left|right|bottom|whitespace|shrink|grow|group|decoration|underline)(?:-\S*)?)$/u;
 const INLINE_SEGMENT_CONFIG = new Set([
+  "config",
   "dynamic",
   "dynamicParams",
   "fetchCache",
@@ -12,6 +13,7 @@ const INLINE_SEGMENT_CONFIG = new Set([
   "runtime",
 ]);
 const NEXT_EXPORTS = new Set([
+  "config",
   "dynamic",
   "dynamicParams",
   "experimental_ppr",

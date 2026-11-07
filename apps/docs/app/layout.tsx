@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import { Analytics } from "@/components/shell/analytics";
 import { cn } from "@/lib/cn";
 import { SITE_DESCRIPTION, SITE_OPEN_GRAPH, SITE_ORIGIN } from "@/lib/site";
 
@@ -38,7 +39,10 @@ const viewport: Viewport = {
 
 const RootLayout = ({ children }: RootLayoutProps) => (
   <html className={cn(inter.variable, paperMono.variable)} lang="en">
-    <body>{children}</body>
+    <body>
+      {children}
+      <Analytics />
+    </body>
   </html>
 );
 

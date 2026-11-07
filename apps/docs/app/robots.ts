@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { SITE_ORIGIN } from "@/lib/site";
 
 const robots = (): MetadataRoute.Robots => ({
-  rules: { allow: "/", disallow: "/md/", userAgent: "*" },
+  rules: { allow: "/", disallow: ["/api/", "/md/"], userAgent: "*" },
   sitemap: `${SITE_ORIGIN}/sitemap.xml`,
 });
 

@@ -1,7 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { after } from "next/server";
 import { z } from "zod";
 
+import { trackServer } from "@/lib/analytics";
+import type { ServerEvent } from "@/lib/analytics";
 import { plain } from "@/lib/doc/inline";
 import { pageMarkdown } from "@/lib/doc/markdown";
 import { DOCS } from "@/lib/docs";
@@ -126,7 +129,67 @@ const serverOf = (): McpServer => {
   return server;
 };
 
+type RpcCall = {
+  method?: unknown;
+  params?: {
+    arguments?: Record<string, unknown>;
+    clientInfo?: { name?: unknown };
+    name?: unknown;
+  };
+};
+
+const textOf = (value: unknown): string =>
+  typeof value === "string" ? value.slice(0, 200) : "";
+
+const eventOf = (call: RpcCall): ServerEvent | null => {
+  if (call.method === "initialize") {
+    return {
+      name: "mcp_connect",
+      properties: { client: textOf(call.params?.clientInfo?.name) },
+    };
+  }
+
+  if (call.method === "tools/call") {
+    const input = call.params?.arguments ?? {};
+
+    return {
+      name: "mcp_call",
+      properties: {
+        input: textOf(input.query ?? input.slug),
+        tool: textOf(call.params?.name),
+      },
+    };
+  }
+
+  return null;
+};
+
+const trackCalls = async (request: Request): Promise<void> => {
+  if (request.method !== "POST") {
+    return;
+  }
+
+  const body: unknown = await request.json().catch(() => null);
+  const calls: RpcCall[] = (Array.isArray(body) ? body : [body]).filter(
+    (call): call is RpcCall => typeof call === "object" && call !== null
+  );
+
+  await Promise.all(
+    calls.flatMap((call) => {
+      const event = eventOf(call);
+
+      return event ? [trackServer(request, event)] : [];
+    })
+  );
+};
+
 const handle = async (request: Request): Promise<Response> => {
+  const copy = request.clone();
+
+  after(async () => {
+    await trackCalls(copy);
+  });
+
   const transport = new WebStandardStreamableHTTPServerTransport({
     enableJsonResponse: true,
   });

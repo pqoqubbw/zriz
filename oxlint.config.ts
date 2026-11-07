@@ -78,7 +78,7 @@ export default defineConfig({
       rules: { "jsx-a11y/role-has-required-aria-props": "off" },
     },
     {
-      files: ["apps/docs/app/**"],
+      files: ["apps/docs/app/**", "apps/docs/proxy.ts"],
       rules: { "import/group-exports": "off" },
     },
     {
