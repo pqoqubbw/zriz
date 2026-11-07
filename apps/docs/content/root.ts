@@ -167,9 +167,9 @@ const ROOT_PAGE = defineDoc({
             type: '"auto" | "always" | "reduce"',
           },
           {
-            default: "500",
+            default: "300",
             name: "recenterDelay",
-            text: "Milliseconds after a gesture before the crop recentres",
+            text: "Milliseconds after a gesture before the crop recentres and the scrim comes back",
             type: "number",
           },
           {
@@ -236,7 +236,7 @@ const ROOT_PAGE = defineDoc({
           },
           {
             name: "data-transition",
-            text: '`"rotate"`, `"flip"`, `"morph"` or `"recenter"` while that transition runs. `"morph"` covers reset, an aspect pick, an orientation swap and undo. A reset or undo across a quarter turn runs as `"rotate"`, which hides `Area` and shows only the crop turning with the photo',
+            text: '`"rotate"`, `"flip"`, `"morph"` or `"recenter"` while that transition runs. `"morph"` covers reset, an aspect pick, an orientation swap and undo. A reset or undo across a quarter turn runs as `"rotate"`, with the crop frame and the photo outside it still in view',
           },
           { name: "data-shape", text: '`"rect"` or `"circle"`' },
         ])

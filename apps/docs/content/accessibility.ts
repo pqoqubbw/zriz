@@ -115,7 +115,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
           column("Reduced", "prose"),
         ],
         rows: [
-          ["Recentre", "Spring, about 460 ms", "Spring, about 250 ms"],
+          ["Recentre", "Spring, about 340 ms", "Spring, about 250 ms"],
           [
             "Rotate 90°, reset or undo across a turn",
             "Spring, about 390 ms",
@@ -136,7 +136,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
         "Spring-backs keep their length in both modes: the dial past its limit, the photo pulled past the crop and the zoom past its limits."
       ),
       p(
-        "The stylesheet's fades keep their length in both modes: the mask dims over 200 ms and comes back over 300 ms, and the grid fades in over 250 ms and out over 300 ms. After a gesture, the thirds grid and `data-interacting` on `Root` and `Mask` stay for 1380 ms. On `Area`, `data-interacting` clears when the gesture ends."
+        "The stylesheet's fades keep their length in both modes: the mask dims over 200 ms and comes back over 300 ms, and the grid fades in over 250 ms and out over 300 ms. After a gesture, the thirds grid and `data-interacting` on `Root` and `Mask` stay until the crop starts to recentre, 300 ms by default. On `Area`, `data-interacting` clears when the gesture ends."
       )
     ),
     section(

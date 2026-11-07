@@ -53,7 +53,7 @@ const BUTTONS_PAGE = defineDoc({
         "While `Root` is disabled, a press does nothing, and before the photo loads only `Reset` acts. The buttons stay natively enabled and report `aria-disabled`, so style them from `data-disabled` on `Root`, as [root](root) shows."
       ),
       p(
-        'While a move runs, `Root` carries `data-transition`: `"rotate"`, `"flip"` or `"morph"` for `Reset`. A `Reset` across a quarter turn runs as `"rotate"`, and so does a `Flip` or `Reset` pressed while a rotate still runs. During `"rotate"` the crop turns whole with the photo, with no photo outside it, and the stylesheet hides `Area` and its handles. [Accessibility](accessibility) lists how long each move takes, with and without reduced motion.'
+        'While a move runs, `Root` carries `data-transition`: `"rotate"`, `"flip"` or `"morph"` for `Reset`. A `Reset` across a quarter turn runs as `"rotate"`, and so does a `Flip` or `Reset` pressed while a rotate still runs. During `"rotate"` the photo turns under the crop, the crop frame changes shape to the new side ratio, and the frame, its handles and the photo outside the crop stay visible, as during a flip. [Accessibility](accessibility) lists how long each move takes, with and without reduced motion.'
       )
     ),
     section(
