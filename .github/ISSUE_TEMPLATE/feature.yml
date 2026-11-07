@@ -23,3 +23,10 @@ body:
     attributes:
       label: What would you like zriz to do?
       description: Optional. A sketch of the prop or part you have in mind.
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Fix prompt
+      description: Optional. If you know how to build it, write the prompt you would give a coding agent instead of a pull request. Name the files, the change, the test that proves it and what must not change. CONTRIBUTING.md has an example.
+    validations:
+      required: false

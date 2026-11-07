@@ -60,6 +60,7 @@ All of check, type, test, lint:package and size must pass before a commit. CI ru
 These rules hold for every coding agent, whoever runs it.
 
 - Work in the local checkout. Don't push, open or edit pull requests or issues, post comments, publish to npm, or create tags or releases unless the person you work for asks for that step in this session.
+- zriz doesn't take outside pull requests. If you work for someone other than the maintainer, write the fix up as an issue with a fix prompt, as `.github/CONTRIBUTING.md` describes, instead of opening a pull request.
 - Never add AI attribution: no `Co-authored-by` trailers for tools and no "generated with" lines in commits, PRs, code or docs.
 - Don't change CI, release or package manager settings (`.github/`, `.changeset/config.json`, `pnpm-workspace.yaml`, and the `engines`, `devEngines` and `packageManager` fields) unless the task is about them.
 - Report security problems the way `.github/SECURITY.md` describes, never in a public issue, PR or commit.

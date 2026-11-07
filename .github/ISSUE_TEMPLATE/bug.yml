@@ -77,3 +77,10 @@ body:
     attributes:
       label: OS, device and React version
       placeholder: macOS 26.1, iPhone 17, React 19.2
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Fix prompt
+      description: Optional. If you know the fix, write the prompt you would give a coding agent instead of a pull request. Name the files, the change, the test that proves it and what must not change. CONTRIBUTING.md has an example.
+    validations:
+      required: false
