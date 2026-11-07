@@ -100,15 +100,10 @@ const log = (lines: readonly LogLine[]): BlockOf<"log"> => ({
   lines,
 });
 
-const actions = (
-  label: string,
-  action: BlockMap["actions"]["action"]
-): BlockOf<"actions"> => ({ action, kind: "actions", label });
-
-const bind = (
-  to: Bind,
-  block: BlockOf<"actions" | "controls" | "log">
-): Block => ({ ...block, bind: to });
+const bind = (to: Bind, block: BlockOf<"controls" | "log">): Block => ({
+  ...block,
+  bind: to,
+});
 
 const liveCode = (file: string, feed: LiveFeed): Block => ({
   feed,
@@ -141,7 +136,6 @@ const intro = (...blocks: Block[]): Block => ({
 });
 
 export {
-  actions,
   attrs,
   bind,
   caption,

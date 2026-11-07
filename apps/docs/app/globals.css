@@ -53,9 +53,11 @@
   --color-surface: rgb(0 0 0 / 0.03);
   --color-white: #ffffff;
   --color-hover: #f7f7f7;
-  --color-button-hover: #efefef;
-  --color-button-press: #e6e6e6;
-  --color-press: rgb(0 0 0 / 0.1);
+  --color-secondary-hover: #fafafa;
+  --color-tertiary: rgb(0 0 0 / 0.05);
+  --color-tertiary-hover: rgb(0 0 0 / 0.069);
+  --color-button-ink: #202020;
+  --color-button-icon: #8d8d8d;
   --color-rail: rgb(0 0 0 / 0.08);
   --color-error: #b42318;
   --color-error-hover: #fbeae8;
@@ -116,6 +118,9 @@
   --radius-demo: 12px;
 
   --shadow-raised: 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-secondary:
+    0 1px 2px -0.5px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.16),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.8);
   --shadow-button: 0 0 0 1px rgb(0 0 0 / 0.1), 0 1px 2px rgb(0 0 0 / 0.05);
   --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-error: 0 0 0 1px rgb(180 35 24 / 0.24), 0 1px 2px rgb(0 0 0 / 0.06);

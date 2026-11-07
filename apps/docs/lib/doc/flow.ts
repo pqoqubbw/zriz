@@ -1,7 +1,6 @@
 import type { Kind } from "@/lib/doc/schema";
 
 type Slot =
-  | "actions"
   | "code"
   | "demo"
   | "head"
@@ -17,7 +16,6 @@ type Before = Slot | "answer" | null;
 type Gap = 0 | 4 | 12 | 16 | 20 | 24 | 28 | 40;
 
 const BLOCK_SLOTS = {
-  actions: "actions",
   attrs: "table",
   caption: "question",
   code: "code",

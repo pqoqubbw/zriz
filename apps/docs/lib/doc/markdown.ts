@@ -107,7 +107,6 @@ const signatureOf = (
 ];
 
 const converters: { [K in Kind]: Converter<K> } = {
-  actions: () => [],
   attrs: pairTableOf,
   caption: (block, depth) => [heading(depth, [inlineCode(block.text)])],
   code: fenceOf,

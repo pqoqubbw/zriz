@@ -58,11 +58,6 @@ type Bind = "playground";
 type LiveFeed = "code" | "value";
 
 type BlockMap = {
-  actions: {
-    action: "copy-code" | "copy-value" | "download";
-    bind?: Bind;
-    label: string;
-  };
   attrs: { rows: readonly NamedRow[] };
   caption: { text: string };
   code: { file: string };

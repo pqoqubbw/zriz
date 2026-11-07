@@ -16,9 +16,9 @@ const DEMO_SIZES = {
 } as const satisfies Record<DemoWidth, DemoSize>;
 
 const PANEL_PADDING = 4;
-const SAFE_TOP = 60;
-const SAFE_BOTTOM = 60;
-const CHIP_OFFSET = 8;
+const SAFE_TOP = 24;
+const SAFE_BOTTOM = 24;
+const CHIP_ROW = 36;
 const CHIP_GAP = 6;
 const CONTROL_HEIGHT = 32;
 const DIAL_HEIGHT = 40;
@@ -34,7 +34,6 @@ const RULER_FOCUS_OUTSET = 6;
 const ICON_COLUMNS_BELOW = 400;
 const MIN_HIT = 44;
 const ERROR_MS = 4000;
-const SAVED_MS = 2000;
 const SPINNER_DELAY_MS = 200;
 
 const ZONE_PADDING = {
@@ -58,7 +57,7 @@ const zoomWidth = (width: DemoWidth): number =>
 export type { DemoSize, DemoWidth, ZoneKind };
 export {
   CHIP_GAP,
-  CHIP_OFFSET,
+  CHIP_ROW,
   CONTROL_HEIGHT,
   DEMO_SIZES,
   DIAL_HEIGHT,
@@ -73,7 +72,6 @@ export {
   RULER_FOCUS_OUTSET,
   SAFE_BOTTOM,
   SAFE_TOP,
-  SAVED_MS,
   SPINNER_DELAY_MS,
   TRACK_ITEM_HEIGHT,
   VALUE_GAP,

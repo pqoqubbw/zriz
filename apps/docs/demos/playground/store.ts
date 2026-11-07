@@ -24,15 +24,8 @@ type LogRow = {
   time: string;
 };
 
-type PlaygroundLink = {
-  copy: () => string;
-  download: (signal: AbortSignal) => Promise<void>;
-};
-
 type PlaygroundState = {
-  busy: boolean;
   knobs: Knobs;
-  ready: boolean;
   rows: readonly LogRow[];
 };
 
@@ -48,7 +41,7 @@ const DEFAULT_KNOBS: Knobs = {
   horizontal: 0,
   maxZoom: 15,
   motion: "auto",
-  recenterDelay: 500,
+  recenterDelay: 300,
   rotateGesture: true,
   shape: "rect",
   vertical: 0,
@@ -67,9 +60,7 @@ const LOG_ROWS = 50;
 const LEVEL: Perspective = { horizontal: 0, vertical: 0 };
 
 const START: PlaygroundState = {
-  busy: false,
   knobs: DEFAULT_KNOBS,
-  ready: false,
   rows: [],
 };
 
@@ -77,8 +68,6 @@ const listeners = new Set<Listener>();
 const valueListeners = new Set<ValueListener>();
 
 let state = START;
-let link: PlaygroundLink | null = null;
-let running: AbortController | null = null;
 let latest: CropValue | null = null;
 let asked: Perspective = LEVEL;
 let tilted: Perspective | null = null;
@@ -166,18 +155,6 @@ const playground = {
   ask: (perspective: Perspective): void => {
     asked = perspective;
   },
-  attach: (next: PlaygroundLink): (() => void) => {
-    link = next;
-
-    return () => {
-      if (link === next) {
-        link = null;
-        running?.abort();
-        running = null;
-        emit({ ...state, busy: false, ready: false });
-      }
-    };
-  },
   change: (value: CropValue, details: ChangeDetails): void => {
     latest = value;
 
@@ -194,26 +171,6 @@ const playground = {
     latest = value;
     push(`${details.reason} commit ${degrees(value.rotation)}`, null);
   },
-  copyText: (): string | null => link?.copy() ?? null,
-  download: async (): Promise<void> => {
-    if (!link || running || !state.ready) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    running = controller;
-    emit({ ...state, busy: true });
-
-    try {
-      await link.download(controller.signal);
-    } finally {
-      if (running === controller) {
-        running = null;
-        emit({ ...state, busy: false });
-      }
-    }
-  },
   getServerState: (): PlaygroundState => START,
   getState: (): PlaygroundState => state,
   knob: (name: string, knobs: Knobs = state.knobs): KnobValue | undefined =>
@@ -224,9 +181,6 @@ const playground = {
       frame = 0;
     }
 
-    running?.abort();
-    running = null;
-    link = null;
     latest = null;
     asked = LEVEL;
     tilted = null;
@@ -243,11 +197,6 @@ const playground = {
     }
 
     emit({ ...state, knobs: { ...state.knobs, [name]: value } });
-  },
-  setReady: (ready: boolean): void => {
-    if (state.ready !== ready) {
-      emit({ ...state, ready });
-    }
   },
   subscribe: (listener: Listener): (() => void) => {
     listeners.add(listener);
@@ -272,7 +221,6 @@ export type {
   Knobs,
   LogRow,
   Perspective,
-  PlaygroundLink,
   PlaygroundState,
 };
 export { DEFAULT_KNOBS, KNOB_CHOICES, playground };

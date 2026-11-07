@@ -1,5 +1,4 @@
 import {
-  actions,
   bind,
   caption,
   choice,
@@ -27,7 +26,7 @@ const PLAYGROUND_PAGE = defineDoc({
           choice("motion", ["auto", "always", "reduce"], "auto"),
           choice("dir", ["ltr", "rtl"], "ltr"),
           range("maxZoom", [1, 15, 15, 1], "×"),
-          range("recenterDelay", [0, 500, 2000, 50], " ms"),
+          range("recenterDelay", [0, 300, 2000, 50], " ms"),
           toggle("disabled", false)
         )
       ),
@@ -56,10 +55,9 @@ const PLAYGROUND_PAGE = defineDoc({
     section(
       "Copy the code",
       p(
-        "The code builds the cropper in the demo, with only the props you changed from their defaults:"
+        "The code builds the cropper in the demo. It lists the props you changed from their defaults, and the tilt even at 0° so the code keeps its shape while you drag:"
       ),
       liveCode("playground/root.jsx.tsx", "code"),
-      actions("Copy code", "copy-code"),
       p(
         "The demo adds handles, a grid and reset, shows the angle to one decimal and uses the styles from the zriz site. On a phone its stage is 320 px tall, not the 380 in the code. It tilts the photo with `setValue()` and listens to `onValueChange` and `onValueCommit` for the value and the events below."
       )
@@ -69,8 +67,7 @@ const PLAYGROUND_PAGE = defineDoc({
       p(
         "The crop as you move it, the same object `onValueChange` and `onValueCommit` hand you:"
       ),
-      liveCode("playground/value.json", "value"),
-      bind("playground", actions("Copy value", "copy-value"))
+      liveCode("playground/value.json", "value")
     ),
     section(
       "Watch the events",
@@ -86,13 +83,6 @@ const PLAYGROUND_PAGE = defineDoc({
           { event: "dial start", time: "12:04:29" },
         ])
       )
-    ),
-    section(
-      "Export the crop",
-      p(
-        'Download the crop as a PNG made by `exportCrop` with `type: "image/png"`. With `shape` set to `"circle"` above, the corners come out transparent.'
-      ),
-      bind("playground", actions("Download PNG", "download"))
     ),
   ],
   lede: "Change the main props on a live cropper and copy the code that matches what you see.",

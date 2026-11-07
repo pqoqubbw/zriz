@@ -20,6 +20,7 @@ import { DemoContext } from "@/demos/shell/context";
 import type { DemoPhoto } from "@/demos/shell/context";
 import { FileChips } from "@/demos/shell/file-chips";
 import {
+  ChipBar,
   DropVeil,
   Spinner,
   Stage,
@@ -168,6 +169,14 @@ const DemoShell = ({
         shape={shape ?? spec.shape}
         src={photo.src}
       >
+        <ChipBar data-hidden={photo.dropping ? "" : undefined}>
+          <FileChips
+            action={spec.action}
+            dim={busy || locked}
+            download={download}
+            photo={photo}
+          />
+        </ChipBar>
         <Stage
           {...photo.drop}
           onDragEnter={(event) => {
@@ -178,18 +187,10 @@ const DemoShell = ({
             photo.drop.onDragEnter(event);
           }}
         >
-          {photo.dropping ? null : (
-            <FileChips
-              action={spec.action}
-              dim={busy || locked}
-              download={download}
-              photo={photo}
-            />
-          )}
           <StageContent data-dropping={dropping ? "" : undefined} ref={content}>
             <Cropper.Viewport
               {...viewport}
-              className="absolute inset-0 px-6 py-15 @max-demo-narrow:px-5"
+              className="absolute inset-0 p-6 @max-demo-narrow:px-5"
             >
               <Cropper.Image />
               <Cropper.Mask />

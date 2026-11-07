@@ -264,7 +264,6 @@ const leaf = (tag: string, ...attributes: Attribute[]): Element => ({
 
 const rootAttributes = (knobs: Knobs): Attribute[] => {
   const changes = rootChanges(knobs);
-  const tilted = knobs.vertical !== 0 || knobs.horizontal !== 0;
 
   return [
     ["src", { kind: "expression", role: "plain", text: "photo" }],
@@ -284,25 +283,21 @@ const rootAttributes = (knobs: Knobs): Attribute[] => {
     ...(changes.disabled === true
       ? [["disabled", { kind: "bare" }] as const]
       : []),
-    ...(tilted
-      ? [
+    [
+      "defaultValue",
+      {
+        entries: [
           [
-            "defaultValue",
-            {
-              entries: [
-                [
-                  "perspective",
-                  [
-                    ["vertical", knobs.vertical],
-                    ["horizontal", knobs.horizontal],
-                  ],
-                ],
-              ],
-              kind: "object",
-            },
-          ] as const,
-        ]
-      : []),
+            "perspective",
+            [
+              ["vertical", knobs.vertical],
+              ["horizontal", knobs.horizontal],
+            ],
+          ],
+        ],
+        kind: "object",
+      },
+    ] as const,
   ];
 };
 

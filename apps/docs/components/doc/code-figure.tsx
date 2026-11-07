@@ -1,5 +1,4 @@
-import { Panel } from "@/components/ui/panel";
-import { cn } from "@/lib/cn";
+import { CodePanel } from "@/components/doc/code-panel";
 import { highlight } from "@/lib/doc/highlight";
 import type { BlockOf } from "@/lib/doc/schema";
 import { languageOf, textOf } from "@/lib/doc/snippets";
@@ -10,25 +9,18 @@ type CodeFigureProps = {
 };
 
 const CodeFigure = async ({ block, className }: CodeFigureProps) => (
-  <Panel
-    aria-label={`${languageOf(block.file).fence.toUpperCase()} code`}
-    as="figure"
-    className={cn(
-      "scrollbar-none overflow-x-auto overscroll-x-contain max-sm:[border-image-outset:0]",
-      className
-    )}
-    tabIndex={0}
+  <CodePanel
+    className={className}
+    label={`${languageOf(block.file).fence.toUpperCase()} code`}
   >
-    <pre className="font-mono text-code text-code-ink">
-      <code
-        className="block w-max p-4"
-        dangerouslySetInnerHTML={{
-          __html: await highlight(textOf(block), block.file),
-        }}
-        data-copy-text=""
-      />
-    </pre>
-  </Panel>
+    <code
+      className="block w-max py-4 pr-12 pl-4"
+      dangerouslySetInnerHTML={{
+        __html: await highlight(textOf(block), block.file),
+      }}
+      data-copy-text=""
+    />
+  </CodePanel>
 );
 
 export { CodeFigure };

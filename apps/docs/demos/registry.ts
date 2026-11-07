@@ -51,7 +51,6 @@ type RowZoneSpec = {
 type ZoneSpec = DialZoneSpec | RowZoneSpec | TrackZoneSpec | ZoomZoneSpec;
 
 type DemoAction = {
-  done: string;
   icon: IconName;
   label: string;
 };
@@ -77,12 +76,11 @@ type DemoSpec = {
 };
 
 const DOWNLOAD: DemoAction = {
-  done: "Saved",
   icon: "download",
   label: "Download",
 };
 
-const SEND: DemoAction = { done: "Sent", icon: "upload", label: "Send" };
+const SEND: DemoAction = { icon: "upload", label: "Send" };
 
 const EDITOR_ZONE: DialZoneSpec = {
   end: "flip-horizontal",
@@ -338,6 +336,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
         "+Instructions",
         "+Reset",
         "DialValue.format",
+        "Root.defaultValue",
         "Root.onValueChange",
         "Root.onValueCommit",
       ],

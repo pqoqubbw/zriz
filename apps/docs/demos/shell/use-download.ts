@@ -6,14 +6,11 @@ import type { ExportOptions } from "@zriz/core/dom";
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
-import { SAVED_MS } from "@/demos/shell/sizes";
-
 type DemoRun = (cropper: Cropper, signal: AbortSignal) => Promise<void>;
 
 type Download = {
   abort: () => void;
   busy: boolean;
-  done: boolean;
   run: () => Promise<void>;
 };
 
@@ -67,14 +64,11 @@ const useDownload = (
   run: DemoRun
 ): Download => {
   const running = useRef<AbortController | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
 
   useEffect(
     () => () => {
       running.current?.abort();
-      clearTimeout(timer.current);
     },
     []
   );
@@ -84,7 +78,6 @@ const useDownload = (
       running.current?.abort();
     },
     busy,
-    done,
     run: async () => {
       const cropper = actions.current;
 
@@ -97,18 +90,10 @@ const useDownload = (
       running.current = controller;
       setBusy(true);
 
-      const saved = await attempt(run, cropper, controller.signal);
+      await attempt(run, cropper, controller.signal);
 
       running.current = null;
       setBusy(false);
-      clearTimeout(timer.current);
-      setDone(saved);
-
-      if (saved) {
-        timer.current = setTimeout(() => {
-          setDone(false);
-        }, SAVED_MS);
-      }
     },
   };
 };

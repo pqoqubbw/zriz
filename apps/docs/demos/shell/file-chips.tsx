@@ -61,7 +61,7 @@ const spoken = (label: string): string =>
   `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 
 const ActionChip = ({ action, download, off }: ActionChipProps) => {
-  const label = download.done ? action.done : action.label;
+  const { label } = action;
 
   return (
     <button
@@ -76,11 +76,7 @@ const ActionChip = ({ action, download, off }: ActionChipProps) => {
       }}
       type="button"
     >
-      <ChipContent
-        collapse
-        icon={download.done ? "check" : action.icon}
-        label={label}
-      />
+      <ChipContent collapse icon={action.icon} label={label} />
     </button>
   );
 };

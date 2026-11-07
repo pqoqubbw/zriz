@@ -11,6 +11,7 @@ import { ghostVariants } from "@/demos/shell/ghost";
 import { Icon } from "@/demos/shell/icon";
 import type { IconName } from "@/demos/shell/icon";
 import {
+  ChipBar,
   Corner,
   Ruler,
   Scale,
@@ -163,7 +164,7 @@ const Frame = ({ name }: FrameProps) => {
       data-slot="demo-frame"
       inert
     >
-      <Stage>
+      <ChipBar>
         <Corner side="start">
           <span className={chipVariants({ live: false })}>
             <ChipContent icon="open-image" label="Open" />
@@ -178,6 +179,8 @@ const Frame = ({ name }: FrameProps) => {
             />
           </span>
         </Corner>
+      </ChipBar>
+      <Stage>
         <StageContent />
         <StageEdge />
       </Stage>

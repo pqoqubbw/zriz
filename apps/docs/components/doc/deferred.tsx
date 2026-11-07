@@ -8,21 +8,8 @@ const Controls = dynamic(async () => {
   return Loaded;
 });
 
-const CopyAction = dynamic(async () => {
-  const { CopyAction: Loaded } = await import("@/components/doc/copy-action");
-
-  return Loaded;
-});
-
 const DemoMount = dynamic(async () => {
   const { DemoMount: Loaded } = await import("@/components/doc/demo-mount");
-
-  return Loaded;
-});
-
-const DownloadAction = dynamic(async () => {
-  const { DownloadAction: Loaded } =
-    await import("@/demos/playground/download-action");
 
   return Loaded;
 });
@@ -39,19 +26,4 @@ const LiveLog = dynamic(async () => {
   return Loaded;
 });
 
-const PlaygroundCopy = dynamic(async () => {
-  const { PlaygroundCopy: Loaded } =
-    await import("@/demos/playground/playground-copy");
-
-  return Loaded;
-});
-
-export {
-  Controls,
-  CopyAction,
-  DemoMount,
-  DownloadAction,
-  LiveCode,
-  LiveLog,
-  PlaygroundCopy,
-};
+export { Controls, DemoMount, LiveCode, LiveLog };

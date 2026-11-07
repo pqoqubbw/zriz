@@ -14,7 +14,7 @@ type CopyProps = {
   label: string;
 };
 
-const useCopy = (read?: () => string | null) => {
+const useCopy = () => {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -30,7 +30,7 @@ const useCopy = (read?: () => string | null) => {
       .closest("[data-copy]")
       ?.querySelector("[data-copy-text]");
 
-    await navigator.clipboard.writeText(read?.() ?? source?.textContent ?? "");
+    await navigator.clipboard.writeText(source?.textContent ?? "");
     setCopied(true);
     clearTimeout(timer.current);
 
@@ -68,5 +68,5 @@ const CopyButton = ({ label }: CopyProps) => {
   );
 };
 
-export type { CopiedStatusProps, CopyProps };
-export { CopiedStatus, CopyButton, useCopy };
+export type { CopyProps };
+export { CopyButton };

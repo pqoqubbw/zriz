@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { Glyph, ICON_PATHS as SITE_PATHS } from "@/components/ui/icon";
+import { Glyph } from "@/components/ui/icon";
 import type { IconPath } from "@/components/ui/icon";
 
 type IconProps = ComponentProps<"svg"> & {
@@ -10,7 +10,6 @@ type IconProps = ComponentProps<"svg"> & {
 type IconName = keyof typeof ICON_PATHS;
 
 const ICON_PATHS = {
-  check: SITE_PATHS.check,
   download: [
     "M10 3.75V11.75",
     "M6.75 8.75L10 12L13.25 8.75",

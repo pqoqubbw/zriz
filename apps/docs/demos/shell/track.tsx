@@ -11,8 +11,8 @@ const trackItemVariants = cva(
       live: {
         false: "",
         radio:
-          "before:absolute before:inset-x-0 before:-inset-y-2 not-data-checked:hover:bg-key not-data-checked:hover:text-ink not-data-checked:active:bg-press not-data-checked:active:text-ink has-focus-visible:text-ink has-focus-visible:inset-shadow-focus data-checked:has-focus-visible:shadow-lift",
-        true: "before:absolute before:inset-x-0 before:-inset-y-2 not-data-checked:hover:bg-key not-data-checked:hover:text-ink focus-visible:text-ink focus-visible:inset-shadow-focus focus-visible:corners-none not-data-checked:active:bg-press not-data-checked:active:text-ink data-checked:focus-visible:shadow-lift",
+          "before:absolute before:inset-x-0 before:-inset-y-2 not-data-checked:hover:bg-key not-data-checked:hover:text-ink has-focus-visible:text-ink has-focus-visible:inset-shadow-focus data-checked:has-focus-visible:shadow-lift",
+        true: "before:absolute before:inset-x-0 before:-inset-y-2 not-data-checked:hover:bg-key not-data-checked:hover:text-ink focus-visible:text-ink focus-visible:inset-shadow-focus focus-visible:corners-none data-checked:focus-visible:shadow-lift",
       },
     },
   }

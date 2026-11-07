@@ -10,12 +10,11 @@ type ChipContentProps = VariantProps<typeof chipLabelVariants> & {
 };
 
 const chipVariants = cva(
-  "relative flex h-8 shrink-0 items-center gap-1.5 rounded-button bg-white text-control font-medium select-none",
+  "relative flex h-8 shrink-0 items-center rounded-control bg-white text-control font-medium select-none",
   {
     compoundVariants: [
       {
-        className:
-          "not-aria-disabled:hover:bg-button-hover not-aria-disabled:active:bg-button-press",
+        className: "not-aria-disabled:hover:bg-secondary-hover",
         live: true,
         tone: "default",
       },
@@ -29,20 +28,20 @@ const chipVariants = cva(
       },
       size: {
         collapse:
-          "pr-2.5 pl-2 @max-demo:w-8 @max-demo:justify-center @max-demo:p-0",
+          "pr-2 pl-2.5 @max-demo:w-8 @max-demo:justify-center @max-demo:p-0",
         fixed: "w-27 justify-center @max-demo:w-8",
         icon: "w-8 justify-center",
-        label: "pr-2.5 pl-2",
+        label: "pr-2 pl-2.5",
       },
       tone: {
-        default: "text-ink shadow-raised",
+        default: "text-button-ink shadow-secondary *:first:text-button-icon",
         error: "text-error shadow-error",
       },
     },
   }
 );
 
-const chipLabelVariants = cva("", {
+const chipLabelVariants = cva("px-1", {
   defaultVariants: { collapse: false },
   variants: { collapse: { false: "", true: "@max-demo:hidden" } },
 });

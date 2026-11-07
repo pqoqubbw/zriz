@@ -3,7 +3,10 @@ import * as Cropper from "@zriz/react/cropper";
 declare const photo: Blob;
 
 export const example = (
-  <Cropper.Root src={photo}>
+  <Cropper.Root
+    src={photo}
+    defaultValue={{ perspective: { vertical: 0, horizontal: 0 } }}
+  >
     <Cropper.Viewport style={{ height: 380 }}>
       <Cropper.Image />
       <Cropper.Mask />

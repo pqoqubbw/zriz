@@ -62,7 +62,7 @@ const LiveProps = () => {
   const knobs = usePlayground((state) => state.knobs);
 
   return (
-    <code className="block w-max p-4" data-copy-text="">
+    <code className="block w-max py-4 pr-12 pl-4" data-copy-text="">
       <Lines lines={codePieces(knobs)} />
     </code>
   );
@@ -85,7 +85,7 @@ const LiveValue = () => {
   );
 
   return (
-    <code className="block w-max p-4" data-copy-text="" ref={box}>
+    <code className="block w-max py-4 pr-12 pl-4" data-copy-text="" ref={box}>
       <Lines lines={START_LINES} />
     </code>
   );

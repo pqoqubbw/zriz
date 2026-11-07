@@ -5,22 +5,15 @@ import { CropperContext, useCropperState } from "@zriz/react";
 import * as Cropper from "@zriz/react/cropper";
 import { useContext, useEffect } from "react";
 
-import {
-  jsonText,
-  rootChanges,
-  viewportChanges,
-} from "@/demos/playground/code";
+import { rootChanges, viewportChanges } from "@/demos/playground/code";
 import { playground } from "@/demos/playground/store";
 import { usePlayground } from "@/demos/playground/use-playground";
 import { DemoShell } from "@/demos/shell/demo-shell";
 import { DialZone } from "@/demos/shell/dial-zone";
 import { ghostVariants } from "@/demos/shell/ghost";
 import { Icon } from "@/demos/shell/icon";
-import { exportRun } from "@/demos/shell/use-download";
 
 const PNG: ExportOptions = { type: "image/png" };
-
-const savePng = exportRun(PNG);
 
 const { change: handleChange, commit: handleCommit } = playground;
 
@@ -29,23 +22,6 @@ const Bridge = () => {
   const ready = useCropperState((state) => state.ready);
   const vertical = usePlayground((state) => state.knobs.vertical);
   const horizontal = usePlayground((state) => state.knobs.horizontal);
-
-  useEffect(
-    () =>
-      cropper
-        ? playground.attach({
-            copy: () => jsonText(cropper.getValue()),
-            download: async (signal) => {
-              await savePng(cropper, signal);
-            },
-          })
-        : undefined,
-    [cropper]
-  );
-
-  useEffect(() => {
-    playground.setReady(ready);
-  }, [ready]);
 
   useEffect(() => {
     if (!cropper || !ready) {

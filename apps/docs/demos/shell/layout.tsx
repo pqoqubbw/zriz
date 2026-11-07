@@ -6,7 +6,9 @@ import { Icon } from "@/demos/shell/icon";
 
 type StageProps = ComponentProps<"div">;
 
-type CornerProps = ComponentProps<"div"> & VariantProps<typeof cornerVariants>;
+type ChipBarProps = ComponentProps<"div">;
+
+type CornerProps = ComponentProps<"div"> & { side: "end" | "start" };
 
 type ZoneProps = ComponentProps<"div"> & VariantProps<typeof zoneVariants>;
 
@@ -48,9 +50,11 @@ const stageVariants = cva(
 
 const contentVariants = cva("absolute inset-0 data-dropping:invisible");
 
-const cornerVariants = cva("absolute top-2 z-1 flex gap-1.5", {
-  variants: { side: { end: "end-2", start: "start-2" } },
-});
+const cornerVariants = cva("flex gap-1.5");
+
+const chipBarVariants = cva(
+  "relative z-1 flex w-full shrink-0 justify-between pb-1 data-hidden:invisible"
+);
 
 const zoneVariants = cva(
   "flex w-full shrink-0 justify-center data-dim:opacity-40",
@@ -116,10 +120,18 @@ const StageEdge = () => (
   />
 );
 
+const ChipBar = ({ className, ...props }: ChipBarProps) => (
+  <div
+    className={chipBarVariants({ className })}
+    data-slot="chip-bar"
+    {...props}
+  />
+);
+
 const Corner = ({ className, side, ...props }: CornerProps) => (
   <div
-    className={cornerVariants({ className, side })}
-    data-slot={`corner-${side ?? "start"}`}
+    className={cornerVariants({ className })}
+    data-slot={`corner-${side}`}
     {...props}
   />
 );
@@ -191,6 +203,7 @@ const DropVeil = () => (
 );
 
 export {
+  ChipBar,
   Corner,
   DropVeil,
   Ruler,

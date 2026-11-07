@@ -13,7 +13,7 @@ const CN_THEME = {
     "panel",
     "demo",
   ],
-  shadow: ["raised", "button", "lift", "error"],
+  shadow: ["raised", "secondary", "button", "lift", "error"],
   text: [
     "title",
     "heading",
