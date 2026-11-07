@@ -96,9 +96,8 @@ const maskClip = (rect: Box, shape: MaskShape): string => {
 
   const x1 = px(rect.x + rect.width);
   const y1 = px(rect.y + rect.height);
-  const hole = [`${x0} ${y0}`, `${x1} ${y0}`, `${x1} ${y1}`, `${x0} ${y1}`];
 
-  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${[...hole, hole[0]].join(", ")})`;
+  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x0} ${y0}, ${x1} ${y0}, ${x1} ${y1}, ${x0} ${y1}, ${x0} ${y0})`;
 };
 
 const maskGradient = (rect: Box, dpr: number): string => {
