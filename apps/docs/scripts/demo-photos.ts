@@ -20,7 +20,7 @@ const sources = process.argv.at(2);
 
 if (sources === undefined) {
   process.stderr.write(
-    "usage: node scripts/demo-photos.ts <folder with landscape.jpg and portrait.jpg>\n"
+    "usage: node scripts/demo-photos.ts <folder with landscape.png>\n"
   );
 
   process.exit(1);
@@ -29,12 +29,10 @@ if (sources === undefined) {
 const out = path.resolve(import.meta.dirname, "../public/demo");
 
 const convert = async (photo: DemoPhoto): Promise<string> => {
-  const input = readFileSync(path.resolve(sources, `${photo.name}.jpg`));
+  const input = readFileSync(path.resolve(sources, `${photo.name}.png`));
 
   if (sha256(input) !== photo.source.sha256) {
-    throw new Error(
-      `${photo.name}.jpg is not the file at ${photo.source.file}`
-    );
+    throw new Error(`${photo.name}.png is not the recorded original`);
   }
 
   const output = await sharp(input)
@@ -43,7 +41,6 @@ const convert = async (photo: DemoPhoto): Promise<string> => {
       fit: "inside",
       height: DEMO_PHOTO_LONG_EDGE,
       width: DEMO_PHOTO_LONG_EDGE,
-      withoutEnlargement: true,
     })
     .toColourspace("srgb")
     .webp({ effort: 6, quality: DEMO_PHOTO_QUALITY, smartSubsample: true })

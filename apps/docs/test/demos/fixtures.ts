@@ -60,7 +60,6 @@ const photoMock = async (): Promise<{
 }> => {
   const urls: Record<DemoPhotoKind, string> = {
     landscape: await fixtureUrl("landscape"),
-    portrait: await fixtureUrl("portrait"),
   };
 
   return { photoUrl: (kind) => urls[kind] };

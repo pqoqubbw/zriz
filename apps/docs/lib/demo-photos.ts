@@ -1,4 +1,4 @@
-type DemoPhotoName = "landscape" | "portrait";
+type DemoPhotoName = "landscape";
 
 type DemoPhotoCrop = {
   height: number;
@@ -61,29 +61,6 @@ const DEMO_PHOTOS = {
     },
     url: "/demo/landscape.webp",
     width: 2400,
-  },
-  portrait: {
-    alt: "A tall pine above Lake Superior, with the Grand Sable Dunes along the far shore under clouds",
-    bytes: 133_784,
-    height: 2400,
-    name: "portrait",
-    sha256: "88854135d89382cc5dc4aa47147529829344281ddf8c839e4b142204fe6651fd",
-    source: {
-      author: "NPS",
-      created: "2016-07-24",
-      crop: { height: 3024, left: 605, top: 0, width: 2016 },
-      fetched: "2026-11-05",
-      file: "https://npgallery.nps.gov/GetAsset/143ddaf3-5383-4828-8ef5-1ef61532c617/original.jpg",
-      height: 3024,
-      page: "https://npgallery.nps.gov/AssetDetail/143ddaf3-5383-4828-8ef5-1ef61532c617",
-      rights: "Public domain:Full Granting Rights",
-      sha256:
-        "87bd656faf57a988aad5df7998259831753d600510d3e3bd03da55c5cb0d1050",
-      title: "Grand Sable Dunes as seen from Au Sable Lighthouse",
-      width: 4032,
-    },
-    url: "/demo/portrait.webp",
-    width: 1600,
   },
 } as const satisfies Record<DemoPhotoName, DemoPhoto>;
 
