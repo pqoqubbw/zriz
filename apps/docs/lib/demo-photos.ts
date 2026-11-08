@@ -32,7 +32,7 @@ type DemoPhoto = {
   width: number;
 };
 
-const DEMO_PHOTO_BUDGET = 220_000;
+const DEMO_PHOTO_BUDGET = 520_000;
 
 const DEMO_PHOTO_LONG_EDGE = 2400;
 
@@ -40,24 +40,24 @@ const DEMO_PHOTO_QUALITY = 80;
 
 const DEMO_PHOTOS = {
   landscape: {
-    alt: "The sun low over Lake Superior, its light on the water and a wave on the sand",
-    bytes: 212_194,
+    alt: "An alpine lake at golden hour, snowy peaks and pines mirrored in still water, boulders in the foreground",
+    bytes: 511_086,
     height: 1600,
     name: "landscape",
-    sha256: "365e7c8ba8c25e43c5b2819cdfefafe36b8f618a19a16d7b0f93041e113ac3d6",
+    sha256: "2590f6e1dbf342554375cd753dc21cacbd2a19daf30679564973f529b262cec9",
     source: {
-      author: "NPS",
-      created: "2015-09-04",
-      crop: { height: 2808, left: 0, top: 150, width: 4212 },
-      fetched: "2026-11-05",
-      file: "https://npgallery.nps.gov/GetAsset/1c8fd902-d138-4e43-b6aa-851491dfbbaf/original.jpg",
-      height: 3648,
-      page: "https://npgallery.nps.gov/AssetDetail/1c8fd902-d138-4e43-b6aa-851491dfbbaf",
-      rights: "Public domain:Full Granting Rights",
+      author: "Generated with GPT Image",
+      created: "2026-11-08",
+      crop: { height: 1024, left: 0, top: 0, width: 1536 },
+      fetched: "2026-11-08",
+      file: "",
+      height: 1024,
+      page: "",
+      rights: "Generated, owned by the author",
       sha256:
-        "e30ec16662762b757172124c11c910c08252b1a2f5700d6d119047d9c3607f11",
-      title: "Summer Sunset at Miners Beach",
-      width: 4212,
+        "a687834b9b6859a37154c275ee2dd4d5bf191f1260547e5563fa28b83b3071d1",
+      title: "Golden Alpine Lake Reflection",
+      width: 1536,
     },
     url: "/demo/landscape.webp",
     width: 2400,

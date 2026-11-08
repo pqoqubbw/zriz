@@ -21,6 +21,8 @@ const COMMONS_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File:.+$/u;
 
 const COMMONS_RIGHTS = "CC0 1.0";
 
+const GENERATED_RIGHTS = "Generated, owned by the author";
+
 const SHA256 = /^[0-9a-f]{64}$/u;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -30,10 +32,16 @@ const rightsOf = (page: string): string | undefined => {
     return NPGALLERY_RIGHTS;
   }
 
-  return COMMONS_PAGE.test(page) ? COMMONS_RIGHTS : undefined;
+  if (COMMONS_PAGE.test(page)) {
+    return COMMONS_RIGHTS;
+  }
+
+  return page === "" ? GENERATED_RIGHTS : undefined;
 };
 
-const NEVER = /^$/u;
+const NEVER = /(?!)/u;
+
+const EMPTY = /^$/u;
 
 const COMMONS_FILE =
   /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/.+$/u;
@@ -42,7 +50,11 @@ const originalOf = (page: string): RegExp => {
   const id = NPGALLERY_PAGE.exec(page)?.groups?.id;
 
   if (id === undefined) {
-    return COMMONS_PAGE.test(page) ? COMMONS_FILE : NEVER;
+    if (COMMONS_PAGE.test(page)) {
+      return COMMONS_FILE;
+    }
+
+    return page === "" ? EMPTY : NEVER;
   }
 
   return new RegExp(
