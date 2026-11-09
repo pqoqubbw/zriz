@@ -1,4 +1,4 @@
-import { projectOntoPlanes } from "./planes";
+import { panPlanes, projectOntoPlanes } from "./planes";
 import type { HalfPlane, Point, Rect, Size } from "./types";
 
 type CropHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
@@ -265,6 +265,63 @@ const dragHandle = (
   return out;
 };
 
+type PairMove = {
+  handle: CropHandle;
+  by: Point;
+};
+
+const shared = (a: number, b: number): number =>
+  a * b > 0 ? Math.sign(a) * Math.min(Math.abs(a), Math.abs(b)) : 0;
+
+const pairRect = (
+  start: Rect,
+  moves: readonly [PairMove, PairMove],
+  limits: DragLimits
+): Rect => {
+  const [near, far] = moves;
+  const shift = {
+    x: shared(near.by.x, far.by.x),
+    y: shared(near.by.y, far.by.y),
+  };
+  const width = start.x1 - start.x0;
+  const height = start.y1 - start.y0;
+  const centre = projectOntoPlanes(
+    panPlanes(limits.planes, width, height),
+    {
+      x: (start.x0 + start.x1) / 2 + shift.x,
+      y: (start.y0 + start.y1) / 2 + shift.y,
+    },
+    1e-11
+  );
+  let rect: Rect =
+    shift.x === 0 && shift.y === 0
+      ? start
+      : {
+          x0: centre.x - width / 2,
+          x1: centre.x + width / 2,
+          y0: centre.y - height / 2,
+          y1: centre.y + height / 2,
+        };
+
+  for (const { by, handle } of moves) {
+    const rest = { x: by.x - shift.x, y: by.y - shift.y };
+
+    if (rest.x !== 0 || rest.y !== 0) {
+      rect = dragHandle(
+        rect,
+        handle,
+        {
+          x: (handle.includes("w") ? rect.x0 : rect.x1) + rest.x,
+          y: (handle.includes("n") ? rect.y0 : rect.y1) + rest.y,
+        },
+        limits
+      );
+    }
+  }
+
+  return rect;
+};
+
 const straightenLimitFor = (side: number, a: number, b: number): number => {
   const radius = Math.hypot(a, b);
 
@@ -291,4 +348,4 @@ const straightenLimit = (
   );
 
 export type { CropHandle, DragLimits };
-export { aspectHeightRange, dragHandle, straightenLimit };
+export { aspectHeightRange, dragHandle, pairRect, straightenLimit };

@@ -1444,6 +1444,42 @@ describe("pinch", () => {
 
     at("pointerup", 1, 150);
   });
+
+  it.runIf(server.browser === "chromium")(
+    "two real fingers on opposite corners resize both at once and commit once",
+    async () => {
+      const fixture = mount();
+      const corner = document.createElement("div");
+
+      corner.style.cssText =
+        "position:absolute;left:-12px;top:-12px;width:24px;height:24px;";
+
+      fixture.area.append(corner);
+      cleanups.push(bindHandle(fixture.cropper, corner, "top-left"));
+      await frames();
+      const a: [number, number][] = [];
+      const b: [number, number][] = [];
+
+      for (let i = 0; i <= 6; i += 1) {
+        const t = i / 6;
+
+        a.push([20 + 50 * t, 20 + 40 * t]);
+        b.push([380 - 40 * t, 280 - 30 * t]);
+      }
+
+      await commands.pinch(`#${fixture.id}`, a, b, true);
+      await expect.poll(() => fixture.commits, { timeout: 5000 }).toBe(1);
+      await frames(3);
+      const { center, size } = fixture.cropper.getValue();
+      const photo = (260 * 4) / 3;
+
+      expect(center.x).toBeCloseTo((photo + 10) / 2 / photo, 2);
+      expect(center.y).toBeCloseTo(135 / 260, 2);
+      expect(size.width).toBeCloseTo((photo - 90) / photo, 2);
+      expect(size.height).toBeCloseTo(190 / 260, 2);
+      expect(fixture.commits).toBe(1);
+    }
+  );
 });
 
 const TAKEOVERS: [string, (fixture: Fixture) => void][] = [

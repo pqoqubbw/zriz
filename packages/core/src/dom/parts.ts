@@ -1,6 +1,6 @@
 import type { Cropper, CropperInternals } from "../cropper";
-import { dragHandle } from "../geometry/constraints";
-import type { CropHandle } from "../geometry/constraints";
+import { dragHandle, pairRect } from "../geometry/constraints";
+import type { CropHandle, DragLimits } from "../geometry/constraints";
 import { imagePlanes } from "../geometry/planes";
 import type {
   Crop,
@@ -54,13 +54,36 @@ type AreaOptions = {
 
 type HandleHandlers = PointerHandlers & { release: () => void };
 
-type HandleDrag = {
+type Finger = {
+  at: Point;
+  drop: () => void;
+  grab: Point | null;
   handle: CropHandle;
-  id: number;
+};
+
+type ResizeBase = {
+  bounds: HalfPlane[];
   placement: Placement;
   start: Rect;
-  grab: Point;
-  bounds: HalfPlane[];
+};
+
+type Batch = {
+  at: Map<Finger, Point>;
+  moved: Set<Finger>;
+  rect: Rect;
+  time: number;
+};
+
+type Resizer = {
+  cancel: (event: KeyboardEvent) => void;
+  join: (
+    event: PointerEvent,
+    handle: CropHandle,
+    state: CropState,
+    drop: () => void
+  ) => boolean;
+  leave: (id: number, event?: Event) => void;
+  move: (event: PointerEvent) => void;
 };
 
 const EDGES: Record<HandleEdge, CropHandle> = {
@@ -426,78 +449,353 @@ const handlePoint = (rect: Rect, handle: CropHandle): Point => {
   return { x, y };
 };
 
-const handleHandlers = (
-  cropper: Cropper,
-  edge: HandleEdge | (() => HandleEdge),
-  element?: () => Element | null
-): HandleHandlers => {
-  const owner = {};
-  let releaseCursor: (() => void) | null = null;
-  let unwatch: (() => void) | null = null;
-  const view = viewOf(cropper);
-  let drag: HandleDrag | null = null;
+const pairs = (aspect: number | null, a: CropHandle, b: CropHandle): boolean =>
+  !new RegExp(`[${a}]`, "u").test(b) &&
+  (aspect === null || a.length + b.length === 4);
 
-  const toWorking = (event: PointerEvent, placement: Placement): Point => {
-    const point = view.local(event);
+const PINNED_SLACK = 0.5;
+const BATCH_MS = 20;
+
+const sameRect = (a: Rect, b: Rect): boolean =>
+  Math.abs(a.x0 - b.x0) < 1e-6 &&
+  Math.abs(a.y0 - b.y0) < 1e-6 &&
+  Math.abs(a.x1 - b.x1) < 1e-6 &&
+  Math.abs(a.y1 - b.y1) < 1e-6;
+
+const toWorking = (point: Point, placement: Placement): Point => ({
+  x: (point.x - placement.offset.x) / placement.scale,
+  y: (point.y - placement.offset.y) / placement.scale,
+});
+
+const resizers = new WeakMap<Cropper, Resizer>();
+
+const createResizer = (cropper: Cropper): Resizer => {
+  const owner = {};
+  const view = viewOf(cropper);
+  const fingers = new Map<number, Finger>();
+  let base: ResizeBase | null = null;
+  let batch: Batch | null = null;
+
+  const limitsOf = (
+    state: CropState,
+    planes: readonly HalfPlane[],
+    { bounds, placement }: Pick<ResizeBase, "bounds" | "placement">
+  ): DragLimits => {
+    const span = MIN_HANDLE_SPAN / placement.scale;
+    const min = (cropper as CropperInternals).getMinSize();
 
     return {
-      x: (point.x - placement.offset.x) / placement.scale,
-      y: (point.y - placement.offset.y) / placement.scale,
+      aspect: state.aspect,
+      minHeight: Math.max(span, min.height),
+      minWidth: Math.max(span, min.width),
+      planes: [...planes, ...bounds],
     };
   };
 
+  const rebase = (state: CropState): boolean => {
+    const placement = view.hold();
+
+    if (!placement) {
+      return false;
+    }
+
+    batch = null;
+    const start = toRect(state.crop);
+    const next = {
+      bounds: boxPlanes(view.frame()?.layout, placement, start),
+      placement,
+      start,
+    };
+    const limits = limitsOf(state, imagePlanes(state), next);
+
+    for (const finger of fingers.values()) {
+      const pointer = toWorking(finger.at, placement);
+      const { grab, handle } = finger;
+      const anchor = handlePoint(start, handle);
+      const wanted = grab && { x: pointer.x - grab.x, y: pointer.y - grab.y };
+      const pinned =
+        state.aspect === null &&
+        wanted !== null &&
+        Math.hypot(wanted.x - anchor.x, wanted.y - anchor.y) * placement.scale >
+          PINNED_SLACK &&
+        sameRect(dragHandle(start, handle, wanted, limits), start);
+
+      if (!pinned) {
+        finger.grab = { x: pointer.x - anchor.x, y: pointer.y - anchor.y };
+      }
+    }
+
+    base = next;
+
+    return true;
+  };
+
+  const unpair = (state: CropState): boolean => {
+    const [first, second] = fingers;
+
+    if (
+      !first ||
+      !second ||
+      pairs(state.aspect, first[1].handle, second[1].handle)
+    ) {
+      return false;
+    }
+
+    fingers.delete(second[0]);
+    second[1].drop();
+
+    return true;
+  };
+
   const drop = (): void => {
-    drag = null;
+    const held = [...fingers.values()];
+
+    fingers.clear();
+    base = null;
+    batch = null;
+
+    for (const finger of held) {
+      finger.drop();
+    }
+  };
+
+  const end = (event?: Event): void => {
+    drop();
+    view.release();
+    cropper.end(event, owner);
+  };
+
+  const batchOf = (
+    event: PointerEvent,
+    moving: Finger,
+    before: Point,
+    state: CropState
+  ): Batch => {
+    if (
+      !batch ||
+      batch.moved.has(moving) ||
+      !(event.timeStamp - batch.time <= BATCH_MS)
+    ) {
+      batch = {
+        at: new Map(
+          [...fingers.values()].map((held) => [
+            held,
+            held === moving ? before : held.at,
+          ])
+        ),
+        moved: new Set(),
+        rect: toRect(state.crop),
+        time: event.timeStamp,
+      };
+    }
+
+    batch.moved.add(moving);
+
+    return batch;
+  };
+
+  const shift = (
+    finger: Finger,
+    placement: Placement
+  ): { by: Point; handle: CropHandle } => {
+    const was = batch?.at.get(finger) ?? finger.at;
+
+    return {
+      by: {
+        x: (finger.at.x - was.x) / placement.scale,
+        y: (finger.at.y - was.y) / placement.scale,
+      },
+      handle: finger.handle,
+    };
+  };
+
+  const target = (finger: Finger, placement: Placement): Point => {
+    const pointer = toWorking(finger.at, placement);
+    const grab = finger.grab ?? pointer;
+
+    return { x: pointer.x - grab.x, y: pointer.y - grab.y };
+  };
+
+  return {
+    cancel(event) {
+      drop();
+      (cropper as CropperInternals).rebase(owner);
+      cropper.cancel(event, owner);
+      view.release();
+    },
+    join(event, handle, state, release) {
+      const [first, extra] = fingers.values();
+
+      if (fingers.has(event.pointerId)) {
+        return false;
+      }
+
+      if (first) {
+        if (extra || !pairs(state.aspect, first.handle, handle)) {
+          return false;
+        }
+      } else if (!cropper.begin("resize", event, owner)) {
+        return false;
+      }
+
+      fingers.set(event.pointerId, {
+        at: view.local(event),
+        drop: release,
+        grab: null,
+        handle,
+      });
+
+      if (rebase(state)) {
+        return true;
+      }
+
+      fingers.delete(event.pointerId);
+
+      if (!first) {
+        cropper.end(event, owner);
+      }
+
+      return false;
+    },
+    leave(id, event) {
+      const finger = fingers.get(id);
+
+      if (!finger) {
+        return;
+      }
+
+      fingers.delete(id);
+      finger.drop();
+      const state = fingers.size > 0 ? cropper.getCropState() : null;
+
+      if (!state || !rebase(state)) {
+        end(event);
+      }
+    },
+    move(event) {
+      const finger = fingers.get(event.pointerId);
+
+      if (!finger) {
+        return;
+      }
+
+      const before = finger.at;
+
+      finger.at = view.local(event);
+
+      if ((cropper as CropperInternals).rebase(owner)) {
+        view.release();
+        const fresh = cropper.getCropState();
+
+        if (!fresh || !rebase(fresh)) {
+          end(event);
+
+          return;
+        }
+      }
+
+      const state = cropper.getCropState();
+
+      if (!state || !base) {
+        return;
+      }
+
+      if (unpair(state)) {
+        if (!rebase(state)) {
+          end(event);
+
+          return;
+        }
+
+        if (!fingers.has(event.pointerId)) {
+          return;
+        }
+      }
+
+      const { placement, start } = base;
+      const planes = imagePlanes(state);
+      const limits = limitsOf(state, planes, base);
+      const [first = finger, second] = fingers.values();
+      const both =
+        second !== undefined &&
+        pairs(limits.aspect, first.handle, second.handle)
+          ? second
+          : null;
+      let rect = start;
+      let from = start;
+
+      if (both && limits.aspect !== null) {
+        from = batchOf(event, finger, before, state).rect;
+
+        rect = pairRect(
+          from,
+          [shift(first, placement), shift(both, placement)],
+          limits
+        );
+      } else {
+        for (const held of both ? [first, both, first] : [first]) {
+          rect = dragHandle(rect, held.handle, target(held, placement), limits);
+        }
+      }
+
+      cropper.setCropState(
+        {
+          ...state,
+          crop: stopAtZoomCeiling(
+            planes,
+            toCrop(from),
+            toCrop(rect),
+            cropper.getMaxZoom(),
+            state.aspect !== null
+          ),
+        },
+        { event, keep: "size", reason: "resize" }
+      );
+    },
+  };
+};
+
+const resizerOf = (cropper: Cropper): Resizer => {
+  let resizer = resizers.get(cropper);
+
+  if (!resizer) {
+    resizer = createResizer(cropper);
+    resizers.set(cropper, resizer);
+  }
+
+  return resizer;
+};
+
+const handleHandlers = (
+  cropper: Cropper,
+  edge: HandleEdge | (() => HandleEdge),
+  element?: () => Element | null,
+  onHeld?: (held: boolean) => void
+): HandleHandlers => {
+  const resizer = resizerOf(cropper);
+  let id: number | null = null;
+  let releaseCursor: (() => void) | null = null;
+  let unwatch: (() => void) | null = null;
+
+  const drop = (): void => {
+    id = null;
     releaseCursor?.();
     releaseCursor = null;
     unwatch?.();
     unwatch = null;
-  };
-
-  const onEscape = (event: KeyboardEvent): void => {
-    drop();
-    (cropper as CropperInternals).rebase(owner);
-    cropper.cancel(event, owner);
-    view.release();
+    onHeld?.(false);
   };
 
   const lost = (event?: Event): void => {
-    if (drag) {
-      drop();
-      view.release();
-      cropper.end(event, owner);
+    if (id !== null) {
+      resizer.leave(id, event);
     }
   };
 
   const finish = (event: PointerEvent): void => {
-    if (drag?.id === event.pointerId) {
+    if (id === event.pointerId) {
       lost(event);
     }
-  };
-
-  const grab = (
-    event: PointerEvent,
-    state: CropState,
-    handle: CropHandle
-  ): HandleDrag | null => {
-    const placement = view.hold();
-
-    if (!placement) {
-      return null;
-    }
-
-    const start = toRect(state.crop);
-    const pointer = toWorking(event, placement);
-    const anchor = handlePoint(start, handle);
-
-    return {
-      bounds: boxPlanes(view.frame()?.layout, placement, start),
-      grab: { x: pointer.x - anchor.x, y: pointer.y - anchor.y },
-      handle,
-      id: event.pointerId,
-      placement,
-      start,
-    };
   };
 
   return {
@@ -508,29 +806,23 @@ const handleHandlers = (
       const state = cropper.getCropState();
 
       if (
-        drag ||
+        id !== null ||
         !state ||
         !presses(event) ||
-        !cropper.begin("resize", event, owner)
+        !resizer.join(
+          event,
+          EDGES[typeof edge === "function" ? edge() : edge],
+          state,
+          drop
+        )
       ) {
         return;
       }
 
-      drag = grab(
-        event,
-        state,
-        EDGES[typeof edge === "function" ? edge() : edge]
-      );
-
-      if (!drag) {
-        cropper.end(event, owner);
-
-        return;
-      }
-
+      id = event.pointerId;
       const target = targetOf(event, element);
-      const offEscape = watchEscape(target, onEscape);
-      const offLoss = watchLoss(cropper, lost, (id) => id === drag?.id, target);
+      const offEscape = watchEscape(target, resizer.cancel);
+      const offLoss = watchLoss(cropper, lost, (held) => held === id, target);
 
       unwatch = () => {
         offLoss();
@@ -544,9 +836,11 @@ const handleHandlers = (
           releaseCursor = holdCursor(target);
         }
       }
+
+      onHeld?.(true);
     },
     onPointerMove(event) {
-      if (drag?.id !== event.pointerId) {
+      if (id !== event.pointerId) {
         return;
       }
 
@@ -556,55 +850,7 @@ const handleHandlers = (
         return;
       }
 
-      if ((cropper as CropperInternals).rebase(owner)) {
-        view.release();
-        const fresh = cropper.getCropState();
-        const next = fresh && grab(event, fresh, drag.handle);
-
-        if (!next) {
-          lost(event);
-
-          return;
-        }
-
-        drag = next;
-      }
-
-      const state = cropper.getCropState();
-
-      if (!state) {
-        return;
-      }
-
-      const pointer = toWorking(event, drag.placement);
-      const span = MIN_HANDLE_SPAN / drag.placement.scale;
-      const min = (cropper as CropperInternals).getMinSize();
-      const planes = imagePlanes(state);
-      const rect = dragHandle(
-        drag.start,
-        drag.handle,
-        { x: pointer.x - drag.grab.x, y: pointer.y - drag.grab.y },
-        {
-          aspect: state.aspect,
-          minHeight: Math.max(span, min.height),
-          minWidth: Math.max(span, min.width),
-          planes: [...planes, ...drag.bounds],
-        }
-      );
-
-      cropper.setCropState(
-        {
-          ...state,
-          crop: stopAtZoomCeiling(
-            planes,
-            toCrop(drag.start),
-            toCrop(rect),
-            cropper.getMaxZoom(),
-            state.aspect !== null
-          ),
-        },
-        { event, keep: "size", reason: "resize" }
-      );
+      resizer.move(event);
     },
     onPointerUp: finish,
     release: lost,

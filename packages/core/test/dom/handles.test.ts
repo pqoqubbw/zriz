@@ -1,3 +1,12 @@
+import {
+  assert,
+  array,
+  constantFrom,
+  double,
+  integer,
+  property,
+  tuple,
+} from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Cropper } from "../../src";
@@ -5,8 +14,10 @@ import { handleHandlers } from "../../src/dom/parts";
 import type { HandleEdge } from "../../src/dom/parts";
 import { fitPlacement, viewOf } from "../../src/dom/view";
 import type { Layout, Placement } from "../../src/dom/view";
+import { cropCorners, imagePlanes, insidePlanes } from "../../src/geometry";
 import type { Point, Rect } from "../../src/geometry";
 import { pointer as fakePointer, setup, stateOf } from "../cropper-fixture";
+import type { Rig } from "../cropper-fixture";
 
 const CORNER_INSET = 35;
 
@@ -44,7 +55,7 @@ const TOLERANCE = 1e-6;
 
 const pointer = (
   { x, y }: Point,
-  init: { button?: number; pointerId?: number } = {}
+  init: { button?: number; pointerId?: number; timeStamp?: number } = {}
 ): PointerEvent => {
   const extra = { clientY: y, currentTarget: null, ...init };
 
@@ -137,12 +148,77 @@ const resized = (low: number, high: number, sign: number, side: number) => {
   return [centre - side / 2, centre + side / 2] as const;
 };
 
-const press = (cropper: Cropper, edge: HandleEdge, at: Point) => {
-  const handlers = handleHandlers(cropper, edge, () => null);
+const press = (
+  cropper: Cropper,
+  edge: HandleEdge,
+  at: Point,
+  pointerId = 1,
+  onHeld?: (held: boolean) => void
+) => {
+  const handlers = handleHandlers(cropper, edge, () => null, onHeld);
 
-  handlers.onPointerDown(pointer(at));
+  handlers.onPointerDown(pointer(at, { pointerId }));
 
   return handlers;
+};
+
+const PAIRS: readonly (readonly [HandleEdge, HandleEdge])[] = [
+  ["top-left", "bottom-right"],
+  ["top-right", "bottom-left"],
+  ["top", "bottom"],
+  ["left", "right"],
+  ["top-left", "bottom"],
+  ["right", "bottom-left"],
+];
+
+const twoFingers = (rig: Rig, edges: readonly [HandleEdge, HandleEdge]) => {
+  const { cropper } = rig;
+
+  viewOf(cropper).setLayout(LAYOUT);
+  const { scale } = placementOf(cropper);
+  const before = cropOf(cropper);
+  const at = edges.map((edge) => handleAt(cropper, edge));
+  const held: boolean[][] = edges.map(() => []);
+  const handlers = edges.map((edge, index) =>
+    press(cropper, edge, at[index] ?? { x: 0, y: 0 }, index + 1, (value) => {
+      held[index]?.push(value);
+    })
+  );
+
+  const send = (
+    type: "onPointerCancel" | "onPointerMove" | "onPointerUp",
+    finger: number,
+    dx: number,
+    dy: number,
+    timeStamp?: number
+  ): void => {
+    const from = at[finger] ?? { x: 0, y: 0 };
+
+    handlers[finger]?.[type](
+      pointer(
+        { x: from.x + dx, y: from.y + dy },
+        {
+          pointerId: finger + 1,
+          ...(timeStamp === undefined ? {} : { timeStamp }),
+        }
+      )
+    );
+  };
+
+  return {
+    before,
+    cancel: (finger: number): void => {
+      send("onPointerCancel", finger, 0, 0);
+    },
+    held,
+    lift: (finger: number, dx: number, dy: number): void => {
+      send("onPointerUp", finger, dx, dy);
+    },
+    move: (finger: number, dx: number, dy: number, time?: number): void => {
+      send("onPointerMove", finger, dx, dy, time);
+    },
+    scale,
+  };
 };
 
 describe("handle gestures", () => {
@@ -299,5 +375,324 @@ describe("handle gestures", () => {
     time.frames(5);
     expect(cropper.getValue()).toStrictEqual(value);
     expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("moves two opposite corners together in one gesture and keeps going when a finger lifts", () => {
+    const rig = setup();
+    const { commit, cropper, time } = rig;
+    const starts = vi.fn<() => void>();
+    const ends = vi.fn<() => void>();
+
+    cropper.on("gesturestart", starts);
+    cropper.on("gestureend", ends);
+    const { before, lift, move, scale } = twoFingers(rig, [
+      "top-left",
+      "bottom-right",
+    ]);
+
+    move(0, 40, 30);
+    move(1, -20, -10);
+    const both = cropOf(cropper);
+
+    expect(
+      drift(both, {
+        x0: before.x0 + 40 / scale,
+        x1: before.x1 - 20 / scale,
+        y0: before.y0 + 30 / scale,
+        y1: before.y1 - 10 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+
+    lift(0, 40, 30);
+    expect(cropOf(cropper)).toStrictEqual(both);
+    expect(cropper.getState().interacting).toBe("resize");
+    move(1, -30, -25);
+
+    expect(
+      drift(cropOf(cropper), {
+        ...both,
+        x1: before.x1 - 30 / scale,
+        y1: before.y1 - 25 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+
+    lift(1, -30, -25);
+    time.frames(120);
+
+    expect({
+      commits: commit.mock.calls.length,
+      ends: ends.mock.calls.length,
+      interacting: cropper.getState().interacting,
+      listeners: unlisten.mock.calls.length - listen.mock.calls.length,
+      starts: starts.mock.calls.length,
+    }).toStrictEqual({
+      commits: 1,
+      ends: 1,
+      interacting: null,
+      listeners: 0,
+      starts: 1,
+    });
+  });
+
+  it("refuses a handle that shares an edge and leaves the first drag alone", () => {
+    const rig = setup();
+    const { cropper } = rig;
+    const { before, lift, move, scale } = twoFingers(rig, [
+      "top-left",
+      "top-right",
+    ]);
+    const listeners = listen.mock.calls.length;
+
+    move(1, -50, 40);
+    lift(1, -50, 40);
+    expect(drift(cropOf(cropper), before)).toBeLessThan(TOLERANCE);
+    move(0, 40, 30);
+
+    expect(
+      drift(cropOf(cropper), {
+        ...before,
+        x0: before.x0 + 40 / scale,
+        y0: before.y0 + 30 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+
+    expect(cropper.getState().interacting).toBe("resize");
+    lift(0, 40, 30);
+    expect(listen).toHaveBeenCalledTimes(listeners);
+    expect(unlisten).toHaveBeenCalledTimes(listeners);
+  });
+
+  it("restores the crop from before both fingers on Escape", () => {
+    const rig = setup();
+    const { cropper } = rig;
+    const { before, lift, move } = twoFingers(rig, ["top", "bottom"]);
+
+    move(0, 0, 30);
+    move(1, 0, -40);
+    lift(0, 0, 30);
+    move(1, 0, -50);
+    expect(drift(cropOf(cropper), before)).toBeGreaterThan(1);
+
+    for (const [type, onKey] of listen.mock.calls as unknown[][]) {
+      if (type === "keydown" && typeof onKey === "function") {
+        Reflect.apply(onKey, undefined, [
+          {
+            key: "Escape",
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          },
+        ]);
+      }
+    }
+
+    expect(drift(cropOf(cropper), before)).toBeLessThan(TOLERANCE);
+    expect(cropper.getState().interacting).toBeNull();
+    move(1, 0, -80);
+    expect(drift(cropOf(cropper), before)).toBeLessThan(TOLERANCE);
+    expect(unlisten).toHaveBeenCalledTimes(listen.mock.calls.length);
+  });
+
+  it("resizes a locked crop from the corner under the finger that stays still", () => {
+    const rig = setup();
+    const { cropper } = rig;
+
+    cropper.setAspect(1);
+    const { before, move, scale } = twoFingers(rig, [
+      "top-left",
+      "bottom-right",
+    ]);
+
+    move(1, -40, 0);
+    move(1, -40, 10);
+
+    expect(
+      drift(cropOf(cropper), {
+        ...before,
+        x1: before.x1 - 15 / scale,
+        y1: before.y1 - 15 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+  });
+
+  it("moves a locked crop with two fingers that travel together", () => {
+    const rig = setup();
+    const { cropper } = rig;
+
+    cropper.setAspect(1);
+    const { before, move, scale } = twoFingers(rig, [
+      "top-left",
+      "bottom-right",
+    ]);
+
+    move(0, 30, 30, 0);
+    move(1, -30, -30, 0);
+    move(0, 40, 30, 100);
+    move(1, -20, -30, 100);
+
+    expect(
+      drift(cropOf(cropper), {
+        x0: before.x0 + 40 / scale,
+        x1: before.x1 - 20 / scale,
+        y0: before.y0 + 30 / scale,
+        y1: before.y1 - 30 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+  });
+
+  it("refuses a held pointer id on another handle and still releases the first", () => {
+    const cropper = create();
+    const held: boolean[] = [];
+    const at = handleAt(cropper, "top-left");
+    const far = handleAt(cropper, "bottom-right");
+    const first = press(cropper, "top-left", at, 1, (value) => {
+      held.push(value);
+    });
+    const listeners = listen.mock.calls.length;
+    const second = press(cropper, "bottom-right", far, 1);
+
+    second.onPointerUp(pointer(far));
+    expect(listen).toHaveBeenCalledTimes(listeners);
+    expect(cropper.getState().interacting).toBe("resize");
+    first.onPointerUp(pointer(at));
+    expect(held).toStrictEqual([true, false]);
+    expect(cropper.getState().interacting).toBeNull();
+    press(cropper, "bottom-right", far, 2);
+    expect(cropper.getState().interacting).toBe("resize");
+  });
+
+  it("releases the second finger when the aspect locks mid-session and keeps the first resizing", () => {
+    const rig = setup();
+    const { cropper } = rig;
+    const { held, move } = twoFingers(rig, ["top", "bottom"]);
+
+    move(0, 0, 20);
+    move(1, 0, -20);
+    cropper.setAspect(1);
+    move(1, 0, -60);
+    expect(held).toStrictEqual([[true], [true, false]]);
+    const locked = cropOf(cropper);
+
+    move(1, 0, -90);
+    expect(cropOf(cropper)).toStrictEqual(locked);
+    move(0, 0, 60);
+    expect(cropOf(cropper).y0).toBeGreaterThan(locked.y0 + TOLERANCE);
+    expect(cropper.getState().interacting).toBe("resize");
+  });
+
+  it("keeps a finger dragged past a limit attached when a second finger joins", () => {
+    const { cropper, time } = setup();
+
+    cropper.setZoom(2);
+    time.frames(60);
+    viewOf(cropper).setLayout(LAYOUT);
+    const before = cropOf(cropper);
+    const joined = vi.fn<(held: boolean) => void>();
+    const first = press(cropper, "top-left", handleAt(cropper, "top-left"));
+
+    first.onPointerMove(pointer({ x: -500, y: -500 }));
+    const clamped = cropOf(cropper);
+
+    press(
+      cropper,
+      "bottom-right",
+      handleAt(cropper, "bottom-right"),
+      2,
+      joined
+    );
+
+    first.onPointerMove(pointer({ x: -499, y: -499 }));
+    expect(drift(clamped, before)).toBeGreaterThan(1);
+    expect(joined).toHaveBeenCalledWith(true);
+    expect(cropOf(cropper)).toStrictEqual(clamped);
+  });
+
+  it("keeps the other finger resizing after a pointercancel and ends the gesture once", () => {
+    const rig = setup();
+    const { cropper } = rig;
+    const ends = vi.fn<() => void>();
+
+    cropper.on("gestureend", ends);
+    const { before, cancel, held, lift, move, scale } = twoFingers(rig, [
+      "top-left",
+      "bottom-right",
+    ]);
+
+    cancel(0);
+    move(0, 40, 30);
+    move(1, -20, -10);
+
+    expect(
+      drift(cropOf(cropper), {
+        ...before,
+        x1: before.x1 - 20 / scale,
+        y1: before.y1 - 10 / scale,
+      })
+    ).toBeLessThan(TOLERANCE);
+
+    expect(ends).not.toHaveBeenCalled();
+    lift(1, -20, -10);
+    expect(ends).toHaveBeenCalledOnce();
+
+    expect(held).toStrictEqual([
+      [true, false],
+      [true, false],
+    ]);
+  });
+
+  it("keeps a rotated photo under the crop while two handles move and stays still when one lifts", () => {
+    assert(
+      property(
+        double({ max: 45, min: -45, noNaN: true }),
+        constantFrom(...PAIRS),
+        constantFrom(null, 1.5),
+        array(
+          tuple(
+            integer({ max: 1, min: 0 }),
+            integer({ max: 3, min: 0 }),
+            double({ max: 300, min: -300, noNaN: true }),
+            double({ max: 300, min: -300, noNaN: true })
+          ),
+          { maxLength: 12, minLength: 1 }
+        ),
+        (angle, edges, aspect, steps) => {
+          const rig = setup();
+          const { cropper } = rig;
+
+          cropper.setRotation(angle);
+
+          if (
+            aspect !== null &&
+            edges[0].includes("-") &&
+            edges[1].includes("-")
+          ) {
+            cropper.setAspect(aspect);
+          }
+
+          const { lift, move } = twoFingers(rig, edges);
+
+          for (const [finger, kind, dx, dy] of steps) {
+            const held = cropOf(cropper);
+
+            if (kind === 0) {
+              lift(finger, dx, dy);
+            } else {
+              move(finger, dx, dy);
+            }
+
+            expect(kind === 0 ? cropOf(cropper) : held).toStrictEqual(held);
+
+            const state = stateOf(cropper);
+            const planes = imagePlanes(state);
+
+            for (const corner of cropCorners(state.crop)) {
+              expect(insidePlanes(planes, corner, 1e-6)).toBeTruthy();
+            }
+          }
+
+          cropper.destroy();
+        }
+      ),
+      { numRuns: 200 }
+    );
   });
 });

@@ -396,9 +396,13 @@ describe("a gesture whose part goes away", () => {
 
     press(a, "pointerdown", 10, 10);
     press(b, "pointerdown", 20, 10, 2);
+    press(c, "pointerdown", 30, 10, 3);
+    await frames();
+    expect(active()).toStrictEqual([true, true, false]);
+    press(c, "pointerup", 30, 10, 3);
+    press(b, "pointerup", 20, 10, 2);
     await frames();
     expect(active()).toStrictEqual([true, false, false]);
-    press(b, "pointerup", 20, 10, 2);
     press(a, "pointerup", 10, 10);
     await frames();
     expect(active()).toStrictEqual([false, false, false]);

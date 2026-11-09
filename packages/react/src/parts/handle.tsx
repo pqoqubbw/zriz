@@ -74,8 +74,9 @@ const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
   const cropper = useCropperContext();
   const box = useElementBox();
   const edge = useLatest(position);
+  const [mine, setMine] = useState(false);
   const handlers = useMemo(
-    () => handleHandlers(cropper, () => edge.current, box.get),
+    () => handleHandlers(cropper, () => edge.current, box.get, setMine),
     [box, cropper, edge]
   );
 
@@ -88,22 +89,7 @@ const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
     },
     [box, edge]
   );
-  const [mine, setMine] = useState(false);
   const active = useCropperState((s) => mine && s.interacting === "resize");
-
-  if (mine && !active) {
-    setMine(false);
-  }
-
-  const onPointerDown = (event: PointerEvent): void => {
-    const free = cropper.getState().interacting === null;
-
-    handlers.onPointerDown(event.nativeEvent);
-
-    if (free) {
-      setMine(cropper.getState().interacting === "resize");
-    }
-  };
 
   return usePart(
     "div",
@@ -113,7 +99,6 @@ const Handle: Part<HandleProps, HTMLDivElement> = forwardRef<
       "data-edge": position,
       "data-zriz-item": "handle",
       ...nativeProps(handlers),
-      onPointerDown,
       onPointerDownCapture: (event: PointerEvent): void => {
         viewOf(cropper).claim(event.nativeEvent);
       },
