@@ -42,7 +42,7 @@ const VANILLA_JS_PAGE = defineDoc({
       ),
       code("vanilla-js/keys.ts"),
       p(
-        "The keys are the ones on [crop area](crop-area). Call `keys.release()` when you unbind, so a key held at that moment does not lock the cropper. `zoomHandlers` and `handleHandlers` have the same `release`."
+        "The keys are the ones on [crop area](crop-area). Call `keys.release()` when you unbind, so a key held at that moment does not lock the cropper. `zoomHandlers` and `handleHandlers` have the same `release`. `handleHandlers` also takes a fourth argument, a function that gets `true` when its handle is pressed and `false` when it lets go."
       )
     ),
     section(

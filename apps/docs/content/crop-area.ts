@@ -41,6 +41,18 @@ const CROP_AREA_PAGE = defineDoc({
       code("crop-area/handles.css")
     ),
     section(
+      "Resize with two fingers",
+      p(
+        "On a touch screen two handles can move at once. Put a finger on each and drag. Any two handles that share no side pair up, such as opposite corners or the top and right edges."
+      ),
+      p(
+        "With a locked aspect or a circle, only opposite corners pair up. A finger that stays still keeps its corner under it, and the other finger resizes the crop from that corner, as a single handle does. Fingers that travel together move the crop. A handle that cannot pair with the one already held ignores the press, and so does a third finger."
+      ),
+      p(
+        "The whole gesture is one change. `onValueCommit` runs once, after the last finger lifts, and Escape puts the crop back where it was before the first finger."
+      )
+    ),
+    section(
       "Know when the grid shows",
       p(
         "The grid hides at rest. It shows thirds (3 × 3) from the moment you press or move the crop, and a fine grid (9 × 9) while the dial moves:"
@@ -164,7 +176,7 @@ const CROP_AREA_PAGE = defineDoc({
       ),
       part(
         "Handle",
-        "Renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. A drag stops at the photo edge, the viewport's padding and `maxZoom`. Each side also stops at 88 px on screen or `minSize`, whichever is larger. A side already smaller stays put and can only grow. The stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
+        "Renders an `aria-hidden` `<div>` inside `Area`, so a `render` element must not take focus. A drag stops at the photo edge, the viewport's padding and `maxZoom`. Each side also stops at 88 px on screen or `minSize`, whichever is larger. A side already smaller stays put and can only grow. Two fingers can drag two handles at once. The stylesheet hides the corner handles on a circle only when they sit right inside `Area`. `className` and `render` get `{ position, active }`.",
         props([
           {
             name: "position",

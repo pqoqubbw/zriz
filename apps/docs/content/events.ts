@@ -134,7 +134,7 @@ const EVENTS_PAGE = defineDoc({
             "Two fingers pinching or twisting, or a trackpad pinch in Safari",
           ],
           ["wheel", "A mouse wheel or trackpad scrolling or zooming the photo"],
-          ["resize", "A handle being dragged"],
+          ["resize", "One or two handles being dragged"],
           ["dial", "The dial being dragged or thrown"],
           [
             "keyboard",
