@@ -6,7 +6,7 @@ import { windowOf } from "./input";
 import type { Region } from "./kernel";
 import { afterPaint } from "./later";
 import { TIMEOUT_MS, noop, withTimeout } from "./turn";
-import { LAYER_BOX, cssMatrix, isAffine, viewOf } from "./view";
+import { LAYER_BOX, cssMatrix, followFlight, isAffine, viewOf } from "./view";
 import type { Layout, ViewFrame } from "./view";
 import { motionOff } from "./worker";
 
@@ -462,7 +462,10 @@ const bindPhoto = (cropper: Cropper, container: HTMLElement): (() => void) => {
 
   sync();
 
+  const offFlight = followFlight(view, motion);
+
   return () => {
+    offFlight();
     offImage();
     offFrame();
     offState();

@@ -14,6 +14,7 @@ import { spring } from "../motion";
 import { sameFields } from "../same-fields";
 import type { Aspect } from "../value";
 import { claim } from "./input";
+import { noop } from "./turn";
 
 type Inset = {
   top: number;
@@ -65,8 +66,19 @@ type ViewOptions = {
   recenterDelay?: number | undefined;
 };
 
+type Flight = {
+  duration: number;
+  frames: string[];
+};
+
+type FlightHandle = {
+  elapsed: () => number | null;
+  stop: () => void;
+};
+
 type View = {
   frame: () => ViewFrame | null;
+  onFlight: (listener: (flight: Flight) => FlightHandle | null) => () => void;
   chrome: () => Chrome;
   onChrome: (listener: () => void) => () => void;
   setOptions: (options: ViewOptions) => void;
@@ -105,6 +117,7 @@ type Flip = {
 };
 
 type Blend = {
+  aim: Pose | null;
   from: Pose;
   t: number;
   lead: number;
@@ -382,6 +395,96 @@ const poseMatrix = ({
   ];
 };
 
+const FLIGHT_STEP_MS = 8;
+
+const poseCss = ({ anchor, angle, centre, mirror, sx, sy }: Pose): string =>
+  `translate(${centre.x}px,${centre.y}px) scale(${mirror},1) rotate(${angle}rad) scale(${sx},${sy}) translate(${-anchor.x}px,${-anchor.y}px)`;
+
+const near = (value: number, wanted: number): boolean =>
+  Math.abs(value - wanted) < 1e-6;
+
+const mirrorOf = (
+  from: Matrix3,
+  to: Matrix3
+): { angle: number; point: Point } | null => {
+  if (!isAffine(from) || !isAffine(to)) {
+    return null;
+  }
+
+  const step = multiplyMatrix3(to, invertMatrix3(from));
+  const [a, b, x, c, d, y] = step;
+  const slack = 1e-6 * (1 + Math.hypot(x, y));
+
+  if (
+    !near(a, -d) ||
+    !near(b, c) ||
+    !near(a * a + b * b, 1) ||
+    Math.abs(a * x + b * y + x) > slack ||
+    Math.abs(c * x + d * y + y) > slack
+  ) {
+    return null;
+  }
+
+  return {
+    angle: Math.atan2(c, a) / 2,
+    point: { x: x / 2, y: y / 2 },
+  };
+};
+
+const mirrorCss = (
+  { angle, point }: { angle: number; point: Point },
+  from: Matrix3,
+  t: number
+): string =>
+  `translate(${point.x}px,${point.y}px) rotate(${angle}rad) scale(1,${1 - 2 * t}) rotate(${-angle}rad) translate(${-point.x}px,${-point.y}px) ${cssMatrix(from)}`;
+
+const flyTransform = (
+  element: HTMLElement,
+  flight: Flight
+): FlightHandle | null => {
+  if (typeof element.animate !== "function") {
+    return null;
+  }
+
+  try {
+    const animation = element.animate(
+      flight.frames.map((transform) => ({ easing: "linear", transform })),
+      { duration: flight.duration, fill: "forwards" }
+    );
+
+    return {
+      elapsed: () =>
+        typeof animation.currentTime === "number"
+          ? animation.currentTime
+          : null,
+      stop: () => {
+        try {
+          animation.cancel();
+        } catch {
+          noop();
+        }
+      },
+    };
+  } catch {
+    return null;
+  }
+};
+
+const followFlight = (view: View, element: HTMLElement): (() => void) => {
+  let handle: FlightHandle | null = null;
+  const off = view.onFlight((flight) => {
+    handle = flyTransform(element, flight);
+
+    return handle;
+  });
+
+  return () => {
+    off();
+    handle?.stop();
+    handle = null;
+  };
+};
+
 const subscribe =
   <T>(set: Set<T>) =>
   (listener: T): (() => void) => {
@@ -407,6 +510,46 @@ const omegaOf = (shape: Transition): number => {
 
   return shape === "flip" ? FLIP_OMEGA : RECENTRE_OMEGA;
 };
+
+const settleMs = (omega: number): number => {
+  let length = 0;
+
+  while (springProgress(omega, length) < SETTLED_PROGRESS) {
+    length += 1;
+  }
+
+  return length;
+};
+
+const flightPath = (active: Blend, to: Pose): ((t: number) => string) => {
+  const { flip, from, lead } = active;
+
+  if (!flip) {
+    return (t) => poseCss(blendPose(from, to, t, lead));
+  }
+
+  const mirror = mirrorOf(flip.from, flip.to);
+
+  return mirror
+    ? (t) => mirrorCss(mirror, flip.from, t)
+    : (t) => cssMatrix(lerpMatrix(flip.from, flip.to, t));
+};
+
+const paceOf =
+  (quick: boolean, omega: number) =>
+  (ms: number): number =>
+    quick ? easeOut(Math.min(ms / REDUCED_MS, 1)) : springProgress(omega, ms);
+
+const isRigid = (
+  kind: Transition,
+  turning: boolean,
+  start: Pose,
+  to: Pose | null
+): boolean =>
+  to !== null &&
+  (kind === "rotate" ||
+    turning ||
+    (kind === "morph" && Math.abs(shortTurn(start, to)) > Math.PI / 4 + 1e-9));
 
 const leadOf = (
   kind: Transition,
@@ -489,6 +632,11 @@ const viewOf = (cropper: Cropper): View => {
   let recenterTimer: ReturnType<typeof setTimeout> | null = null;
   let chromeTimer: ReturnType<typeof setTimeout> | null = null;
   let blend: Blend | null = null;
+  let flights: FlightHandle[] = [];
+  let flightTarget: Matrix3 | null = null;
+  let aimed: Matrix3 | null = null;
+  let pace: ((ms: number) => number) | null = null;
+  const flightListeners = new Set<(flight: Flight) => FlightHandle | null>();
   let shown: Pose | null = null;
   let drawn: Matrix3 | null = null;
   let queued: Queued | null = null;
@@ -542,7 +690,46 @@ const viewOf = (cropper: Cropper): View => {
       : fitPlacement(current, state);
   };
 
+  const stopFlights = (): void => {
+    for (const flight of flights) {
+      flight.stop();
+    }
+
+    flights = [];
+    flightTarget = null;
+  };
+
+  const startFlights = (
+    aim: Matrix3,
+    length: number,
+    at: (t: number) => string
+  ): void => {
+    if (flightListeners.size === 0 || !pace) {
+      return;
+    }
+
+    const count = Math.max(2, Math.ceil(length / FLIGHT_STEP_MS));
+    const frames: string[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      frames.push(at(Math.min(pace((index / count) * length), 1)));
+    }
+
+    frames.push(at(1));
+    flightTarget = aim;
+
+    for (const listener of flightListeners) {
+      const handle = listener({ duration: length, frames });
+
+      if (handle) {
+        flights.push(handle);
+      }
+    }
+  };
+
   const endTransition = (): void => {
+    stopFlights();
+    pace = null;
     queued = null;
     stopTransition?.();
     stopTransition = null;
@@ -596,6 +783,9 @@ const viewOf = (cropper: Cropper): View => {
     );
     const exact = exactBox(state, placement);
     const to = blend && pose(exact, matrix);
+
+    aimed = matrix;
+
     let rect = exact;
 
     drawn = matrix;
@@ -621,6 +811,13 @@ const viewOf = (cropper: Cropper): View => {
   const publish = (): void => {
     last = compute();
 
+    if (
+      flightTarget &&
+      aimed?.some((value, index) => value !== flightTarget?.[index]) === true
+    ) {
+      stopFlights();
+    }
+
     if (last) {
       for (const listener of listeners) {
         listener(last);
@@ -639,6 +836,8 @@ const viewOf = (cropper: Cropper): View => {
   };
 
   const finishTransition = (): false => {
+    stopFlights();
+    pace = null;
     stopTransition = null;
     setChrome({ transition: null });
 
@@ -685,6 +884,34 @@ const viewOf = (cropper: Cropper): View => {
       : null;
   };
 
+  const fly = (
+    active: Blend,
+    next: ViewFrame | null,
+    to: Pose | null,
+    length: number
+  ): void => {
+    if (next && to) {
+      startFlights(next.matrix, length, flightPath(active, to));
+    }
+  };
+
+  const catchUp = (): void => {
+    const real = flights[0]?.elapsed() ?? null;
+
+    if (!blend || !pace || real === null) {
+      return;
+    }
+
+    const t = Math.min(pace(real), 1);
+
+    if (blend.flip) {
+      drawn = lerpMatrix(blend.flip.from, blend.flip.to, t);
+    } else if (blend.aim && shown) {
+      shown = blendPose(blend.from, blend.aim, t, blend.lead);
+      drawn = poseMatrix(shown);
+    }
+  };
+
   const animate = (
     kind: Transition,
     from: Pick<ViewFrame, "matrix" | "rect">,
@@ -695,6 +922,8 @@ const viewOf = (cropper: Cropper): View => {
 
       return;
     }
+
+    catchUp();
 
     const was = blend && shown ? drawn : null;
     const start = (blend && shown) ?? pose(from.rect, from.matrix);
@@ -709,16 +938,12 @@ const viewOf = (cropper: Cropper): View => {
 
     const next = compute();
     const to = next && pose(next.rect, next.matrix);
-    const rigid =
-      to !== null &&
-      (kind === "rotate" ||
-        turning ||
-        (kind === "morph" &&
-          Math.abs(shortTurn(start, to)) > Math.PI / 4 + 1e-9));
-
-    const shape: Transition = rigid ? "rotate" : kind;
+    const shape: Transition = isRigid(kind, turning, start, to)
+      ? "rotate"
+      : kind;
 
     blend = {
+      aim: to,
       flip:
         shape === "flip" && next
           ? { from: was ?? from.matrix, rect: next.rect, to: next.matrix }
@@ -731,12 +956,14 @@ const viewOf = (cropper: Cropper): View => {
     setChrome({ transition: shape });
     let elapsed = 0;
     const quick = reduced();
+    const step = paceOf(quick, omegaOf(shape));
+
+    pace = step;
+    fly(blend, next, to, quick ? REDUCED_MS : settleMs(omegaOf(shape)));
 
     stopTransition = cropper.run((_, delta) => {
       elapsed += delta;
-      const t = quick
-        ? easeOut(Math.min(elapsed / REDUCED_MS, 1))
-        : springProgress(omegaOf(shape), elapsed);
+      const t = step(elapsed);
 
       if (t >= SETTLED_PROGRESS || !blend) {
         const flip = blend?.flip;
@@ -917,6 +1144,7 @@ const viewOf = (cropper: Cropper): View => {
       endTransition();
       clearTimers();
       listeners.clear();
+      flightListeners.clear();
       chromeListeners.clear();
       emptyListeners.clear();
       views.delete(cropper);
@@ -959,6 +1187,7 @@ const viewOf = (cropper: Cropper): View => {
       };
     },
     onEmpty: subscribe(emptyListeners),
+    onFlight: subscribe(flightListeners),
     onFrame: subscribe(listeners),
     overscroll: () => overscrollShift,
     overzoom: () => overscrollScale,
@@ -1044,6 +1273,8 @@ const viewOf = (cropper: Cropper): View => {
 export type {
   Box,
   Chrome,
+  Flight,
+  FlightHandle,
   Grid,
   Inset,
   Layout,
@@ -1056,6 +1287,7 @@ export type {
 export {
   LAYER_BOX,
   cssMatrix,
+  followFlight,
   isAffine,
   fitPlacement,
   imageMatrix,

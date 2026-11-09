@@ -26,7 +26,13 @@ import {
 import type { PointerHandlers } from "./input";
 import { cropShapeOf, setCropShape } from "./shape";
 import { followDisabled } from "./slider";
-import { LAYER_BOX, cssMatrix, stateAttributes, viewOf } from "./view";
+import {
+  LAYER_BOX,
+  cssMatrix,
+  followFlight,
+  stateAttributes,
+  viewOf,
+} from "./view";
 import type { Box, Layout, Placement, ViewFrame } from "./view";
 
 type MaskShape = "rect" | "circle";
@@ -165,10 +171,12 @@ const bindImage = (cropper: Cropper, element: HTMLElement): (() => void) => {
 
   sync();
   const offState = cropper.subscribe(sync);
+  const offFlight = followFlight(viewOf(cropper), element);
 
   return () => {
     stop();
     offState();
+    offFlight();
   };
 };
 
