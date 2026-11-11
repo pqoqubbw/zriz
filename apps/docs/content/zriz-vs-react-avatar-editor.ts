@@ -15,7 +15,7 @@ const ZRIZ_VS_REACT_AVATAR_EDITOR_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `react-avatar-editor` 16.0.0 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `react-avatar-editor` 16.0.0 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_REACT_AVATAR_EDITOR_PAGE = defineDoc({
         'react-avatar-editor describes itself as an "Avatar / profile picture cropping component for React. Resize, crop and rotate your uploaded image using a simple and clean user interface." It is one component that paints the photo and a mask on a `<canvas>`. The frame has the size you pass as props, and the visitor moves the photo under it. Its docs are the [README](https://github.com/mosch/react-avatar-editor#readme).'
       ),
       p(
-        "Pick react-avatar-editor when the job is a fixed-frame avatar picker and weight matters. It adds about 5 kB to the bundle, against 26 to 34 kB for zriz. It has been on npm since 2014 and has over 980,000 downloads a week. Its README names React 17, 18 and 19. It ships a CommonJS build next to ESM, and zriz is ESM only. It can zoom out below the fit and fill the rest with a colour. `rotate` takes any angle, `borderRadius` takes any radius, and `getImage()` returns a canvas synchronously. The canvas comes with a label for screen readers and paints a pulsing fill while a photo loads."
+        "Pick react-avatar-editor when the job is a fixed-frame avatar picker and weight matters. It adds about 5 kB to the bundle, against 22 to 30 kB for zriz. It has been on npm since 2014 and has over 980,000 downloads a week. Its README names React 17, 18 and 19. It ships a CommonJS build next to ESM, and zriz is ESM only. It can zoom out below the fit and fill the rest with a colour. `rotate` takes any angle, `borderRadius` takes any radius, and `getImage()` returns a canvas synchronously. The canvas comes with a label for screen readers and paints a pulsing fill while a photo loads."
       ),
       p(
         "Pick zriz when the visitor resizes the crop or picks a ratio, when a straightened photo must fill the frame, or when the saved file must be round. zriz keeps the zoom itself, takes your labels for screen readers and returns a JPEG, PNG or WebP blob. It is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week."
@@ -55,11 +55,11 @@ const ZRIZ_VS_REACT_AVATAR_EDITOR_PAGE = defineDoc({
             "None, `@zriz/core` and React are peers",
           ],
           ["React", "17, 18 and 19 per its README", "18.2 and 19"],
-          ["Size", "About 5 kB", "26 to 34 kB"],
+          ["Size", "About 5 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-avatar-editor it is the basic example from its docs, built with esbuild. That already holds `getImage()` and `getImageScaledToCanvas()`, and with a range input, wheel zoom and a `toBlob` save it stays at about 5 kB. react-avatar-editor has no CSS. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-avatar-editor it is the basic example from its docs, built with esbuild. That already holds `getImage()` and `getImageScaledToCanvas()`, and with a range input, wheel zoom and a `toBlob` save it stays at about 5 kB. react-avatar-editor has no CSS. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       ),
       p(
         "The peer range of react-avatar-editor also lists React 0.14 and 16. Its code imports hooks, and its README names 17, 18 and 19."

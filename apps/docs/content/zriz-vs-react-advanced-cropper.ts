@@ -15,7 +15,7 @@ const ZRIZ_VS_REACT_ADVANCED_CROPPER_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares react-advanced-cropper 0.20.1 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares react-advanced-cropper 0.20.1 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_REACT_ADVANCED_CROPPER_PAGE = defineDoc({
         `react-advanced-cropper is a styled React cropper whose parts and algorithms you can replace. Its README calls it "the advanced library that gives you opportunity to create your own croppers suited for any website design". The state lives in a core without a framework, \`advanced-cropper\`. The [docs](https://advanced-cropper.github.io/react-advanced-cropper/) are for the React package, and their tutorials use the core's extensions.`
       ),
       p(
-        "Pick react-advanced-cropper when the visitor should drag a selection box over a still photo, when the crop needs a range of aspect ratios, a largest size in pixels or room past the edge of the photo with a fill colour, or when you want your own stencil shape and your own resize rules. It runs on React 16.8 and newer, ships five themes, a preview part and a CommonJS build, and returns a canvas you can draw on. It is about 24 kB against 26 to 34 kB for zriz. It has been on npm since 2021 and has over 250k downloads a week."
+        "Pick react-advanced-cropper when the visitor should drag a selection box over a still photo, when the crop needs a range of aspect ratios, a largest size in pixels or room past the edge of the photo with a fill colour, or when you want your own stencil shape and your own resize rules. It runs on React 16.8 and newer, ships five themes, a preview part and a CommonJS build, and returns a canvas you can draw on. It is about 24 kB against 22 to 30 kB for zriz. It has been on npm since 2021 and has over 250k downloads a week."
       ),
       p(
         "Pick zriz when the cropper has to work from the keyboard and with a screen reader, when visitors straighten photos and no corner of the saved crop may be empty, or when you want parts for the dial, zoom slider, aspect picker, rotate and flip buttons instead of building them. zriz takes a `File` as `src` and returns a JPEG, PNG or WebP blob. It is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week."
@@ -55,11 +55,11 @@ const ZRIZ_VS_REACT_ADVANCED_CROPPER_PAGE = defineDoc({
             "None",
           ],
           ["React", "16.8 and newer", "18.2 and 19"],
-          ["Size", "About 24 kB", "26 to 34 kB"],
+          ["Size", "About 24 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-advanced-cropper it is the basic example from its docs, built with esbuild. That example reads a canvas on every change, and its stylesheet is about 1 kB of the total. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-advanced-cropper it is the basic example from its docs, built with esbuild. That example reads a canvas on every change, and its stylesheet is about 1 kB of the total. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(

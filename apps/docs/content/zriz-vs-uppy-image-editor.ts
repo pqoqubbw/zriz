@@ -15,7 +15,7 @@ const ZRIZ_VS_UPPY_IMAGE_EDITOR_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `@uppy/image-editor` 5.0.1 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `@uppy/image-editor` 5.0.1 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -33,7 +33,7 @@ const ZRIZ_VS_UPPY_IMAGE_EDITOR_PAGE = defineDoc({
         "Pick Uppy Image Editor when the app uploads with Uppy or needs an uploader. Two `use()` calls give a toolbar with icons, Save, Cancel and English labels that the `locale` option or some locale packs replace, and the edited file takes the original's place in the upload queue. An app that already loads Uppy and the Dashboard adds about 17 kB for it. The `useImageEditor` hook in `@uppy/react` runs the editor under your own toolbar, without the Dashboard. Uppy has Dashboard components for React, Vue, Svelte and Angular. Through Cropper.js it can draw a new crop box with a drag, take a `fillColor` for any exported area outside the photo and run a `beforeDraw` hook on the export. The package has been on npm since 2020 and has over 270,000 downloads a week."
       ),
       p(
-        "Pick zriz when the page needs a cropper on its own, such as an avatar or cover field in a form. zriz adds 26 to 34 kB to the bundle, against about 89 kB for Uppy's documented setup with its uploader and Dashboard, or about 35 kB for Uppy's `useImageEditor` hook without the Dashboard. The crop is a value you can save and restore, the crop area takes keys, and the photo moves under the frame with a pinch and a two-finger twist. You write the layout, the styles and every label. zriz had its first release in November 2026, has one maintainer and under a thousand downloads a week."
+        "Pick zriz when the page needs a cropper on its own, such as an avatar or cover field in a form. zriz adds 22 to 30 kB to the bundle, against about 89 kB for Uppy's documented setup with its uploader and Dashboard, or about 35 kB for Uppy's `useImageEditor` hook without the Dashboard. The crop is a value you can save and restore, the crop area takes keys, and the photo moves under the frame with a pinch and a two-finger twist. You write the layout, the styles and every label. zriz had its first release in November 2026, has one maintainer and under a thousand downloads a week."
       )
     ),
     section(
@@ -55,11 +55,11 @@ const ZRIZ_VS_UPPY_IMAGE_EDITOR_PAGE = defineDoc({
             "None, `@zriz/core` and React as peers",
           ],
           ["React", "Not needed, `@uppy/react` takes 18 and 19", "18.2 and 19"],
-          ["Size", "About 89 kB, about 17 kB as a plugin", "26 to 34 kB"],
+          ["Size", "About 89 kB, about 17 kB as a plugin", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Uppy Image Editor it is the basic example from its docs, built with esbuild. It holds `@uppy/core`, the Dashboard with its file picker, Cropper.js and the Save code, and in an app that already loads Uppy and the Dashboard the plugin adds about 17 kB. The `useImageEditor` hook in `@uppy/react` runs the editor without the Dashboard, at about 35 kB with its stylesheet. The uppy.io pages we read do not describe it. The documented Uppy setup installs 22 packages, or 28 with `@uppy/react`. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Uppy Image Editor it is the basic example from its docs, built with esbuild. It holds `@uppy/core`, the Dashboard with its file picker, Cropper.js and the Save code, and in an app that already loads Uppy and the Dashboard the plugin adds about 17 kB. The `useImageEditor` hook in `@uppy/react` runs the editor without the Dashboard, at about 35 kB with its stylesheet. The uppy.io pages we read do not describe it. The documented Uppy setup installs 22 packages, or 28 with `@uppy/react`. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(

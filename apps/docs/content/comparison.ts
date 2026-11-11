@@ -26,7 +26,7 @@ const COMPARISON_PAGE = defineDoc({
         "zriz is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week. Every library below is older and has far more."
       ),
       p(
-        "It is also larger than each of them on its own. Uppy Image Editor with its uploader and Dashboard is about 89 kB, and about 35 kB through its `useImageEditor` hook. zriz adds 26 to 34 kB of Brotli, by the parts you import, see [bundle size](bundle-size). The basic examples of react-easy-crop, react-avatar-editor and react-image-crop add about 7, 5 and 5 kB."
+        "It is also larger than most of them. zriz adds 22 to 30 kB of Brotli, by the parts you import, see [bundle size](bundle-size). The basic examples of react-easy-crop, react-avatar-editor and react-image-crop add about 7, 5 and 5 kB. react-advanced-cropper is about 24 kB. Uppy Image Editor with its uploader and Dashboard is about 89 kB, and about 35 kB through its `useImageEditor` hook."
       ),
       p(
         "What zriz has for that size is on each page: a straighten dial, a crop that stays inside the photo at an angle, and a saved value that restores exactly. Some of the others also have handles with a moving photo or export to a file, and each page says which."
@@ -94,7 +94,7 @@ const COMPARISON_PAGE = defineDoc({
       "Pick by need",
       entries([
         {
-          text: "react-image-crop or react-avatar-editor. Each adds about 5 kB, against 26 to 34 kB for zriz.",
+          text: "react-image-crop or react-avatar-editor. Each adds about 5 kB, against 22 to 30 kB for zriz.",
           title: "The smallest bundle",
         },
         {

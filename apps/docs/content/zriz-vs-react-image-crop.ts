@@ -15,7 +15,7 @@ const ZRIZ_VS_REACT_IMAGE_CROP_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares react-image-crop 11.1.2 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares react-image-crop 11.1.2 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_REACT_IMAGE_CROP_PAGE = defineDoc({
         'react-image-crop is, in the words of [its README](https://github.com/dominictobias/react-image-crop#readme), "An image cropping tool for React with no dependencies." It is one styled component. You put your own `<img>` or any other element inside it, and it draws a crop box with eight handles on top. The element under the box stays still.'
       ),
       p(
-        "Pick react-image-crop when size decides, because it is about 5 kB against 26 to 34 kB for zriz. Pick it when the app runs React 17 or React 16 from 16.13.1, or needs a UMD build. Pick it when the crop goes over a video or another element that is not a photo, when the user should start with no crop and draw one, when the crop needs a largest size or an oval shape, or when a keyboard user must move one edge at a time. It ships nine English labels for the box and its handles. It has been on npm since 2015 and has over 4 million downloads a week."
+        "Pick react-image-crop when size decides, because it is about 5 kB against 22 to 30 kB for zriz. Pick it when the app runs React 17 or React 16 from 16.13.1, or needs a UMD build. Pick it when the crop goes over a video or another element that is not a photo, when the user should start with no crop and draw one, when the crop needs a largest size or an oval shape, or when a keyboard user must move one edge at a time. It ships nine English labels for the box and its handles. It has been on npm since 2015 and has over 4 million downloads a week."
       ),
       p(
         "Pick zriz when the photo should move under the crop, with a pinch or Ctrl + wheel to zoom. Pick it when you need a straighten dial, quarter turns or a flip, when you want the file back as a JPEG, PNG or WebP blob with a size cap, or when you cut the original on a server and want `toSharp`, a helper that turns the crop into a recipe for sharp. It is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week."
@@ -51,11 +51,11 @@ const ZRIZ_VS_REACT_IMAGE_CROP_PAGE = defineDoc({
           ["Licence", "ISC", "MIT"],
           ["Dependencies", "None", "None, `@zriz/core` and React are peers"],
           ["React", "16.13.1 and newer", "18.2 and 19"],
-          ["Size", "About 5 kB", "26 to 34 kB"],
+          ["Size", "About 5 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-image-crop it is the basic example from its docs, built with esbuild. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-image-crop it is the basic example from its docs, built with esbuild. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(
@@ -220,7 +220,7 @@ const ZRIZ_VS_REACT_IMAGE_CROP_PAGE = defineDoc({
         },
       ]),
       p(
-        'A saved react-image-crop crop is `{ x, y, width, height, unit }`, measured from the top left of the rendered image. With `unit` `%` the numbers run from 0 to 100, and that crop converts to a zriz value. `center.x` is `(x + width / 2) / 100`, `center.y` is `(y + height / 2) / 100`, `size.width` is `width / 100` and `size.height` is `height / 100`. Set `rotation` and `quarterTurns` to 0 and `mirrored` to `false`. A controlled `value` needs every field, so there also set `perspective` to `{ vertical: 0, horizontal: 0 }` and `aspect` to `"free"` or your ratio. We checked this by running `@zriz/core` 0.2.0 on a 2400 by 1600 photo, where percent 10, 20, 30, 40 gave the same rectangle back in source pixels. It holds for a crop made over one `<img>` with no CSS scale or rotation.'
+        'A saved react-image-crop crop is `{ x, y, width, height, unit }`, measured from the top left of the rendered image. With `unit` `%` the numbers run from 0 to 100, and that crop converts to a zriz value. `center.x` is `(x + width / 2) / 100`, `center.y` is `(y + height / 2) / 100`, `size.width` is `width / 100` and `size.height` is `height / 100`. Set `rotation` and `quarterTurns` to 0 and `mirrored` to `false`. A controlled `value` needs every field, so there also set `perspective` to `{ vertical: 0, horizontal: 0 }` and `aspect` to `"free"` or your ratio. We checked this by running `@zriz/core` 0.2.1 on a 2400 by 1600 photo, where percent 10, 20, 30, 40 gave the same rectangle back in source pixels. It holds for a crop made over one `<img>` with no CSS scale or rotation.'
       ),
       p(
         "A crop saved with `unit` `px` is in pixels of the image as it was rendered, so it needs that rendered width and height first. `convertToPercentCrop` from react-image-crop does that step. Skip a crop with zero width or height, which meant no crop. zriz grows a crop that is smaller than its `maxZoom` of 15 allows. In the same run, a crop of 2% by 2% came back as 160 by 106 px where 48 by 32 px was saved, so raise `maxZoom` on `Root` before you load crops that small. There is no formula here for a crop made over a scaled or rotated image."
