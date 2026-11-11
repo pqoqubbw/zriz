@@ -102,6 +102,18 @@ describe("svg that would freeze the page", () => {
         `<image width="400" height="300" href="data:image/svg+xml;base64,${btoa(useBombText(10))}"/>`
       ),
     ],
+    [
+      "a use bomb behind a second element with the same id",
+      new Blob(
+        [
+          useBombText(10).replace(
+            "</svg>",
+            `${repeat(11, (level) => `<rect id="l${level}"/>`)}</svg>`
+          ),
+        ],
+        { type: "image/svg+xml" }
+      ),
+    ],
   ])("refuses %s before it draws", async (_name, blob) => {
     const { code, message, ms } = await outcome(blob);
 

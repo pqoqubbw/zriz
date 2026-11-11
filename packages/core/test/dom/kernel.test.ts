@@ -340,6 +340,31 @@ describe("image kernel", () => {
     expect(decoded).toHaveLength(0);
   });
 
+  it("stops a tiff whose pages each claim a full table of entries", async () => {
+    const count = 20_000;
+    const chain = Buffer.alloc(8 + count * 8 + 2 + 0xff_ff * 12 + 4);
+
+    chain.write("II", 0);
+    chain.writeUInt16LE(42, 2);
+    chain.writeUInt32LE(8, 4);
+
+    for (let page = 0; page < count; page += 1) {
+      const at = 8 + page * 8;
+
+      chain.writeUInt16LE(0xff_ff, at);
+      chain.writeUInt32LE(at + 8, at + 2 + 0xff_ff * 12);
+    }
+
+    const start = performance.now();
+
+    await expect(
+      imageKernel().decode(blobOf(chain), 4096, undefined, PIXELS)
+    ).rejects.toThrow(/^zriz:too-large:/u);
+
+    expect(performance.now() - start).toBeLessThan(500);
+    expect(decoded).toHaveLength(0);
+  });
+
   it("refuses an image over the limit once decoded when its header gives no count", async () => {
     const file = Buffer.from([0xff, 0x0a, 0, 0, 0, 0, 0, 0]);
 

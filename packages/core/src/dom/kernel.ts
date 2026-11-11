@@ -287,10 +287,17 @@ const imageKernel = (): Kernel => {
     let most = 0;
     let before = 0;
     let at = read(b, 4, 4);
+    let entries = 1_000_000;
 
     while (at > before && at + 2 <= b.length) {
       const count = read(b, at, 2);
       const sides = [0, 0];
+
+      entries -= count + 1;
+
+      if (entries < 0) {
+        return Number.POSITIVE_INFINITY;
+      }
 
       for (let i = 0; i < count; i += 1) {
         const entry = at + 2 + i * 12;
