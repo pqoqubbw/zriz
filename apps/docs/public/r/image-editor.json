@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "image-editor",
+  "title": "Image editor",
+  "author": "pqoqubbw <https://zriz.dev>",
+  "description": "A full image editor in a card: straighten dial, rotate, flip, aspect ratios and reset.",
+  "dependencies": [
+    "@zriz/react@^0.2.0",
+    "@zriz/core@^0.2.0"
+  ],
+  "registryDependencies": [
+    "button",
+    "https://zriz.dev/r/cropper.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/blocks/image-editor.tsx",
+      "content": "\"use client\";\n\nimport type { ExportOptions } from \"@zriz/core/dom\";\nimport type { Cropper as CropperApi, CropValue } from \"@zriz/react\";\nimport { useRef, useState } from \"react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/registry/new-york/ui/button\";\nimport {\n  Cropper,\n  CropperAngle,\n  CropperAspect,\n  CropperAspectItem,\n  CropperDial,\n  CropperFlip,\n  CropperReset,\n  CropperRotate,\n  CropperViewport,\n  cropToFile,\n} from \"@/registry/new-york/ui/cropper\";\n\ntype ImageEditorProps = {\n  className?: string;\n  defaultValue?: Partial<CropValue>;\n  exportOptions?: ExportOptions;\n  image: Blob | string | null;\n  onCancel?: () => void;\n  onSave: (file: File, value: CropValue) => void;\n};\n\ntype Status = \"failed\" | \"loading\" | \"ready\";\n\nconst ImageEditor = ({\n  className,\n  defaultValue,\n  exportOptions,\n  image,\n  onCancel,\n  onSave,\n}: ImageEditorProps) => {\n  const [status, setStatus] = useState<Status>(\"loading\");\n  const [saving, setSaving] = useState(false);\n  const [unsaved, setUnsaved] = useState(false);\n  const actions = useRef<CropperApi>(null);\n\n  const save = async (): Promise<void> => {\n    const cropper = actions.current;\n\n    if (!cropper) {\n      return;\n    }\n\n    setSaving(true);\n    const file = await cropToFile(cropper, exportOptions).catch(() => null);\n\n    setSaving(false);\n    setUnsaved(file === null);\n\n    if (file !== null) {\n      onSave(file, cropper.getValue());\n    }\n  };\n\n  return (\n    <div\n      className={cn(\n        \"flex w-full max-w-md flex-col gap-4 rounded-xl bg-card p-4 text-sm text-card-foreground ring-1 ring-foreground/10\",\n        className\n      )}\n      data-slot=\"image-editor\"\n    >\n      <Cropper\n        actionsRef={actions}\n        onError={() => {\n          setStatus(\"failed\");\n        }}\n        onLoad={() => {\n          setStatus(\"ready\");\n        }}\n        src={image}\n        {...(defaultValue ? { defaultValue } : null)}\n      >\n        <CropperViewport className=\"aspect-[4/3]\" />\n        <div className=\"flex items-end gap-1\">\n          <CropperRotate className=\"mb-2\" />\n          <div className=\"flex min-w-0 flex-1 flex-col items-center gap-1\">\n            <CropperAngle />\n            <CropperDial className=\"w-full flex-none\" />\n          </div>\n          <CropperFlip className=\"mb-2\" />\n        </div>\n        <div className=\"flex flex-wrap items-center justify-between gap-2\">\n          <CropperAspect>\n            <CropperAspectItem value=\"free\">Free</CropperAspectItem>\n            <CropperAspectItem value=\"original\">Original</CropperAspectItem>\n            <CropperAspectItem value={1}>1:1</CropperAspectItem>\n            <CropperAspectItem value={4 / 3}>4:3</CropperAspectItem>\n            <CropperAspectItem value={16 / 9}>16:9</CropperAspectItem>\n          </CropperAspect>\n          <CropperReset />\n        </div>\n      </Cropper>\n      {status === \"failed\" ? (\n        <p className=\"text-sm text-destructive\" role=\"alert\">\n          This image did not open. Try a JPEG, PNG or WebP.\n        </p>\n      ) : null}\n      {unsaved ? (\n        <p className=\"text-sm text-destructive\" role=\"alert\">\n          This crop did not save. Try again.\n        </p>\n      ) : null}\n      <div className=\"-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4\">\n        {onCancel ? (\n          <Button onClick={onCancel} type=\"button\" variant=\"outline\">\n            Cancel\n          </Button>\n        ) : null}\n        <Button\n          disabled={status !== \"ready\" || saving}\n          onClick={() => {\n            void save();\n          }}\n          type=\"button\"\n        >\n          Save\n        </Button>\n      </div>\n    </div>\n  );\n};\n\nexport type { ImageEditorProps };\nexport { ImageEditor };\n",
+      "type": "registry:component"
+    }
+  ],
+  "docs": "Needs Tailwind CSS v4, React 19 and shadcn/ui components on Radix or Base UI. Docs: https://zriz.dev/docs/shadcn",
+  "categories": [
+    "image",
+    "cropper"
+  ],
+  "type": "registry:block"
+}

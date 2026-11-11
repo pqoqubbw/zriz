@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "image-crop-dialog",
+  "title": "Image crop dialog",
+  "author": "pqoqubbw <https://zriz.dev>",
+  "description": "A dialog that crops any image with an aspect ratio switch and rotate, and returns a file.",
+  "dependencies": [
+    "@zriz/react@^0.2.0",
+    "@zriz/core@^0.2.0"
+  ],
+  "registryDependencies": [
+    "button",
+    "dialog",
+    "https://zriz.dev/r/cropper.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/blocks/image-crop-dialog.tsx",
+      "content": "\"use client\";\n\nimport type { ExportOptions } from \"@zriz/core/dom\";\nimport type { Aspect, Cropper as CropperApi } from \"@zriz/react\";\nimport { useEffect, useRef, useState } from \"react\";\n\nimport { Button } from \"@/registry/new-york/ui/button\";\nimport {\n  Cropper,\n  CropperAspect,\n  CropperAspectItem,\n  CropperRotate,\n  CropperViewport,\n  cropToFile,\n} from \"@/registry/new-york/ui/cropper\";\nimport {\n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogTitle,\n} from \"@/registry/new-york/ui/dialog\";\n\ntype CropAspect = {\n  label: string;\n  value: Aspect;\n};\n\ntype ImageCropDialogProps = {\n  aspects?: readonly CropAspect[];\n  description?: string;\n  exportOptions?: ExportOptions;\n  image: Blob | string | null;\n  onCrop: (file: File) => void;\n  onOpenChange: (open: boolean) => void;\n  open: boolean;\n  title?: string;\n};\n\ntype ImageCropProps = Pick<\n  ImageCropDialogProps,\n  \"exportOptions\" | \"image\" | \"onCrop\" | \"onOpenChange\"\n> & {\n  aspects: readonly CropAspect[];\n};\n\ntype Status = \"failed\" | \"loading\" | \"ready\";\n\nconst ASPECTS: readonly CropAspect[] = [\n  { label: \"Free\", value: \"free\" },\n  { label: \"1:1\", value: 1 },\n  { label: \"4:3\", value: 4 / 3 },\n  { label: \"16:9\", value: 16 / 9 },\n];\n\nconst ImageCrop = ({\n  aspects,\n  exportOptions,\n  image,\n  onCrop,\n  onOpenChange,\n}: ImageCropProps) => {\n  const [status, setStatus] = useState<Status>(\"loading\");\n  const [saving, setSaving] = useState(false);\n  const [unsaved, setUnsaved] = useState(false);\n  const actions = useRef<CropperApi>(null);\n  const open = useRef(true);\n\n  useEffect(() => {\n    open.current = true;\n\n    return () => {\n      open.current = false;\n    };\n  }, []);\n\n  const save = async (): Promise<void> => {\n    if (!actions.current) {\n      return;\n    }\n\n    setSaving(true);\n    const file = await cropToFile(actions.current, exportOptions).catch(\n      () => null\n    );\n\n    if (!open.current) {\n      return;\n    }\n\n    setSaving(false);\n    setUnsaved(file === null);\n\n    if (file !== null) {\n      onCrop(file);\n      onOpenChange(false);\n    }\n  };\n\n  return (\n    <>\n      <Cropper\n        actionsRef={actions}\n        defaultValue={{ aspect: aspects[0]?.value ?? \"free\" }}\n        onError={() => {\n          setStatus(\"failed\");\n        }}\n        onLoad={() => {\n          setStatus(\"ready\");\n        }}\n        src={image}\n      >\n        <CropperViewport className=\"aspect-[3/2]\" />\n        <div className=\"flex items-center justify-between gap-2\">\n          {aspects.length > 1 ? (\n            <CropperAspect>\n              {aspects.map((aspect) => (\n                <CropperAspectItem key={aspect.label} value={aspect.value}>\n                  {aspect.label}\n                </CropperAspectItem>\n              ))}\n            </CropperAspect>\n          ) : (\n            <span />\n          )}\n          <CropperRotate />\n        </div>\n      </Cropper>\n      {status === \"failed\" ? (\n        <p className=\"text-sm text-destructive\" role=\"alert\">\n          This image did not open. Try a JPEG, PNG or WebP.\n        </p>\n      ) : null}\n      {unsaved ? (\n        <p className=\"text-sm text-destructive\" role=\"alert\">\n          This crop did not save. Try again.\n        </p>\n      ) : null}\n      <DialogFooter>\n        <Button\n          onClick={() => {\n            onOpenChange(false);\n          }}\n          type=\"button\"\n          variant=\"outline\"\n        >\n          Cancel\n        </Button>\n        <Button\n          disabled={status !== \"ready\" || saving}\n          onClick={() => {\n            void save();\n          }}\n          type=\"button\"\n        >\n          Crop\n        </Button>\n      </DialogFooter>\n    </>\n  );\n};\n\nconst ImageCropDialog = ({\n  aspects = ASPECTS,\n  description = \"Drag the corners or move the image under the frame.\",\n  exportOptions,\n  image,\n  onCrop,\n  onOpenChange,\n  open,\n  title = \"Crop image\",\n}: ImageCropDialogProps) => (\n  <Dialog\n    onOpenChange={(next: boolean) => {\n      onOpenChange(next);\n    }}\n    open={open}\n  >\n    <DialogContent className=\"sm:max-w-lg\">\n      <DialogHeader>\n        <DialogTitle>{title}</DialogTitle>\n        <DialogDescription>{description}</DialogDescription>\n      </DialogHeader>\n      <ImageCrop\n        aspects={aspects}\n        image={image}\n        onCrop={onCrop}\n        onOpenChange={onOpenChange}\n        {...(exportOptions ? { exportOptions } : null)}\n      />\n    </DialogContent>\n  </Dialog>\n);\n\nexport type { CropAspect, ImageCropDialogProps };\nexport { ImageCropDialog };\n",
+      "type": "registry:component"
+    }
+  ],
+  "docs": "Needs Tailwind CSS v4, React 19 and shadcn/ui components on Radix or Base UI. Docs: https://zriz.dev/docs/shadcn",
+  "categories": [
+    "image",
+    "cropper"
+  ],
+  "type": "registry:block"
+}

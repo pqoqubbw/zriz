@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import type { ReactNode } from "react";
 
 import { CopyButton } from "@/components/doc/copy-button";
@@ -8,9 +9,24 @@ type CodePanelProps = {
   children: ReactNode;
   className: string;
   label: string;
+  single?: boolean;
 };
 
-const CodePanel = ({ children, className, label }: CodePanelProps) => (
+const copyVariants = cva("absolute right-2 max-sm:hidden", {
+  variants: {
+    single: {
+      false: "top-2",
+      true: "top-1/2 -translate-y-1/2",
+    },
+  },
+});
+
+const CodePanel = ({
+  children,
+  className,
+  label,
+  single = false,
+}: CodePanelProps) => (
   <div className={cn("relative", className)} data-copy="">
     <Panel
       aria-label={label}
@@ -20,7 +36,7 @@ const CodePanel = ({ children, className, label }: CodePanelProps) => (
     >
       <pre className="font-mono text-code text-code-ink">{children}</pre>
     </Panel>
-    <div className="absolute top-2 right-2 max-sm:hidden">
+    <div className={copyVariants({ single })}>
       <CopyButton label="Copy code" />
     </div>
   </div>
