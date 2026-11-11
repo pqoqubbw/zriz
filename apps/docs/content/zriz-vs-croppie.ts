@@ -15,7 +15,7 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `croppie` 2.6.5 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `croppie` 2.6.5 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -55,11 +55,11 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
             "Not needed, its README lists no React wrapper",
             "18.2 and 19",
           ],
-          ["Size", "About 8 kB", "26 to 34 kB"],
+          ["Size", "About 8 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Croppie it is the basic example from its docs, built with esbuild. Croppie's one script holds its export code, so its number includes export. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Croppie it is the basic example from its docs, built with esbuild. Croppie's one script holds its export code, so its number includes export. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(

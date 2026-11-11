@@ -7,6 +7,16 @@ type Release = {
 
 const RELEASES: readonly Release[] = [
   {
+    bump: "patch",
+    date: "2026-11-11",
+    notes: [
+      "`Root` loads the code that fetches, checks and decodes a file when it gets a `src`, as one chunk of about 4.6 kB. With Brotli the avatar set is 4.13 kB smaller on first load and the full editor 4.32 kB smaller. Code that calls `loadImage` itself is not affected.",
+      "A TIFF whose header tables never end now fails with a `too-large` error.",
+      "An SVG that repeats an id is checked by the first element with that id, the one the browser draws.",
+    ],
+    version: "0.2.1",
+  },
+  {
     bump: "minor",
     date: "2026-11-10",
     notes: [

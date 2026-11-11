@@ -15,7 +15,7 @@ const ZRIZ_VS_CROPPERJS_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `cropperjs` 2.3.1 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `cropperjs` 2.3.1 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_CROPPERJS_PAGE = defineDoc({
         '[Cropper.js](https://fengyuanchen.github.io/cropperjs/) calls itself a "JavaScript image cropper", and its guide says "Cropper.js 2.0 is a series of web components for image cropping". The npm name `cropperjs` holds two products. Version 2 is the set of custom elements this page covers. Version 1 is an imperative class, and npm\'s per-version counts put over 80% of the weekly downloads on it. The [react-cropper](zriz-vs-react-cropper) page covers version 1.'
       ),
       p(
-        "Pick Cropper.js when the page has no React or the cropper has to load from one script tag. It has been on npm since 2015 and has over 2 million downloads a week. Its basic example is about 13 kB, against 26 to 34 kB for zriz. It paints its own crop box and turns the photo to any angle. It keeps several selections on one photo, lets the user draw a box with a drag and rounds the output to any radius."
+        "Pick Cropper.js when the page has no React or the cropper has to load from one script tag. It has been on npm since 2015 and has over 2 million downloads a week. Its basic example is about 13 kB, against 22 to 30 kB for zriz. It paints its own crop box and turns the photo to any angle. It keeps several selections on one photo, lets the user draw a box with a drag and rounds the output to any radius."
       ),
       p(
         'Pick zriz when the app is React with server rendering and a drag should move the photo under the crop by default. In Cropper.js the photo moves under a fixed box once the canvas handle has `action="move"` and the selection drops `movable`. The saved crop stays on the photo at every angle zriz allows. The crop area, dial and zoom slider take focus and keys, and the export is a JPEG, PNG or WebP blob. zriz is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week.'
@@ -55,11 +55,11 @@ const ZRIZ_VS_CROPPERJS_PAGE = defineDoc({
             "None, `@zriz/core` and React are peers",
           ],
           ["React", "Not needed, no React code", "18.2 and 19"],
-          ["Size", "About 13 kB", "26 to 34 kB"],
+          ["Size", "About 13 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        'Size is minified JavaScript and CSS, compressed with Brotli, without React. For Cropper.js it is the basic example from its docs, built with esbuild. That example is `new Cropper("#image")` with the built-in template and has no CSS file. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers.'
+        'Size is minified JavaScript and CSS, compressed with Brotli, without React. For Cropper.js it is the basic example from its docs, built with esbuild. That example is `new Cropper("#image")` with the built-in template and has no CSS file. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers.'
       ),
       p(
         "The first stable 2.0.0 came out in March 2025. The download count covers both versions of Cropper.js."

@@ -201,7 +201,7 @@ const checkSizes = (file: string, source: string): string[] => {
   const avatar = limitOf(config, "avatar");
   const editor = limitOf(config, "editor (every part)");
   const later = limitOf(config, "avatar total (with lazy chunks)") - avatar;
-  const range = `${Math.floor(avatar / KILO)} to ${Math.ceil(editor / KILO)} kB`;
+  const range = `${Math.round(avatar / KILO)} to ${Math.ceil(editor / KILO)} kB`;
   const more = `up to ${Math.round(later / KILO)} kB more`;
   return [
     ...[...new Set(source.match(/\d+ to \d+ kB/gu))].flatMap((found) =>

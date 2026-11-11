@@ -15,7 +15,7 @@ const ZRIZ_VS_REACT_EASY_CROP_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `react-easy-crop` 6.2.5 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `react-easy-crop` 6.2.5 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_REACT_EASY_CROP_PAGE = defineDoc({
         'react-easy-crop describes itself in its [README](https://github.com/ValentinH/react-easy-crop) as "A React component to crop images/videos with easy interactions". It is one styled component. The photo or video moves under a fixed frame, and the component reports the crop as numbers. Your app holds the state and writes the code that makes the file. Wheel and pinch zoom are built in, and a zoom slider is the app\'s to draw.'
       ),
       p(
-        "Pick react-easy-crop when you crop video, when the project runs React 16.4 to 18.1 or needs a CommonJS build, or when a fixed frame with pan and zoom is all the screen needs. Setup is one component. Its basic example adds about 7 kB to the bundle, against 26 to 34 kB for zriz. It has been on npm since 2018 and has over 5 million downloads a week. It also allows a crop that shows area outside the photo, takes any angle in one `rotation` prop and shows a remote image from a server without CORS headers. zriz does none of these."
+        "Pick react-easy-crop when you crop video, when the project runs React 16.4 to 18.1 or needs a CommonJS build, or when a fixed frame with pan and zoom is all the screen needs. Setup is one component. Its basic example adds about 7 kB to the bundle, against 22 to 30 kB for zriz. It has been on npm since 2018 and has over 5 million downloads a week. It also allows a crop that shows area outside the photo, takes any angle in one `rotation` prop and shows a remote image from a server without CORS headers. zriz does none of these."
       ),
       p(
         "Pick zriz when the user resizes the crop with handles or picks a free ratio, when a tilted crop must hold no empty corner in the saved value and the file, or when you want the library to make the file, a round PNG included. Its zoom slider, straighten dial, rotate and flip buttons come as parts with roles and keys. zriz is new and little used. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week."
@@ -51,11 +51,11 @@ const ZRIZ_VS_REACT_EASY_CROP_PAGE = defineDoc({
           ["Licence", "MIT", "MIT"],
           ["Dependencies", "One, `normalize-wheel`", "None"],
           ["React", "16.4 and newer", "18.2 and 19"],
-          ["Size", "About 7 kB", "26 to 34 kB"],
+          ["Size", "About 7 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-easy-crop it is the basic example from its docs, built with esbuild. That number includes `normalize-wheel` and the component's CSS, which ships as a string inside the JavaScript. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For react-easy-crop it is the basic example from its docs, built with esbuild. That number includes `normalize-wheel` and the component's CSS, which ships as a string inside the JavaScript. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(
@@ -271,7 +271,7 @@ const ZRIZ_VS_REACT_EASY_CROP_PAGE = defineDoc({
         "For another angle, use `croppedAreaPixels` and the photo's natural size. Take the bounding box of the photo rotated by the saved angle. Measure the offset of the crop's centre from the centre of that box, in pixels. Set `quarterTurns` to the angle rounded to the nearest quarter turn, wrapped to a count from 0 to 3, and `rotation` to what is left. Divide the offset and the crop's width and height by the sides of the photo after its quarter turns, and add 0.5 to each offset to get `center`. Set `mirrored` to `false`, both `perspective` fields to 0 and `aspect` to your ratio. [Value](value) lists every field."
       ),
       p(
-        "We ran the pixel conversion against `@zriz/core` 0.2.0 on a 2400 by 1600 px photo with one aspect and no flip. The percentage form for quarter turns follows from it, and we did not run it on its own. For seven crops that lie inside the photo, at 0°, 90°, 180°, 270°, 30°, -12° and 100°, zriz picked a source pixel within 0.5 px of react-easy-crop's for every crop corner, and the output size matched within 1 px. A crop that reaches outside the photo does not survive. A 10° crop of 2400 by 1800 px came back as 1753 by 1314 px. A flip made with `transform` is not in the react-easy-crop data, so carry it over by hand."
+        "We ran the pixel conversion against `@zriz/core` 0.2.1 on a 2400 by 1600 px photo with one aspect and no flip. The percentage form for quarter turns follows from it, and we did not run it on its own. For seven crops that lie inside the photo, at 0°, 90°, 180°, 270°, 30°, -12° and 100°, zriz picked a source pixel within 0.5 px of react-easy-crop's for every crop corner, and the output size matched within 1 px. A crop that reaches outside the photo does not survive. A 10° crop of 2400 by 1800 px came back as 1753 by 1314 px. A flip made with `transform` is not in the react-easy-crop data, so carry it over by hand."
       ),
       p(
         "Install `@zriz/react` and `@zriz/core`. Replace `<Cropper />` with the parts below. Drop the `crop`, `zoom` and `rotation` state unless the app reads it elsewhere, because zriz works uncontrolled. Move the save code from `onCropComplete` and `getCroppedImg` to one `exportCrop` call. Convert the stored crops. Then remove `react-easy-crop` and the copied canvas function."

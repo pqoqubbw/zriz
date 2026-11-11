@@ -15,7 +15,7 @@ const ZRIZ_VS_ARK_UI_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `@ark-ui/react` 5.40.0 with `@zag-js/image-cropper` 1.47.0 with `@zriz/react` 0.2.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `@ark-ui/react` 5.40.0 with `@zag-js/image-cropper` 1.47.0 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,7 +30,7 @@ const ZRIZ_VS_ARK_UI_PAGE = defineDoc({
         'Ark UI describes its Image Cropper as "Crop and transform images with zoom, rotation, and aspect ratio controls." It is a set of unstyled parts in `@ark-ui/react` on top of the `@zag-js/image-cropper` state machine, and the [Ark UI docs](https://ark-ui.com/docs/components/image-cropper) mark it "preview". The machine first shipped in October 2025.'
       ),
       p(
-        "Pick Ark UI when the app already uses Ark UI or Chakra UI 3, because `@chakra-ui/react` 3.38.0 depends on `@ark-ui/react` and the cropper is already installed. Pick it for Solid, Vue or Svelte, where Ark UI ships the same component, or for React 18.0 or 18.1 or a CommonJS build. Pick it when the user drags a frame across a still photo, when a rotated crop may keep clear corners, or when you want English screen reader labels without writing them. Pick it for one angle past 45°, a maximum crop size, key steps in pixels or a data URL from the export call. Pick it when size comes first, at about 16 kB against 26 to 34 kB for zriz."
+        "Pick Ark UI when the app already uses Ark UI or Chakra UI 3, because `@chakra-ui/react` 3.38.0 depends on `@ark-ui/react` and the cropper is already installed. Pick it for Solid, Vue or Svelte, where Ark UI ships the same component, or for React 18.0 or 18.1 or a CommonJS build. Pick it when the user drags a frame across a still photo, when a rotated crop may keep clear corners, or when you want English screen reader labels without writing them. Pick it for one angle past 45°, a maximum crop size, key steps in pixels or a data URL from the export call. Pick it when size comes first, at about 16 kB against 22 to 30 kB for zriz."
       ),
       p(
         "Pick zriz when the saved crop and the file must stay inside the photo, because zriz shrinks the crop to fit when the photo tilts. Pick it when you want a straighten dial, a two-finger twist, a zoom slider and rotate, flip and reset buttons as parts, a round file, or a saved crop that restores in a viewport of any size. zriz is new and little used. Its first release was in November 2026. It has one maintainer, versions at 0.x and under a thousand downloads a week, against over 1 million for `@ark-ui/react`."
@@ -63,11 +63,11 @@ const ZRIZ_VS_ARK_UI_PAGE = defineDoc({
             "None, `@zriz/core` and React are peers",
           ],
           ["React", "18.0 and newer", "18.2 and 19"],
-          ["Size", "About 16 kB", "26 to 34 kB"],
+          ["Size", "About 16 kB", "22 to 30 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Ark UI it is the basic example from its docs, built with esbuild. Ark UI ships no CSS, so its number counts the stylesheet that the example imports, about 1 kB of the total. For zriz it depends on the parts you import: about 26 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 34 kB with every part. Up to 6 kB more loads later, for export, sharpening and SVG. We measured the zriz sets with Rolldown, and esbuild makes them up to about 16% larger. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Ark UI it is the basic example from its docs, built with esbuild. Ark UI ships no CSS, so its number counts the stylesheet that the example imports, about 1 kB of the total. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       ),
       p(
         "The download count is for the whole `@ark-ui/react` package, which holds every Ark UI component. It does not say how many projects render the cropper. The 89 packages are the tree of all of `@ark-ui/react`, most of them for other components. The machine with `@zag-js/react` alone installs 10, and the Size row shows what reaches the browser."
