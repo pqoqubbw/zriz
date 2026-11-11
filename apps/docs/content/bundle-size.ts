@@ -1,4 +1,5 @@
 import { AVATAR_TOTAL, LAZY_CHUNKS } from "@/content/bundle-size-chunks";
+import { RELEASES } from "@/content/releases";
 import { column, defineDoc, p, section, table } from "@/lib/doc/define";
 
 const KILO = 1000;
@@ -32,7 +33,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
         ],
       }),
       p(
-        "Measured with size-limit 14.3.0 on the 0.0.0 packages. It bundles each set with Rolldown 1.2.15, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the `production` export condition, so development warnings do not count."
+        `Measured with size-limit 14.3.0 on the ${RELEASES[0]?.version} packages. It bundles each set with Rolldown 1.2.15, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the \`production\` export condition, so development warnings do not count.`
       ),
       p("With gzip, the stylesheet is 1111 B."),
       p(

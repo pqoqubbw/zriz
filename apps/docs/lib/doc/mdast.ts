@@ -86,7 +86,7 @@ const printMarkdown = (children: RootContent[]): string =>
     bullet: "-",
     extensions: [gfmToMarkdown({ tablePipeAlign: false })],
     fences: true,
-  });
+  }).replaceAll("\\://", "://");
 
 export {
   blockquote,

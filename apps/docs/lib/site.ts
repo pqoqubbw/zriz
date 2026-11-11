@@ -10,7 +10,9 @@ const SITE_LINKS = {
 } as const;
 
 const SITE_DESCRIPTION =
-  "zriz is an image cropper for React with a straighten dial, like the crop tool in iOS Photos.";
+  "zriz is a headless image cropper for React and Next.js, written in TypeScript. It crops avatars, profile pictures and cover photos with a straighten dial, pinch zoom and touch gestures, like the crop tool in iOS Photos.";
+
+const HOME_TITLE = "zriz, a headless image cropper for React";
 
 const SITE_OPEN_GRAPH = {
   locale: "en_US",
@@ -29,6 +31,7 @@ const markdownUrl = (slug: Slug, anchor = ""): string =>
   `${SITE_ORIGIN}${markdownPath(slug, anchor)}`;
 
 export {
+  HOME_TITLE,
   LLMS_FULL_URL,
   LLMS_URL,
   markdownUrl,

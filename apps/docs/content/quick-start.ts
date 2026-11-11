@@ -22,7 +22,9 @@ const QUICK_START_PAGE = defineDoc({
     section(
       "Install",
       code("quick-start/install.sh"),
-      p("npm, Yarn and Bun work too. [FAQ](faq) lists what zriz needs.")
+      p(
+        "With npm, run `npm install @zriz/react @zriz/core`. Yarn and Bun work too. [FAQ](faq) lists what zriz needs."
+      )
     ),
     section(
       "Render a cropper",

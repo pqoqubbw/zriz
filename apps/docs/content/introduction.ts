@@ -74,7 +74,7 @@ const INTRODUCTION_PAGE = defineDoc({
       )
     ),
   ],
-  lede: "zriz is an image cropper for React with a straighten dial, like the crop tool in iOS Photos.",
+  lede: "zriz is a headless image cropper for React and Next.js, written in TypeScript. It crops avatars, profile pictures and cover photos with a straighten dial, pinch zoom and touch gestures, like the crop tool in iOS Photos.",
 });
 
 export { INTRODUCTION_PAGE };
