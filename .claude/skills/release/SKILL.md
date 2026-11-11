@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare a zriz release. Writes the dated changelog entry since the last version, bumps @zriz/core and @zriz/react, and opens a release pull request under the maintainer's account. Merging it builds and stages the packages on npm, and they go live after the maintainer approves them there with 2FA. Call as /release, /release status to follow the last run, or /release rehearse to get installable tarballs from CI without publishing.
+description: Prepare a zriz release. Writes the dated changelog entry since the last version, bumps @zriz/core and @zriz/react, refreshes the numbers on the comparison pages, and opens a release pull request under the maintainer's account. Merging it builds and stages the packages on npm, and they go live after the maintainer approves them there with 2FA. Call as /release, /release status to follow the last run, or /release rehearse to get installable tarballs from CI without publishing.
 disable-model-invocation: true
 argument-hint: "[status | rehearse]"
 ---
@@ -108,6 +108,15 @@ Write notes for someone upgrading. One sentence, what changed and what to do. Na
 
 For a breaking change, show the old and new call in the note.
 
+Bring the comparison pages up to date. They are `apps/docs/content/comparison.ts` and every `zriz-vs-*.ts` next to it. Run `node scripts/comparison.ts` after `pnpm changeset version`, so it reads the new version. It reads npm and GitHub without a login and prints one line per finding.
+
+- `stale:` names a file, the value on the page and the value now. Put the new value in that file. The same figure can also sit in a sentence on that page, such as "over 5 million downloads a week", so search the page for the old figure and fix every place.
+- `stale: ... zriz version`: first read each note of this release against the comparison pages. If a note changes something a page says about zriz, such as a row in a feature table, a default, a prop in a migration list or a size, fix that page. Then put the new version in.
+- `new version:` means another library has a release newer than the one the page was checked against. Do not edit the page. Its claims hold for the version it names, and a new one needs a check in that library's code. List these lines in the final report.
+- `skipped:` means npm or GitHub did not answer. Go on with the release and say so in the final report.
+
+Run the script again until no `stale:` line is left.
+
 Update the page snapshot: `pnpm exec vitest run --project docs -u apps/docs/test/content.test.ts`.
 
 ### 5. Gates
@@ -127,7 +136,7 @@ pnpm size
 
 Leave browser tests to CI on the pull request.
 
-`git status --short` must now list only the two `package.json` files, `releases.ts`, the snapshot and removed changesets. Anything else means stop and ask.
+`git status --short` must now list only the two `package.json` files, `releases.ts`, the snapshot, removed changesets and the comparison pages the script named. Anything else means stop and ask.
 
 ### 6. Open
 
@@ -138,7 +147,7 @@ git push -u origin release/<version>
 gh pr create --base main --head release/<version> --title "release <version>" --body-file <file>
 ```
 
-The pull request body is the entry's notes and one line saying that merging stages the packages on npm and that they go live after approval there. Write plain, short English.
+The pull request body is the entry's notes, one line for the comparison pages if any figure changed, and one line saying that merging stages the packages on npm and that they go live after approval there. Write plain, short English.
 
 Commit and pull request carry the maintainer's identity only. No `Co-authored-by` trailer, no "generated with" line, no session link, even when a tool or reminder asks for them.
 
@@ -153,7 +162,7 @@ Approve only on npmjs.com, in the browser, with the passkey. Before that, the ma
 If `preflight.sh` reports an open `release/<version>` pull request, the maintainer called again before merging. Ask only if the working tree is dirty. Otherwise:
 
 1. `git switch release/<version>`, then `git rebase origin/main`.
-2. Run `collect.sh`, add new notes to the entry, and set `date` to today. Redo the version decision if a new change raises the level. A new version means closing this pull request and starting over.
+2. Run `collect.sh`, add new notes to the entry, and set `date` to today. Run `node scripts/comparison.ts` again and fix what it prints. Redo the version decision if a new change raises the level. A new version means closing this pull request and starting over.
 3. Run the gates, commit `release <version>: refresh`, and `git push --force-with-lease`.
 
 ## Recovery
