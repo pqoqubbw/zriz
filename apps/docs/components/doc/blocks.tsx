@@ -8,7 +8,9 @@ import { CopyButton } from "@/components/doc/copy-button";
 import { Controls, LiveCode, LiveLog } from "@/components/doc/deferred";
 import { Demo } from "@/components/doc/demo";
 import { Faq, FaqItem } from "@/components/doc/faq";
+import { CompareTable } from "@/components/doc/tables/compare-table";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
+import { EntryList } from "@/components/doc/tables/entry-list";
 import { TableBlock } from "@/components/doc/tables/grid-table";
 import { PairTable } from "@/components/doc/tables/pair-table";
 import { Text } from "@/components/doc/text";
@@ -78,6 +80,9 @@ const renderers: { [K in Kind]: Renderer<K> } = {
     </Heading>
   ),
   code: renderCode,
+  compare: (block, { className }) => (
+    <CompareTable block={block} className={className} />
+  ),
   controls: (block, { className }) => (
     <Controls
       className={className}
@@ -87,6 +92,9 @@ const renderers: { [K in Kind]: Renderer<K> } = {
   ),
   demo: (block, { className }) => (
     <Demo className={className} name={block.name} />
+  ),
+  entries: (block, { className }) => (
+    <EntryList block={block} className={className} />
   ),
   excerpt: renderCode,
   intro: (block, context) => (

@@ -28,6 +28,18 @@ type KeyRow = {
   text: string;
 };
 
+type Level = "no" | "partly" | "yes";
+
+type Verdict = readonly [level: Level, note?: string];
+
+type CompareRow = readonly [feature: string, theirs: Verdict, ours: Verdict];
+
+type EntryRow = {
+  meta?: string;
+  text: string;
+  title: string;
+};
+
 type MessageRow = {
   fix: string;
   message: string;
@@ -61,8 +73,10 @@ type BlockMap = {
   attrs: { rows: readonly NamedRow[] };
   caption: { text: string };
   code: { file: string };
+  compare: { names: readonly [string, string]; rows: readonly CompareRow[] };
   controls: { bind?: Bind; controls: readonly Control[] };
   demo: { name: DemoName; space?: DemoSpace };
+  entries: { rows: readonly EntryRow[] };
   excerpt: {
     file: string;
     ranges: readonly (readonly [string, string | null])[];
@@ -99,6 +113,12 @@ type Doc = {
   lede: string;
 };
 
+const LEVEL_WORDS = {
+  no: "No",
+  partly: "Partly",
+  yes: "Yes",
+} as const satisfies Record<Level, string>;
+
 const TABLE_HEADS = {
   attrs: ["Attribute", "When"],
   keys: ["Key", "What it does"],
@@ -112,15 +132,19 @@ export type {
   BlockOf,
   Chord,
   Column,
+  CompareRow,
   Control,
   DemoSpace,
   Doc,
+  EntryRow,
   KeyRow,
   Kind,
+  Level,
   LiveFeed,
   LogLine,
   MessageRow,
   NamedRow,
   PropRow,
+  Verdict,
 };
-export { TABLE_HEADS };
+export { LEVEL_WORDS, TABLE_HEADS };

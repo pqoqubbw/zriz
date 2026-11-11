@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
-import { NAV_GROUPS, pagePath } from "@/lib/nav";
+import { isSlug, NAV_GROUPS, pagePath, parentOf } from "@/lib/nav";
 import type { Slug } from "@/lib/nav";
 
 type NavGroupTitleProps = {
@@ -18,6 +18,7 @@ type NavGroupTitleProps = {
 type NavItemProps = {
   active: boolean;
   children: string;
+  current: "page" | "true" | undefined;
   roomy: boolean;
   slug: Slug;
 };
@@ -46,20 +47,31 @@ const navItemVariants = cva(
   }
 );
 
+const currentOf = (
+  page: boolean,
+  section: boolean
+): "page" | "true" | undefined => {
+  if (page) {
+    return "page";
+  }
+
+  return section ? "true" : undefined;
+};
+
 const NavGroupTitle = ({ children, id, roomy }: NavGroupTitleProps) => (
   <div className={navGroupTitleVariants({ roomy })} id={id}>
     {children}
   </div>
 );
 
-const NavItem = ({ active, children, roomy, slug }: NavItemProps) => {
+const NavItem = ({ active, children, current, roomy, slug }: NavItemProps) => {
   const router = useRouter();
   const href = pagePath(slug);
 
   return (
     <li>
       <Link
-        aria-current={active ? "page" : undefined}
+        aria-current={current}
         className={navItemVariants({ active, roomy })}
         href={href}
         onFocus={() => {
@@ -79,12 +91,15 @@ const NavItem = ({ active, children, roomy, slug }: NavItemProps) => {
 const NavList = ({ roomy }: NavListProps) => {
   const pathname = usePathname();
   const list = useRef<HTMLDivElement>(null);
+  const current = pathname.split("/").at(-1) ?? "";
+  const parent = isSlug(current) ? parentOf(current) : null;
+  const target = parent === null ? pathname : pagePath(parent);
 
   useEffect(() => {
     list.current
-      ?.querySelector(`a[href="${pathname}"]`)
+      ?.querySelector(`a[href="${target}"]`)
       ?.scrollIntoView({ block: "nearest" });
-  }, [pathname]);
+  }, [target]);
 
   return (
     <div className={cn("flex flex-col", roomy ? "gap-5" : "gap-7")} ref={list}>
@@ -101,7 +116,13 @@ const NavList = ({ roomy }: NavListProps) => {
             <ul aria-labelledby={group.title === "" ? undefined : id}>
               {group.items.map((entry) => (
                 <NavItem
-                  active={pathname === pagePath(entry.slug)}
+                  active={
+                    pathname === pagePath(entry.slug) || parent === entry.slug
+                  }
+                  current={currentOf(
+                    pathname === pagePath(entry.slug),
+                    parent === entry.slug
+                  )}
                   key={entry.slug}
                   roomy={roomy}
                   slug={entry.slug}
