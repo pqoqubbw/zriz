@@ -12,6 +12,12 @@
     "jsx": "react-jsx",
     "types": ["react", "node"],
     "paths": {
+      "@/*": ["../*"],
+      "@/components/*": ["../registry/new-york/blocks/*"],
+      "@/components/ui/*": ["../registry/new-york/ui/*"],
+      "@zriz/react/styles.css": [
+        "../../../packages/core/src/styles.css"
+      ],
       "@zriz/core": ["../../../packages/core/src/index.ts"],
       "@zriz/core/dom": [
         "../../../packages/core/src/dom/index.ts"

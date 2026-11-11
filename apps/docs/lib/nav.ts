@@ -4,6 +4,7 @@ const NAV_GROUPS = [
       { slug: "introduction", title: "Introduction" },
       { slug: "quick-start", title: "Quick start" },
       { slug: "playground", title: "Playground" },
+      { slug: "shadcn", title: "shadcn" },
     ],
     title: "",
   },

@@ -1,4 +1,5 @@
 import type { DemoName } from "@/demos/registry";
+import type { RegistryName } from "@/lib/registry";
 
 type Chord = readonly string[];
 
@@ -74,6 +75,7 @@ type BlockMap = {
   messages: { label: string; rows: readonly MessageRow[] };
   p: { text: string };
   part: { blocks: readonly Block[]; name: string; text: string };
+  preview: { name: RegistryName };
   prompt: { text: string };
   props: { label: string; rows: readonly PropRow[] };
   qa: { blocks: readonly Block[]; question: string };
