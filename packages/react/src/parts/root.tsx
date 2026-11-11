@@ -56,7 +56,7 @@ type RootProps = UseCropperOptions &
     shape?: "rect" | "circle" | undefined;
     /** "always" keeps full motion, "reduce" forces short motion. @default "auto" */
     motion?: "auto" | "always" | "reduce" | undefined;
-    /** Milliseconds the crop waits after a gesture before it recentres. @default 500 */
+    /** Milliseconds the crop waits after a gesture before it recentres. @default 300 */
     recenterDelay?: number | undefined;
     /** Reading direction for keys and sliders. @default the page's direction */
     dir?: "ltr" | "rtl" | undefined;

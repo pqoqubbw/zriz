@@ -42,7 +42,7 @@ const INTRODUCTION_PAGE = defineDoc({
           ],
           [
             "[Accessibility](accessibility)",
-            "Keys on every control, labels and announcements in your own words, and shorter motion when the system asks",
+            "Keys for the crop area, dial, zoom and aspect ratio, labels and announcements in your own words, and shorter motion when the system asks",
           ],
           [
             "[Styling](styling)",
