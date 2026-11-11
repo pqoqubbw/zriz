@@ -117,7 +117,9 @@ const measure = (doc: Document, nestedSvg: (svg: string) => Cost): Cost => {
   const byId = new Map<string, Element>();
 
   for (const element of doc.querySelectorAll("[id]")) {
-    byId.set(element.id, element);
+    if (!byId.has(element.id)) {
+      byId.set(element.id, element);
+    }
   }
 
   const done = new Map<Element, Cost>();

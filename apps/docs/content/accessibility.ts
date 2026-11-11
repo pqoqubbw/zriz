@@ -84,7 +84,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
     section(
       "Move everything with keys",
       p(
-        "Every control works without a mouse. The keys live with each part: [crop area](crop-area), [dial](dial), [zoom](zoom) and [aspect ratio](aspect-ratio). Buttons take Enter and Space like any button."
+        "Every part except the handles works without a mouse. The keys live with each part: [crop area](crop-area), [dial](dial), [zoom](zoom) and [aspect ratio](aspect-ratio). Buttons take Enter and Space like any button. Handles take no keys. Alt with an arrow on the crop area resizes the frame about its centre, so no key moves one edge or one corner."
       ),
       p(
         "Escape also cancels a drag on the photo, a handle, `Dial` or `Zoom`, and the dialog around it stays open. A second Escape reaches the dialog."
@@ -124,7 +124,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
           ["Flip", "Spring, about 420 ms", "150 ms"],
           [
             "Aspect, orientation, reset or undo",
-            "Spring, about 460 ms",
+            "Spring, about 340 ms",
             "150 ms",
           ],
         ],

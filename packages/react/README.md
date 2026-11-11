@@ -53,7 +53,7 @@ The stylesheet is optional. Every rule sits in `:where()` inside a cascade layer
 - Parts for zoom, aspect ratio, flip, quarter turns, reset and a live angle readout.
 - `useCropper` and `actionsRef` to drive the cropper from your own buttons.
 - Export to a `Blob` in a worker, from the full-resolution photo.
-- Keyboard control, screen reader labels and reduced motion for every part.
+- Keys for the crop area, dial, zoom and aspect ratio, screen reader labels in your own words, and shorter motion when the system asks.
 
 [Full editor](https://zriz.dev/docs/full-editor) puts every part in one component, and [playground](https://zriz.dev/docs/playground) changes the main props live.
 
