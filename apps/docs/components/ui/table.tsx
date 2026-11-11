@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 type TableRowProps = HTMLAttributes<HTMLElement> &
   VariantProps<typeof tableRowVariants> & {
-    as?: "div" | "tr";
+    as?: "div" | "li" | "tr";
   };
 
 type TableCellProps = HTMLAttributes<HTMLElement> &
@@ -24,6 +24,7 @@ const tableRowVariants = cva("", {
   variants: {
     as: {
       div: "",
+      li: "",
       tr: "col-span-full flex sm:grid sm:grid-cols-subgrid",
     },
     kind: {

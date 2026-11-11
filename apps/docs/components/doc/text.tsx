@@ -10,6 +10,7 @@ type TextProps = {
 };
 
 const LONG_CODE = 28;
+const WRAPPING_CODE = 44;
 
 const renderPieces = (pieces: Piece[], prefix: string) =>
   pieces.map((piece, i) => {
@@ -21,12 +22,21 @@ const renderPieces = (pieces: Piece[], prefix: string) =>
           className={cn(
             "chip",
             piece.text.length > LONG_CODE &&
-              "max-sm:inline max-sm:box-decoration-clone"
+              "max-sm:inline max-sm:box-decoration-clone",
+            piece.text.length > WRAPPING_CODE && "inline box-decoration-clone"
           )}
           key={key}
         >
           {piece.text}
         </code>
+      );
+    }
+
+    if (piece.kind === "external") {
+      return (
+        <a className="link" href={piece.href} key={key} rel="noreferrer">
+          {piece.text}
+        </a>
       );
     }
 

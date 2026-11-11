@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 type PanelProps = HTMLAttributes<HTMLElement> &
   VariantProps<typeof panelVariants> & {
-    as?: "div" | "figure" | "table";
+    as?: "div" | "figure" | "table" | "ul";
   };
 
 const panelVariants = cva(

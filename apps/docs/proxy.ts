@@ -17,7 +17,7 @@ const kindOf = (request: NextRequest): AgentKind | null => {
     return "llms";
   }
 
-  if (pathname === "/skill.md") {
+  if (pathname === "/skill.md" || pathname === "/migrate.md") {
     return "skill";
   }
 

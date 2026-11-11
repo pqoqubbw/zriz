@@ -37,6 +37,7 @@ const ICON_PATHS = {
     "M7.5 12.5H5.5A2 2 0 0 1 3.5 10.5V5.5A2 2 0 0 1 5.5 3.5H10.5A2 2 0 0 1 12.5 5.5V7.5",
   ],
   menu: ["M3.5 7.5H16.5M3.5 12.5H16.5"],
+  minus: ["M5 10H15"],
 } as const satisfies Record<string, readonly IconPath[]>;
 
 const ICON_NAMES = Object.keys(ICON_PATHS).filter(

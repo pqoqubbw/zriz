@@ -5,9 +5,11 @@ import type {
   BlockMap,
   BlockOf,
   Column,
+  CompareRow,
   Control,
   DemoSpace,
   Doc,
+  EntryRow,
   KeyRow,
   LiveFeed,
   LogLine,
@@ -40,6 +42,16 @@ const excerpt = (
 const table = (spec: BlockMap["table"]): Block => ({
   ...spec,
   kind: "table",
+});
+
+const compare = (
+  names: readonly [string, string],
+  rows: readonly CompareRow[]
+): Block => ({ kind: "compare", names, rows });
+
+const entries = (rows: readonly EntryRow[]): Block => ({
+  kind: "entries",
+  rows,
 });
 
 const column = (
@@ -145,9 +157,11 @@ export {
   choice,
   code,
   column,
+  compare,
   controls,
   defineDoc,
   demo,
+  entries,
   excerpt,
   intro,
   keys,

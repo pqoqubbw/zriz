@@ -15,8 +15,8 @@ import {
   table,
   text,
 } from "@/lib/doc/mdast";
-import { TABLE_HEADS } from "@/lib/doc/schema";
-import type { Block, BlockOf, Chord, Kind } from "@/lib/doc/schema";
+import { LEVEL_WORDS, TABLE_HEADS } from "@/lib/doc/schema";
+import type { Block, BlockOf, Chord, Kind, Verdict } from "@/lib/doc/schema";
 import { languageOf, textOf } from "@/lib/doc/snippets";
 import { DOCS } from "@/lib/docs";
 import { titleOf } from "@/lib/nav";
@@ -38,6 +38,10 @@ const phrasing = (source: string): PhrasingContent[] =>
       return inlineCode(piece.text);
     }
 
+    if (piece.kind === "external") {
+      return link(piece.href, piece.text);
+    }
+
     if (piece.kind === "link") {
       return link(markdownUrl(piece.slug, piece.anchor), piece.text);
     }
@@ -46,6 +50,11 @@ const phrasing = (source: string): PhrasingContent[] =>
   });
 
 const prose = (source: string): Paragraph => paragraph(phrasing(source));
+
+const verdictPhrasing = ([level, note]: Verdict): PhrasingContent[] =>
+  phrasing(
+    note === undefined ? LEVEL_WORDS[level] : `${LEVEL_WORDS[level]}. ${note}`
+  );
 
 const chordPhrasing = (chords: readonly Chord[]): PhrasingContent[] =>
   chords.flatMap((chord, i) => [
@@ -111,6 +120,16 @@ const converters: { [K in Kind]: Converter<K> } = {
   attrs: pairTableOf,
   caption: (block, depth) => [heading(depth, [inlineCode(block.text)])],
   code: fenceOf,
+  compare: (block) => [
+    table(
+      ["Feature", ...block.names],
+      block.rows.map(([feature, theirs, ours]) => [
+        phrasing(feature),
+        verdictPhrasing(theirs),
+        verdictPhrasing(ours),
+      ])
+    ),
+  ],
   controls: (block) => [
     list(
       block.controls.map((control) =>
@@ -121,6 +140,19 @@ const converters: { [K in Kind]: Converter<K> } = {
   demo: (block) => [
     prose(
       `The page at ${pageUrl(block.name)} runs this cropper: ${DEMO_SPECS[block.name].summary}.`
+    ),
+  ],
+  entries: (block) => [
+    list(
+      block.rows.map((row) =>
+        item([
+          prose(
+            row.meta === undefined
+              ? `${row.title}. ${row.text}`
+              : `${row.title}, ${row.meta}. ${row.text}`
+          ),
+        ])
+      )
     ),
   ],
   excerpt: fenceOf,

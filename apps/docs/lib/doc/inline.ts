@@ -3,6 +3,7 @@ import type { Slug } from "@/lib/nav";
 
 type Piece =
   | { kind: "code"; text: string }
+  | { href: string; kind: "external"; text: string }
   | { anchor: string; kind: "link"; slug: Slug; text: string }
   | { kind: "text"; text: string };
 
@@ -12,7 +13,7 @@ type Typeset = {
 };
 
 const INLINE_SYNTAX =
-  /`(?<code>[^`]+)`|\[(?<label>[^\]]+)\]\((?<slug>[a-z0-9-]+)(?:#(?<anchor>[a-z0-9-]+))?\)/gu;
+  /`(?<code>[^`]+)`|\[(?<label>[^\]]+)\]\((?:(?<href>https:\/\/[^\s)]+)|(?<slug>[a-z0-9-]+)(?:#(?<anchor>[a-z0-9-]+))?)\)/gu;
 
 const UNIT_SPACE =
   /(?<=\d) (?=(?:px|ms|mm|kB|B|s|megapixels|degrees)(?![\w-]))|(?<=\d) (?=(?:×|by) \d)|(?<=\d (?:×|by)) (?=\d)/gu;
@@ -34,9 +35,11 @@ const piecesOf = (source: string): Piece[] => {
       pieces.push({ kind: "text", text: source.slice(at, match.index) });
     }
 
-    const { anchor, code, label, slug } = match.groups ?? {};
+    const { anchor, code, href, label, slug } = match.groups ?? {};
 
-    if (code === undefined) {
+    if (code !== undefined) {
+      pieces.push({ kind: "code", text: code });
+    } else if (href === undefined) {
       pieces.push({
         anchor: anchor ?? "",
         kind: "link",
@@ -44,7 +47,7 @@ const piecesOf = (source: string): Piece[] => {
         text: label ?? "",
       });
     } else {
-      pieces.push({ kind: "code", text: code });
+      pieces.push({ href, kind: "external", text: label ?? "" });
     }
 
     at = match.index + match[0].length;
@@ -70,7 +73,7 @@ const splitLastPair = (pieces: Piece[]): Typeset => {
   for (let i = pieces.length - 1; i >= 0; i -= 1) {
     const piece = pieces[i];
 
-    if (piece?.kind === "link") {
+    if (piece?.kind === "link" || piece?.kind === "external") {
       spaces += piece.text.split(" ").length - 1;
 
       if (spaces >= 2) {
