@@ -9,7 +9,7 @@ import {
   stateAttributes,
   viewOf,
 } from "@zriz/core/dom";
-import type { Chrome, LoadedImage } from "@zriz/core/dom";
+import type { Chrome, LoadOptions, LoadedImage } from "@zriz/core/dom";
 import {
   forwardRef,
   useCallback,
@@ -74,6 +74,15 @@ const IDLE: Chrome = {
   grid: "none",
   overscroll: false,
   transition: null,
+};
+
+const loadPhoto = async (
+  src: string | Blob,
+  options: LoadOptions
+): Promise<LoadedImage> => {
+  const { loadImage } = await import("@zriz/core/dom/image");
+
+  return await loadImage(src, options);
 };
 
 const actionHolders = new WeakMap<object, () => unknown>();
@@ -235,9 +244,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       let loaded: LoadedImage;
 
       try {
-        const { loadImage } = await import("@zriz/core/dom/image");
-
-        loaded = await loadImage(src, {
+        loaded = await loadPhoto(src, {
           crossOrigin,
           previewEdge,
           signal: controller.signal,

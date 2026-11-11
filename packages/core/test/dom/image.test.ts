@@ -13,7 +13,8 @@ import {
   imageOf,
   loadImage,
 } from "../../src/dom";
-import { freeImage, raster, toZriz } from "../../src/dom/image";
+import { freeImage } from "../../src/dom/free";
+import { raster, toZriz } from "../../src/dom/image";
 import type { LoadOptions, LoadedImage } from "../../src/dom/image";
 import { exportImage } from "../../src/dom/render";
 import { withTimeout } from "../../src/dom/turn";

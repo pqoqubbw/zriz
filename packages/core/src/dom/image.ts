@@ -299,6 +299,7 @@ const loadImage = async (
   const work = async (): Promise<LoadedImage> => {
     let mime: string | null = null;
     let animated = false;
+
     const loaded = (
       preview: ImageBitmap,
       source: LoadedImage["source"],
@@ -445,11 +446,4 @@ export type {
   LoadOptions,
   LoadedImage,
 };
-export {
-  defaultPreviewEdge,
-  freeImage,
-  loadImage,
-  outputLimit,
-  raster,
-  toZriz,
-};
+export { defaultPreviewEdge, loadImage, outputLimit, raster, toZriz };
