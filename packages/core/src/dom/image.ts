@@ -1,6 +1,7 @@
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
+import { borrowed, freeImage, onFree } from "./free";
 import { fitEdge, textOf } from "./media";
 import { MAX_DELAY_MS, TIMEOUT_MS, aborted, deadline, noop } from "./turn";
 import { decodeOff, decodeTurn, gate, keepOff, releaseOff } from "./worker";
@@ -260,23 +261,6 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   );
 };
 
-const borrowed = new WeakSet<object>();
-
-const closeOwn = (bitmap: ImageBitmap): void => {
-  if (!borrowed.has(bitmap)) {
-    bitmap.close();
-  }
-};
-
-const freeImage = (image: LoadedImage): void => {
-  void releaseOff(image.id);
-  closeOwn(image.preview);
-
-  if (image.source instanceof ImageBitmap && image.source !== image.preview) {
-    closeOwn(image.source);
-  }
-};
-
 const loadImage = async (
   src: ImageSource,
   options: LoadOptions = {}
@@ -319,15 +303,15 @@ const loadImage = async (
       preview: ImageBitmap,
       source: LoadedImage["source"],
       { width, height }: Size
-    ): LoadedImage => ({
-      animated,
-      height,
-      id,
-      mime,
-      preview,
-      source,
-      width,
-    });
+    ): LoadedImage => {
+      const image = { animated, height, id, mime, preview, source, width };
+
+      onFree(image, () => {
+        void releaseOff(id);
+      });
+
+      return image;
+    };
 
     checkpoint();
 
