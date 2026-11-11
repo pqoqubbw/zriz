@@ -1,30 +1,29 @@
 import type { Cropper } from "../cropper";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
-import { outputLimit, toZriz } from "./image";
+import { toolsOf } from "./free";
 import type { ExportOptions, ExportResult, LoadedImage } from "./image";
 import { encoderQuality, jpegQuality } from "./jpeg-quality";
 import { loadElement } from "./media";
 import { renderKernel } from "./render-kernel";
 import type { RenderJob, RenderKernel, RenderReply } from "./render-kernel";
 import { TIMEOUT_MS, aborted, withTimeout } from "./turn";
-import { gate, lane, via } from "./worker";
-import type { Lane } from "./worker";
+import type { Lane, Turn } from "./worker";
 
 const DEFAULT_QUALITY = 0.9;
 
-const exportTurn = gate(1);
+let exportTurn: Turn | undefined;
 
 let renderer: Lane<RenderKernel> | undefined;
 
 const rendering = (): Lane<RenderKernel> => {
-  renderer ??= lane(renderKernel);
+  renderer ??= toolsOf().lane(renderKernel);
 
   return renderer;
 };
 
 const renderOff = async (job: RenderJob): Promise<RenderReply> =>
-  await via(rendering(), "render", [job]);
+  await toolsOf().via(rendering(), "render", [job]);
 
 const renderHere = async (job: RenderJob): Promise<RenderReply> =>
   await rendering().here().render(job);
@@ -70,7 +69,7 @@ const firstScale = (
 
   return Math.min(
     fit > 0 ? fit : 1,
-    Math.sqrt(outputLimit() / (base.width * base.height)),
+    Math.sqrt(toolsOf().outputLimit() / (base.width * base.height)),
     (type === "image/webp" ? 16_383 : 65_500) /
       Math.max(base.width, base.height)
   );
@@ -144,6 +143,8 @@ const exportImage = async (
   };
 
   try {
+    exportTurn ??= toolsOf().gate(1);
+
     const { blob, index } = await withTimeout(
       exportTurn(
         async () => await withTimeout(work(), TIMEOUT_MS * 2, undefined),
@@ -164,7 +165,7 @@ const exportImage = async (
       width: crop.width,
     };
   } catch (error) {
-    throw toZriz(error, image.mime);
+    throw toolsOf().toZriz(error, image.mime);
   } finally {
     over = true;
 

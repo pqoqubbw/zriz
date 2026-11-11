@@ -3,7 +3,10 @@ import { afterEach, beforeEach, vi } from "vitest";
 import { createCropper } from "../src";
 import type { Cropper, CropperEvents, CropperOptions, CropState } from "../src";
 import type { LoadedImage } from "../src/dom";
+import { setTools } from "../src/dom/free";
+import { outputLimit, toZriz } from "../src/dom/image";
 import { viewOf } from "../src/dom/view";
+import * as worker from "../src/dom/worker";
 import { fakeClock } from "./fake-clock";
 import type { FakeClock } from "./fake-clock";
 
@@ -150,16 +153,20 @@ const stubDom = (): void => {
   });
 };
 
-const loadedImage = (overrides: Partial<LoadedImage> = {}): LoadedImage => ({
-  animated: false,
-  height: 1,
-  id: 1,
-  mime: "image/png",
-  preview: { close: noop, height: 1, width: 1 },
-  source: new Blob(),
-  width: 1,
-  ...overrides,
-});
+const loadedImage = (overrides: Partial<LoadedImage> = {}): LoadedImage => {
+  setTools({ ...worker, outputLimit, toZriz });
+
+  return {
+    animated: false,
+    height: 1,
+    id: 1,
+    mime: "image/png",
+    preview: { close: noop, height: 1, width: 1 },
+    source: new Blob(),
+    width: 1,
+    ...overrides,
+  };
+};
 
 export type { KeyInit, Layout, Rig };
 export {

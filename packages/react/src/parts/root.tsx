@@ -80,9 +80,11 @@ const loadPhoto = async (
   src: string | Blob,
   options: LoadOptions
 ): Promise<LoadedImage> => {
-  const { loadImage } = await import("@zriz/core/dom/image");
+  const code = await import("@zriz/core/dom/image").catch(() => {
+    throw new ZrizError("decode", "zriz: the image code did not load");
+  });
 
-  return await loadImage(src, options);
+  return await code.loadImage(src, options);
 };
 
 const actionHolders = new WeakMap<object, () => unknown>();
@@ -251,12 +253,8 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
           svg,
         });
       } catch (error) {
-        if (!controller.signal.aborted) {
-          latestError.current?.(
-            error instanceof ZrizError
-              ? error
-              : new ZrizError("decode", "zriz: could not load the image code")
-          );
+        if (!controller.signal.aborted && error instanceof ZrizError) {
+          latestError.current?.(error);
         }
 
         return;

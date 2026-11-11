@@ -1,5 +1,6 @@
 import type { Cropper } from "../cropper";
 import type { Matrix3 } from "../geometry/types";
+import { toolsOf } from "./free";
 import type { LoadedImage } from "./image";
 import { imageOf, onImage } from "./image-store";
 import { windowOf } from "./input";
@@ -41,9 +42,9 @@ const whole = (image: LoadedImage): Region => ({
 
 const takeFile = async (image: LoadedImage): Promise<string> => {
   const file = files.get(image) ?? {
-    url: import("./worker").then(async ({ motionOff }) =>
-      URL.createObjectURL(await motionOff(image.id, motionType(image)))
-    ),
+    url: toolsOf()
+      .motionOff(image.id, motionType(image))
+      .then((blob) => URL.createObjectURL(blob)),
     users: 0,
   };
 

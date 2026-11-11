@@ -591,6 +591,12 @@ const inTurn = async () => {
 
   vi.mocked(worker.via).mockReset();
   vi.mocked(worker.via).mockImplementation(answer);
+
+  const { setTools } = await import("../../src/dom/free");
+  const { outputLimit, toZriz } = await import("../../src/dom/image");
+
+  setTools({ ...worker, outputLimit, toZriz });
+
   const image = bitmapOf(400, 300);
   const cropper = createCropper({ clock: fakeClock().clock, image });
   const loaded = loadedImage({

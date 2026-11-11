@@ -1,10 +1,22 @@
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
-import { borrowed, freeImage, onFree } from "./free";
+import { borrowed, freeImage, onFree, setTools } from "./free";
+import type { Tools } from "./free";
 import { fitEdge, textOf } from "./media";
 import { MAX_DELAY_MS, TIMEOUT_MS, aborted, deadline, noop } from "./turn";
-import { decodeOff, decodeTurn, gate, keepOff, releaseOff } from "./worker";
+import {
+  decodeOff,
+  decodeTurn,
+  gate,
+  keepOff,
+  lane,
+  motionOff,
+  regionOff,
+  releaseOff,
+  resampleOff,
+  via,
+} from "./worker";
 
 type ImageSource =
   | Blob
@@ -261,10 +273,24 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   );
 };
 
+const TOOLS: Tools = {
+  decodeTurn,
+  gate,
+  lane,
+  motionOff,
+  outputLimit,
+  regionOff,
+  resampleOff,
+  toZriz,
+  via,
+};
+
 const loadImage = async (
   src: ImageSource,
   options: LoadOptions = {}
 ): Promise<LoadedImage> => {
+  setTools(TOOLS);
+
   const asked = options.previewEdge ?? 0;
   const edge = asked > 0 ? asked : defaultPreviewEdge();
 
