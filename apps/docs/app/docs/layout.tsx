@@ -3,16 +3,17 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/shell/logo";
 import { Menu } from "@/components/shell/menu";
 import { NavList } from "@/components/shell/nav-list";
+import { Project } from "@/components/shell/project";
 
 type DocsLayoutProps = {
   children: ReactNode;
 };
 
 const DocsLayout = ({ children }: DocsLayoutProps) => (
-  <div className="grid grid-cols-[minmax(0,var(--container-page))] justify-center px-4 md:grid-cols-[11rem_minmax(var(--container-page),50rem)] md:gap-x-20 md:px-8">
+  <div className="grid grid-cols-[minmax(0,var(--container-page))] justify-center px-4 md:grid-cols-[11rem_minmax(var(--container-page),50rem)] md:gap-x-20 md:px-8 lg:grid-cols-[11rem_var(--container-page)_10rem]">
     <header className="sticky top-0 z-10 row-start-1 -mx-4 flex h-11 items-center justify-between bg-page px-4 md:hidden">
       <Logo />
-      <Menu logo={<Logo />} />
+      <Menu foot={<Project />} logo={<Logo />} />
     </header>
     <main className="row-start-2 min-w-0 pt-6 md:col-start-2 md:row-start-1 md:w-page md:pt-18">
       <a aria-hidden="true" className="sr-only" href="/llms.txt" tabIndex={-1}>
@@ -34,6 +35,12 @@ const DocsLayout = ({ children }: DocsLayoutProps) => (
       <Logo />
       <NavList roomy={false} />
     </nav>
+    <aside
+      aria-label="Project"
+      className="sticky top-0 hidden self-start pt-18 lg:col-start-3 lg:row-start-1 lg:block"
+    >
+      <Project />
+    </aside>
   </div>
 );
 

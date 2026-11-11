@@ -20,7 +20,7 @@ const CodePanel = ({ children, className, label }: CodePanelProps) => (
     >
       <pre className="font-mono text-code text-code-ink">{children}</pre>
     </Panel>
-    <div className="absolute top-2 right-2">
+    <div className="absolute top-2 right-2 max-sm:hidden">
       <CopyButton label="Copy code" />
     </div>
   </div>

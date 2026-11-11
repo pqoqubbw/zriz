@@ -69,4 +69,4 @@ const CopyButton = ({ label }: CopyProps) => {
 };
 
 export type { CopyProps };
-export { CopyButton };
+export { CopiedStatus, CopyButton, useCopy };

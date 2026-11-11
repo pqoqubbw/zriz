@@ -36,6 +36,7 @@
   --tracking-strong: -0.0076em;
   --breakpoint-sm: 37rem;
   --breakpoint-md: 55rem;
+  --breakpoint-lg: 75rem;
 
   --color-page: #fdfdfc;
   --color-ink: #111111;
@@ -174,6 +175,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-padding-top: 40px;
+    scrollbar-gutter: stable;
 
     @media (width < 55rem) {
       scroll-padding-top: 68px;
