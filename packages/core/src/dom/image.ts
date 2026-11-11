@@ -1,9 +1,22 @@
 import type { ExportPlan } from "../geometry/export-plan";
 import type { Size } from "../geometry/types";
 import { ZrizError } from "./error";
+import { borrowed, freeImage, onFree, setTools } from "./free";
+import type { Tools } from "./free";
 import { fitEdge, textOf } from "./media";
 import { MAX_DELAY_MS, TIMEOUT_MS, aborted, deadline, noop } from "./turn";
-import { decodeOff, decodeTurn, gate, keepOff, releaseOff } from "./worker";
+import {
+  decodeOff,
+  decodeTurn,
+  gate,
+  keepOff,
+  lane,
+  motionOff,
+  regionOff,
+  releaseOff,
+  resampleOff,
+  via,
+} from "./worker";
 
 type ImageSource =
   | Blob
@@ -260,27 +273,24 @@ const toZriz = (error: unknown, mime: string | null = null): ZrizError => {
   );
 };
 
-const borrowed = new WeakSet<object>();
-
-const closeOwn = (bitmap: ImageBitmap): void => {
-  if (!borrowed.has(bitmap)) {
-    bitmap.close();
-  }
-};
-
-const freeImage = (image: LoadedImage): void => {
-  void releaseOff(image.id);
-  closeOwn(image.preview);
-
-  if (image.source instanceof ImageBitmap && image.source !== image.preview) {
-    closeOwn(image.source);
-  }
+const TOOLS: Tools = {
+  decodeTurn,
+  gate,
+  lane,
+  motionOff,
+  outputLimit,
+  regionOff,
+  resampleOff,
+  toZriz,
+  via,
 };
 
 const loadImage = async (
   src: ImageSource,
   options: LoadOptions = {}
 ): Promise<LoadedImage> => {
+  setTools(TOOLS);
+
   const asked = options.previewEdge ?? 0;
   const edge = asked > 0 ? asked : defaultPreviewEdge();
 
@@ -315,19 +325,20 @@ const loadImage = async (
   const work = async (): Promise<LoadedImage> => {
     let mime: string | null = null;
     let animated = false;
+
     const loaded = (
       preview: ImageBitmap,
       source: LoadedImage["source"],
       { width, height }: Size
-    ): LoadedImage => ({
-      animated,
-      height,
-      id,
-      mime,
-      preview,
-      source,
-      width,
-    });
+    ): LoadedImage => {
+      const image = { animated, height, id, mime, preview, source, width };
+
+      onFree(image, () => {
+        void releaseOff(id);
+      });
+
+      return image;
+    };
 
     checkpoint();
 
@@ -461,11 +472,4 @@ export type {
   LoadOptions,
   LoadedImage,
 };
-export {
-  defaultPreviewEdge,
-  freeImage,
-  loadImage,
-  outputLimit,
-  raster,
-  toZriz,
-};
+export { defaultPreviewEdge, loadImage, outputLimit, raster, toZriz };

@@ -1,9 +1,9 @@
 import { applyHomography, invertMatrix3 } from "../geometry/matrix";
+import { toolsOf } from "./free";
 import type { LoadedImage } from "./image";
 import type { Region } from "./kernel";
 import { TIMEOUT_MS } from "./turn";
 import type { ViewFrame } from "./view";
-import { decodeTurn, regionOff, resampleOff } from "./worker";
 
 const SHARPEN_RATIO = 1.02;
 
@@ -64,7 +64,7 @@ const refine = async (
     );
 
     return {
-      bitmap: await resampleOff(
+      bitmap: await toolsOf().resampleOff(
         image.id,
         { height, width, x, y },
         Math.max(1, Math.round(width * ratio)),
@@ -83,10 +83,10 @@ const refine = async (
     const region = visibleRect(frame, image);
 
     return {
-      bitmap: await decodeTurn(
+      bitmap: await toolsOf().decodeTurn(
         async () =>
           live()
-            ? await regionOff(
+            ? await toolsOf().regionOff(
                 image.source,
                 region,
                 Math.max(1, Math.round(region.width * devicePerSource)),

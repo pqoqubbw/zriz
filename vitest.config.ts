@@ -106,6 +106,10 @@ const core = [
   { find: /^@zriz\/core$/u, replacement: coreFile("index.js") },
   { find: /^@zriz\/core\/dom$/u, replacement: coreFile("dom/index.js") },
   {
+    find: /^@zriz\/core\/dom\/image$/u,
+    replacement: coreFile("dom/image.js"),
+  },
+  {
     find: /^@zriz\/core\/styles\.css$/u,
     replacement: coreFile("styles.css"),
   },

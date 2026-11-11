@@ -1,5 +1,29 @@
 import type { SizeLimitConfig } from "size-limit";
 
+const PARTS = [
+  "Announcer",
+  "Area",
+  "AspectGroup",
+  "AspectItem",
+  "Dial",
+  "DialTicks",
+  "DialValue",
+  "Flip",
+  "Grid",
+  "Handle",
+  "Image",
+  "Instructions",
+  "Mask",
+  "Orientation",
+  "Reset",
+  "Root",
+  "Rotate",
+  "Viewport",
+  "Zoom",
+  "ZoomStep",
+  "ZoomThumb",
+];
+
 const production = (config: object): object => ({
   ...config,
   external: /^(?:react|react-dom)(?:$|\/)/u,
@@ -19,7 +43,7 @@ export default [
     entry: ["index"],
     ignore: ["react", "react-dom"],
     import: "{ Root }",
-    limit: "18760 B",
+    limit: "14470 B",
     modifyRolldownConfig: production,
     name: "Root",
     path: "dist/cropper.js",
@@ -28,7 +52,7 @@ export default [
     entry: ["index"],
     ignore: ["react", "react-dom"],
     import: "{ Root, Viewport, Image, Mask, Area }",
-    limit: "26060 B",
+    limit: "21930 B",
     modifyRolldownConfig: production,
     name: "avatar",
     path: "dist/cropper.js",
@@ -36,8 +60,8 @@ export default [
   {
     entry: ["index"],
     ignore: ["react", "react-dom"],
-    import: "*",
-    limit: "33510 B",
+    import: `{ ${PARTS.join(", ")} }`,
+    limit: "29180 B",
     modifyRolldownConfig: production,
     name: "editor (every part)",
     path: "dist/cropper.js",
@@ -90,7 +114,7 @@ export default [
   {
     ignore: ["react", "react-dom"],
     import: "{ Root, Viewport, Image, Mask, Area }",
-    limit: "32230 B",
+    limit: "33250 B",
     modifyRolldownConfig: production,
     name: "avatar total (with lazy chunks)",
     path: "dist/cropper.js",

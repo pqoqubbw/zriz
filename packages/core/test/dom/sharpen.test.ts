@@ -2,16 +2,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCropper } from "../../src";
 import type { Size } from "../../src";
+import { setTools } from "../../src/dom/free";
+import { outputLimit, toZriz } from "../../src/dom/image";
 import type { LoadedImage } from "../../src/dom/image";
 import { fitEdge } from "../../src/dom/media";
 import { refine } from "../../src/dom/sharpen";
 import type { ViewFrame } from "../../src/dom/view";
+import * as worker from "../../src/dom/worker";
 import { regionOff, resampleOff } from "../../src/dom/worker";
 import type { Matrix3, Point } from "../../src/geometry";
 import { LAYOUT } from "../cropper-fixture";
 import { fakeClock } from "../fake-clock";
 
 vi.mock(import("../../src/dom/worker"), { spy: true });
+
+setTools({ ...worker, outputLimit, toZriz });
 
 const isBitmap = (value: unknown): value is ImageBitmap =>
   typeof value === "object" && value !== null && "width" in value;

@@ -5,12 +5,11 @@ import type { Cropper, CropperInternals, CropperSnapshot } from "@zriz/core";
 import {
   ZrizError,
   attachImage,
-  loadImage,
   setCropShape,
   stateAttributes,
   viewOf,
 } from "@zriz/core/dom";
-import type { Chrome, LoadedImage } from "@zriz/core/dom";
+import type { Chrome, LoadOptions, LoadedImage } from "@zriz/core/dom";
 import {
   forwardRef,
   useCallback,
@@ -75,6 +74,17 @@ const IDLE: Chrome = {
   grid: "none",
   overscroll: false,
   transition: null,
+};
+
+const loadPhoto = async (
+  src: string | Blob,
+  options: LoadOptions
+): Promise<LoadedImage> => {
+  const code = await import("@zriz/core/dom/image").catch(() => {
+    throw new ZrizError("decode", "zriz: the image code did not load");
+  });
+
+  return await code.loadImage(src, options);
 };
 
 const actionHolders = new WeakMap<object, () => unknown>();
@@ -236,7 +246,7 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       let loaded: LoadedImage;
 
       try {
-        loaded = await loadImage(src, {
+        loaded = await loadPhoto(src, {
           crossOrigin,
           previewEdge,
           signal: controller.signal,

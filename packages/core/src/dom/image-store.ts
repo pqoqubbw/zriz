@@ -1,6 +1,6 @@
 import type { Cropper } from "../cropper";
 import { ZrizError } from "./error";
-import { freeImage } from "./image";
+import { freeImage } from "./free";
 import type { LoadedImage } from "./image";
 import { afterPaint } from "./later";
 
