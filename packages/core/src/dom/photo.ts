@@ -8,7 +8,6 @@ import { afterPaint } from "./later";
 import { TIMEOUT_MS, noop, withTimeout } from "./turn";
 import { LAYER_BOX, cssMatrix, followFlight, isAffine, viewOf } from "./view";
 import type { Layout, ViewFrame } from "./view";
-import { motionOff } from "./worker";
 
 type Drawn = {
   matrix: Matrix3;
@@ -42,8 +41,8 @@ const whole = (image: LoadedImage): Region => ({
 
 const takeFile = async (image: LoadedImage): Promise<string> => {
   const file = files.get(image) ?? {
-    url: motionOff(image.id, motionType(image)).then((blob) =>
-      URL.createObjectURL(blob)
+    url: import("./worker").then(async ({ motionOff }) =>
+      URL.createObjectURL(await motionOff(image.id, motionType(image)))
     ),
     users: 0,
   };
