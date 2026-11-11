@@ -281,7 +281,7 @@ const ZRIZ_VS_REACT_EASY_CROP_PAGE = defineDoc({
         'This is the basic react-easy-crop screen in zriz: a 4:3 frame with no handles, a photo that pans and zooms under it, a zoom slider and a save button. `wheel="zoom"` keeps the plain wheel on zoom. `maxZoom={3}` sets the same number as the react-easy-crop default, on the zriz zoom scale. `rotateGesture={false}` turns off the two-finger twist, which the old screen had only with `onRotationChange`. `exportCrop` returns a JPEG no larger than 1600 by 1200 px.'
       ),
       p(
-        "The app still writes the paint for the `Zoom` track, the thumb and the button, the layout around the cropper, and every label. Add `Dial`, `Rotate` or `Flip` if the old screen had a rotation control, and remove `rotateGesture={false}` if it passed `onRotationChange`."
+        "The app still writes the paint for the `Zoom` track, the thumb and the button, the layout around the cropper, and every label. Add `Dial`, `Rotate` or `Flip` if the old screen had a rotation control, and remove `rotateGesture={false}` if it passed `onRotationChange`. Blocks for shadcn/ui are on the [shadcn](shadcn) page."
       )
     ),
     section(

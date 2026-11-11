@@ -23,6 +23,7 @@ import { ROOT_PAGE } from "@/content/root";
 import { SAVING_STATE_PAGE } from "@/content/saving-state";
 import { SECURITY_PAGE } from "@/content/security";
 import { SERVER_CROP_PAGE } from "@/content/server-crop";
+import { SHADCN_PAGE } from "@/content/shadcn";
 import { STYLING_PAGE } from "@/content/styling";
 import { UNDO_PAGE } from "@/content/undo";
 import { VALUE_PAGE } from "@/content/value";
@@ -68,6 +69,7 @@ const DOCS: Record<Slug, Doc> = {
   "saving-state": SAVING_STATE_PAGE,
   security: SECURITY_PAGE,
   "server-crop": SERVER_CROP_PAGE,
+  shadcn: SHADCN_PAGE,
   styling: STYLING_PAGE,
   undo: UNDO_PAGE,
   value: VALUE_PAGE,

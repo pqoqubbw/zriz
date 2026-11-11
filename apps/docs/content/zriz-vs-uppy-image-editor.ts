@@ -254,7 +254,7 @@ const ZRIZ_VS_UPPY_IMAGE_EDITOR_PAGE = defineDoc({
       ),
       code("zriz-vs-uppy-image-editor/after.tsx"),
       p(
-        "The component has the same controls as Uppy's toolbar, with Uppy's default English labels on the buttons. Three controls differ. It adds a Free ratio button, where Uppy returns to free through Reset. `Reset` stays hidden until the crop changes. The dial has the label Straighten. A plain wheel zooms, as in Uppy, and the step size is zriz's own. Save returns a `File` with the old name at quality 0.8. JPEG and PNG keep their format, WebP keeps it where the browser can write WebP, and any other type comes out as JPEG, so rename the file when the type changes. The app still writes the layout, the styles for every button and the ratio group, icons if it wants them, and translations."
+        "The component has the same controls as Uppy's toolbar, with Uppy's default English labels on the buttons. Three controls differ. It adds a Free ratio button, where Uppy returns to free through Reset. `Reset` stays hidden until the crop changes. The dial has the label Straighten. A plain wheel zooms, as in Uppy, and the step size is zriz's own. Save returns a `File` with the old name at quality 0.8. JPEG and PNG keep their format, WebP keeps it where the browser can write WebP, and any other type comes out as JPEG, so rename the file when the type changes. The app still writes the layout, the styles for every button and the ratio group, icons if it wants them, and translations. Blocks for shadcn/ui are on the [shadcn](shadcn) page."
       )
     ),
     section(

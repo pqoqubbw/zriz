@@ -31,6 +31,7 @@ const BLOCK_SLOTS = {
   messages: "table",
   p: "p",
   part: "part",
+  preview: "demo",
   prompt: "code",
   props: "table",
   qa: "qa",

@@ -247,7 +247,7 @@ const ZRIZ_VS_REACT_AVATAR_EDITOR_PAGE = defineDoc({
       ),
       code("zriz-vs-react-avatar-editor/after.tsx"),
       p(
-        'This is a 250 px square frame with a 50 px border, a zoom slider that ends at 5× and a save button. `Area` has no handles, so the visitor moves and zooms the photo. Alt with an arrow key still resizes the crop. On a touch screen a two-finger twist also straightens the photo, and `rotateGesture={false}` on `Viewport` turns that off. `exportCrop` returns a JPEG at most 500 px wide. For a round avatar set `shape="circle"` on `Root`, and the file becomes a round PNG. Still yours to write: the layout, the look of the button, the file input, the wording of each label and a loading state. react-avatar-editor paints a pulsing fill while a photo loads, and zriz paints nothing for that. The slider styles here are the ones from the zriz docs.'
+        'This is a 250 px square frame with a 50 px border, a zoom slider that ends at 5× and a save button. `Area` has no handles, so the visitor moves and zooms the photo. Alt with an arrow key still resizes the crop. On a touch screen a two-finger twist also straightens the photo, and `rotateGesture={false}` on `Viewport` turns that off. `exportCrop` returns a JPEG at most 500 px wide. For a round avatar set `shape="circle"` on `Root`, and the file becomes a round PNG. Still yours to write: the layout, the look of the button, the file input, the wording of each label and a loading state. react-avatar-editor paints a pulsing fill while a photo loads, and zriz paints nothing for that. The slider styles here are the ones from the zriz docs. Blocks for shadcn/ui are on the [shadcn](shadcn) page.'
       )
     ),
     section(

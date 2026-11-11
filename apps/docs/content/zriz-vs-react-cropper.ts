@@ -261,7 +261,7 @@ const ZRIZ_VS_REACT_CROPPER_PAGE = defineDoc({
         "This component follows the react-cropper README example, with a save button like the one in the repo's example app where the README logs on every crop event. It loads a photo from a URL, shows a free crop box with eight handles that starts at 16:9, and the button produces a PNG. `onLoad` sets the first box to 80% of the largest 16:9 box that fits, as `autoCropArea` does. `exportCrop` hands `onSave` a `Blob` where the README logs a data URL. A photo on another domain needs CORS headers, because zriz loads it with `fetch`."
       ),
       p(
-        "You still write the button styles and the words. Zoom, rotate and flip controls are parts you add inside `Root`. The stylesheet paints the mask, the crop frame and the handles."
+        "You still write the button styles and the words. Zoom, rotate and flip controls are parts you add inside `Root`. The stylesheet paints the mask, the crop frame and the handles. Blocks for shadcn/ui are on the [shadcn](shadcn) page."
       )
     ),
     section(

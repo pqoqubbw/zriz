@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/doc/copy-button";
 import { Controls, LiveCode, LiveLog } from "@/components/doc/deferred";
 import { Demo } from "@/components/doc/demo";
 import { Faq, FaqItem } from "@/components/doc/faq";
+import { RegistryPreview } from "@/components/doc/registry-preview";
 import { CompareTable } from "@/components/doc/tables/compare-table";
 import { MessageList, PropList } from "@/components/doc/tables/definition-list";
 import { EntryList } from "@/components/doc/tables/entry-list";
@@ -167,6 +168,9 @@ const renderers: { [K in Kind]: Renderer<K> } = {
         level={4}
       />
     </div>
+  ),
+  preview: (block, { className }) => (
+    <RegistryPreview className={className} name={block.name} />
   ),
   prompt: (block, { className }) => (
     <Panel className={className} data-copy="" layout="prompt">

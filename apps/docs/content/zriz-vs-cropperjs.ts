@@ -262,7 +262,7 @@ const ZRIZ_VS_CROPPERJS_PAGE = defineDoc({
       ),
       code("zriz-vs-cropperjs/after.tsx"),
       p(
-        "This component is the nearest zriz match for `new Cropper(image)` with the default template: a crop box with eight handles and a grid, a wheel that zooms, and a start crop of half the photo on each side. A drag pans the photo under the box. It does not draw a new box or move the box over a still photo. `save` exports a JPEG of at most 2048 by 2048 px and hands it to `onSave`. The app still writes the layout, the button styles and the words. A zoom slider, rotate and flip buttons and an aspect picker are parts the app adds and paints, see [full editor](full-editor)."
+        "This component is the nearest zriz match for `new Cropper(image)` with the default template: a crop box with eight handles and a grid, a wheel that zooms, and a start crop of half the photo on each side. A drag pans the photo under the box. It does not draw a new box or move the box over a still photo. `save` exports a JPEG of at most 2048 by 2048 px and hands it to `onSave`. The app still writes the layout, the button styles and the words. A zoom slider, rotate and flip buttons and an aspect picker are parts the app adds and paints, see [full editor](full-editor). Blocks for shadcn/ui are on the [shadcn](shadcn) page."
       )
     ),
     section(

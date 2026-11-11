@@ -21,6 +21,7 @@ import { languageOf, textOf } from "@/lib/doc/snippets";
 import { DOCS } from "@/lib/docs";
 import { titleOf } from "@/lib/nav";
 import type { Slug } from "@/lib/nav";
+import { REGISTRY_ITEMS } from "@/lib/registry";
 import { LLMS_URL, markdownUrl, pageUrl } from "@/lib/site";
 
 type Nested = (blocks: readonly Block[], depth: number) => RootContent[];
@@ -179,6 +180,11 @@ const converters: { [K in Kind]: Converter<K> } = {
     heading(depth, [inlineCode(block.name)]),
     ...(block.text === "" ? [] : [prose(block.text)]),
     ...nested(block.blocks, depth + 1),
+  ],
+  preview: (block) => [
+    prose(
+      `The page at ${pageUrl("shadcn")} runs this block: ${REGISTRY_ITEMS[block.name].summary}.`
+    ),
   ],
   prompt: fenceOf,
   props: (block) => [

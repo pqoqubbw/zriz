@@ -8,19 +8,24 @@ type CodeFigureProps = {
   className: string;
 };
 
-const CodeFigure = async ({ block, className }: CodeFigureProps) => (
-  <CodePanel
-    className={className}
-    label={`${languageOf(block.file).fence.toUpperCase()} code`}
-  >
-    <code
-      className="block w-max py-4 pr-12 pl-4"
-      dangerouslySetInnerHTML={{
-        __html: await highlight(textOf(block), block.file),
-      }}
-      data-copy-text=""
-    />
-  </CodePanel>
-);
+const CodeFigure = async ({ block, className }: CodeFigureProps) => {
+  const text = textOf(block);
+
+  return (
+    <CodePanel
+      className={className}
+      label={`${languageOf(block.file).fence.toUpperCase()} code`}
+      single={!text.includes("\n")}
+    >
+      <code
+        className="block w-max py-4 pr-12 pl-4"
+        dangerouslySetInnerHTML={{
+          __html: await highlight(text, block.file),
+        }}
+        data-copy-text=""
+      />
+    </CodePanel>
+  );
+};
 
 export { CodeFigure };

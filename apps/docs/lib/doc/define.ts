@@ -17,6 +17,7 @@ import type {
   NamedRow,
   PropRow,
 } from "@/lib/doc/schema";
+import type { RegistryName } from "@/lib/registry";
 
 const defineDoc = (doc: Doc): Doc => doc;
 
@@ -28,6 +29,8 @@ const prompt = (text: string): Block => ({ kind: "prompt", text });
 
 const demo = (name: DemoName, space?: DemoSpace): Block =>
   space === undefined ? { kind: "demo", name } : { kind: "demo", name, space };
+
+const preview = (name: RegistryName): Block => ({ kind: "preview", name });
 
 const code = (file: string): Block => ({ file, kind: "code" });
 
@@ -167,6 +170,7 @@ export {
   messages,
   p,
   part,
+  preview,
   prompt,
   props,
   qa,

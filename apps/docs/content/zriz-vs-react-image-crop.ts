@@ -230,7 +230,7 @@ const ZRIZ_VS_REACT_IMAGE_CROP_PAGE = defineDoc({
       ),
       code("zriz-vs-react-image-crop/after.tsx"),
       p(
-        "`ImageCrop` shows the photo with a free crop and eight handles, logs the crop in source pixels on each commit and hands `onSave` a PNG blob, the format `cropToImg` made. Leave out `type` for a JPEG. The stylesheet paints the mask, the frame and the handles. The app still writes the layout, the button styles and every label. For zoom, turns or a dial, add those parts and style them, see [full editor](full-editor)."
+        "`ImageCrop` shows the photo with a free crop and eight handles, logs the crop in source pixels on each commit and hands `onSave` a PNG blob, the format `cropToImg` made. Leave out `type` for a JPEG. The stylesheet paints the mask, the frame and the handles. The app still writes the layout, the button styles and every label. For zoom, turns or a dial, add those parts and style them, see [full editor](full-editor). Blocks for shadcn/ui are on the [shadcn](shadcn) page."
       )
     ),
     section(
