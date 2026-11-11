@@ -22,6 +22,9 @@
       "@zriz/core/dom": [
         "../../../packages/core/src/dom/index.ts"
       ],
+      "@zriz/core/dom/image": [
+        "../../../packages/core/src/dom/image.ts"
+      ],
       "@zriz/react": ["../../../packages/react/src/index.ts"],
       "@zriz/react/cropper": [
         "../../../packages/react/src/cropper.ts"

@@ -38,6 +38,10 @@
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
     },
+    "./dom/image": {
+      "types": "./dist/dom/image.d.ts",
+      "default": "./dist/dom/image.js"
+    },
     "./styles.css": {
       "types": "./dist/styles.d.css.ts",
       "default": "./dist/styles.css"

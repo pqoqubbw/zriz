@@ -5,7 +5,6 @@ import type { Cropper, CropperInternals, CropperSnapshot } from "@zriz/core";
 import {
   ZrizError,
   attachImage,
-  loadImage,
   setCropShape,
   stateAttributes,
   viewOf,
@@ -236,6 +235,8 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
       let loaded: LoadedImage;
 
       try {
+        const { loadImage } = await import("@zriz/core/dom/image");
+
         loaded = await loadImage(src, {
           crossOrigin,
           previewEdge,
@@ -243,8 +244,12 @@ const Root: Part<RootProps, HTMLDivElement> = forwardRef<
           svg,
         });
       } catch (error) {
-        if (!controller.signal.aborted && error instanceof ZrizError) {
-          latestError.current?.(error);
+        if (!controller.signal.aborted) {
+          latestError.current?.(
+            error instanceof ZrizError
+              ? error
+              : new ZrizError("decode", "zriz: could not load the image code")
+          );
         }
 
         return;
