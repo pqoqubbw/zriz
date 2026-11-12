@@ -39,7 +39,7 @@ const DocsLayout = ({ children }: DocsLayoutProps) => (
       aria-label="Project"
       className="sticky top-0 hidden self-start pt-18 lg:col-start-3 lg:row-start-1 lg:block"
     >
-      <Project />
+      <Project nudge />
     </aside>
   </div>
 );
