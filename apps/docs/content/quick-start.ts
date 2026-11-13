@@ -59,6 +59,9 @@ const QUICK_START_PAGE = defineDoc({
       ),
       p(
         "[Playground](playground) changes the main props live, and [full editor](full-editor) puts every part in one component."
+      ),
+      p(
+        "If zriz made your day a little easier, [a star on GitHub](https://github.com/pqoqubbw/zriz) would mean a lot to us."
       )
     ),
   ],
