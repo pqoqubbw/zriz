@@ -4,13 +4,23 @@ import {
   defineDoc,
   demo,
   p,
+  prompt,
   section,
   table,
 } from "@/lib/doc/define";
 
+import { AGENT_PROMPT } from "./agent-prompt";
+
 const INTRODUCTION_PAGE = defineDoc({
   blocks: [
     demo("introduction"),
+    section(
+      "Set it up with an agent",
+      p(
+        "Paste this prompt into Claude Code, Cursor or any other coding agent. It reads [quick start](quick-start) and adds a working cropper to your project:"
+      ),
+      prompt(AGENT_PROMPT)
+    ),
     section(
       "What it does",
       table({

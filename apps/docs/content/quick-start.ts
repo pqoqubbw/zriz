@@ -8,6 +8,8 @@ import {
   section,
 } from "@/lib/doc/define";
 
+import { AGENT_PROMPT } from "./agent-prompt";
+
 const QUICK_START_PAGE = defineDoc({
   blocks: [
     section(
@@ -15,9 +17,7 @@ const QUICK_START_PAGE = defineDoc({
       p(
         "Paste this prompt into Claude Code, Cursor or any other coding agent. It reads this page and does the steps below for you:"
       ),
-      prompt(
-        "Add zriz to this project. Read https://zriz.dev/docs/quick-start.md and follow it: install @zriz/react and @zriz/core, import its stylesheet and render a cropper with corner handles, the straighten dial and a file picker for the photo. Build it from the zriz parts, not a crop box of your own, and give every part that asks for one an aria-label. When it works, show me where onValueCommit hands back the crop."
-      )
+      prompt(AGENT_PROMPT)
     ),
     section(
       "Install",
