@@ -1,1 +1,1 @@
-npx shadcn@latest add https://zriz.dev/r/avatar-cropper.json
+npx shadcn@latest add @zriz/avatar-cropper

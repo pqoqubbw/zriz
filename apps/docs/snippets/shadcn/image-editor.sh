@@ -1,1 +1,1 @@
-npx shadcn@latest add https://zriz.dev/r/image-editor.json
+npx shadcn@latest add @zriz/image-editor

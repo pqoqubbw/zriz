@@ -1,1 +1,1 @@
-npx shadcn@latest add https://zriz.dev/r/image-crop-dialog.json
+npx shadcn@latest add @zriz/image-crop-dialog

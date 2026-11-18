@@ -1,1 +1,1 @@
-npx shadcn@latest add https://zriz.dev/r/image-crop-field.json
+npx shadcn@latest add @zriz/image-crop-field
