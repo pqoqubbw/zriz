@@ -1,1 +1,1 @@
-npx shadcn@latest add https://zriz.dev/r/cover-cropper.json
+npx shadcn@latest add @zriz/cover-cropper
