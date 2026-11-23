@@ -36,13 +36,13 @@ const outcome = async (
   blob: Blob
 ): Promise<{ code: string; message: string; ms: number }> => {
   const start = performance.now();
-  const [code, message] = await loadImage(blob).then(
-    (): [string, string] => ["loaded", ""],
-    (error: unknown): [string, string] =>
+  const [code, message] = await loadImage(blob)
+    .then((): [string, string] => ["loaded", ""])
+    .catch((error: unknown): [string, string] =>
       error instanceof ZrizError
         ? [error.code, error.message]
         : [String(error), String(error)]
-  );
+    );
 
   return { code, message, ms: performance.now() - start };
 };

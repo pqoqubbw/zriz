@@ -24,10 +24,11 @@ const violated = async (directive: string, scheme: string): Promise<void> => {
 };
 
 const messageOf = async (work: Promise<unknown>): Promise<string> =>
-  await work.then(
-    () => "resolved",
-    (error: unknown) => (error instanceof Error ? error.message : String(error))
-  );
+  await work
+    .then(() => "resolved")
+    .catch((error: unknown) =>
+      error instanceof Error ? error.message : String(error)
+    );
 
 const record = (event: SecurityPolicyViolationEvent): void => {
   seen.push({ directive: event.effectiveDirective, uri: event.blockedURI });

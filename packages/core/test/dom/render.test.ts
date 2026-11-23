@@ -410,10 +410,9 @@ describe("export retry", () => {
         {},
         undefined,
         new Blob(["x"], { type: "image/jpeg" })
-      ).then(
-        ({ result }) => result,
-        (error: unknown) => error
-      );
+      )
+        .then(({ result }) => result)
+        .catch((error: unknown) => error);
 
       expect(outcome).toMatchObject(expected);
       expect(made.length).toBeGreaterThan(0);
@@ -619,11 +618,11 @@ const flushed = async (): Promise<void> => {
 };
 
 const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
-  await work.then(
-    () => "resolved",
-    (error: unknown) =>
+  await work
+    .then(() => "resolved")
+    .catch((error: unknown) =>
       error instanceof Error && "code" in error ? error.code : error
-  );
+    );
 
 describe("exports in turn", () => {
   beforeEach(() => {

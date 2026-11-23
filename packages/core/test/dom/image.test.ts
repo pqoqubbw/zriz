@@ -172,10 +172,7 @@ const noneLive = async (): Promise<void> => {
 };
 
 const failure = async (work: Promise<unknown>): Promise<unknown> =>
-  await work.then(
-    () => null,
-    (error: unknown) => error
-  );
+  await work.then(() => null).catch((error: unknown) => error);
 
 const codeOf = (error: unknown): unknown =>
   error instanceof ZrizError ? error.code : error;
