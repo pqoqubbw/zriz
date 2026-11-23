@@ -840,10 +840,11 @@ const paint = (bitmap: ImageBitmap, x = 0.5, y = 0.5): number[] => {
 };
 
 const codeOf = async (work: Promise<unknown>): Promise<unknown> =>
-  await work.then(
-    () => "resolved",
-    (error: unknown) => (error instanceof ZrizError ? error.code : error)
-  );
+  await work
+    .then(() => "resolved")
+    .catch((error: unknown) =>
+      error instanceof ZrizError ? error.code : error
+    );
 
 describe("reading a file before it decodes", () => {
   it.each(["image/png", "image/jpeg"])(
@@ -1117,10 +1118,8 @@ describe("element sources", () => {
     context?.drawImage(img, 0, 0, 1, 1);
     const clean = await Promise.resolve(context)
       .then((reader) => reader?.getImageData(0, 0, 1, 1))
-      .then(
-        () => true,
-        () => false
-      );
+      .then(() => true)
+      .catch(() => false);
     const bitmap = await createImageBitmap(img);
 
     img.remove();
@@ -1224,11 +1223,13 @@ describe("video sources", () => {
     preview.close();
     video.remove();
     const early = await playable("frames.webm", "loadedmetadata");
-    const outcome = await loadImage(early).then(
-      ({ preview: shownPreview }) =>
-        near(paint(shownPreview), [255, 0, 0, 255], 72) ? "picture" : "blank",
-      (error: unknown) => (error instanceof ZrizError ? error.code : error)
-    );
+    const outcome = await loadImage(early)
+      .then(({ preview: shownPreview }) =>
+        near(paint(shownPreview), [255, 0, 0, 255], 72) ? "picture" : "blank"
+      )
+      .catch((error: unknown) =>
+        error instanceof ZrizError ? error.code : error
+      );
 
     expect(["picture", "decode"]).toContain(outcome);
     early.remove();

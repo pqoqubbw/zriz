@@ -361,10 +361,8 @@ const renderKernel = (): RenderKernel => {
       contextOf(probe, "srgb").fillRect(0, 0, 1, 1);
 
       known = encode(probe, type, 1)
-        .then(
-          (blob) => blob.type === type,
-          () => false
-        )
+        .then((blob) => blob.type === type)
+        .catch(() => false)
         .finally(() => {
           free(probe);
         });

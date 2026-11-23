@@ -458,7 +458,7 @@ const loadImage = async (
     return await Promise.race([pending, limit.promise]);
   } catch (error) {
     cancel.abort();
-    void pending.then(freeImage, noop);
+    void pending.then(freeImage).catch(noop);
     throw inHook ? error : toZriz(error);
   } finally {
     limit.clear();

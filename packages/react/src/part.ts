@@ -100,8 +100,6 @@ const keepStyle =
         }
       }
     }
-
-    return undefined;
   };
 
 const useKeptStyle = (

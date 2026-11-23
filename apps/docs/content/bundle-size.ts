@@ -20,20 +20,20 @@ const BUNDLE_SIZE_PAGE = defineDoc({
           column("Brotli", "prose", { align: "end", width: 88 }),
         ],
         rows: [
-          ["Editor", "Every part from `@zriz/react/cropper`", "29.18 kB"],
+          ["Editor", "Every part from `@zriz/react/cropper`", "29.20 kB"],
           ["Avatar", "`Root`, `Viewport`, `Image`, `Mask`, `Area`", "21.92 kB"],
-          ["Root only", "`Root`", "14.46 kB"],
+          ["Root only", "`Root`", "14.29 kB"],
           [
             "Vanilla avatar",
             "`createCropper`, `loadImage`, `attachImage`, `bindViewport`, `bindPhoto`, `bindMask` and `bindArea`",
-            "21.46 kB",
+            "21.45 kB",
           ],
           ["Server", "`toSharp` from `@zriz/core`", "723 B"],
           ["Stylesheet", "`styles.css`, which is optional", "973 B"],
         ],
       }),
       p(
-        `Measured with size-limit 14.3.0 on the ${RELEASES[0]?.version} packages. It bundles each set with Rolldown 1.2.15, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the \`production\` export condition, so development warnings do not count.`
+        `Measured with size-limit 14.3.0 on the ${RELEASES[0]?.version} packages. It bundles each set with Rolldown 1.3.3, minifies it with Oxc and leaves out React and react-dom. It compresses each output file with Brotli at quality 11, adds the files up and subtracts the 18 B that size-limit measures for an empty project. 1 kB is 1000 B. The build uses the \`production\` export condition, so development warnings do not count.`
       ),
       p(
         "The vanilla set calls `loadImage` itself, so the code that fetches and decodes a file is in its first load. With `Root` that code loads later."
@@ -82,7 +82,7 @@ const BUNDLE_SIZE_PAGE = defineDoc({
         ],
       }),
       p(
-        `With all five chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to ${size(AVATAR_TOTAL)}. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild with \`splitting\` puts that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.40 kB.`
+        `With all five chunks, even \`source\`, which \`Root\` never loads, the avatar set comes to ${size(AVATAR_TOTAL)}. Rolldown, Rollup, Vite, webpack and Next keep the code a chunk shares with the first load in the first load, so the chunks stay this small. esbuild with \`splitting\` puts that code into chunks of its own. A chunk bundled alone is larger: \`render\` is 3.43 kB.`
       )
     ),
     section(

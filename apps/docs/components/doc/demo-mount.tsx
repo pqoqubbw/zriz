@@ -28,16 +28,15 @@ const DemoMount = ({ children, name, preload }: DemoMountProps) => {
 
         observer.disconnect();
 
-        void DEMO_LOADERS[name]().then(
-          (module) => {
+        void DEMO_LOADERS[name]()
+          .then((module) => {
             if (!gone) {
               setDemo(() => module.default);
             }
 
             return module;
-          },
-          () => null
-        );
+          })
+          .catch(() => null);
       },
       { rootMargin: ROOT_MARGIN }
     );

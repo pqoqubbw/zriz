@@ -138,7 +138,7 @@
       "name": "image pipeline (loadImage, exportCrop, attachImage)",
       "path": "dist/dom/index.js",
       "import": "{ loadImage, exportCrop, attachImage }",
-      "limit": "5500 B",
+      "limit": "5520 B",
       "entry": [
         "index"
       ]
@@ -162,7 +162,7 @@
       "name": "loadImage",
       "path": "dist/dom/index.js",
       "import": "{ loadImage }",
-      "limit": "4910 B",
+      "limit": "4920 B",
       "entry": [
         "index"
       ]
@@ -171,25 +171,25 @@
       "name": "lazy chunk dom/render",
       "path": "dist/dom/render.js",
       "import": "*",
-      "limit": "3400 B"
+      "limit": "3430 B"
     },
     {
       "name": "lazy chunk dom/svg",
       "path": "dist/dom/svg.js",
       "import": "*",
-      "limit": "2540 B"
+      "limit": "2560 B"
     },
     {
       "name": "lazy chunk dom/source",
       "path": "dist/dom/source.js",
       "import": "*",
-      "limit": "770 B"
+      "limit": "795 B"
     },
     {
       "name": "lazy chunk dom/sharpen",
       "path": "dist/dom/sharpen.js",
       "import": "*",
-      "limit": "810 B"
+      "limit": "835 B"
     }
   ]
 }
