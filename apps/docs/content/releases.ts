@@ -7,6 +7,16 @@ type Release = {
 
 const RELEASES: readonly Release[] = [
   {
+    bump: "minor",
+    date: "2026-11-24",
+    notes: [
+      '`Flip` is a plain button by default and no longer sets `aria-pressed` or `data-mirrored`. An editor with one flip button named without an axis adds `toggle` to keep them: `<Cropper.Flip aria-label="Flip" />` becomes `<Cropper.Flip aria-label="Flip" toggle />`.',
+      '`toggle` has no effect with `axis="y"`, because a vertical flip also mirrors the photo and a pressed horizontal flip would be read after it. With two flip buttons, keep both plain and say the result with `Announcer`.',
+      'In development, a `Flip` with `toggle` next to a `Flip` with `axis="y"` logs a warning.',
+    ],
+    version: "0.3.0",
+  },
+  {
     bump: "patch",
     date: "2026-11-11",
     notes: [

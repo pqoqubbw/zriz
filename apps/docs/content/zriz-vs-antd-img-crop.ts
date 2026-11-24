@@ -15,7 +15,7 @@ const ZRIZ_VS_ANTD_IMG_CROP_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `antd-img-crop` 4.30.0 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `antd-img-crop` 4.30.0 with `@zriz/react` 0.3.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,10 +30,10 @@ const ZRIZ_VS_ANTD_IMG_CROP_PAGE = defineDoc({
         'antd-img-crop calls itself "An image cropper for Ant Design Upload" in its [README](https://github.com/nanxiaobei/antd-img-crop#readme). You wrap an antd `Upload` in `ImgCrop`. When a person picks a file, an antd modal opens with a react-easy-crop cropper inside, and OK sends the cropped file on to the upload. The [Ant Design Upload docs](https://ant.design/components/upload) use it in their crop demo.'
       ),
       p(
-        "Pick antd-img-crop when the app is on Ant Design and the crop is a step before an upload. One wrapper gives the modal, the sliders, OK and Cancel as antd components, and the app writes no crop code. Its optional sliders turn the photo through 180° each way and change the aspect, from 0.5 to 2 by default, and zriz has neither as one control. It adds about 10 kB to an app that already uses antd's Modal, Upload, Button and Slider. Its peer range starts at React 16.8, and we ran it on React 19 alone. It has been on npm since 2018 and has over 100k downloads a week."
+        "Pick antd-img-crop when the app is on Ant Design and the crop is a step before an upload. One wrapper gives the modal, the sliders, OK and Cancel as antd components, and the app writes no crop code. Its optional sliders turn the photo through 180° each way and change the aspect, from 0.5 to 2 by default, and zriz has neither as one control. It adds about 10 kB to an app that already uses antd's Modal, Upload, Button and Slider. Its peer range starts at React 16.8, and we ran it on React 19 alone. It has been on npm since 2018 and has over 120k downloads a week."
       ),
       p(
-        "Pick zriz when the app has no antd, or the crop is not part of an upload. zriz opens a URL, a `File` or a `Blob`, has handles on the crop, quarter turns and flip, and gives the crop back as a value you can save and restore. A round crop can export as a round PNG. You write the dialog, the styles and every label, and zriz adds 22 to 30 kB. zriz had its first release in November 2026 and has under a thousand downloads a week. Each package has one maintainer on npm."
+        "Pick zriz when the app has no antd, or the crop is not part of an upload. zriz opens a URL, a `File` or a `Blob`, has handles on the crop, quarter turns and flip, and gives the crop back as a value you can save and restore. A round crop can export as a round PNG. You write the dialog, the styles and every label, and the zriz component below adds 37.0 kB. zriz had its first release in November 2026 and has over 1,100 downloads a week. Each package has one maintainer on npm."
       )
     ),
     section(
@@ -46,7 +46,7 @@ const ZRIZ_VS_ANTD_IMG_CROP_PAGE = defineDoc({
         ],
         rows: [
           ["First release", "2018", "November 2026"],
-          ["npm downloads a week", "100k+", "Under 1,000"],
+          ["npm downloads a week", "120k+", "1.1k+"],
           ["GitHub stars", "540+", "Under 100"],
           ["Licence", "MIT", "MIT"],
           [
@@ -59,11 +59,11 @@ const ZRIZ_VS_ANTD_IMG_CROP_PAGE = defineDoc({
             "16.8 and newer by its peer range, we ran it on 19",
             "18.2 and 19",
           ],
-          ["Size", "About 10 kB, on top of antd", "22 to 30 kB"],
+          ["Size", "9.7 kB, on top of antd", "37.0 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For antd-img-crop it is the basic example from its docs, built with esbuild. That number leaves out antd's modal, slider and buttons. With antd's Modal, Upload, Button and Slider counted the same example is about 111 kB, and an app pays for whichever of those four it does not use yet. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For antd-img-crop it is the basic example from its docs, built with esbuild. That number leaves out antd's modal, slider and buttons. With antd's Modal, Upload, Button and Slider counted the same example is about 111 kB, and an app pays for whichever of those four it does not use yet. For zriz it is the component below, built the same way, stylesheet included. In a bundler that splits code, such as Rolldown or Vite, zriz depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part, plus 1 kB for the optional stylesheet. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. Built as one file, those two sets come to about 34 kB and about 43 kB, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(

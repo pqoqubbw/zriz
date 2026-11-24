@@ -15,7 +15,7 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
   blocks: [
     intro(
       p(
-        "We make zriz, so read this page with that in mind. It compares `croppie` 2.6.5 with `@zriz/react` 0.2.1. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
+        "We make zriz, so read this page with that in mind. It compares `croppie` 2.6.5 with `@zriz/react` 0.3.0. If something here is wrong, [open an issue](https://github.com/pqoqubbw/zriz/issues) and we will fix it."
       ),
       p(
         "To move a project over, paste this into Claude Code, Cursor or another coding agent:"
@@ -30,10 +30,10 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
         'Croppie is a plain JavaScript class, `new Croppie(element, options)`, with an optional jQuery plugin. Its [docs](https://foliotek.github.io/Croppie/) call it "a fast, easy to use image cropping plugin with tons of configuration options". A frame of fixed pixel size sits in the middle of a box, the photo moves and zooms under it, and a styled zoom slider sits below.'
       ),
       p(
-        "Pick Croppie when the page has no React or no bundler, or runs on jQuery. It is one script and one stylesheet, about 8 kB together as measured below, and it loads from a CDN. It paints its own frame and zoom slider, so a square or round avatar cropper needs no CSS from you. It has been on npm since 2015 and has over 120k downloads a week. It returns a data URL, a canvas or an exact output size, and with `enforceBoundary: false` the crop can run past the photo. Its docs list browsers back to IE 10 and Safari 4."
+        "Pick Croppie when the page has no React or no bundler, or runs on jQuery. It is one script and one stylesheet, 8.2 kB together as measured below, and it loads from a CDN. It paints its own frame and zoom slider, so a square or round avatar cropper needs no CSS from you. It has been on npm since 2015 and has over 170k downloads a week. It returns a data URL, a canvas or an exact output size, and with `enforceBoundary: false` the crop can run past the photo. Its docs list browsers back to IE 10 and Safari 4."
       ),
       p(
-        "Pick zriz when the app is React and the user needs to resize or straighten the crop. It is a set of React parts with bundled types, it renders on the server, and `src` takes a `File` or a `Blob`. It has eight resize handles, ratios you change at runtime, a dial that turns the photo up to 45° each way, and rotate and flip buttons. zriz is new. Its first release was in November 2026, and it has one maintainer, versions at 0.x and under a thousand downloads a week."
+        "Pick zriz when the app is React and the user needs to resize or straighten the crop. It is a set of React parts with bundled types, it renders on the server, and `src` takes a `File` or a `Blob`. It has eight resize handles, ratios you change at runtime, a dial that turns the photo up to 45° each way, and rotate and flip buttons. zriz is new. Its first release was in November 2026, and it has one maintainer, versions at 0.x and over 1,100 downloads a week."
       )
     ),
     section(
@@ -46,7 +46,7 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
         ],
         rows: [
           ["First release", "2015", "November 2026"],
-          ["npm downloads a week", "120k+", "Under 1,000"],
+          ["npm downloads a week", "170k+", "1.1k+"],
           ["GitHub stars", "2.6k+", "Under 100"],
           ["Licence", "MIT", "MIT"],
           ["Dependencies", "None", "None, `@zriz/core` and React as peers"],
@@ -55,11 +55,11 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
             "Not needed, its README lists no React wrapper",
             "18.2 and 19",
           ],
-          ["Size", "About 8 kB", "22 to 30 kB"],
+          ["Size", "8.2 kB", "36.7 kB"],
         ],
       }),
       p(
-        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Croppie it is the basic example from its docs, built with esbuild. Croppie's one script holds its export code, so its number includes export. For zriz it depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. We measured the zriz sets with Rolldown. Built with esbuild as one file, the way the other example was, zriz comes to about 33 kB for those five parts and about 41 kB with every part, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
+        "Size is minified JavaScript and CSS, compressed with Brotli, without React. For Croppie it is the basic example from its docs, built with esbuild. Croppie's one script holds its export code, so its number includes export. For zriz it is the component below, built the same way, stylesheet included. In a bundler that splits code, such as Rolldown or Vite, zriz depends on the parts you import: about 22 kB for `Root`, `Viewport`, `Image`, `Mask` and `Area`, and about 29 kB with every part, plus 1 kB for the optional stylesheet. Up to 11 kB more loads later, for reading the file, export, sharpening and SVG. Built as one file, those two sets come to about 34 kB and about 43 kB, because the code that loads later is then in that file. [Bundle size](bundle-size) has each set. `@zriz/react` needs `@zriz/core` and React as peers."
       )
     ),
     section(
@@ -157,7 +157,7 @@ const ZRIZ_VS_CROPPIE_PAGE = defineDoc({
         'Both take keys. In Croppie the frame is a tab stop, and each arrow press moves the photo 1 CSS px. Shift + Up and Shift + Down change the zoom by [0.0001 per press](https://github.com/Foliotek/Croppie/blob/v2.6.5/croppie.js#L832-L886). The frame has no role and no name, and `croppie.css` [removes the slider\'s focus outline](https://github.com/Foliotek/Croppie/blob/v2.6.5/croppie.css#L161-L190) and gives it a 1 px white one in Firefox. In zriz the arrows move the crop by 1% of its size, or 10% with Shift. The crop area has `role="application"`, and you write its name. The zriz handles take no keys, and Alt + arrows on the crop area resize it about its centre.'
       ),
       p(
-        "Croppie's latest release, 2.6.5, came out in June 2020, and its repo has over 250 open issues. One of its two authors wrote about the project's status in [issue 716](https://github.com/Foliotek/Croppie/issues/716). zriz had its first release in November 2026 and has one maintainer. It has under a thousand downloads a week, where Croppie has over 120k."
+        "Croppie's latest release, 2.6.5, came out in June 2020, and its repo has over 250 open issues. One of its two authors wrote about the project's status in [issue 716](https://github.com/Foliotek/Croppie/issues/716). zriz had its first release in November 2026 and has one maintainer. It has over 1,100 downloads a week, where Croppie has over 170k."
       )
     ),
     section(
