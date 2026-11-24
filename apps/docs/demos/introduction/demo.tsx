@@ -14,7 +14,7 @@ const IntroductionDemo = () => (
   <DemoShell name="introduction" onValueCommit={save}>
     <DialZone
       end={
-        <Cropper.Flip aria-label="Flip" className={ghostVariants()}>
+        <Cropper.Flip aria-label="Flip" className={ghostVariants()} toggle>
           <Icon className="size-5" name="flip-horizontal" />
         </Cropper.Flip>
       }

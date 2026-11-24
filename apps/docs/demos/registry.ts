@@ -173,6 +173,7 @@ const DEMO_SPECS: Record<DemoName, DemoSpec> = {
         "+Viewport",
         "Flip.aria-label",
         "Flip.axis",
+        "Flip.toggle",
         "Reset.aria-label",
         "Rotate.aria-label",
         "Rotate.direction",

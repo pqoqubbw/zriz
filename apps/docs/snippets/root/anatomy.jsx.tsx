@@ -17,7 +17,7 @@ export const example = (
     </Cropper.Dial>
     <div className="toolbar">
       <Cropper.Rotate>Rotate</Cropper.Rotate>
-      <Cropper.Flip>Flip</Cropper.Flip>
+      <Cropper.Flip toggle>Flip</Cropper.Flip>
       <Cropper.Reset>Reset</Cropper.Reset>
     </div>
   </Cropper.Root>

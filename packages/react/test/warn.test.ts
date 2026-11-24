@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { warnUnlabelled, warnViewports } from "../src/warn";
+import { warnFlips, warnUnlabelled, warnViewports } from "../src/warn";
 import { warnViewports as warnViewportsOff } from "../src/warn-off";
 
 const isElement = (value: unknown): value is Element =>
@@ -86,5 +86,27 @@ describe(warnViewports, () => {
     warnViewportsOff(cropper, box(640))();
     warnViewportsOff(cropper, box(640))();
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe(warnFlips, () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("warns once, only when a toggle shares a cropper with a vertical flip", () => {
+    const warn = vi.spyOn(console, "warn").mockReturnValue(undefined);
+    const cropper = {};
+
+    warnFlips(cropper, { axis: "x", toggle: true });
+    warnFlips(cropper, { axis: "x", toggle: true });
+    warnFlips({}, { axis: "y", toggle: false });
+    const leave = warnFlips(cropper, { axis: "x", toggle: false });
+
+    leave();
+    expect(warn).not.toHaveBeenCalled();
+    warnFlips(cropper, { axis: "y", toggle: false });
+    warnFlips(cropper, { axis: "y", toggle: true });
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

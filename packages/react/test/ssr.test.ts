@@ -59,7 +59,7 @@ describe("server rendering", () => {
         createElement(Cropper.ZoomStep, { factor: 2 }, "in"),
         createElement(Cropper.Orientation, null, "turn"),
         createElement(Cropper.Rotate, null, "rotate"),
-        createElement(Cropper.Flip, null, "flip"),
+        createElement(Cropper.Flip, { toggle: true }, "flip"),
         createElement(Cropper.Reset, null, "reset"),
         createElement(
           Cropper.AspectGroup,
@@ -73,6 +73,7 @@ describe("server rendering", () => {
 
     expect(html).toContain('data-zriz-item="root"');
     expect(html).toContain('data-zriz-item="dial-ticks"');
+    expect(html).toContain('aria-pressed="false"');
     expect(errors).not.toHaveBeenCalled();
     errors.mockRestore();
   });

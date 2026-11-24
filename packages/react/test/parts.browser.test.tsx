@@ -183,8 +183,10 @@ describe("buttons and state attributes", () => {
     await cleanup();
   });
 
-  it("Flip mirrors on click, aria-pressed and data-mirrored follow, and axis y keeps the mirror's axis", async () => {
-    const { api, pick, root } = await mount(<Cropper.Flip>flip</Cropper.Flip>);
+  it("Flip with toggle mirrors on click, and aria-pressed and data-mirrored follow", async () => {
+    const { api, pick, root } = await mount(
+      <Cropper.Flip toggle>flip</Cropper.Flip>
+    );
     const button = pick("flip");
     const read = () => ({
       button: on(button, "data-mirrored"),
@@ -213,16 +215,40 @@ describe("buttons and state attributes", () => {
     button.click();
     await frames();
     expect(read()).toStrictEqual(off);
-    await cleanup();
-
-    const y = await mount(<Cropper.Flip axis="y">flip</Cropper.Flip>);
-    const before = y.api().getValue().quarterTurns;
-
-    y.pick("flip").click();
-    await frames();
-    expect(y.api().getValue().mirrored).toBeTruthy();
-    expect(y.api().getValue().quarterTurns).not.toBe(before);
   });
+
+  it.each([
+    ["x", false],
+    ["y", true],
+  ] as const)(
+    "Flip with axis %s and toggle %s is a plain button",
+    async (axis, toggle) => {
+      const { api, pick, root } = await mount(
+        <Cropper.Flip axis={axis} toggle={toggle}>
+          flip
+        </Cropper.Flip>
+      );
+      const button = pick("flip");
+      const before = api().getValue().quarterTurns;
+
+      button.click();
+      await frames();
+
+      expect({
+        button: on(button, "data-mirrored"),
+        mirrored: api().getValue().mirrored,
+        pressed: button.hasAttribute("aria-pressed"),
+        root: on(root, "data-mirrored"),
+        turned: api().getValue().quarterTurns !== before,
+      }).toStrictEqual({
+        button: false,
+        mirrored: true,
+        pressed: false,
+        root: true,
+        turned: axis === "y",
+      });
+    }
+  );
 
   it("Reset undoes a change on click and hides itself", async () => {
     const { api, pick, root } = await mount(

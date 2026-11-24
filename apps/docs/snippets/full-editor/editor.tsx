@@ -51,14 +51,41 @@ const aspects = [
 ] as const;
 
 const spoken: Partial<Record<ChangeReason, string>> = {
-  "rotate-90": "Turned 90 degrees",
-  flip: "Flipped",
   orientation: "Orientation swapped",
   reset: "Crop reset",
 };
 
-const announce = (_: CropValue, details: CommitDetails) =>
-  spoken[details.reason] ?? null;
+const FLIPPED = [
+  "Flipped horizontally",
+  "Flipped and turned 90 degrees",
+  "Flipped vertically",
+  "Flipped and turned 90 degrees",
+] as const;
+
+const announce = (value: CropValue, details: CommitDetails) => {
+  const { previous, reason } = details;
+  const fixed = spoken[reason];
+
+  if (fixed !== undefined) {
+    return fixed;
+  }
+
+  const sum = (value.quarterTurns + previous.quarterTurns) % 4;
+  const turn =
+    (value.quarterTurns - previous.quarterTurns + 4) % 4;
+
+  if (value.mirrored !== previous.mirrored) {
+    return FLIPPED[sum] ?? null;
+  }
+
+  if (turn !== 0) {
+    return turn === 2
+      ? "Turned 180 degrees"
+      : "Turned 90 degrees";
+  }
+
+  return null;
+};
 
 const instructions = [
   "Drag the photo to move it.",
@@ -157,7 +184,7 @@ export const Editor = ({ src, onSave }: Props) => {
       </Cropper.AspectGroup>
       <Cropper.Orientation>Orientation</Cropper.Orientation>
       <Cropper.Rotate>Rotate</Cropper.Rotate>
-      <Cropper.Flip>Flip</Cropper.Flip>
+      <Cropper.Flip toggle>Flip</Cropper.Flip>
       <Cropper.Reset>Reset</Cropper.Reset>
       <Cropper.Instructions>
         {instructions}

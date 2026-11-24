@@ -11,7 +11,12 @@ vi.mock(import("../../demos/shell/photo"), async () => {
   return await photoMock();
 });
 
-const LABELS = ["Rotate left", "Rotate right", "Flip", "Flip vertically"];
+const LABELS = [
+  "Rotate left",
+  "Rotate right",
+  "Flip horizontally",
+  "Flip vertically",
+];
 
 const panel = (): HTMLElement => find('[data-demo="buttons"]');
 
@@ -59,14 +64,14 @@ describe("buttons demo", () => {
       "Rotate left",
       "Rotate right",
       "Flip vertically",
-      "Flip",
+      "Flip horizontally",
       "Reset",
     ]) {
       button(label).click();
       await settle();
 
       steps.push({
-        flip: button("Flip").getAttribute("aria-pressed"),
+        flip: button("Flip horizontally").getAttribute("aria-pressed"),
         flipVertically: button("Flip vertically").getAttribute("aria-pressed"),
         portrait: ratio() < 1,
         reset: shown(button("Reset")),
@@ -76,8 +81,8 @@ describe("buttons demo", () => {
     expect(steps).toMatchObject([
       { portrait: true, reset: true },
       { portrait: false },
-      { flipVertically: "true", reset: true },
-      { flip: "false" },
+      { flip: null, flipVertically: null, reset: true },
+      { flip: null, flipVertically: null },
       { reset: false },
     ]);
   });

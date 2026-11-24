@@ -70,12 +70,13 @@ const FULL_EDITOR_PAGE = defineDoc({
         "`Instructions` is hidden text. The crop area points to it with `aria-describedby`, so a screen reader reads it when the area gets focus."
       ),
       p(
-        "The dial and the zoom slider read out their own values. The buttons do not, so `announce` speaks for them after each commit. It returns `null` for any other change. [Accessibility](accessibility) covers the keys and the labels."
+        "The dial and the zoom slider read out their own values, and the `Flip` toggle reads out whether it is pressed. The other buttons do not, so `announce` says what each one did after its commit, and it also says a flip for screen readers that skip the pressed state. It returns `null` for any other change. [Accessibility](accessibility) covers the keys and the labels."
       ),
       excerpt(
         "full-editor/editor.tsx",
         ["const spoken", "};"],
-        ["const announce", "spoken["],
+        ["const FLIPPED", "] as const"],
+        ["const announce", "};"],
         ["const instructions", "].join"],
         ["<Cropper.Instructions>", "<Cropper.Announcer"]
       )

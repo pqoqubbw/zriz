@@ -4,6 +4,7 @@ import { IconButton } from "./icon-button";
 export const example = (
   <Cropper.Flip
     aria-label="Flip"
+    toggle
     render={(props, state) => (
       <IconButton
         {...props}

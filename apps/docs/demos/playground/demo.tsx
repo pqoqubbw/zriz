@@ -59,7 +59,7 @@ const PlaygroundDemo = () => {
       <div className="contents in-data-disabled:**:data-[slot=scale]:opacity-40">
         <DialZone
           end={
-            <Cropper.Flip aria-label="Flip" className={ghostVariants()}>
+            <Cropper.Flip aria-label="Flip" className={ghostVariants()} toggle>
               <Icon className="size-5" name="flip-horizontal" />
             </Cropper.Flip>
           }

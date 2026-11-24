@@ -153,7 +153,7 @@ export const Undefined = ({
       <Cropper.Zoom aria-label="Zoom" format={unset} max={unset}>
         <Cropper.ZoomThumb max={unset} />
       </Cropper.Zoom>
-      <Cropper.Flip axis={unset} />
+      <Cropper.Flip axis={unset} toggle={unset} />
       <Cropper.Rotate direction={unset} />
     </Cropper.Root>
   );

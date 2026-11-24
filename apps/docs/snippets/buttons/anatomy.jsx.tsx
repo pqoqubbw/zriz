@@ -17,7 +17,7 @@ export const example = (
         />
       </svg>
     </Cropper.Rotate>
-    <Cropper.Flip aria-label="Flip">
+    <Cropper.Flip aria-label="Flip" toggle>
       <svg
         aria-hidden="true"
         width={20}

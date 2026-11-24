@@ -47,7 +47,10 @@ const ACCESSIBILITY_PAGE = defineDoc({
             "Rotate, Orientation, ZoomStep",
             "Buttons. Name a `ZoomStep` with `aria-label`. `Orientation` is disabled for a free, original or square crop",
           ],
-          ["Flip", "A toggle button. `aria-pressed` follows `mirrored`"],
+          [
+            "Flip",
+            'A button. With `toggle` and `axis="x"` it is a toggle button with `aria-pressed` following `mirrored`. Use `toggle` for one flip action named without an axis, such as "Flip", and keep the name when it is pressed. Next to a vertical flip, keep both plain, because a vertical flip also mirrors the photo and a pressed "Flip" would read as a horizontal flip. A toggle with a vertical flip logs a warning in development',
+          ],
           [
             "Reset",
             "A button that is `hidden` while nothing has changed. If it has focus when it hides, focus moves to `Area`, or to the first control in `Root` that can take focus when there is no `Area` or it cannot take focus",
@@ -78,7 +81,7 @@ const ACCESSIBILITY_PAGE = defineDoc({
       ),
       code("accessibility/announcer.jsx.tsx"),
       p(
-        "`details.reason` says what made the change, such as `keyboard`, `dial`, `pan` or `orientation`, and `details.previous` holds the crop before it. A message equal to the last one is spoken again."
+        "`details.reason` says what made the change, such as `keyboard`, `dial`, `pan` or `orientation`, and `details.previous` holds the crop before it. A message equal to the last one is spoken again. A button pressed during a drag, pinch or dial turn commits with the reason of that gesture. So read a flip or a turn from the value. `mirrored` differs from `details.previous` after a flip. The sum of the two `quarterTurns` is then a multiple of 4 for a horizontal flip, 2 more than that for a vertical one, and odd when a flip and a quarter turn land in one commit. `quarterTurns` alone differs after a turn. `Reset` and `Orientation` pressed during a gesture carry its reason too. A toggle `Flip` speaks its own state on most screen readers, but VoiceOver on macOS does not speak the change, so keep the message for a toggle too."
       )
     ),
     section(
