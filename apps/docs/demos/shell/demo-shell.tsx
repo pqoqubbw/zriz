@@ -90,14 +90,38 @@ const INSTRUCTIONS = [
 ].join(" ");
 
 const SPOKEN: Partial<Record<CommitDetails["reason"], string>> = {
-  flip: "Flipped",
   orientation: "Orientation swapped",
   reset: "Crop reset",
-  "rotate-90": "Turned 90 degrees",
 };
 
-const announce = (_: CropValue, details: CommitDetails): string | null =>
-  SPOKEN[details.reason] ?? null;
+const FLIPPED = [
+  "Flipped horizontally",
+  "Flipped and turned 90 degrees",
+  "Flipped vertically",
+  "Flipped and turned 90 degrees",
+] as const;
+
+const announce = (value: CropValue, details: CommitDetails): string | null => {
+  const { previous, reason } = details;
+  const spoken = SPOKEN[reason];
+
+  if (spoken !== undefined) {
+    return spoken;
+  }
+
+  const sum = (value.quarterTurns + previous.quarterTurns) % 4;
+  const turn = (value.quarterTurns - previous.quarterTurns + 4) % 4;
+
+  if (value.mirrored !== previous.mirrored) {
+    return FLIPPED[sum] ?? null;
+  }
+
+  if (turn !== 0) {
+    return turn === 2 ? "Turned 180 degrees" : "Turned 90 degrees";
+  }
+
+  return null;
+};
 
 const photoIdOf = (src: Blob | string, initial: string): string => {
   if (typeof src === "string") {

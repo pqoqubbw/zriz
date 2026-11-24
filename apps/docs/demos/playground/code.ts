@@ -339,7 +339,11 @@ const treeOf = (knobs: Knobs): Element => ({
       children: [leaf("Cropper.DialTicks")],
       tag: "Cropper.Dial",
     },
-    leaf("Cropper.Flip", ["aria-label", text("Flip")]),
+    leaf(
+      "Cropper.Flip",
+      ["aria-label", text("Flip")],
+      ["toggle", { kind: "bare" }]
+    ),
   ],
   tag: "Cropper.Root",
 });

@@ -17,6 +17,6 @@ export const example = (
     <Cropper.Dial aria-label="Straighten">
       <Cropper.DialTicks />
     </Cropper.Dial>
-    <Cropper.Flip aria-label="Flip" />
+    <Cropper.Flip aria-label="Flip" toggle />
   </Cropper.Root>
 );

@@ -87,7 +87,7 @@ const ImageEditor = ({
             <CropperAngle />
             <CropperDial className="w-full flex-none" />
           </div>
-          <CropperFlip className="mb-2" />
+          <CropperFlip className="mb-2" toggle />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CropperAspect>

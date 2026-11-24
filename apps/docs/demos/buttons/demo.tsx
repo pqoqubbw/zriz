@@ -24,7 +24,10 @@ const ButtonsRow = () => {
         >
           <Icon className="size-5" name="rotate-right" />
         </Cropper.Rotate>
-        <Cropper.Flip aria-label="Flip" className={ghostVariants()}>
+        <Cropper.Flip
+          aria-label="Flip horizontally"
+          className={ghostVariants()}
+        >
           <Icon className="size-5" name="flip-horizontal" />
         </Cropper.Flip>
         <Cropper.Flip

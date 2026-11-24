@@ -79,4 +79,32 @@ const warnViewports = (cropper: object, element: Element): (() => void) => {
   };
 };
 
-export { warnFormat, warnUnlabelled, warnViewports };
+type FlipEntry = { axis: "x" | "y"; toggle: boolean };
+
+const flips = new WeakMap<object, Set<FlipEntry>>();
+
+const warnFlips = (cropper: object, entry: FlipEntry): (() => void) => {
+  const live = flips.get(cropper) ?? new Set();
+
+  flips.set(cropper, live);
+  live.add(entry);
+
+  const all = [...live];
+  const mixed =
+    all.some((flip) => flip.toggle && flip.axis === "x") &&
+    all.some((flip) => flip.axis === "y");
+
+  if (mixed && !warned.has("Flip") && isDev()) {
+    warned.add("Flip");
+
+    console.warn(
+      'zriz: <Cropper.Flip toggle> sits next to <Cropper.Flip axis="y">. A vertical flip also mirrors the photo, so the toggle reads as pressed after it. Leave both flips plain and say the result with <Cropper.Announcer>.'
+    );
+  }
+
+  return () => {
+    live.delete(entry);
+  };
+};
+
+export { warnFlips, warnFormat, warnUnlabelled, warnViewports };

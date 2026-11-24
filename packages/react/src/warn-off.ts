@@ -12,4 +12,9 @@ const stay = (): void => undefined;
 const warnViewports = (_cropper: object, _element: Element): (() => void) =>
   stay;
 
-export { warnFormat, warnUnlabelled, warnViewports };
+const warnFlips = (
+  _cropper: object,
+  _entry: { axis: "x" | "y"; toggle: boolean }
+): (() => void) => stay;
+
+export { warnFlips, warnFormat, warnUnlabelled, warnViewports };

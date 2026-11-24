@@ -21,7 +21,7 @@ const BUTTONS_PAGE = defineDoc({
       ),
       code("buttons/anatomy.jsx.tsx"),
       p(
-        "zriz ships them bare, with no paint and no icons. The demo above adds a right turn and a vertical flip, and uses the icons and styles from the zriz site."
+        "zriz ships them bare, with no paint and no icons. The demo above adds a right turn and a vertical flip, and uses the icons and styles from the zriz site. With the vertical flip beside it, both of its flips leave out `toggle`."
       )
     ),
     section(
@@ -84,7 +84,7 @@ const BUTTONS_PAGE = defineDoc({
       ),
       part(
         "Flip",
-        'Renders a `<button type="button">` with `aria-pressed` anywhere inside `Root`. `className` and `render` get `{ mirrored }`.',
+        'Renders a `<button type="button">` anywhere inside `Root`. It is a plain button by default. With `toggle` and `axis="x"` it is a toggle with `aria-pressed`, which is `true` while the photo is mirrored. Use `toggle` when the editor has one flip action named without an axis, such as "Flip", even if a second toolbar repeats it. A vertical flip is a mirror and a 180° turn, so a toggle beside a vertical flip button, or in an app that calls `flip("y")`, would read as pressed after a vertical flip. Leave both buttons plain then, say the result with `Announcer`, and never set `aria-pressed` on them yourself. `className` and `render` get `{ mirrored }`. Without `toggle` the button has no on state, so do not draw one from `mirrored`.',
         props([
           {
             default: '"x"',
@@ -92,11 +92,17 @@ const BUTTONS_PAGE = defineDoc({
             text: '`"x"` swaps left and right, `"y"` swaps top and bottom',
             type: '"x" | "y"',
           },
+          {
+            default: "false",
+            name: "toggle",
+            text: 'Sets `aria-pressed` to whether the photo is mirrored. Has no effect with `axis="y"`',
+            type: "boolean",
+          },
         ]),
         attrs([
           {
             name: "data-mirrored",
-            text: 'While the photo is mirrored, with `aria-pressed="true"`',
+            text: 'With `toggle`, while the photo is mirrored, with `aria-pressed="true"`. `Root` carries `data-mirrored` too, for styling the photo, never a plain flip button',
           },
         ])
       ),
