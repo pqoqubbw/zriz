@@ -23,10 +23,10 @@ const COMPARISON_PAGE = defineDoc({
     section(
       "Where zriz stands",
       p(
-        "zriz is new. Its first release was in November 2026, it has one maintainer and under a thousand downloads a week. Every library below is older and has far more."
+        "zriz is new. Its first release was in November 2026, it has one maintainer and over 1,100 downloads a week. Every library below is older and has far more."
       ),
       p(
-        "It is also larger than most of them. zriz adds 22 to 30 kB of Brotli, by the parts you import, see [bundle size](bundle-size). The basic examples of react-easy-crop, react-avatar-editor and react-image-crop add about 7, 5 and 5 kB. react-advanced-cropper is about 24 kB. Uppy Image Editor with its uploader and Dashboard is about 89 kB, and about 35 kB through its `useImageEditor` hook."
+        "It is also larger than most of them. zriz adds 22 to 29 kB of Brotli by the parts you import, plus 1 kB for its optional stylesheet, see [bundle size](bundle-size). The basic examples of react-easy-crop, react-avatar-editor and react-image-crop add 7.0, 4.6 and 4.5 kB. react-advanced-cropper is 23.8 kB. Uppy Image Editor with its uploader and Dashboard is 89.3 kB, and 35.4 kB through its `useImageEditor` hook."
       ),
       p(
         "What zriz has for that size is on each page: a straighten dial, a crop that stays inside the photo at an angle, and a saved value that restores exactly. Some of the others also have handles with a moving photo or export to a file, and each page says which."
@@ -36,17 +36,17 @@ const COMPARISON_PAGE = defineDoc({
       "Libraries",
       entries([
         {
-          meta: "5.5M+",
+          meta: "5.8M+",
           text: "A styled React component. The photo moves under a fixed frame.",
           title: "[react-easy-crop](zriz-vs-react-easy-crop)",
         },
         {
-          meta: "4.3M+",
+          meta: "4.6M+",
           text: "A crop box you drag over a still image, with no zoom or rotation.",
           title: "[react-image-crop](zriz-vs-react-image-crop)",
         },
         {
-          meta: "2.5M+",
+          meta: "2.7M+",
           text: "Plain JavaScript. Version 2 is web components, version 1 is a class.",
           title: "[Cropper.js](zriz-vs-cropperjs)",
         },
@@ -56,32 +56,32 @@ const COMPARISON_PAGE = defineDoc({
           title: "[Ark UI Image Cropper](zriz-vs-ark-ui)",
         },
         {
-          meta: "980k+",
+          meta: "1M+",
           text: "A canvas component with a fixed frame, made for avatars.",
           title: "[react-avatar-editor](zriz-vs-react-avatar-editor)",
         },
         {
-          meta: "640k+",
+          meta: "700k+",
           text: "A React wrapper around Cropper.js 1.",
           title: "[react-cropper](zriz-vs-react-cropper)",
         },
         {
-          meta: "270k+",
+          meta: "290k+",
           text: "A plugin of the Uppy uploader, built on Cropper.js 1.",
           title: "[Uppy Image Editor](zriz-vs-uppy-image-editor)",
         },
         {
-          meta: "250k+",
+          meta: "270k+",
           text: "A box that moves over a photo that also moves, with custom stencils.",
           title: "[react-advanced-cropper](zriz-vs-react-advanced-cropper)",
         },
         {
-          meta: "120k+",
+          meta: "170k+",
           text: "Plain JavaScript with a fixed frame and a zoom slider. Its last release was in 2020.",
           title: "[Croppie](zriz-vs-croppie)",
         },
         {
-          meta: "100k+",
+          meta: "120k+",
           text: "A crop dialog for the Upload of Ant Design, built on react-easy-crop.",
           title: "[antd-img-crop](zriz-vs-antd-img-crop)",
         },
@@ -94,7 +94,7 @@ const COMPARISON_PAGE = defineDoc({
       "Pick by need",
       entries([
         {
-          text: "react-image-crop or react-avatar-editor. Each adds about 5 kB, against 22 to 30 kB for zriz.",
+          text: "react-image-crop or react-avatar-editor. Each adds under 5 kB, against 22 to 29 kB for zriz.",
           title: "The smallest bundle",
         },
         {
@@ -138,7 +138,7 @@ const COMPARISON_PAGE = defineDoc({
     section(
       "How we checked",
       p(
-        "We took the most downloaded npm packages that put a crop UI in a React app in the browser, have open source code and are not marked deprecated. For each one we installed the published package at the version its page names and read its source and docs. Then we ran every library and zriz in headless Chromium with the same photo and the same script, which records tab order, keys, ARIA attributes, mouse, wheel, touch and a 15° turn."
+        "We took the most downloaded npm packages that put a crop UI in a React app in the browser, have open source code and are not marked deprecated. For each one we installed the published package at the version its page names and read its source and docs. Then we ran every library and zriz in headless Chromium with the same photo and the same script, which records tab order, keys, ARIA attributes, mouse, wheel and touch, and a 15° turn for each library that can rotate."
       ),
       p(
         "In the feature tables, No means we searched the code and the feature is not there."
