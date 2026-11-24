@@ -41,6 +41,15 @@ const CROP_AREA_PAGE = defineDoc({
       code("crop-area/handles.css")
     ),
     section(
+      "Very wide or tall photos",
+      p(
+        "zriz fits the whole photo in the viewport, and the crop can't be larger than the photo. A 100:1 banner in a 420 px wide viewport is about 4 px tall, and so is its crop. When the crop's short side is under two handles, about 88 px at the default size, the eight hit boxes overlap and a press grabs whichever one is on top. Photos up to about 4:1 are not affected."
+      ),
+      p(
+        "`onLoad` gets the photo's `width` and `height`, so an app can spot a strip before anyone tries to crop it, and show a note or skip the crop step. A smaller `--zriz-handle-size` moves the limit, but keep it at least 24 px for WCAG 2.5.8. The keyboard always works: Alt and the arrows resize the crop, whatever its size."
+      )
+    ),
+    section(
       "Resize with two fingers",
       p(
         "On a touch screen two handles can move at once. Put a finger on each and drag. Any two handles that share no side pair up, such as opposite corners or the top and right edges."
